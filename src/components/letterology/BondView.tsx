@@ -5,7 +5,7 @@ import { HouseCircle } from "@/components/letterology/HouseCircle";
 import { Explain } from "@/components/letterology/Gloss";
 import { Button } from "@/components/ui/button";
 import { copyToClipboard, openXIntent } from "@/lib/letterology/clipboard";
-import type { BondReading } from "@/lib/letterology/compatibility";
+import type { BondAxes, BondReading } from "@/lib/letterology/compatibility";
 import { dayReadingOf } from "@/lib/letterology/day-reading";
 import { WEATHER_COPY } from "@/lib/letterology/glossary";
 import { themeOf } from "@/lib/letterology/lexicon";
@@ -27,6 +27,17 @@ const KIND_LABEL: Record<MeetKind, string> = {
   enemy: "enemies",
   none: "unrelated",
 };
+
+const AXIS_ORDER: { key: keyof BondAxes; label: string }[] = [
+  { key: "role", label: "Role" },
+  { key: "method", label: "Method" },
+  { key: "place", label: "Place" },
+  { key: "overlap", label: "Letters" },
+  { key: "exchange", label: "Gifts" },
+  { key: "temper", label: "Temper" },
+  { key: "court", label: "Court" },
+  { key: "spark", label: "Spark" },
+];
 
 const webLinkClass =
   "inline-flex h-12 items-center justify-between rounded-xl bg-raised px-4 font-display text-sm text-ink shadow-[var(--shadow-border)] transition-[box-shadow,transform] duration-150 hover:shadow-[var(--shadow-border-hover)] active:scale-[0.96]";
@@ -91,14 +102,14 @@ export function BondView({ bond }: { bond: BondReading }) {
       <header className="flex flex-col items-center text-center">
         <p className="font-display text-xs tracking-[0.22em] text-muted uppercase">Certificate of Bond</p>
         <p className="mt-2 max-w-md text-sm text-muted">
-          Two usernames, read together. The number is a fit of their houses, how they work, and
-          the letters they share.
+          Eight measures, then a name for the pair. The number is a fit — not a forecast.
         </p>
         <div className="mt-6 flex w-full max-w-xl items-end justify-between gap-3">
           <PersonMark
             letter={bond.a.signature}
             name={bond.a.displayName}
             house={bond.seats[0].aNoun}
+            code={bond.a.archetype.code}
             align="left"
           />
           <AffinityRing value={shown} />
@@ -106,16 +117,40 @@ export function BondView({ bond }: { bond: BondReading }) {
             letter={bond.b.signature}
             name={bond.b.displayName}
             house={bond.seats[0].bNoun}
+            code={bond.b.archetype.code}
             align="right"
           />
         </div>
         <p className="mt-6 font-display text-xs tracking-[0.18em] text-primary uppercase">{weather.label}</p>
         {weather.gloss ? <p className="mt-1 max-w-md text-sm text-muted">{weather.gloss}</p> : null}
+        <p className="mt-3 font-display text-xs tracking-[0.2em] text-muted uppercase">{bond.epithet}</p>
         <h2 className="mt-2 font-display text-3xl leading-tight text-ink sm:text-4xl">{bond.title}</h2>
-        <p className="mt-3 max-w-2xl leading-relaxed text-ink/90">{bond.verdict}</p>
+        <p className="mt-2 font-display text-sm tracking-[0.14em] text-muted uppercase">
+          {bond.sigil} · {bond.headline}
+        </p>
+        <p className="mt-4 max-w-2xl leading-relaxed text-ink/90">{bond.verdict}</p>
         <p className="mt-3 font-display text-ink">{bond.invitation}</p>
         <p className="mt-4 max-w-2xl text-sm leading-relaxed text-ink/80">{bond.plainly}</p>
       </header>
+
+      <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
+        <Explain title="The eight measures">
+          Each bar is its own question. Role is the first letters. Method is how they work. Place is
+          where. Letters are shared spelling, by weight. Gifts are missing allies the other already
+          carries. Temper is inward versus outward. Court is how often each name sits in the other’s
+          allies. Spark is honest argument.
+        </Explain>
+        <div className="mt-6 grid gap-5 sm:grid-cols-2">
+          {AXIS_ORDER.map((axis) => (
+            <AxisMeter
+              key={axis.key}
+              label={axis.label}
+              value={bond.axes[axis.key]}
+              hint={bond.axisHints[axis.key]}
+            />
+          ))}
+        </div>
+      </section>
 
       <section className="overflow-hidden rounded-xl bg-primary text-primary-fg shadow-[var(--shadow-border)]">
         <div className="flex flex-col gap-6 p-5 lg:flex-row lg:items-stretch sm:p-7">
@@ -138,7 +173,10 @@ export function BondView({ bond }: { bond: BondReading }) {
                 <p className="mt-1 font-display text-sm text-ink">{bond.b.displayName}</p>
               </div>
             </div>
-            <h3 className="mt-5 text-center font-display text-2xl leading-tight text-ink">{bond.title}</h3>
+            <p className="mt-4 text-center font-display text-xs tracking-[0.16em] text-muted uppercase">
+              {bond.epithet}
+            </p>
+            <h3 className="mt-2 text-center font-display text-2xl leading-tight text-ink">{bond.title}</h3>
             <p className="mt-2 text-center text-sm leading-relaxed text-ink/80">{bond.invitation}</p>
             <img
               src="/seal.jpg"
@@ -244,6 +282,40 @@ export function BondView({ bond }: { bond: BondReading }) {
         ))}
       </section>
 
+      <section className="grid gap-4 lg:grid-cols-3">
+        <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-6">
+          <Explain title="What they make">
+            The third thing — shared letters, plus the two fields side by side.
+          </Explain>
+          <p className="mt-3 text-sm leading-relaxed text-ink/90">{bond.made}</p>
+        </article>
+        <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-6">
+          <Explain title="What they owe">
+            Gifts are allies one name already carries for the other.
+          </Explain>
+          <p className="mt-3 text-sm leading-relaxed text-ink/90">{bond.owed}</p>
+        </article>
+        <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-6">
+          <Explain title="The argument">
+            Each name’s live tension, and the seat that pushes back.
+          </Explain>
+          <p className="mt-3 text-sm leading-relaxed text-ink/90">{bond.argument}</p>
+        </article>
+      </section>
+
+      <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
+        <Explain title="Four rooms">
+          A day in the pair — morning, work, the fight, and how they come back. Not a script. A
+          portrait of the hours.
+        </Explain>
+        <div className="mt-6 grid gap-5 sm:grid-cols-2">
+          <RoomCard title="Morning" copy={bond.rooms.morning} />
+          <RoomCard title="Work" copy={bond.rooms.work} />
+          <RoomCard title="Fight" copy={bond.rooms.fight} />
+          <RoomCard title="Repair" copy={bond.rooms.repair} />
+        </div>
+      </section>
+
       <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
         <Explain title="On the wheel">
           Gold is an ally. Dark is an enemy. Tap a letter to open that house on the circle.
@@ -283,21 +355,17 @@ export function BondView({ bond }: { bond: BondReading }) {
       ) : null}
 
       <nav className="grid gap-3 sm:grid-cols-2">
-        <Link
-          to="/"
-          search={{ name: bond.a.displayName }}
-          className={webLinkClass}
-        >
+        <Link to="/" search={{ name: bond.a.displayName }} className={webLinkClass}>
           <span>Read {bond.a.displayName}</span>
-          <span aria-hidden="true" className="text-primary">→</span>
+          <span aria-hidden="true" className="text-primary">
+            →
+          </span>
         </Link>
-        <Link
-          to="/"
-          search={{ name: bond.b.displayName }}
-          className={webLinkClass}
-        >
+        <Link to="/" search={{ name: bond.b.displayName }} className={webLinkClass}>
           <span>Read {bond.b.displayName}</span>
-          <span aria-hidden="true" className="text-primary">→</span>
+          <span aria-hidden="true" className="text-primary">
+            →
+          </span>
         </Link>
         <Link
           to="/archetypes"
@@ -305,7 +373,9 @@ export function BondView({ bond }: { bond: BondReading }) {
           className={webLinkClass}
         >
           <span>{bond.seats[0].aNoun} house</span>
-          <span aria-hidden="true" className="text-primary">→</span>
+          <span aria-hidden="true" className="text-primary">
+            →
+          </span>
         </Link>
         <Link
           to="/archetypes"
@@ -313,7 +383,9 @@ export function BondView({ bond }: { bond: BondReading }) {
           className={webLinkClass}
         >
           <span>{bond.seats[0].bNoun} house</span>
-          <span aria-hidden="true" className="text-primary">→</span>
+          <span aria-hidden="true" className="text-primary">
+            →
+          </span>
         </Link>
         <Link
           to="/p/$slug"
@@ -322,7 +394,9 @@ export function BondView({ bond }: { bond: BondReading }) {
           className={webLinkClass}
         >
           <span>{bond.a.displayName} portrait</span>
-          <span aria-hidden="true" className="text-primary">→</span>
+          <span aria-hidden="true" className="text-primary">
+            →
+          </span>
         </Link>
         <Link
           to="/p/$slug"
@@ -331,7 +405,9 @@ export function BondView({ bond }: { bond: BondReading }) {
           className={webLinkClass}
         >
           <span>{bond.b.displayName} portrait</span>
-          <span aria-hidden="true" className="text-primary">→</span>
+          <span aria-hidden="true" className="text-primary">
+            →
+          </span>
         </Link>
       </nav>
     </div>
@@ -342,11 +418,13 @@ function PersonMark({
   letter,
   name,
   house,
+  code,
   align,
 }: {
   letter: Letter;
   name: string;
   house: string;
+  code: string;
   align: "left" | "right";
 }) {
   return (
@@ -354,6 +432,7 @@ function PersonMark({
       <p className="font-display text-6xl leading-none text-primary sm:text-7xl">{letter}</p>
       <p className="mt-2 font-display text-lg leading-tight text-ink">{name}</p>
       <p className="text-sm text-muted">{house}</p>
+      <p className="font-display text-xs tracking-[0.14em] text-muted uppercase">{code}</p>
     </div>
   );
 }
@@ -371,6 +450,30 @@ function AffinityRing({ value }: { value: number }) {
       </div>
       <p className="mt-2 font-display text-xs tracking-[0.16em] text-muted uppercase">Affinity</p>
     </div>
+  );
+}
+
+function AxisMeter({ label, value, hint }: { label: string; value: number; hint: string }) {
+  return (
+    <div>
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">{label}</p>
+        <p className="font-display text-sm text-ink">{value}</p>
+      </div>
+      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-ink/10">
+        <div className="h-full rounded-full bg-primary" style={{ width: `${value}%` }} />
+      </div>
+      <p className="mt-2 text-sm leading-snug text-muted">{hint}</p>
+    </div>
+  );
+}
+
+function RoomCard({ title, copy }: { title: string; copy: string }) {
+  return (
+    <article className="border-t border-ink/10 pt-4">
+      <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">{title}</p>
+      <p className="mt-2 text-sm leading-relaxed text-ink/90">{copy}</p>
+    </article>
   );
 }
 

@@ -356,13 +356,62 @@ export const WEATHER_COPY: Record<
   string,
   { label: string; gloss: string }
 > = {
-  homecoming: { label: "Homecoming", gloss: gloss("homecoming") },
-  kinship: { label: "Kinship", gloss: gloss("kinship-weather") },
-  crossing: { label: "Crossing", gloss: gloss("crossing") },
-  friction: { label: "Friction", gloss: gloss("friction") },
-  exile: { label: "Exile", gloss: gloss("exile") },
-  hinge: { label: "Hinge", gloss: gloss("hinge") },
-  ordinary: { label: "Ordinary day", gloss: gloss("ordinary") },
+  homecoming: {
+    label: "Homecoming",
+    gloss: "Same house. Two lives inside one role — not one person twice.",
+  },
+  kinship: {
+    label: "Kinship",
+    gloss: "Allied houses. They complete a job the other started.",
+  },
+  crossing: {
+    label: "Crossing",
+    gloss: "Useful difference. They meet at an angle and still make something.",
+  },
+  friction: {
+    label: "Friction",
+    gloss: "Opposing houses. The argument is the work, not a failure.",
+  },
+  exile: {
+    label: "Exile",
+    gloss: "Opposite grain, and neither name carries the missing ally.",
+  },
+  hinge: {
+    label: "Hinge",
+    gloss: "Leftover days between year-walks. No numbered house.",
+  },
+  ordinary: {
+    label: "Unmarked",
+    gloss: "No official bond. They get to write one.",
+  },
+  pact: {
+    label: "Pact",
+    gloss: "Each name already carries an ally the other is missing. That is the deal.",
+  },
+  forge: {
+    label: "Forge",
+    gloss: "Heat plus common letters. They make things by arguing well.",
+  },
+  orbit: {
+    label: "Orbit",
+    gloss: "One leans in, one leans out, and the spellings barely overlap. They visit.",
+  },
+  echo: {
+    label: "Echo",
+    gloss: "Different roles, same way of working. One method, two lives.",
+  },
+  harvest: {
+    label: "Harvest",
+    gloss: "The place is right and the gifts are already in the names.",
+  },
+  veil: {
+    label: "Veil",
+    gloss: "Both names lean inward. The private life is loud; the room still needs a face.",
+  },
+  carnival: {
+    label: "Carnival",
+    gloss: "Both names lean outward and work differently. Plenty of room; keep an inner hour.",
+  },
 };
 
 export const METHOD_PLAIN =

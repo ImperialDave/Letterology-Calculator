@@ -81,9 +81,10 @@ function BondPage() {
               </p>
               <h1 className="mt-2 font-display text-4xl text-ink sm:text-5xl">Certificate of Bond</h1>
               <p className="mt-3 max-w-xl leading-relaxed text-ink/85">
-                Type two usernames. The first letters sit two houses. How they work, where they
-                work, the letters they share, and the allies one already carries for the other —
-                that is the bond. Keep the metaphors. The number is only a fit.
+                Type two usernames. We read eight measures: the role each first letter names,
+                how each tends to work, where, how the spellings overlap, the allies one already
+                carries for the other, inward versus outward, the court, and the honest argument.
+                The title is unique to the pair. The number is a fit, not a forecast.
               </p>
               <PageShare
                 path="/bond"

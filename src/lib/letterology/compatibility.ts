@@ -1,10 +1,26 @@
 import { houseOf } from "./archetypes";
+import { composeBondStory } from "./bond-narrative";
 import { bondCopy, relationTo } from "./circle";
 import { buildHoroscope } from "./engine";
 import { themeOf } from "./lexicon";
 import type { Horoscope, Letter, MeetKind } from "./types";
 
-export type BondWeather = "kinship" | "homecoming" | "crossing" | "friction" | "exile" | "ordinary";
+export type BondWeather =
+  | "kinship"
+  | "homecoming"
+  | "crossing"
+  | "friction"
+  | "exile"
+  | "ordinary"
+  | "pact"
+  | "forge"
+  | "orbit"
+  | "echo"
+  | "harvest"
+  | "veil"
+  | "carnival";
+
+export type BondLean = "complement" | "both-in" | "both-out";
 
 export interface SeatMeet {
   seat: "house" | "manner" | "field";
@@ -17,6 +33,24 @@ export interface SeatMeet {
   copy: string;
 }
 
+export interface BondAxes {
+  role: number;
+  method: number;
+  place: number;
+  overlap: number;
+  exchange: number;
+  temper: number;
+  court: number;
+  spark: number;
+}
+
+export interface BondRooms {
+  morning: string;
+  work: string;
+  fight: string;
+  repair: string;
+}
+
 export interface BondReading {
   a: Horoscope;
   b: Horoscope;
@@ -24,16 +58,31 @@ export interface BondReading {
   weather: BondWeather;
   title: string;
   headline: string;
+  epithet: string;
+  sigil: string;
   verdict: string;
   plainly: string;
   invitation: string;
+  made: string;
+  owed: string;
+  argument: string;
+  rooms: BondRooms;
+  axes: BondAxes;
+  axisHints: Record<keyof BondAxes, string>;
   seats: SeatMeet[];
   shared: Letter[];
   onlyA: Letter[];
   onlyB: Letter[];
   giftsAtoB: Letter[];
   giftsBtoA: Letter[];
-  innerOuter: "complement" | "both-in" | "both-out" | "mixed";
+  coversA: Letter[];
+  coversB: Letter[];
+  innerOuter: BondLean;
+  seed: number;
+}
+
+function spoken(h: Horoscope): string {
+  return h.displayName.replace(/^@+/, "").trim() || h.displayName;
 }
 
 function meet(a: Letter, b: Letter): MeetKind {
@@ -41,117 +90,144 @@ function meet(a: Letter, b: Letter): MeetKind {
   return relationTo(a, b) ?? "none";
 }
 
-function points(kind: MeetKind, max: number): number {
+function kindScore(kind: MeetKind): number {
   switch (kind) {
     case "ally":
-      return max;
+      return 92;
     case "same":
-      return Math.round(max * 0.82);
+      return 78;
     case "none":
-      return Math.round(max * 0.42);
+      return 44;
     case "enemy":
-      return Math.round(max * 0.28);
+      return 26;
   }
 }
 
-function lean(h: Horoscope): "in" | "out" {
+function leanOf(h: Horoscope): "in" | "out" {
   const inner = h.vowels.reduce((sum, item) => sum + item.weight, 0);
   const outer = h.consonants.reduce((sum, item) => sum + item.weight, 0);
   return inner >= outer ? "in" : "out";
+}
+
+function weightMap(h: Horoscope): Map<Letter, number> {
+  const map = new Map<Letter, number>();
+  for (const item of h.inventory) map.set(item.letter, item.weight);
+  return map;
 }
 
 function lettersOf(h: Horoscope): Letter[] {
   return h.inventory.map((item) => item.letter);
 }
 
-function seatCopy(seat: SeatMeet["seat"], kind: MeetKind, a: Letter, b: Letter): string {
+function clamp(n: number, lo = 0, hi = 100): number {
+  return Math.max(lo, Math.min(hi, Math.round(n)));
+}
+
+function vowelRatio(h: Horoscope): number {
+  const inner = h.vowels.reduce((sum, item) => sum + item.weight, 0);
+  const total = h.inventory.reduce((sum, item) => sum + item.weight, 0) || 1;
+  return inner / total;
+}
+
+function weightedOverlap(a: Horoscope, b: Horoscope): number {
+  const mapA = weightMap(a);
+  const mapB = weightMap(b);
+  const keys = new Set([...mapA.keys(), ...mapB.keys()]);
+  let inter = 0;
+  let union = 0;
+  for (const letter of keys) {
+    const wa = mapA.get(letter) ?? 0;
+    const wb = mapB.get(letter) ?? 0;
+    inter += Math.min(wa, wb);
+    union += Math.max(wa, wb);
+  }
+  return union === 0 ? 0 : inter / union;
+}
+
+function courtToward(self: Horoscope, otherLetters: Set<Letter>): number {
+  const allyHits = self.allies.filter((letter) => otherLetters.has(letter)).length;
+  const enemyHits = self.enemies.filter((letter) => otherLetters.has(letter)).length;
+  return 22 + allyHits * 22 - enemyHits * 12;
+}
+
+function themeToward(self: Horoscope, other: Horoscope, otherLetters: Set<Letter>): number {
+  const primary = meet(self.primary.letter, other.primary.letter);
+  const complements = themeOf(self.primary.letter).complements.filter((letter) => otherLetters.has(letter)).length;
+  return kindScore(primary) * 0.62 + Math.min(3, complements) * 12;
+}
+
+function pairSeed(a: Horoscope, b: Horoscope, shared: Letter[]): number {
+  const key = `${a.normalized}\0${b.normalized}\0${a.archetype.code}\0${b.archetype.code}\0${shared.join("")}`;
+  let h = 2166136261;
+  for (let i = 0; i < key.length; i += 1) {
+    h ^= key.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function seatCopy(seat: SeatMeet["seat"], kind: MeetKind, a: Letter, b: Letter, nameA: string, nameB: string): string {
   const aHouse = houseOf(a);
   const bHouse = houseOf(b);
+  const aTheme = themeOf(a);
+  const bTheme = themeOf(b);
   if (seat === "house") {
-    if (kind === "same") return `Both sit the ${aHouse.house}. Same role, two lives inside it.`;
-    if (kind === "ally") return bondCopy(a, b, "ally");
-    if (kind === "enemy") return bondCopy(a, b, "enemy");
-    return `No formal bond between ${aHouse.noun} and ${bHouse.noun}. The work still happens.`;
+    if (kind === "same") {
+      return `${nameA} and ${nameB} both sit the ${aHouse.house}. Same role — ${aHouse.myth} Two lives inside it, not one person twice.`;
+    }
+    if (kind === "ally") return `${nameA} as ${aHouse.noun}, ${nameB} as ${bHouse.noun}. ${bondCopy(a, b, "ally")}`;
+    if (kind === "enemy") return `${nameA} as ${aHouse.noun}, ${nameB} as ${bHouse.noun}. ${bondCopy(a, b, "enemy")}`;
+    return `${nameA} sits ${aHouse.noun} (${aTheme.name.toLowerCase()}); ${nameB} sits ${bHouse.noun} (${bTheme.name.toLowerCase()}). No official bond between those roles. The work still happens.`;
   }
   if (seat === "manner") {
     if (kind === "same") {
-      return `They work the same way — ${themeOf(a).name.toLowerCase()}. Echo, not a spare method.`;
+      return `They work the same way — ${aTheme.name.toLowerCase()}, the ${aHouse.adj.toLowerCase()} manner. Echo, not a spare method. ${aHouse.method}`;
     }
     if (kind === "ally") {
-      return `How they work completes each other: ${aHouse.adj.toLowerCase()} with ${bHouse.adj.toLowerCase()}.`;
+      return `How they work completes each other: ${nameA}'s ${aHouse.adj.toLowerCase()} manner beside ${nameB}'s ${bHouse.adj.toLowerCase()} one. ${aHouse.method} ${bHouse.method}`;
     }
     if (kind === "enemy") {
-      return `How they work pushes back: ${aHouse.adj.toLowerCase()} against ${bHouse.adj.toLowerCase()}. Useful, if nobody pretends it is easy.`;
+      return `How they work pushes back: ${aHouse.adj.toLowerCase()} against ${bHouse.adj.toLowerCase()}. Useful if nobody pretends it is easy. ${aHouse.method} ${bHouse.method}`;
     }
-    return "Different manners, no official argument. They will have to invent the method together.";
+    return `${nameA} works by ${aTheme.name.toLowerCase()}; ${nameB} by ${bTheme.name.toLowerCase()}. Different manners, no official argument. They invent the method together.`;
   }
-  if (kind === "same") return `They work in the same kind of place — the ${aHouse.realm}.`;
-  if (kind === "ally") return `Their fields help each other: ${aHouse.realm} beside ${bHouse.realm}.`;
-  if (kind === "enemy") return `Their fields rub: ${aHouse.realm} against ${bHouse.realm}.`;
-  return "They do not share a field. The rooms will have to be built.";
+  if (kind === "same") {
+    return `They work in the same kind of place — the ${aHouse.realm}. ${aHouse.field}`;
+  }
+  if (kind === "ally") {
+    return `Their fields help each other: ${nameA} in the ${aHouse.realm}, ${nameB} in the ${bHouse.realm}. ${aHouse.field} ${bHouse.field}`;
+  }
+  if (kind === "enemy") {
+    return `Their fields rub: the ${aHouse.realm} against the ${bHouse.realm}. ${aHouse.field} ${bHouse.field}`;
+  }
+  return `${nameA}'s work lives in the ${aHouse.realm}; ${nameB}'s in the ${bHouse.realm}. They do not share a field. The rooms will have to be built.`;
 }
 
-function weatherOf(house: MeetKind, affinity: number, gifts: number): BondWeather {
+function weatherOf(input: {
+  house: MeetKind;
+  manner: MeetKind;
+  affinity: number;
+  gifts: number;
+  axes: BondAxes;
+  lean: BondLean;
+}): BondWeather {
+  const { house, manner, affinity, gifts, axes, lean } = input;
   if (house === "same") return "homecoming";
-  if (house === "ally") return affinity >= 55 ? "kinship" : "crossing";
+  if (house === "ally" && affinity >= 55) return "kinship";
+  if (axes.spark >= 64 && axes.overlap >= 48) return "forge";
+  if (axes.exchange >= 72 && house !== "enemy") return "pact";
   if (house === "enemy") {
     if (affinity <= 36 && gifts === 0) return "exile";
     if (affinity >= 52 || gifts >= 2) return "crossing";
     return "friction";
   }
+  if (manner === "same") return "echo";
+  if (axes.place >= 70 && axes.exchange >= 48) return "harvest";
+  if (lean === "complement" && axes.overlap < 30) return "orbit";
+  if (lean === "both-in" && axes.role < 55) return "veil";
+  if (lean === "both-out" && axes.method < 48) return "carnival";
   if (affinity >= 62 || gifts >= 2) return "crossing";
   return "ordinary";
-}
-
-function titleOf(weather: BondWeather, aNoun: string, bNoun: string): string {
-  switch (weather) {
-    case "homecoming":
-      return aNoun === bNoun ? `The Twin Seat — ${aNoun}` : "Homecoming";
-    case "kinship":
-      return `Kinship of ${aNoun} and ${bNoun}`;
-    case "friction":
-      return "The Honest Argument";
-    case "exile":
-      return "Opposite Grain";
-    case "crossing":
-      return `A Crossing — ${aNoun} and ${bNoun}`;
-    case "ordinary":
-      return "An Unmarked Bond";
-  }
-}
-
-function invitationOf(weather: BondWeather): string {
-  switch (weather) {
-    case "kinship":
-      return "Keep the table you already know how to set.";
-    case "homecoming":
-      return "Do not become one person. Two of the same house still need two lives.";
-    case "crossing":
-      return "Name the difference. Then use it.";
-    case "friction":
-      return "The argument is the work. Stay in the room.";
-    case "exile":
-      return "Do not make the distance your identity. Do one shared practical thing.";
-    case "ordinary":
-      return "No official bond. That means you get to write one.";
-  }
-}
-
-function weatherHeadline(weather: BondWeather): string {
-  switch (weather) {
-    case "kinship":
-      return "Kinship";
-    case "homecoming":
-      return "Homecoming";
-    case "crossing":
-      return "Crossing";
-    case "friction":
-      return "Friction";
-    case "exile":
-      return "Exile";
-    case "ordinary":
-      return "Unmarked";
-  }
 }
 
 export function compareNames(rawA: string, rawB: string): BondReading | null {
@@ -174,7 +250,7 @@ export function compareNames(rawA: string, rawB: string): BondReading | null {
       aNoun: houseOf(aHouse).noun,
       bNoun: houseOf(bHouse).noun,
       kind: houseKind,
-      copy: seatCopy("house", houseKind, aHouse, bHouse),
+      copy: seatCopy("house", houseKind, aHouse, bHouse, spoken(a), spoken(b)),
     },
     {
       seat: "manner",
@@ -184,7 +260,7 @@ export function compareNames(rawA: string, rawB: string): BondReading | null {
       aNoun: houseOf(aManner).noun,
       bNoun: houseOf(bManner).noun,
       kind: mannerKind,
-      copy: seatCopy("manner", mannerKind, aManner, bManner),
+      copy: seatCopy("manner", mannerKind, aManner, bManner, spoken(a), spoken(b)),
     },
     {
       seat: "field",
@@ -194,7 +270,7 @@ export function compareNames(rawA: string, rawB: string): BondReading | null {
       aNoun: houseOf(aField).noun,
       bNoun: houseOf(bField).noun,
       kind: fieldKind,
-      copy: seatCopy("field", fieldKind, aField, bField),
+      copy: seatCopy("field", fieldKind, aField, bField, spoken(a), spoken(b)),
     },
   ];
 
@@ -203,90 +279,116 @@ export function compareNames(rawA: string, rawB: string): BondReading | null {
   const shared = [...setA].filter((letter) => setB.has(letter)).sort();
   const onlyA = [...setA].filter((letter) => !setB.has(letter)).sort();
   const onlyB = [...setB].filter((letter) => !setA.has(letter)).sort();
-  const union = setA.size + setB.size - shared.length;
-  const overlap = union === 0 ? 0 : shared.length / union;
 
   const giftsAtoB = a.kinAbsent.filter((letter) => setB.has(letter));
   const giftsBtoA = b.kinAbsent.filter((letter) => setA.has(letter));
+  const coversA = a.shadows.filter((letter) => setB.has(letter));
+  const coversB = b.shadows.filter((letter) => setA.has(letter));
 
-  const aLean = lean(a);
-  const bLean = lean(b);
-  const innerOuter: BondReading["innerOuter"] =
-    aLean !== bLean ? "complement" : aLean === "in" ? "both-in" : "both-out";
+  const aLean = leanOf(a);
+  const bLean = leanOf(b);
+  const innerOuter: BondLean = aLean !== bLean ? "complement" : aLean === "in" ? "both-in" : "both-out";
 
   const giftCount = giftsAtoB.length + giftsBtoA.length;
+  const coverCount = coversA.length + coversB.length;
+  const overlapRatio = weightedOverlap(a, b);
+
+  const role = kindScore(houseKind);
+  const method = kindScore(mannerKind);
+  const place = kindScore(fieldKind);
+  const overlap = clamp(overlapRatio * 100);
+  const exchange = clamp(18 + giftCount * 16 + coverCount * 10 + Math.min(8, shared.length) * 2);
+  const temper =
+    innerOuter === "complement" ? 84 : innerOuter === "both-in" ? 49 : 54;
+  const court = clamp((courtToward(a, setB) + courtToward(b, setA)) / 2);
+  const theme = (themeToward(a, b, setB) + themeToward(b, a, setA)) / 2;
+  const sparkBase =
+    houseKind === "enemy" ? 70 : houseKind === "ally" ? 38 : houseKind === "same" ? 30 : 46;
+  const spark = clamp(sparkBase + (mannerKind === "enemy" ? 14 : 0) + (fieldKind === "enemy" ? 8 : 0) - giftCount * 4);
+  const rhythm = clamp(
+    (1 - Math.abs(vowelRatio(a) - vowelRatio(b))) * 58 +
+      (1 - Math.min(1, Math.abs(a.normalized.length - b.normalized.length) / 12)) * 42,
+  );
+
+  const axes: BondAxes = { role, method, place, overlap, exchange, temper, court, spark };
+
   const raw =
-    points(houseKind, 34) +
-    points(mannerKind, 20) +
-    points(fieldKind, 14) +
-    Math.round(overlap * 16) +
-    Math.min(6, giftsAtoB.length * 3) +
-    Math.min(6, giftsBtoA.length * 3) +
-    (innerOuter === "complement" ? 4 : innerOuter === "both-in" || innerOuter === "both-out" ? 1 : 2);
+    role * 0.2 +
+    method * 0.11 +
+    place * 0.08 +
+    overlap * 0.13 +
+    exchange * 0.12 +
+    temper * 0.07 +
+    court * 0.1 +
+    theme * 0.08 +
+    rhythm * 0.06 +
+    (100 - spark) * 0.05;
 
-  const affinity = Math.max(8, Math.min(99, raw));
-  const weather = weatherOf(houseKind, affinity, giftCount);
-  const aNoun = houseOf(aHouse).noun;
-  const bNoun = houseOf(bHouse).noun;
-  const title = titleOf(weather, aNoun, bNoun);
-
-  const giftLine =
-    giftCount === 0
-      ? "Neither name carries an ally the other is missing."
-      : [
-          giftsAtoB.length
-            ? `${b.displayName} already holds ${giftsAtoB.map((letter) => `${houseOf(letter).noun} (${letter})`).join(", ")} — an ally ${a.displayName} does not write.`
-            : "",
-          giftsBtoA.length
-            ? `${a.displayName} already holds ${giftsBtoA.map((letter) => `${houseOf(letter).noun} (${letter})`).join(", ")} — an ally ${b.displayName} does not write.`
-            : "",
-        ]
-          .filter(Boolean)
-          .join(" ");
-
-  const shareLine =
-    shared.length === 0
-      ? "They share no letters."
-      : `They share ${shared.join(", ")}.`;
-
-  const leanLine =
-    innerOuter === "complement"
-      ? "One name leans inward, the other outward — private life and public face cover each other."
-      : innerOuter === "both-in"
-        ? "Both names lean inward. The private life is loud; the room still needs a face."
-        : "Both names lean outward. Plenty of room; the inner life will have to be kept on purpose.";
-
-  const verdict = [seats[0].copy, shareLine, giftLine, leanLine].filter(Boolean).join(" ");
-
-  const plainly = `We compared the first letter of each username (the role), then how each tends to work, then where. ${aNoun} and ${bNoun} are ${houseKind === "none" ? "unrelated houses" : houseKind === "same" ? "the same house" : houseKind}. Affinity ${affinity} is a 0–100 fit of those seats, shared letters, and missing allies the other already carries. Nothing here predicts a future.`;
-
-  return {
+  const affinity = clamp(raw, 8, 99);
+  const weather = weatherOf({
+    house: houseKind,
+    manner: mannerKind,
+    affinity,
+    gifts: giftCount,
+    axes,
+    lean: innerOuter,
+  });
+  const seed = pairSeed(a, b, shared);
+  const story = composeBondStory({
     a,
     b,
-    affinity,
     weather,
-    title,
-    headline: weatherHeadline(weather),
-    verdict,
-    plainly,
-    invitation: invitationOf(weather),
+    affinity,
+    axes,
     seats,
     shared,
     onlyA,
     onlyB,
     giftsAtoB,
     giftsBtoA,
+    coversA,
+    coversB,
     innerOuter,
+    seed,
+  });
+
+  return {
+    a,
+    b,
+    affinity,
+    weather,
+    title: story.title,
+    headline: story.headline,
+    epithet: story.epithet,
+    sigil: `${a.archetype.code}×${b.archetype.code}`,
+    verdict: story.verdict,
+    plainly: story.plainly,
+    invitation: story.invitation,
+    made: story.made,
+    owed: story.owed,
+    argument: story.argument,
+    rooms: story.rooms,
+    axes,
+    axisHints: story.axisHints,
+    seats,
+    shared,
+    onlyA,
+    onlyB,
+    giftsAtoB,
+    giftsBtoA,
+    coversA,
+    coversB,
+    innerOuter,
+    seed,
   };
 }
 
 export function bondAsText(bond: BondReading): string {
   return [
     `Certificate of Bond — ${bond.a.displayName} & ${bond.b.displayName}`,
+    bond.epithet,
     bond.title,
-    `Affinity ${bond.affinity} · ${bond.headline}`,
-    "",
-    bond.verdict,
+    `Affinity ${bond.affinity} · ${bond.headline} · ${bond.sigil}`,
     "",
     bond.invitation,
     "",

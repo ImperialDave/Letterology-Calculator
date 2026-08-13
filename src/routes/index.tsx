@@ -101,8 +101,8 @@ function Home() {
                 </p>
                 <h2 className="mt-2 font-display text-3xl">Are you compatible?</h2>
                 <p className="mt-2 text-sm leading-relaxed text-primary-fg/85">
-                  Compare two handles. Houses, how they work, the letters they share —
-                  then a certificate you can post.
+                  Compare two handles. Eight measures — role, method, place, letters, gifts,
+                  temper, court, spark — then a certificate only this pair can wear.
                 </p>
                 <div className="mt-6 rounded-lg bg-raised p-4 text-ink sm:p-5">
                   <BondForm onSubmit={readBond} />
