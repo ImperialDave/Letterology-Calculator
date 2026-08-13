@@ -69,7 +69,7 @@ const ENEMIES: Record<Letter, [Letter, Letter, Letter]> = {
 
 const ALLY_COPY: Record<string, string> = {
   "A-D":
-    "The road is only a rumor until you have sat still long enough to hear your own name. The Hermit gives the Seeker a departure that is not a panic.",
+    "The Seeker needs a pause that is not panic. The Hermit gives the departure a reason, not just an itch.",
   "A-E":
     "One leaves a borrowed self; the other leaves a borrowed map. Together they keep a life from confusing a familiar cage with a home.",
   "A-J":
@@ -77,29 +77,29 @@ const ALLY_COPY: Record<string, string> = {
   "B-K":
     "The Caregiver builds the table the Orphan once stood outside. Kinship here is a craft: a spare chair, not a blood-myth.",
   "B-N":
-    "Holding and healing are one climate. The hearth and the garden keep life edible — for others, and for the one who tends.",
+    "Holding and healing are one job. The hearth and the garden keep people able to continue — including the one who tends.",
   "B-S":
     "A home is a cloth of loyalties. The Weaver gives the Caregiver a weave that can breathe; the Caregiver gives the weave a place to be warm.",
   "C-F":
-    "The holy no and the unowned mind. Rebellion that has not become a brand; freedom that can still refuse.",
+    "The clean no and the unowned mind. Rebellion that has not become a brand; freedom that can still refuse.",
   "C-T":
     "The spark and the crucible. The Rebel names the dead rule; the Alchemist agrees to let the dead form actually die.",
   "C-X":
     "Disruption as medicine. The Rebel strikes the match; the Trickster makes sure the rule was lying before anything burns.",
   "D-I":
-    "Descent and the lamp. The Hermit goes down; the Sage will not let what is fetched become a private museum.",
+    "Descent and the lamp. The Hermit goes down; the Sage will not let what is fetched become a private hoard.",
   "D-Q":
-    "Two doors into the same quiet: solitude, and union with what will not be herded by a clever sentence.",
+    "Two ways into the same quiet: solitude, and a question that will not be herded by a clever sentence.",
   "E-J":
     "Distance and ordeal. The Explorer opens the miles; the Hero agrees to be changed by them and still come home.",
   "E-Y":
-    "A wider world asks for a self that can turn. The Explorer and the Shapeshifter keep a life from fossilizing into one costume.",
+    "A wider world asks for a self that can turn. The Explorer and the Shapeshifter keep a life from freezing into one costume.",
   "F-W":
-    "Beginner's mind and the Divine Child. Astonishment that has not signed a contract — the zero and the dawn in one breath.",
+    "Beginner's mind and the Divine Child. Astonishment that has not signed a contract — a new start that still has eyes.",
   "F-Y":
     "The open gate and the living hinge. Lightness that can still choose a form; a form that has not forgotten how to be light.",
   "G-L":
-    "Making is Eros with hands. The Creator and the Lover refuse a life that only witnesses.",
+    "Making is love with hands. The Creator and the Lover refuse a life that only watches.",
   "G-N":
     "What is tended increases. The grove and the garden are one work seen from two sides of the same watering can.",
   "G-O":
@@ -107,19 +107,19 @@ const ALLY_COPY: Record<string, string> = {
   "H-K":
     "A people is both spoken and fed. The Prophet's unwelcome word and the Orphan's made table — conscience with a place to sit.",
   "H-R":
-    "The far word needs a true note. Prophet and Bard restore a tribe to the vow it had begun to live against.",
+    "The far word needs a true note. Prophet and Bard restore a group to the vow it had begun to live against.",
   "H-V":
-    "Horizon and vocation. The Prophet names the weather coming; the Oracle gives that weather a face and a pulse.",
+    "Horizon and vocation. The Prophet names what is coming; the Oracle gives that picture a face and a next step.",
   "I-Q":
     "The lamp and the cloister. Insight that would rather be accurate than impressive, and a question that can be lived near.",
   "I-S":
     "The private pattern and the public braid. The Sage sees the cloth; the Weaver sits down at the loom.",
   "J-M":
-    "The road and the kept edge. The Hero returns with medicine; the Warrior knows which fight was worthy of the dust.",
+    "The road and the kept edge. The Hero returns with medicine; the Warrior knows which fight was worth the dust.",
   "K-N":
     "Exile becomes a craft of feeding. Both remember what absence costs, and so they know how to make a place.",
   "L-O":
-    "Chosen flame and sacred vessel. Eros that has a rim; mystery that still has a body.",
+    "Chosen flame and sacred vessel. Desire that has a rim; mystery that still has a body.",
   "L-U":
     "Love that can hold two true things. The Lover's heat in the Peacemaker's bowl — warmth that does not require a smaller I.",
   "M-P":
@@ -133,11 +133,11 @@ const ALLY_COPY: Record<string, string> = {
   "P-Z":
     "Sacred kingship and aligned will. The crown and the peak — power that can become ordinary again.",
   "Q-Z":
-    "The unspeakable, then one practicable act. Union with the Real is not finished until it can wash a dish.",
+    "The unspeakable, then one practicable act. Union with the real is not finished until it can wash a dish.",
   "R-S":
     "Song and cloth. A people remember themselves by a note they can enter and a joining they can live inside.",
   "R-V":
-    "What is received in the sanctum must be sounded. The Oracle's picture; the Bard's pitch.",
+    "What is received in private must be said aloud. The Oracle's picture; the Bard's pitch.",
   "T-X":
     "The furnace and the crossroads. Necessary fire, and the messenger who will not let the official story stay too clean.",
   "T-Z":
@@ -160,11 +160,11 @@ const ENEMY_COPY: Record<string, string> = {
   "B-O":
     "The personal hearth and the impersonal temple. Home can colonize the sacred; the sacred can treat a living room as a draft.",
   "C-P":
-    "The holy no and the sacred yes of order. Dead law and live revolt. A culture needs both, and dies when either becomes a personality.",
+    "The clean no and the sacred yes of order. Dead law and live revolt. A culture needs both, and dies when either becomes a personality.",
   "C-U":
     "The spark and the bowl. The Rebel fears a peace that muzzles; the Peacemaker fears a fire with no vessel. Both fears have a point.",
   "D-F":
-    "The well and the cliff. Depth despises lightness and calls it stupidity. The Fool will not be buried in a private museum and call it wisdom.",
+    "The well and the cliff. Depth despises lightness and calls it stupidity. The Fool will not be buried in a private hoard and call it wisdom.",
   "D-L":
     "Withdrawal and union. The lantern hides; the flame wants a witness. Solitude can become contempt. Love can become a refusal to go down.",
   "D-M":
@@ -176,11 +176,11 @@ const ENEMY_COPY: Record<string, string> = {
   "E-R":
     "The open road and the true note of home. Distance that will not be sung; a song that will not travel. Someone has to write.",
   "F-P":
-    "Beginner's mind and the script of rule. The Fool will not be scheduled. The Ruler cannot govern weather and still sleep.",
+    "Beginner's mind and the script of rule. The Fool will not be scheduled. The Ruler cannot govern mood and still sleep.",
   "F-S":
-    "The unnumbered gate and the loom. Freedom that will not be woven; a cloth that wants a vow. Zero meets the braid and bristles.",
+    "The unnumbered gate and the loom. Freedom that will not be woven; a cloth that wants a vow. The beginner meets the braid and bristles.",
   "G-Q":
-    "The green work and the unsayable. A made thing can flee the Real. The cloister can refuse to make anything and call the emptiness holy.",
+    "The green work and the unsayable. A made thing can flee the real. The cloister can refuse to make anything and call the emptiness holy.",
   "G-T":
     "The grove and the furnace. Increase, and the death that lets the next form live. Make, or undo. The argument that grows a soul.",
   "G-X":
@@ -192,7 +192,7 @@ const ENEMY_COPY: Record<string, string> = {
   "H-Y":
     "A far line, and a self that will not stay one shape. The Prophet needs a stable hearer. The Shapeshifter will not be a statue of the message.",
   "I-L":
-    "Logos and Eros. The study and the chosen body. Understanding without heat; heat without a sentence. Each thinks the other is a child.",
+    "Understanding and desire. The study and the chosen body. Insight without heat; heat without a sentence. Each thinks the other is a child.",
   "I-V":
     "The inner lamp and the public sanctum. Insight hoarded, vocation displayed — the same seeing, two vanities, one unused village.",
   "I-W":
@@ -214,7 +214,7 @@ const ENEMY_COPY: Record<string, string> = {
   "O-T":
     "Holy rim and crucible. The Priestess fears a fire with no rite. The Alchemist fears a rite with no death. Mystery needs heat and a bowl.",
   "O-X":
-    "The temenos and the crossroads. A circle that polices mystery; a trick that will not let a room ripen. Threshold versus the joke that never builds.",
+    "The held circle and the crossroads. A circle that polices mystery; a trick that will not let a room ripen. Threshold versus the joke that never builds.",
   "Q-W":
     "The cloister and the dawn. Mysticism that has forgotten first light; innocence that will not go into the dark. Both are unfinished prayers.",
   "R-U":
@@ -226,7 +226,7 @@ const ENEMY_COPY: Record<string, string> = {
   "S-Y":
     "The cloth and the hinge. A weave that cannot bear a new shape; a self that will not be a thread. Joining versus remaining uncaught.",
   "V-Z":
-    "The picture and the forced rhyme of will. Vocation versus manifestation as domination. Sight that will not act; will that will not see.",
+    "The picture and the forced will. Vocation versus manifestation as domination. Sight that will not act; will that will not see.",
 };
 
 function pairKey(a: Letter, b: Letter): string {

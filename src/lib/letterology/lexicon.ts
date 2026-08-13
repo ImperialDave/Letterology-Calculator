@@ -12,7 +12,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     gift: "You tend to meet the world as a beginning. Wanting, in you, is a form of honesty.",
     challenge:
       "Aspiration without choosing becomes restlessness. The invitation is to let appetite become a single, kept vow.",
-    invitation: "Notice where you are already standing at a threshold, and step as if the name were true.",
+    invitation: "Notice where you are already standing at a threshold, and take the step.",
     complements: ["D", "N", "G"],
   },
   B: {
@@ -63,7 +63,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     keywords: ["empathy", "evolution", "energy", "emergence"],
     essence:
       "E is the Explorer's ribcage opening. It is the letter that says there is more room than you were using.",
-    inner: "Inwardly, E is a widening of feeling — empathy as a kind of weather you walk through.",
+    inner: "Inwardly, E is a widening of feeling — empathy other people can actually share.",
     outer: "Outwardly, E reaches: new people, new work, the next version of a life already in motion.",
     gift: "You tend to make more space than the situation asked for — and someone always needs it.",
     challenge:
@@ -77,11 +77,11 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     keywords: ["focus", "faith", "flow", "fidelity"],
     essence:
       "F is the Fool's open gate, and the chosen path through it. Freedom here is not escape; it is uncoerced attention — beginner's mind with a spine.",
-    inner: "Inwardly, F protects a private sovereignty — the right to move as the inner weather asks.",
+    inner: "Inwardly, F protects a private sovereignty — the right to move as you actually need to move.",
     outer: "Outwardly, F shows as independence, clean focus, and a refusal to be owned by noise.",
     gift: "You tend to keep a corridor of air around your life. Others breathe easier near it.",
     challenge:
-      "Freedom without fidelity is only weather. The invitation is to choose, and then stay freely.",
+      "Freedom without fidelity is only drift. The invitation is to choose, and then stay freely.",
     invitation: "Ask what you would still choose if no one were watching — then give it your focus.",
     complements: ["B", "D", "P"],
   },
@@ -120,7 +120,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     essence:
       "I is the Sage's inner lamp. It is the letter of the solitary yes — insight before applause.",
     inner: "Inwardly, I is a well-lit room that not everyone is invited into. Imagination lives there first.",
-    outer: "Outwardly, I appears as integrity: a life whose inside and outside are trying to rhyme.",
+    outer: "Outwardly, I appears as integrity: a life whose inside and outside match.",
     gift: "You tend to see the pattern before it is fashionable, and to keep faith with what you see.",
     challenge:
       "Interiority can become a locked study. Illumination is meant, eventually, to fall on a shared table.",
@@ -146,9 +146,9 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     name: "Kinship",
     keywords: ["knowledge", "kindness", "key", "kinship"],
     essence:
-      "K is the Orphan's key left on the table for one's people. It is knowledge that wants to be useful to someone named — belonging as a craft.",
-    inner: "Inwardly, K is a loyalty of mind — you understand by standing with.",
-    outer: "Outwardly, K knits: family, chosen family, the small republic of those who know your real name.",
+      "K is the Orphan's key left on the table for one's people. It is knowledge that wants to be useful to someone specific — belonging as a craft.",
+    inner: "Inwardly, K is a loyalty of mind — you understand by standing with people.",
+    outer: "Outwardly, K knits: family, chosen family, the small circle of those who know you.",
     gift: "You tend to be the person who remembers, who opens, who makes knowledge feel like kindness.",
     challenge:
       "Kinship can become a closed room. The key is also meant for the stranger who knocks.",
@@ -190,7 +190,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     essence:
       "N is the Healer's hand that notices before it fixes. It is nurture as a form of nobility — care without condescension.",
     inner: "Inwardly, N is a fine attention to what is young, tender, or not yet named.",
-    outer: "Outwardly, N feeds: people, ideas, rooms, the unglamorous work of keeping life edible.",
+    outer: "Outwardly, N feeds: people, ideas, rooms, the unglamorous work of keeping life workable.",
     gift: "You tend to see what needs feeding while others are still arguing about the menu.",
     challenge:
       "Nurture can forget the nurturer. Novelty for its own sake can abandon what was just beginning to root.",
@@ -216,7 +216,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     name: "Purpose",
     keywords: ["passion", "patience", "presence", "potential"],
     essence:
-      "P is the Ruler's point of the spear, and the patience to carve it. Purpose here is presence with a direction.",
+      "P is the Ruler's aimed work, and the patience to carve it. Purpose here is presence with a direction.",
     inner: "Inwardly, P is a heat that wants a worthy object — passion that has agreed to wait.",
     outer: "Outwardly, P aims. It turns potential into a sequence of kept days.",
     gift: "You tend to give scattered energy a spine. People remember what they were for, near you.",
@@ -303,7 +303,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
       "V is the Oracle's far-seeing that still has a pulse. Vision here is vocation with blood in it.",
     inner: "Inwardly, V is a vivid picture of a life that would be worth the risk of being seen.",
     outer: "Outwardly, V points. It names a direction with enough vitality that others can walk toward it.",
-    gift: "You tend to see the shape of a future while it is still only weather, and to say so.",
+    gift: "You tend to see the shape of a future while it is still only an idea, and to say so.",
     challenge:
       "Vision can refuse the humble near. Vulnerability is what keeps vocation from becoming a statue.",
     invitation: "Tell the true picture, then take one unglamorous step that belongs to it.",
