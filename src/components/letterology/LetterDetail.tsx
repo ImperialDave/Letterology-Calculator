@@ -1,11 +1,11 @@
-import { allHouseNames } from "@/lib/letterology/archetypes";
+import { houseOf } from "@/lib/letterology/archetypes";
 import { themeOf } from "@/lib/letterology/lexicon";
 import type { Letter } from "@/lib/letterology/types";
 import { VOWEL_LETTERS } from "@/lib/letterology/types";
 
 export function LetterDetail({ letter }: { letter: Letter }) {
   const theme = themeOf(letter);
-  const house = allHouseNames().find((item) => item.letter === letter);
+  const house = houseOf(letter);
   const kind = VOWEL_LETTERS.has(letter) || letter === "Y" ? "Inner orientation" : "Outer expression";
 
   return (
@@ -17,23 +17,33 @@ export function LetterDetail({ letter }: { letter: Letter }) {
           <h3 className="mt-1 font-display text-2xl text-ink">{theme.name}</h3>
         </div>
       </div>
-      {house ? (
-        <div className="mt-4 border-t border-ink/10 pt-4">
-          <p className="font-display text-lg text-ink">{house.house}</p>
-          <p className="mt-1 text-sm italic text-ink/70">{house.myth}</p>
-          <p className="mt-1 font-display text-xs tracking-[0.14em] text-muted uppercase">
-            {house.tradition}
-          </p>
-        </div>
-      ) : null}
+      <div className="mt-4 border-t border-ink/10 pt-4">
+        <p className="font-display text-lg text-ink">{house.house}</p>
+        <p className="mt-1 text-sm italic text-ink/70">{house.myth}</p>
+        <p className="mt-1 font-display text-xs tracking-[0.14em] text-muted uppercase">
+          {house.tradition}
+        </p>
+        <p className="mt-1 text-sm text-ink/65">{house.correspondence}</p>
+        <p className="mt-3 text-sm leading-relaxed text-ink/90">{house.doctrine}</p>
+      </div>
       <p className="mt-4 text-sm tracking-wide text-muted">{theme.keywords.join(" · ")}</p>
       <p className="mt-4 text-[1.05rem] leading-relaxed text-ink">{theme.essence}</p>
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <p className="text-sm leading-relaxed text-ink/85">{theme.inner}</p>
         <p className="text-sm leading-relaxed text-ink/85">{theme.outer}</p>
       </div>
+      <div className="mt-5 grid gap-4 sm:grid-cols-2">
+        <div className="border-t border-ink/10 pt-4">
+          <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">Shadow</p>
+          <p className="mt-2 text-sm leading-relaxed text-ink/85">{house.shadow}</p>
+        </div>
+        <div className="border-t border-ink/10 pt-4">
+          <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">Gold</p>
+          <p className="mt-2 text-sm leading-relaxed text-ink/85">{house.gold}</p>
+        </div>
+      </div>
       <p className="mt-5 border-t border-ink/10 pt-4 text-sm leading-relaxed text-muted">
-        {theme.invitation}
+        {house.invitation}
       </p>
     </article>
   );

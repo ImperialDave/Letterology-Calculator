@@ -122,12 +122,14 @@ function HousesPage() {
             })}
           </div>
           {selectedMeta ? (
-            <div className="mt-4 max-w-xl">
+            <div className="mt-4 max-w-2xl">
               <p className="font-display text-xl text-ink">{selectedMeta.house}</p>
               <p className="mt-1 text-sm italic text-ink/70">{selectedMeta.myth}</p>
               <p className="mt-1 font-display text-xs tracking-[0.14em] text-muted uppercase">
                 {selectedMeta.tradition}
               </p>
+              <p className="mt-1 text-sm text-ink/65">{selectedMeta.correspondence}</p>
+              <p className="mt-3 text-sm leading-relaxed text-ink/85">{selectedMeta.doctrine}</p>
             </div>
           ) : null}
         </section>

@@ -227,7 +227,7 @@ export function buildHoroscope(rawName: string, now = new Date()): Horoscope | n
   const kindred = kindredArchetypes(triad, 8);
 
   const synthesis = [
-    `${displayName} meets the world through the ${archetype.house}, a climate of ${p.name.toLowerCase()}${g2 ? `, with ${g2.name.toLowerCase()} close behind` : ", with little secondary weather to dilute it"}. ${archetype.myth}`,
+    `${displayName} meets the world through the ${archetype.house} (${archetype.correspondence}), a climate of ${p.name.toLowerCase()}${g2 ? `, with ${g2.name.toLowerCase()} close behind` : ", with little secondary weather to dilute it"}. ${archetype.myth} ${archetype.doctrine}`,
     tension
       ? `A living tension — ${tension.title.toLowerCase()} — gives the configuration its characteristic pressure.`
       : `${p.invitation}`,
@@ -291,7 +291,11 @@ export function readingAsText(h: Horoscope): string {
     h.statements.primary,
     "",
     `${h.archetype.title}`,
+    h.archetype.myth,
+    h.archetype.correspondence,
     h.archetype.portrait,
+    `Shadow: ${h.archetype.shadow}`,
+    `Gold: ${h.archetype.gold}`,
     "",
     h.statements.gifts,
     "",

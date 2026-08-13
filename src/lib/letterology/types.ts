@@ -45,6 +45,10 @@ export interface Archetype {
   houseLetter: Letter;
   tradition: string;
   myth: string;
+  correspondence: string;
+  doctrine: string;
+  shadow: string;
+  gold: string;
   summary: string;
   portrait: string;
   invitation: string;

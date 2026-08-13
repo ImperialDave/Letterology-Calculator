@@ -44,8 +44,19 @@ export function ArchetypeCard({
       <p className="mt-2 font-display text-xs tracking-[0.14em] text-muted uppercase">
         {archetype.tradition}
       </p>
+      <p className="mt-1 text-sm text-ink/65">{archetype.correspondence}</p>
       <p className="mt-4 max-w-3xl leading-relaxed text-ink/90">{archetype.portrait}</p>
-      <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted">{archetype.invitation}</p>
+      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+        <div className="border-t border-ink/10 pt-4">
+          <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">Shadow</p>
+          <p className="mt-2 text-sm leading-relaxed text-ink/85">{archetype.shadow}</p>
+        </div>
+        <div className="border-t border-ink/10 pt-4">
+          <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">Gold</p>
+          <p className="mt-2 text-sm leading-relaxed text-ink/85">{archetype.gold}</p>
+        </div>
+      </div>
+      <p className="mt-5 max-w-3xl text-sm leading-relaxed text-muted">{archetype.invitation}</p>
       <p className="mt-5 text-sm text-muted">
         {themeOf(first).name} names the house; {themeOf(second).name.toLowerCase()} is the manner;
         {" "}
