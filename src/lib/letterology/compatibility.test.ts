@@ -117,3 +117,11 @@ test("the same pair is stable across calls", () => {
   assert.equal(first.rooms.repair, second.rooms.repair);
   assert.equal(first.seed, second.seed);
 });
+
+test("geometry rides on the reading", () => {
+  const bond = compareNames("@lovelace", "@octavia");
+  assert.ok(bond);
+  assert.equal(bond.geometry.hops.house, 1);
+  assert.ok(bond.geometry.resonance.house >= 84);
+  assert.ok(bond.axes.role >= 84);
+});

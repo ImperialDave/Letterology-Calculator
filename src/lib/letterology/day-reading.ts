@@ -6,6 +6,7 @@ import {
 } from "./calendar";
 import { bondCopy, relationTo } from "./circle";
 import { buildHoroscope } from "./engine";
+import { hopDistance, hopPhrase, resonanceOf } from "./geometry";
 import type { DayReading, DayWeather, Horoscope, Letter, MeetKind } from "./types";
 
 function meet(a: Letter, b: Letter): MeetKind {
@@ -145,7 +146,7 @@ function meetingOf(
   if (toDate === "enemy") {
     return `The day opposes your grain: ${today.noun}. ${where}. ${bondCopy(signature, date, "enemy")}`;
   }
-  return `The ${today.house} has no standing bond with your ${self.noun}. ${where}. Meet it as a guest, not a verdict.`;
+  return `The ${today.house} has no official bond with your ${self.noun} — ${hopPhrase(hopDistance(signature, date))}, resonance ${resonanceOf(signature, date)}. ${where}. Meet it as a guest, not a verdict.`;
 }
 
 function mannerOf(manner: Letter, fortnight: Letter, hinge: boolean, toFortnight: MeetKind): string {

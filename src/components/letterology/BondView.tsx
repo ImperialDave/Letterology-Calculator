@@ -6,6 +6,7 @@ import { Explain } from "@/components/letterology/Gloss";
 import { Button } from "@/components/ui/button";
 import { copyToClipboard, openXIntent } from "@/lib/letterology/clipboard";
 import type { BondAxes, BondReading } from "@/lib/letterology/compatibility";
+import { hopPhrase } from "@/lib/letterology/geometry";
 import { dayReadingOf } from "@/lib/letterology/day-reading";
 import { WEATHER_COPY } from "@/lib/letterology/glossary";
 import { themeOf } from "@/lib/letterology/lexicon";
@@ -150,6 +151,42 @@ export function BondView({ bond }: { bond: BondReading }) {
             />
           ))}
         </div>
+      </section>
+
+      <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
+        <Explain title="Path on the graph">
+          The twenty-six houses are a 3-regular graph — each has three allies. Distance is hops
+          along those allies, not the alphabet’s order. Resonance blends that walk with the
+          graph’s spectrum. A 1 is an official ally. A 4 is a long walk.
+        </Explain>
+        <div className="mt-6 grid gap-4 sm:grid-cols-3">
+          <PathCard
+            label="House"
+            hops={bond.geometry.hops.house}
+            resonance={bond.geometry.resonance.house}
+            a={bond.seats[0].aNoun}
+            b={bond.seats[0].bNoun}
+          />
+          <PathCard
+            label="Manner"
+            hops={bond.geometry.hops.manner}
+            resonance={bond.geometry.resonance.manner}
+            a={bond.seats[1].aNoun}
+            b={bond.seats[1].bNoun}
+          />
+          <PathCard
+            label="Field"
+            hops={bond.geometry.hops.field}
+            resonance={bond.geometry.resonance.field}
+            a={bond.seats[2].aNoun}
+            b={bond.seats[2].bNoun}
+          />
+        </div>
+        <p className="mt-5 text-sm leading-relaxed text-ink/85">
+          The two spellings, moved across the wheel: letter-fit {bond.geometry.overlapJS},
+          transport {bond.geometry.transport}, circular fit {bond.geometry.circleFit}. Mean walk{" "}
+          {bond.geometry.meanHop.toFixed(1)} hops.
+        </p>
       </section>
 
       <section className="overflow-hidden rounded-xl bg-primary text-primary-fg shadow-[var(--shadow-border)]">
@@ -465,6 +502,33 @@ function AxisMeter({ label, value, hint }: { label: string; value: number; hint:
       </div>
       <p className="mt-2 text-sm leading-snug text-muted">{hint}</p>
     </div>
+  );
+}
+
+function PathCard({
+  label,
+  hops,
+  resonance,
+  a,
+  b,
+}: {
+  label: string;
+  hops: number;
+  resonance: number;
+  a: string;
+  b: string;
+}) {
+  return (
+    <article className="border-t border-ink/10 pt-4 sm:border-0 sm:pt-0">
+      <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">{label}</p>
+      <p className="mt-2 font-display text-2xl text-ink">
+        {hops} hop{hops === 1 ? "" : "s"}
+      </p>
+      <p className="mt-1 text-sm text-muted">{hopPhrase(hops)}</p>
+      <p className="mt-2 text-sm leading-snug text-ink/85">
+        {a} → {b}. Resonance {resonance}.
+      </p>
+    </article>
   );
 }
 

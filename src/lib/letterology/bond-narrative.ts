@@ -295,7 +295,7 @@ export function composeBondStory(input: BondStoryInput): BondStory {
     .filter(Boolean)
     .join(" ");
 
-  const plainly = `We compared eight measures, not one vibe: the role each first letter names, how each name tends to work, where the work happens, how much the spellings overlap (by weight, not just presence), the allies one already carries for the other, whether they lean inward or outward, how often each name sits in the other's court, and how much honest argument lives here. ${aH.noun} and ${bH.noun} meet as ${seats[0].kind === "none" ? "unrelated houses" : seats[0].kind === "same" ? "the same house" : seats[0].kind}. Affinity ${affinity} is a fit of those measures. Nothing here predicts a future.`;
+  const plainly = `We compared eight measures plus the house graph: the role each first letter names, how each name tends to work, where the work happens, how much the spellings overlap (by weight, Jensen–Shannon, and transport along allies), the allies one already carries for the other, whether they lean inward or outward, how often each name sits in the other's court, and how much honest argument lives here. Distance on the wheel is hops along allies — not A next to B. ${aH.noun} and ${bH.noun} meet as ${seats[0].kind === "none" ? "unrelated houses" : seats[0].kind === "same" ? "the same house" : seats[0].kind}. Affinity ${affinity} is a fit of those measures. Nothing here predicts a future.`;
 
   const madeShared = shared.length
     ? `The third thing they make is spelled in the letters they share — ${listThemes(shared)}.`

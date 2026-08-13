@@ -2,6 +2,15 @@ import { houseOf } from "./archetypes";
 import { composeBondStory } from "./bond-narrative";
 import { bondCopy, relationTo } from "./circle";
 import { buildHoroscope } from "./engine";
+import {
+  betweennessOf,
+  closenessOf,
+  hopDistance,
+  hopPhrase,
+  pairGeometry,
+  resonanceOf,
+  type PairGeometry,
+} from "./geometry";
 import { themeOf } from "./lexicon";
 import type { Horoscope, Letter, MeetKind } from "./types";
 
@@ -78,6 +87,7 @@ export interface BondReading {
   coversA: Letter[];
   coversB: Letter[];
   innerOuter: BondLean;
+  geometry: PairGeometry;
   seed: number;
 }
 
@@ -88,19 +98,6 @@ function spoken(h: Horoscope): string {
 function meet(a: Letter, b: Letter): MeetKind {
   if (a === b) return "same";
   return relationTo(a, b) ?? "none";
-}
-
-function kindScore(kind: MeetKind): number {
-  switch (kind) {
-    case "ally":
-      return 92;
-    case "same":
-      return 78;
-    case "none":
-      return 44;
-    case "enemy":
-      return 26;
-  }
 }
 
 function leanOf(h: Horoscope): "in" | "out" {
@@ -145,15 +142,16 @@ function weightedOverlap(a: Horoscope, b: Horoscope): number {
 }
 
 function courtToward(self: Horoscope, otherLetters: Set<Letter>): number {
-  const allyHits = self.allies.filter((letter) => otherLetters.has(letter)).length;
-  const enemyHits = self.enemies.filter((letter) => otherLetters.has(letter)).length;
-  return 22 + allyHits * 22 - enemyHits * 12;
+  const allyHits = self.allies.filter((letter) => otherLetters.has(letter));
+  const enemyHits = self.enemies.filter((letter) => otherLetters.has(letter));
+  const allyWeight = allyHits.reduce((sum, letter) => sum + 18 + closenessOf(letter) * 80, 0);
+  const enemyWeight = enemyHits.reduce((sum, letter) => sum + 10 + betweennessOf(letter) * 40, 0);
+  return 20 + allyWeight - enemyWeight;
 }
 
 function themeToward(self: Horoscope, other: Horoscope, otherLetters: Set<Letter>): number {
-  const primary = meet(self.primary.letter, other.primary.letter);
   const complements = themeOf(self.primary.letter).complements.filter((letter) => otherLetters.has(letter)).length;
-  return kindScore(primary) * 0.62 + Math.min(3, complements) * 12;
+  return resonanceOf(self.primary.letter, other.primary.letter) * 0.62 + Math.min(3, complements) * 12;
 }
 
 function pairSeed(a: Horoscope, b: Horoscope, shared: Letter[]): number {
@@ -177,7 +175,7 @@ function seatCopy(seat: SeatMeet["seat"], kind: MeetKind, a: Letter, b: Letter, 
     }
     if (kind === "ally") return `${nameA} as ${aHouse.noun}, ${nameB} as ${bHouse.noun}. ${bondCopy(a, b, "ally")}`;
     if (kind === "enemy") return `${nameA} as ${aHouse.noun}, ${nameB} as ${bHouse.noun}. ${bondCopy(a, b, "enemy")}`;
-    return `${nameA} sits ${aHouse.noun} (${aTheme.name.toLowerCase()}); ${nameB} sits ${bHouse.noun} (${bTheme.name.toLowerCase()}). No official bond between those roles. The work still happens.`;
+    return `${nameA} sits ${aHouse.noun} (${aTheme.name.toLowerCase()}); ${nameB} sits ${bHouse.noun} (${bTheme.name.toLowerCase()}). No official bond — ${hopPhrase(hopDistance(a, b))} between them. The work still happens.`;
   }
   if (seat === "manner") {
     if (kind === "same") {
@@ -292,22 +290,28 @@ export function compareNames(rawA: string, rawB: string): BondReading | null {
   const giftCount = giftsAtoB.length + giftsBtoA.length;
   const coverCount = coversA.length + coversB.length;
   const overlapRatio = weightedOverlap(a, b);
+  const geo = pairGeometry(a, b);
 
-  const role = kindScore(houseKind);
-  const method = kindScore(mannerKind);
-  const place = kindScore(fieldKind);
-  const overlap = clamp(overlapRatio * 100);
-  const exchange = clamp(18 + giftCount * 16 + coverCount * 10 + Math.min(8, shared.length) * 2);
+  const role = geo.resonance.house;
+  const method = geo.resonance.manner;
+  const place = geo.resonance.field;
+  const overlap = clamp(overlapRatio * 42 + geo.overlapJS * 0.33 + geo.transport * 0.25);
+  const giftWeight =
+    [...giftsAtoB, ...giftsBtoA].reduce((sum, letter) => sum + 12 + betweennessOf(letter) * 50, 0) +
+    coverCount * 8;
+  const exchange = clamp(16 + giftWeight + Math.min(10, shared.length) * 2);
   const temper =
     innerOuter === "complement" ? 84 : innerOuter === "both-in" ? 49 : 54;
   const court = clamp((courtToward(a, setB) + courtToward(b, setA)) / 2);
   const theme = (themeToward(a, b, setB) + themeToward(b, a, setA)) / 2;
-  const sparkBase =
-    houseKind === "enemy" ? 70 : houseKind === "ally" ? 38 : houseKind === "same" ? 30 : 46;
-  const spark = clamp(sparkBase + (mannerKind === "enemy" ? 14 : 0) + (fieldKind === "enemy" ? 8 : 0) - giftCount * 4);
+  const spark = clamp(
+    (100 - geo.resonance.house) * 0.5 +
+      (100 - geo.resonance.manner) * 0.3 +
+      (100 - geo.resonance.field) * 0.2,
+  );
   const rhythm = clamp(
-    (1 - Math.abs(vowelRatio(a) - vowelRatio(b))) * 58 +
-      (1 - Math.min(1, Math.abs(a.normalized.length - b.normalized.length) / 12)) * 42,
+    geo.circleFit * 0.55 +
+      (1 - Math.abs(vowelRatio(a) - vowelRatio(b))) * 45,
   );
 
   const axes: BondAxes = { role, method, place, overlap, exchange, temper, court, spark };
@@ -379,6 +383,7 @@ export function compareNames(rawA: string, rawB: string): BondReading | null {
     coversA,
     coversB,
     innerOuter,
+    geometry: geo,
     seed,
   };
 }
