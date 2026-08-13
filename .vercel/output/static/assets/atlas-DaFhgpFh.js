@@ -1,0 +1,2 @@
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/atlas-DTaoAUwr.js","assets/link-BoOQdfCm.js","assets/types-Crz1F9ca.js","assets/LetterDetail-Zfn1Gqwh.js","assets/SiteChrome-DQ21PJtd.js"])))=>i.map(i=>d[i]);
+import{a as e,i as t,o as n,t as r}from"./types-Crz1F9ca.js";var i=n(`/atlas`)({validateSearch:e=>{let t=typeof e.letter==`string`?e.letter.toUpperCase():`A`;return{letter:r.includes(t)?t:`A`}},component:e(()=>t(()=>import(`./atlas-DTaoAUwr.js`),__vite__mapDeps([0,1,2,3,4])),`component`)});export{i as t};
