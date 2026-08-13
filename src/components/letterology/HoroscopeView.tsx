@@ -3,10 +3,12 @@ import { Link } from "@tanstack/react-router";
 import { Check, Copy } from "lucide-react";
 import { ArchetypeCard } from "@/components/letterology/ArchetypeCard";
 import { ArchetypeList } from "@/components/letterology/ArchetypeList";
+import { CourtLines } from "@/components/letterology/CourtLines";
 import { LetterDetail } from "@/components/letterology/LetterDetail";
 import { LetterMap } from "@/components/letterology/LetterMap";
 import { Button } from "@/components/ui/button";
 import { houseOf } from "@/lib/letterology/archetypes";
+import { almanacOf } from "@/lib/letterology/calendar";
 import { bondCopy } from "@/lib/letterology/circle";
 import { readingAsText } from "@/lib/letterology/engine";
 import { themeOf } from "@/lib/letterology/lexicon";
@@ -44,6 +46,7 @@ export function HoroscopeView({ horoscope }: { horoscope: Horoscope }) {
   const [copied, setCopied] = useState(false);
   const theme = themeOf(selected);
   const text = useMemo(() => readingAsText(horoscope), [horoscope]);
+  const almanac = useMemo(() => almanacOf(), []);
 
   async function copyReading() {
     try {
@@ -185,6 +188,26 @@ export function HoroscopeView({ horoscope }: { horoscope: Horoscope }) {
 
       <section className="grid gap-4 md:grid-cols-2">
         <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)]">
+          <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">Year court</p>
+          <h3 className="mt-2 font-display text-2xl text-ink">
+            {almanac.yearLetter} — {houseOf(almanac.yearLetter).noun}
+          </h3>
+          <p className="mt-2 text-sm leading-relaxed text-muted">
+            {almanac.civil.year} sits in {houseOf(almanac.yearLetter).house}.
+          </p>
+          <CourtLines letter={almanac.yearLetter} />
+        </article>
+        <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)]">
+          <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">Month court</p>
+          <h3 className="mt-2 font-display text-2xl text-ink">
+            {almanac.monthLetter} — {houseOf(almanac.monthLetter).noun}
+          </h3>
+          <p className="mt-2 text-sm leading-relaxed text-muted">
+            This month sits in {houseOf(almanac.monthLetter).house}.
+          </p>
+          <CourtLines letter={almanac.monthLetter} />
+        </article>
+        <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)]">
           <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">Today's date letter</p>
           <button
             type="button"
@@ -196,6 +219,7 @@ export function HoroscopeView({ horoscope }: { horoscope: Horoscope }) {
             </h3>
           </button>
           <p className="mt-2 text-sm leading-relaxed">{horoscope.statements.daily}</p>
+          <CourtLines letter={horoscope.daily} />
         </article>
         <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)]">
           <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">This fortnight</p>
@@ -209,6 +233,7 @@ export function HoroscopeView({ horoscope }: { horoscope: Horoscope }) {
             </h3>
           </button>
           <p className="mt-2 text-sm leading-relaxed">{horoscope.statements.period}</p>
+          <CourtLines letter={horoscope.period} />
         </article>
       </section>
       <p className="text-center">

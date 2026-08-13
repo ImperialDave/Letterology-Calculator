@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { CourtLines } from "@/components/letterology/CourtLines";
 import { HoroscopeView } from "@/components/letterology/HoroscopeView";
 import { NameForm } from "@/components/letterology/NameForm";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
@@ -106,28 +107,37 @@ function Home() {
                 </div>
               </div>
             ) : null}
-            <aside className="mt-12 border-t border-ink/10 pt-8 text-center">
-              <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">Today on the wheel</p>
-              <p className="mt-2 font-display text-3xl text-ink">
-                {almanac.dateLetter} — {daily.name}
+            <aside className="mt-12 border-t border-ink/10 pt-8">
+              <div className="text-center">
+                <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">Today on the wheel</p>
+                <p className="mt-2 font-display text-3xl text-ink">
+                  {almanac.dateLetter} — {daily.name}
+                </p>
+                <p className="mt-1 text-sm text-muted">
+                  Date {almanac.civil.day} {monthName(almanac.civil.month)} · year {almanac.yearLetter} ·{" "}
+                  {almanac.fortnight.hinge ? "hinge" : `fortnight ${almanac.fortnight.letter}`}
+                </p>
+                <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">
+                  {almanac.fortnight.hinge
+                    ? "The Fool holds the leftover days between one walk and the next."
+                    : `The sun is in the ${fortnightHouse.house}, day ${almanac.fortnight.dayInSeat} of 14.`}{" "}
+                  {daily.invitation}
+                </p>
+              </div>
+              <div className="mx-auto mt-6 grid max-w-3xl gap-4 sm:grid-cols-3">
+                <HomeCourt label="Year" letter={almanac.yearLetter} />
+                <HomeCourt label="Month" letter={almanac.monthLetter} />
+                <HomeCourt label="Day" letter={almanac.dateLetter} />
+              </div>
+              <p className="mt-4 text-center">
+                <Link
+                  to="/almanac"
+                  search={{ date: almanac.iso }}
+                  className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+                >
+                  Open the almanac
+                </Link>
               </p>
-              <p className="mt-1 text-sm text-muted">
-                Date {almanac.civil.day} {monthName(almanac.civil.month)} · year {almanac.yearLetter} ·{" "}
-                {almanac.fortnight.hinge ? "hinge" : `fortnight ${almanac.fortnight.letter}`}
-              </p>
-              <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">
-                {almanac.fortnight.hinge
-                  ? "The Fool holds the leftover days between one walk and the next."
-                  : `The sun is in the ${fortnightHouse.house}, day ${almanac.fortnight.dayInSeat} of 14.`}{" "}
-                {daily.invitation}
-              </p>
-              <Link
-                to="/almanac"
-                search={{ date: almanac.iso }}
-                className="mt-4 inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
-              >
-                Open the almanac
-              </Link>
             </aside>
           </section>
         ) : (
@@ -140,6 +150,18 @@ function Home() {
         )}
       </main>
       <SiteFooter />
+    </div>
+  );
+}
+
+function HomeCourt({ label, letter }: { label: string; letter: string }) {
+  return (
+    <div className="rounded-xl bg-raised p-4 text-left shadow-[var(--shadow-border)]">
+      <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">{label}</p>
+      <p className="mt-1 font-display text-xl text-ink">
+        {letter} · {houseOf(letter).noun}
+      </p>
+      <CourtLines letter={letter} />
     </div>
   );
 }

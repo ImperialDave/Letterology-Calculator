@@ -30,6 +30,20 @@ const MONTH_NAMES = [
 
 export type WeekdayRole = "house" | "ally" | "enemy";
 
+export interface SeatCourt {
+  letter: Letter;
+  allies: [Letter, Letter, Letter];
+  enemies: [Letter, Letter, Letter];
+}
+
+export function courtOf(letter: Letter): SeatCourt {
+  return {
+    letter,
+    allies: alliesOf(letter),
+    enemies: enemiesOf(letter),
+  };
+}
+
 export interface CivilDate {
   year: number;
   month: number;
@@ -58,6 +72,10 @@ export interface AlmanacDay {
   dateLetter: Letter;
   weekdayLetter: Letter;
   weekdayRole: WeekdayRole;
+  yearCourt: SeatCourt;
+  monthCourt: SeatCourt;
+  dateCourt: SeatCourt;
+  fortnightCourt: SeatCourt;
   triad: Triad;
   archetype: Archetype;
 }
@@ -211,6 +229,10 @@ export function almanacOf(date: Date | CivilDate = new Date()): AlmanacDay {
     dateLetter: dateSeat,
     weekdayLetter: aspect.letter,
     weekdayRole: aspect.role,
+    yearCourt: courtOf(year),
+    monthCourt: courtOf(month),
+    dateCourt: courtOf(dateSeat),
+    fortnightCourt: courtOf(seatLetter),
     triad,
     archetype: archetypeOf(triad),
   };
@@ -241,5 +263,5 @@ export function fortnightDoctrine(seat: FortnightSeat): string {
 }
 
 export function calendarMethod(): string {
-  return "The year is a walk around the Circle of Houses. Twenty-six fortnights, beginning at the Station of the Seeker on 21 March, return the sun to A a year later. The leftover day or two before the next threshold are the Fool's hinge. The civil year has its own house on a twenty-six-year cycle — year 1 is A — and each date wears the letter of its number. A day's triad is year, fortnight, and date: the same grammar as a name.";
+  return "The year is a walk around the Circle of Houses. Twenty-six fortnights, beginning at the Station of the Seeker on 21 March, return the sun to A a year later. The leftover day or two before the next threshold are the Fool's hinge. The civil year has its own house on a twenty-six-year cycle — year 1 is A — and each date wears the letter of its number. Every year, month, and day keeps the three allies and three enemies of its house. A day's triad is year, fortnight, and date: the same grammar as a name.";
 }

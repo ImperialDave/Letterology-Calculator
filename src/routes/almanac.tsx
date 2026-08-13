@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArchetypeCard } from "@/components/letterology/ArchetypeCard";
+import { CourtLines } from "@/components/letterology/CourtLines";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { houseOf } from "@/lib/letterology/archetypes";
 import {
@@ -171,6 +172,24 @@ function AlmanacPage() {
           <WeekAspects day={selected} />
         </section>
 
+        <section className="mt-6 grid gap-4 lg:grid-cols-3">
+          <CourtCard
+            label="Year court"
+            letter={selected.yearLetter}
+            note={`${selected.civil.year} sits in ${houseOf(selected.yearLetter).house}.`}
+          />
+          <CourtCard
+            label="Month court"
+            letter={selected.monthLetter}
+            note={`${monthName(selected.civil.month)} sits in ${houseOf(selected.monthLetter).house}.`}
+          />
+          <CourtCard
+            label="Day court"
+            letter={selected.dateLetter}
+            note={`The ${selected.civil.day} wears ${houseOf(selected.dateLetter).house}.`}
+          />
+        </section>
+
         <div className="mt-6">
           <ArchetypeCard archetype={selected.archetype} />
         </div>
@@ -243,6 +262,28 @@ function ClimateCard({
       <p className="mt-1 text-sm text-muted">{detail}</p>
       <p className="mt-3 text-sm leading-relaxed text-ink/80">{copy}</p>
       <p className="mt-2 text-xs tracking-wide text-muted">{themeOf(letter).name}</p>
+      <CourtLines letter={letter} />
+    </article>
+  );
+}
+
+function CourtCard({
+  label,
+  letter,
+  note,
+}: {
+  label: string;
+  letter: string;
+  note: string;
+}) {
+  return (
+    <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)]">
+      <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">{label}</p>
+      <h3 className="mt-2 font-display text-2xl text-ink">
+        {letter} · {houseOf(letter).noun}
+      </h3>
+      <p className="mt-1 text-sm text-muted">{note}</p>
+      <CourtLines letter={letter} />
     </article>
   );
 }
