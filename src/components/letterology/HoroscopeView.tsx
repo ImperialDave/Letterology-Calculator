@@ -188,26 +188,6 @@ export function HoroscopeView({ horoscope }: { horoscope: Horoscope }) {
 
       <section className="grid gap-4 md:grid-cols-2">
         <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)]">
-          <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">Year court</p>
-          <h3 className="mt-2 font-display text-2xl text-ink">
-            {almanac.yearLetter} — {houseOf(almanac.yearLetter).noun}
-          </h3>
-          <p className="mt-2 text-sm leading-relaxed text-muted">
-            {almanac.civil.year} sits in {houseOf(almanac.yearLetter).house}.
-          </p>
-          <CourtLines letter={almanac.yearLetter} />
-        </article>
-        <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)]">
-          <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">Month court</p>
-          <h3 className="mt-2 font-display text-2xl text-ink">
-            {almanac.monthLetter} — {houseOf(almanac.monthLetter).noun}
-          </h3>
-          <p className="mt-2 text-sm leading-relaxed text-muted">
-            This month sits in {houseOf(almanac.monthLetter).house}.
-          </p>
-          <CourtLines letter={almanac.monthLetter} />
-        </article>
-        <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)]">
           <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">Today's date letter</p>
           <button
             type="button"
@@ -236,6 +216,11 @@ export function HoroscopeView({ horoscope }: { horoscope: Horoscope }) {
           <CourtLines letter={horoscope.period} />
         </article>
       </section>
+      <p className="text-center text-sm text-muted">
+        Background climate: {almanac.yearLetter} {houseOf(almanac.yearLetter).noun} holds the year,{" "}
+        {almanac.monthLetter} {houseOf(almanac.monthLetter).noun} holds the month. They color the season.
+        They do not sit today's house.
+      </p>
       <p className="text-center">
         <Link
           to="/almanac"

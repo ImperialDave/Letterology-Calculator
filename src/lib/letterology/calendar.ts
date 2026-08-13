@@ -216,7 +216,7 @@ export function almanacOf(date: Date | CivilDate = new Date()): AlmanacDay {
   const dateSeat = dateLetter(civil.day);
   const weekday = weekdayIndex(civil);
   const aspect = weekdayAspect(civil, seatLetter);
-  const triad: Triad = [year, seatLetter, dateSeat];
+  const triad: Triad = [dateSeat, seatLetter, aspect.letter];
   return {
     civil,
     iso: isoOf(civil),
@@ -263,5 +263,5 @@ export function fortnightDoctrine(seat: FortnightSeat): string {
 }
 
 export function calendarMethod(): string {
-  return "The year is a walk around the Circle of Houses. Twenty-six fortnights, beginning at the Station of the Seeker on 21 March, return the sun to A a year later. The leftover day or two before the next threshold are the Fool's hinge. The civil year has its own house on a twenty-six-year cycle — year 1 is A — and each date wears the letter of its number. Every year, month, and day keeps the three allies and three enemies of its house. A day's triad is year, fortnight, and date: the same grammar as a name.";
+  return "The year is a walk around the Circle of Houses. Twenty-six fortnights, beginning at the Station of the Seeker on 21 March, return the sun to A a year later. The leftover day or two before the next threshold are the Fool's hinge. The civil year and the month each have their own house — background climate, not the day's work. A day is read from its own letters: the date sits the house, the fortnight sets the manner, and the weekday is the field. Year and month keep their courts; they do not rename the day.";
 }

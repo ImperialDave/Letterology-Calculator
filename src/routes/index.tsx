@@ -125,9 +125,15 @@ function Home() {
                 </p>
               </div>
               <div className="mx-auto mt-6 grid max-w-3xl gap-4 sm:grid-cols-3">
-                <HomeCourt label="Year" letter={almanac.yearLetter} />
-                <HomeCourt label="Month" letter={almanac.monthLetter} />
-                <HomeCourt label="Day" letter={almanac.dateLetter} />
+                <HomeCourt label="Today" letter={almanac.dateLetter} />
+                <HomeCourt label="Fortnight" letter={almanac.fortnight.letter} />
+                <div className="rounded-xl bg-raised p-4 text-left shadow-[var(--shadow-border)]">
+                  <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">Climate</p>
+                  <p className="mt-1 text-sm leading-relaxed text-ink/85">
+                    Year {almanac.yearLetter} {houseOf(almanac.yearLetter).noun} · month {almanac.monthLetter}{" "}
+                    {houseOf(almanac.monthLetter).noun}. Background only.
+                  </p>
+                </div>
               </div>
               <p className="mt-4 text-center">
                 <Link

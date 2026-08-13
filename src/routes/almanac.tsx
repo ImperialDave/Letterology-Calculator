@@ -77,18 +77,6 @@ function AlmanacPage() {
 
         <section className="mt-10 grid gap-4 sm:grid-cols-3">
           <ClimateCard
-            label="Civil year"
-            letter={yearSeat}
-            detail={String(selectedCivil.year)}
-            copy={yearDoctrine(yearSeat)}
-          />
-          <ClimateCard
-            label="This month"
-            letter={monthSeat}
-            detail={`${monthName(selectedCivil.month)} · ${monthSeats.join(" · ")}`}
-            copy={`The mid-month sits in ${houseOf(monthSeat).house}. A Gregorian month usually spans two fortnights.`}
-          />
-          <ClimateCard
             label={selected.fortnight.hinge ? "Hinge" : "This fortnight"}
             letter={selected.fortnight.letter}
             detail={
@@ -97,6 +85,18 @@ function AlmanacPage() {
                 : `Day ${selected.fortnight.dayInSeat} of 14`
             }
             copy={fortnightDoctrine(selected.fortnight)}
+          />
+          <ClimateCard
+            label="This month"
+            letter={monthSeat}
+            detail={`${monthName(selectedCivil.month)} · ${monthSeats.join(" · ")}`}
+            copy={`The mid-month sits in ${houseOf(monthSeat).house}. Climate around the days, not their house.`}
+          />
+          <ClimateCard
+            label="Civil year"
+            letter={yearSeat}
+            detail={String(selectedCivil.year)}
+            copy={`${yearDoctrine(yearSeat)} Background climate — it does not sit today's house.`}
           />
         </section>
 
@@ -158,36 +158,57 @@ function AlmanacPage() {
           </p>
           <h2 className="mt-2 font-display text-3xl text-ink">{selected.archetype.title}</h2>
           <p className="mt-1 text-sm text-muted">
-            {selected.triad.join("")} · year {selected.yearLetter} · fortnight {selected.fortnight.letter} · date{" "}
-            {selected.dateLetter}
+            {selected.triad.join("")} · date {selected.dateLetter} · fortnight {selected.fortnight.letter} ·{" "}
+            {selected.weekdayName.toLowerCase()} {selected.weekdayLetter}
           </p>
           <p className="mt-4 max-w-3xl leading-relaxed text-ink/90">
-            The year sits as {houseOf(selected.yearLetter).noun}. The sun walks as{" "}
+            Today sits as {houseOf(selected.dateLetter).noun} — the {selected.civil.day}
+            {ordinal(selected.civil.day)} wears that house. The sun's fortnight sets the manner:{" "}
             {houseOf(selected.fortnight.letter).noun}
-            {selected.fortnight.hinge ? " on the hinge" : ` (day ${selected.fortnight.dayInSeat} of the fortnight)`}.
-            The date wears {houseOf(selected.dateLetter).noun}. {selected.weekdayName} is the{" "}
-            {selected.weekdayRole} aspect of this fortnight — {houseOf(selected.weekdayLetter).noun} (
-            {selected.weekdayLetter}).
+            {selected.fortnight.hinge ? " on the hinge" : `, day ${selected.fortnight.dayInSeat} of 14`}.{" "}
+            {selected.weekdayName} is the {selected.weekdayRole} aspect of that fortnight —{" "}
+            {houseOf(selected.weekdayLetter).noun} ({selected.weekdayLetter}), which is the field.
+          </p>
+          <p className="mt-3 text-sm text-muted">
+            Year {selected.civil.year} ({selected.yearLetter} {houseOf(selected.yearLetter).noun}) and{" "}
+            {monthName(selected.civil.month)} ({selected.monthLetter} {houseOf(selected.monthLetter).noun}) are
+            climate around this day. They do not sit the house.
           </p>
           <WeekAspects day={selected} />
         </section>
 
         <section className="mt-6 grid gap-4 lg:grid-cols-3">
           <CourtCard
-            label="Year court"
-            letter={selected.yearLetter}
-            note={`${selected.civil.year} sits in ${houseOf(selected.yearLetter).house}.`}
-          />
-          <CourtCard
-            label="Month court"
-            letter={selected.monthLetter}
-            note={`${monthName(selected.civil.month)} sits in ${houseOf(selected.monthLetter).house}.`}
-          />
-          <CourtCard
             label="Day court"
             letter={selected.dateLetter}
-            note={`The ${selected.civil.day} wears ${houseOf(selected.dateLetter).house}.`}
+            note={`The ${selected.civil.day}${ordinal(selected.civil.day)} wears ${houseOf(selected.dateLetter).house}.`}
           />
+          <CourtCard
+            label="Fortnight court"
+            letter={selected.fortnight.letter}
+            note={
+              selected.fortnight.hinge
+                ? "The Fool holds the hinge between walks."
+                : `The sun is in ${houseOf(selected.fortnight.letter).house}, day ${selected.fortnight.dayInSeat} of 14.`
+            }
+          />
+          <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)]">
+            <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">Background climate</p>
+            <p className="mt-3 text-sm leading-relaxed text-ink/85">
+              <span className="font-display text-ink">
+                {selected.yearLetter} {houseOf(selected.yearLetter).noun}
+              </span>{" "}
+              holds {selected.civil.year}.{" "}
+              <span className="font-display text-ink">
+                {selected.monthLetter} {houseOf(selected.monthLetter).noun}
+              </span>{" "}
+              holds {monthName(selected.civil.month)}.
+            </p>
+            <p className="mt-3 font-display text-xs tracking-[0.14em] text-muted uppercase">Year court</p>
+            <CourtLines letter={selected.yearLetter} />
+            <p className="mt-3 font-display text-xs tracking-[0.14em] text-muted uppercase">Month court</p>
+            <CourtLines letter={selected.monthLetter} />
+          </article>
         </section>
 
         <div className="mt-6">
@@ -241,6 +262,21 @@ function AlmanacPage() {
       <SiteFooter />
     </div>
   );
+}
+
+function ordinal(day: number): string {
+  const remainder = day % 100;
+  if (remainder >= 11 && remainder <= 13) return "th";
+  switch (day % 10) {
+    case 1:
+      return "st";
+    case 2:
+      return "nd";
+    case 3:
+      return "rd";
+    default:
+      return "th";
+  }
 }
 
 function ClimateCard({
