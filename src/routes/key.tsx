@@ -32,6 +32,10 @@ const STEPS = [
     term: "Allies and enemies",
     detail: "Each house has three complements and three counterweights. An enemy is a blind spot, not a villain.",
   },
+  {
+    term: "Bond",
+    detail: "Two usernames, compared. Houses, how they work, shared letters, and missing allies the other already carries. The certificate is the postcard.",
+  },
 ];
 
 function KeyPage() {
@@ -82,6 +86,25 @@ function KeyPage() {
               className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
             >
               Open the almanac
+            </Link>
+          </p>
+        </section>
+
+        <section className="mt-10 rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
+          <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">Two handles</p>
+          <h2 className="mt-2 font-display text-2xl text-ink">How a bond is read</h2>
+          <p className="mt-3 max-w-3xl leading-relaxed text-ink/90">
+            Type two usernames. We compare the role each first letter names, then how each tends
+            to work, then where. Allies complete a job. Enemies keep it honest. Shared letters are
+            common ground. If one name already carries an ally the other is missing, that is a
+            gift. The number is a fit, not a forecast.
+          </p>
+          <p className="mt-4">
+            <Link
+              to="/bond"
+              className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+            >
+              Compare two handles
             </Link>
           </p>
         </section>

@@ -107,6 +107,14 @@ function HousesPage() {
             where. {gloss("allies")} {gloss("enemies")}
           </Plainly>
           <KeyLink />
+          <p className="mt-1">
+            <Link
+              to="/bond"
+              className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+            >
+              Bond two names
+            </Link>
+          </p>
           <PageShare
             path={`/archetypes?house=${selectedHouse}`}
             caption={`${houseOf(selectedHouse).house}\n${houseOf(selectedHouse).myth}`}

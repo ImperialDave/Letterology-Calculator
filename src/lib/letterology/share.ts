@@ -59,6 +59,22 @@ export function portraitUrl(name: string, origin = publicSiteOrigin()): string {
   return `${origin}${portraitPath(name)}`;
 }
 
+export function bondPath(a: string, b: string): string {
+  return `/bond?a=${encodeURIComponent(a.trim())}&b=${encodeURIComponent(b.trim())}`;
+}
+
+export function bondUrl(a: string, b: string, origin = publicSiteOrigin()): string {
+  return `${origin}${bondPath(a, b)}`;
+}
+
+export function bondCardFile(a: string, b: string): string {
+  return `bond-${nameToSlug(a)}_${nameToSlug(b)}.jpg`;
+}
+
+export function bondCardImageUrl(a: string, b: string, origin = publicSiteOrigin()): string {
+  return `${origin}/og/${bondCardFile(a, b)}`;
+}
+
 export function cardImageUrl(name: string, origin = publicSiteOrigin(), date?: string): string {
   const slug = nameToSlug(name);
   if (date) return `${origin}/og/${slug}-${date}.jpg`;
@@ -109,6 +125,23 @@ export function tweetReading(h: Horoscope): string {
 
 export function tweetDay(headline: string, invitation: string): string {
   return `${headline.trim()}\n${invitation.trim()}`;
+}
+
+export function tweetBond(input: {
+  a: string;
+  b: string;
+  title: string;
+  affinity: number;
+}): string {
+  return `${input.a} & ${input.b}\n${input.title}\nAffinity ${input.affinity}`;
+}
+
+export function bondTitle(a: string, b: string, title: string): string {
+  return clip(`${a} & ${b} · ${title}`, X_TITLE_MAX);
+}
+
+export function bondDescription(title: string, plainly: string): string {
+  return clip(`${title}. ${plainly}`, X_DESC_MAX);
 }
 
 export function xIntentUrl(h: Horoscope, origin = publicSiteOrigin()): string {

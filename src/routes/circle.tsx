@@ -94,13 +94,19 @@ function CirclePage() {
           <p className="mt-1 font-display text-xs tracking-[0.14em] text-muted uppercase">{meta.tradition}</p>
           <p className="mt-1 text-sm text-muted">{gloss("tradition")}</p>
           <p className="mt-4 max-w-3xl leading-relaxed text-ink/90">{meta.doctrine}</p>
-          <p className="mt-4">
+          <p className="mt-4 flex flex-wrap gap-x-4">
             <Link
               to="/archetypes"
               search={{ house: selected }}
               className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
             >
               Open this house
+            </Link>
+            <Link
+              to="/bond"
+              className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+            >
+              Bond two names
             </Link>
           </p>
         </section>

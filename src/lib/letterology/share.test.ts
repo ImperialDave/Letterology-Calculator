@@ -3,10 +3,12 @@ import test from "node:test";
 import { buildHoroscope } from "./engine";
 import { parseCardFile } from "./render-card";
 import {
+  bondCardFile,
   composeXPost,
   nameToSlug,
   pageCardMeta,
   portraitTitle,
+  tweetBond,
   tweetDay,
   tweetReading,
   tweetText,
@@ -89,9 +91,28 @@ test("card files parse as portraits, glyphs, and days", () => {
   assert.deepEqual(parseCardFile("letter-r.jpg"), { kind: "letter", letter: "R" });
   assert.deepEqual(parseCardFile("circle-b.jpg"), { kind: "circle", letter: "B" });
   assert.deepEqual(parseCardFile("day-2026-08-13.jpg"), { kind: "day", date: "2026-08-13" });
+  assert.deepEqual(parseCardFile("bond-lovelace_octavia.jpg"), {
+    kind: "bond",
+    a: "lovelace",
+    b: "octavia",
+  });
   assert.equal(parseCardFile("nope.png"), null);
 });
 
-test("slugs stay lowercase and file-like", () => {
+test("bond tweets stay a caption with both names", () => {
+  const text = tweetBond({
+    a: "Ada Lovelace",
+    b: "Octavia",
+    title: "Kinship of Lover and Priestess",
+    affinity: 78,
+  });
+  assert.match(text, /Ada Lovelace & Octavia/);
+  assert.match(text, /Affinity 78/);
+  const post = composeXPost(text, "https://www.letterology.club/bond?a=Ada%20Lovelace&b=Octavia");
+  assert.ok(post.caption.length < 260);
+});
+
+test("bond card files keep both slugs", () => {
+  assert.equal(bondCardFile("Ada Lovelace", "Octavia"), "bond-ada-lovelace_octavia.jpg");
   assert.equal(nameToSlug("Ada Lovelace"), "ada-lovelace");
 });

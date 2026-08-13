@@ -121,6 +121,17 @@ function AlmanacPage() {
               onSubmit={(name) => openDay(selectedCivil, name)}
             />
           </div>
+          {nameParam ? (
+            <p className="mt-3">
+              <Link
+                to="/bond"
+                search={{ a: nameParam }}
+                className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+              >
+                Compare {nameParam}
+              </Link>
+            </p>
+          ) : null}
         </section>
 
         {person ? (

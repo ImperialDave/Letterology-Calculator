@@ -27,8 +27,9 @@ function AuthSlot() {
   );
 }
 
-const NAV: { to: "/" | "/atlas" | "/archetypes" | "/circle" | "/almanac" | "/key"; label: string; current: HeaderCurrent }[] = [
+const NAV: { to: "/" | "/bond" | "/atlas" | "/archetypes" | "/circle" | "/almanac" | "/key"; label: string; current: HeaderCurrent }[] = [
   { to: "/", label: "Read", current: "read" },
+  { to: "/bond", label: "Bond", current: "bond" },
   { to: "/atlas", label: "Atlas", current: "atlas" },
   { to: "/archetypes", label: "Houses", current: "houses" },
   { to: "/circle", label: "Circle", current: "circle" },
@@ -36,7 +37,7 @@ const NAV: { to: "/" | "/atlas" | "/archetypes" | "/circle" | "/almanac" | "/key
   { to: "/key", label: "Key", current: "key" },
 ];
 
-export type HeaderCurrent = "read" | "atlas" | "houses" | "circle" | "almanac" | "login" | "key";
+export type HeaderCurrent = "read" | "bond" | "atlas" | "houses" | "circle" | "almanac" | "login" | "key";
 
 export function SiteHeader({ current }: { current: HeaderCurrent }) {
   return (
@@ -79,12 +80,20 @@ export function SiteFooter() {
     <footer className="mt-16 border-t border-ink/10">
       <div className="mx-auto flex max-w-5xl flex-col items-center gap-2 px-4 py-8 text-center text-sm text-muted sm:px-6">
         <p>Twenty-six houses. A portrait of a username, not a prediction.</p>
-        <Link
-          to="/key"
-          className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
-        >
-          How to read this
-        </Link>
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+          <Link
+            to="/bond"
+            className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+          >
+            Compare two handles
+          </Link>
+          <Link
+            to="/key"
+            className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+          >
+            How to read this
+          </Link>
+        </div>
       </div>
     </footer>
   );

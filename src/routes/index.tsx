@@ -11,6 +11,7 @@ import { themeOf } from "@/lib/letterology/lexicon";
 import { PageShare } from "@/components/letterology/PageShare";
 import { KeyLink, Plainly, TermStack } from "@/components/letterology/Gloss";
 import { METHOD_PLAIN, gloss } from "@/lib/letterology/glossary";
+import { loadRecent, saveRecent } from "@/lib/letterology/recent";
 import { pageCardMeta } from "@/lib/letterology/share";
 
 type Search = { name?: string };
@@ -18,25 +19,6 @@ type Search = { name?: string };
 const HOME_TITLE = "Letterology";
 const HOME_DESCRIPTION =
   "Read a username through twenty-six houses. First letter sits the house. The next two set how and where you work.";
-
-const RECENT_KEY = "letterology:recent";
-
-function loadRecent(): string[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(RECENT_KEY);
-    const parsed = raw ? (JSON.parse(raw) as unknown) : [];
-    return Array.isArray(parsed) ? parsed.filter((x) => typeof x === "string").slice(0, 8) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveRecent(name: string) {
-  if (typeof window === "undefined") return;
-  const next = [name, ...loadRecent().filter((item) => item.toLowerCase() !== name.toLowerCase())].slice(0, 8);
-  window.localStorage.setItem(RECENT_KEY, JSON.stringify(next));
-}
 
 export const Route = createFileRoute("/")({
   validateSearch: (search: Record<string, unknown>): Search => ({
@@ -114,6 +96,14 @@ function Home() {
             </div>
             <div className="mt-10 rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
               <NameForm initial={name ?? ""} onSubmit={readName} />
+              <p className="mt-5 text-center">
+                <Link
+                  to="/bond"
+                  className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+                >
+                  Or compare two handles
+                </Link>
+              </p>
             </div>
             {recent.length > 0 ? (
               <div className="mt-6">

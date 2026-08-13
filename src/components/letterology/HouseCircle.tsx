@@ -2,6 +2,7 @@ import { houseOf } from "@/lib/letterology/archetypes";
 import { alliesOf, enemiesOf } from "@/lib/letterology/circle";
 import { ALPHABET, type Letter } from "@/lib/letterology/types";
 import { cn } from "@/lib/utils";
+import { Link } from "@tanstack/react-router";
 
 const SIZE = 400;
 const CX = 200;
@@ -34,15 +35,21 @@ const SEAT_MAP = Object.fromEntries(SEATS.map((seat) => [seat.letter, seat])) as
 
 export function HouseCircle({
   selected,
+  partner,
   onSelect,
+  asLinks = false,
 }: {
   selected: Letter;
-  onSelect: (letter: Letter) => void;
+  partner?: Letter;
+  onSelect?: (letter: Letter) => void;
+  asLinks?: boolean;
 }) {
   const house = houseOf(selected);
   const allies = alliesOf(selected);
   const enemies = enemiesOf(selected);
   const selectedSeat = SEAT_MAP[selected];
+  const partnerSeat = partner && partner !== selected ? SEAT_MAP[partner] : null;
+  const bondKind = partner && partner !== selected ? (allies.includes(partner) ? "ally" : enemies.includes(partner) ? "enemy" : "none") : null;
 
   return (
     <div className="relative mx-auto aspect-square w-full max-w-lg">
@@ -50,7 +57,11 @@ export function HouseCircle({
         viewBox={`0 0 ${SIZE} ${SIZE}`}
         className="size-full"
         role="img"
-        aria-label={`Circle of Houses. ${house.house} selected.`}
+        aria-label={
+          partner
+            ? `Circle of Houses. ${house.house} and ${houseOf(partner).house}.`
+            : `Circle of Houses. ${house.house} selected.`
+        }
       >
         <circle cx={CX} cy={CY} r="176" fill="none" stroke="currentColor" className="text-ink/10" strokeWidth="1" />
         <circle cx={CX} cy={CY} r="158" fill="none" stroke="currentColor" className="text-ink/15" strokeWidth="1" />
@@ -99,6 +110,18 @@ export function HouseCircle({
             />
           );
         })}
+        {partnerSeat && bondKind === "none" ? (
+          <line
+            x1={selectedSeat.x}
+            y1={selectedSeat.y}
+            x2={partnerSeat.x}
+            y2={partnerSeat.y}
+            stroke="currentColor"
+            className="text-ink/35"
+            strokeWidth="1.5"
+            strokeDasharray="2 6"
+          />
+        ) : null}
         <text
           x={CX}
           y={CY - 6}
@@ -123,26 +146,45 @@ export function HouseCircle({
 
       {SEATS.map((seat) => {
         const isSelected = seat.letter === selected;
+        const isPartner = Boolean(partner && seat.letter === partner && !isSelected);
         const isAlly = allies.includes(seat.letter);
         const isEnemy = enemies.includes(seat.letter);
+        const className = cn(
+          "absolute flex size-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full font-display text-sm transition-[background-color,color,transform] duration-150 active:scale-[0.96] sm:size-10 sm:text-base",
+          isSelected
+            ? "bg-primary text-primary-fg"
+            : isPartner
+              ? "bg-primary/15 text-primary outline outline-2 outline-primary"
+              : isAlly
+                ? "bg-raised text-primary shadow-[var(--shadow-border)]"
+                : isEnemy
+                  ? "bg-ink text-raised shadow-[var(--shadow-border)]"
+                  : "bg-raised text-ink shadow-[var(--shadow-border)] hover:shadow-[var(--shadow-border-hover)]",
+        );
+        const label = `${seat.letter}, ${houseOf(seat.letter).house}${isAlly ? ", ally" : ""}${isEnemy ? ", enemy" : ""}${isPartner ? ", other handle" : ""}`;
+        if (asLinks) {
+          return (
+            <Link
+              key={seat.letter}
+              to="/circle"
+              search={{ house: seat.letter }}
+              aria-label={label}
+              style={{ left: seat.left, top: seat.top }}
+              className={className}
+            >
+              {seat.letter}
+            </Link>
+          );
+        }
         return (
           <button
             key={seat.letter}
             type="button"
-            onClick={() => onSelect(seat.letter)}
+            onClick={() => onSelect?.(seat.letter)}
             aria-pressed={isSelected}
-            aria-label={`${seat.letter}, ${houseOf(seat.letter).house}${isAlly ? ", ally" : ""}${isEnemy ? ", enemy" : ""}`}
+            aria-label={label}
             style={{ left: seat.left, top: seat.top }}
-            className={cn(
-              "absolute flex size-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full font-display text-sm transition-[background-color,color,transform] duration-150 active:scale-[0.96] sm:size-10 sm:text-base",
-              isSelected
-                ? "bg-primary text-primary-fg"
-                : isAlly
-                  ? "bg-raised text-primary shadow-[var(--shadow-border)]"
-                  : isEnemy
-                    ? "bg-ink text-raised shadow-[var(--shadow-border)]"
-                    : "bg-raised text-ink shadow-[var(--shadow-border)] hover:shadow-[var(--shadow-border-hover)]",
-            )}
+            className={className}
           >
             {seat.letter}
           </button>

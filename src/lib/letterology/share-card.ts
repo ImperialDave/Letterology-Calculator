@@ -181,3 +181,54 @@ export function glyphSvg(input: {
   ${sealMark(input.letter)}
 </svg>`;
 }
+
+export function bondSvg(input: {
+  aLetter: string;
+  bLetter: string;
+  aName: string;
+  bName: string;
+  aHouse: string;
+  bHouse: string;
+  title: string;
+  affinity: number;
+  headline: string;
+  line: string;
+}): string {
+  const aName = fit(input.aName, 22);
+  const bName = fit(input.bName, 22);
+  const title = fit(input.title, 42);
+  const line = wrap(input.line, 52, 2);
+  const aHouse = fit(input.aHouse, 22);
+  const bHouse = fit(input.bHouse, 22);
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  ${paperShell()}
+  ${brandKicker()}
+
+  <text x="600" y="148" text-anchor="middle" font-family="${FACE}" font-size="16" letter-spacing="6" fill="${WINE}">CERTIFICATE OF BOND</text>
+
+  <text x="210" y="310" text-anchor="middle" font-family="${FACE}" font-size="150" fill="${WINE}">${esc(input.aLetter)}</text>
+  <text x="990" y="310" text-anchor="middle" font-family="${FACE}" font-size="150" fill="${WINE}">${esc(input.bLetter)}</text>
+
+  <text x="210" y="356" text-anchor="middle" font-family="${FACE}" font-size="22" fill="${INK}">${esc(aName)}</text>
+  <text x="990" y="356" text-anchor="middle" font-family="${FACE}" font-size="22" fill="${INK}">${esc(bName)}</text>
+  <text x="210" y="384" text-anchor="middle" font-family="${FACE}" font-size="15" fill="${MUTED}">${esc(aHouse)}</text>
+  <text x="990" y="384" text-anchor="middle" font-family="${FACE}" font-size="15" fill="${MUTED}">${esc(bHouse)}</text>
+
+  <circle cx="600" cy="286" r="58" fill="none" stroke="${WINE}" stroke-width="2" stroke-opacity="0.55"/>
+  <circle cx="600" cy="286" r="46" fill="none" stroke="${WINE}" stroke-width="1" stroke-opacity="0.25"/>
+  <text x="600" y="280" text-anchor="middle" font-family="${FACE}" font-size="36" fill="${WINE}">${esc(String(input.affinity))}</text>
+  <text x="600" y="306" text-anchor="middle" font-family="${FACE}" font-size="11" letter-spacing="3" fill="${MUTED}">AFFINITY</text>
+
+  <text x="600" y="450" text-anchor="middle" font-family="${FACE}" font-size="14" letter-spacing="4" fill="${SUBTLE}">${esc(input.headline.toUpperCase())}</text>
+  <text x="600" y="492" text-anchor="middle" font-family="${FACE}" font-size="28" fill="${INK}">${esc(title)}</text>
+  ${line
+    .map(
+      (row, i) =>
+        `<text x="600" y="${530 + i * 26}" text-anchor="middle" font-family="${FACE}" font-size="18" fill="${INK}">${esc(row)}</text>`,
+    )
+    .join("\n  ")}
+</svg>`;
+}
+

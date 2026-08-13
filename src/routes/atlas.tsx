@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { LetterDetail } from "@/components/letterology/LetterDetail";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { PageShare } from "@/components/letterology/PageShare";
@@ -58,6 +58,14 @@ function AtlasPage() {
             letter sits — not a fortune.
           </Plainly>
           <KeyLink />
+          <p className="mt-1">
+            <Link
+              to="/bond"
+              className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+            >
+              Bond two names
+            </Link>
+          </p>
           <PageShare
             path={`/atlas?letter=${selected}`}
             caption={`${selected} — ${themeOf(selected).name}\n${themeOf(selected).essence}`}

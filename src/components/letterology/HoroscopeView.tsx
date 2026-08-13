@@ -98,10 +98,19 @@ export function HoroscopeView({
             </div>
           </div>
         </div>
-        <Button variant="outline" onClick={copyReading} className="self-start sm:self-auto">
-          {copied ? <Check /> : <Copy />}
-          {copied ? "Copied" : "Copy reading"}
-        </Button>
+        <div className="flex flex-col items-stretch gap-2 self-start sm:self-auto">
+          <Button variant="outline" onClick={copyReading}>
+            {copied ? <Check /> : <Copy />}
+            {copied ? "Copied" : "Copy reading"}
+          </Button>
+          <Link
+            to="/bond"
+            search={{ a: horoscope.displayName }}
+            className="inline-flex h-11 items-center justify-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+          >
+            Compare this handle
+          </Link>
+        </div>
       </header>
 
       <DayCard horoscope={horoscope} date={date} />

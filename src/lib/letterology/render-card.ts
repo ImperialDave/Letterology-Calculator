@@ -3,8 +3,9 @@ import { join } from "node:path";
 import { houseOf } from "./archetypes";
 import { almanacOf, parseIso } from "./calendar";
 import { alliesOf, enemiesOf } from "./circle";
+import { compareNames } from "./compatibility";
 import { dayReadingOf } from "./day-reading";
-import { glyphSvg, portraitSvg } from "./share-card";
+import { bondSvg, glyphSvg, portraitSvg } from "./share-card";
 import { portraitOf, slugToName } from "./share";
 import { themeOf } from "./lexicon";
 import { ALPHABET } from "./types";
@@ -39,7 +40,8 @@ export type CardSpec =
   | { kind: "house"; letter: string }
   | { kind: "circle"; letter: string }
   | { kind: "letter"; letter: string }
-  | { kind: "day"; date: string };
+  | { kind: "day"; date: string }
+  | { kind: "bond"; a: string; b: string };
 
 export function parseCardFile(file: string): CardSpec | null {
   const trimmed = file.trim().toLowerCase();
@@ -52,6 +54,8 @@ export function parseCardFile(file: string): CardSpec | null {
     if (!ALPHABET.includes(letter)) return null;
     return { kind: glyph[1] as "house" | "circle" | "letter", letter: letter };
   }
+  const bond = jpg.match(/^bond-([^_]+)_([^_]+)$/);
+  if (bond) return { kind: "bond", a: bond[1], b: bond[2] };
   const dated = jpg.match(/^([a-z0-9''’-]+)-(\d{4}-\d{2}-\d{2})$/);
   if (dated) return { kind: "portrait", slug: dated[1], date: dated[2] };
   if (!jpg || jpg.includes(".")) return null;
@@ -65,7 +69,22 @@ export async function renderPortraitJpeg(file: string): Promise<Uint8Array | nul
   if (cached) return cached;
 
   let svg: string | null = null;
-  if (parsed.kind === "portrait") {
+  if (parsed.kind === "bond") {
+    const bond = compareNames(slugToName(parsed.a), slugToName(parsed.b));
+    if (!bond) return null;
+    svg = bondSvg({
+      aLetter: bond.a.signature,
+      bLetter: bond.b.signature,
+      aName: bond.a.displayName,
+      bName: bond.b.displayName,
+      aHouse: bond.seats[0].aNoun,
+      bHouse: bond.seats[0].bNoun,
+      title: bond.title,
+      affinity: bond.affinity,
+      headline: bond.headline,
+      line: bond.invitation,
+    });
+  } else if (parsed.kind === "portrait") {
     const name = slugToName(parsed.slug);
     const horoscope = portraitOf(name);
     if (!horoscope) return null;

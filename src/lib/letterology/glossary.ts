@@ -302,6 +302,30 @@ export const GLOSSARY: GlossEntry[] = [
     opacity: "low",
     surfaces: ["home", "footer", "reading"],
   },
+  {
+    id: "bond",
+    term: "Bond",
+    metaphor: "Two handles sit a bond.",
+    plain: "A reading of two usernames together — how their roles, methods, and letters meet.",
+    opacity: "high",
+    surfaces: ["bond", "home", "reading"],
+  },
+  {
+    id: "affinity",
+    term: "Affinity",
+    metaphor: "Affinity 78.",
+    plain: "A 0–100 fit of the two names: houses, how they work, shared letters, and missing allies the other already carries.",
+    opacity: "high",
+    surfaces: ["bond", "certificate"],
+  },
+  {
+    id: "certificate",
+    term: "Certificate of Bond",
+    metaphor: "Certified by Letterology.",
+    plain: "A shareable card of the pair: both names, the bond’s title, and the affinity. Made to post.",
+    opacity: "medium",
+    surfaces: ["bond"],
+  },
 ];
 
 const BY_ID = new Map(GLOSSARY.map((entry) => [entry.id, entry]));
@@ -346,3 +370,7 @@ export const METHOD_PLAIN =
 
 export const CALENDAR_PLAIN =
   "The year is split into twenty-six two-week seats, one per letter, starting 21 March. Today's date names a role. The current two-week seat says how the season is working. The weekday says what today's work is about. The calendar year and the month only color the background — they do not rename the day.";
+
+export const BOND_PLAIN =
+  "Type two usernames. We compare the role each first letter names, then how each tends to work, then where. Allies complete a job. Enemies keep it honest. Shared letters are common ground. If one name already carries an ally the other is missing, that is a gift. The number is a fit, not a forecast.";
+
