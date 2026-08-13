@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-const EXAMPLES = ["Ada Lovelace", "James Baldwin", "Zora Neale Hurston", "Octavia Butler"];
+const EXAMPLES = ["@lovelace", "@baldwin", "@zora", "@octavia"];
 
 export function NameForm({
   initial = "",
@@ -25,25 +25,25 @@ export function NameForm({
 
   return (
     <form onSubmit={handleSubmit} className="w-full">
-      <Label htmlFor="full-name">Your name</Label>
+      <Label htmlFor="username">Your username</Label>
       <div className="mt-2 flex flex-col gap-2 sm:flex-row">
         <Input
-          id="full-name"
-          name="name"
+          id="username"
+          name="username"
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          placeholder="Ada Lovelace"
-          autoComplete="name"
-          autoCapitalize="words"
+          placeholder="@lovelace"
+          autoComplete="username"
+          autoCapitalize="none"
           spellCheck={false}
-          aria-describedby="name-hint"
+          aria-describedby="username-hint"
         />
         <Button type="submit" className="h-12 shrink-0 px-6">
           Read the letters
         </Button>
       </div>
-      <p id="name-hint" className="mt-2 text-sm text-muted">
-        A given name, a full name, or a username. Diacritics fold; only A–Z are read.
+      <p id="username-hint" className="mt-2 text-sm text-muted">
+        The handle you live under. @ is optional. Diacritics fold; only A–Z are read.
       </p>
       {!compact ? (
         <div className="mt-5 flex flex-wrap gap-2">

@@ -74,13 +74,13 @@ function PortraitPage() {
         <SiteHeader current="read" />
         <main className="mx-auto max-w-xl px-4 py-24 text-center">
           <p className="font-display text-xs tracking-[0.2em] text-muted uppercase">No letters</p>
-          <h1 className="mt-3 font-display text-4xl text-ink">That name has nothing to read.</h1>
-          <p className="mt-3 text-muted">{name || "Give the portrait a name with A–Z in it."}</p>
+          <h1 className="mt-3 font-display text-4xl text-ink">That username has nothing to read.</h1>
+          <p className="mt-3 text-muted">{name || "Give the portrait a username with A–Z in it."}</p>
           <Link
             to="/"
             className="mt-8 inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
           >
-            Read a name
+            Read a username
           </Link>
         </main>
         <SiteFooter />

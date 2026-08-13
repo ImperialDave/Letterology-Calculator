@@ -108,7 +108,7 @@ function AlmanacPage() {
 
         <section className="mt-8 max-w-xl rounded-xl bg-raised p-5 shadow-[var(--shadow-border)]">
           <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">
-            Read this day for a name
+            Read this day for a username
           </p>
           <div className="mt-3">
             <NameForm

@@ -15,7 +15,7 @@ type Search = { name?: string };
 
 const HOME_TITLE = "Letterology";
 const HOME_DESCRIPTION =
-  "Read a name through twenty-six houses. First letter sits the house. The next two set how and where you work.";
+  "Read a username through twenty-six houses. First letter sits the house. The next two set how and where you work.";
 
 const RECENT_KEY = "letterology:recent";
 
@@ -94,14 +94,15 @@ function Home() {
                 Letterology
               </h1>
               <p className="mt-4 max-w-xl text-base leading-relaxed text-ink/85">
-                Type a name. The first letter sits a house — Seeker, Caregiver, Rebel,
-                Hermit, and the rest. The two letters that weigh most after that set
-                how you work and where you work. Allies complete the job. Enemies keep
-                it honest. This is a portrait, not a prediction.
+                Type a username. The letters you chose sit a house — Seeker, Caregiver,
+                Rebel, Hermit, and the rest. The two letters that weigh most after that
+                set how you work and where you work. Allies complete the job. Enemies
+                keep it honest. The handle is the destiny. This is a portrait, not a
+                prediction.
               </p>
               <PageShare
                 path="/"
-                caption={"Letterology\nRead a name through twenty-six houses."}
+                caption={"Letterology\nRead a username through twenty-six houses."}
                 imagePath="/og.jpg"
               />
             </div>

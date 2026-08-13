@@ -91,7 +91,7 @@ function HousesPage() {
           <h1 className="mt-2 font-display text-4xl text-ink sm:text-5xl">The Houses</h1>
           <p className="mt-3 max-w-xl leading-relaxed text-ink/85">
             Twenty-six houses, one for each letter. They are the old figures —
-            Seeker, Caregiver, Rebel, Hermit — said in plain English. A name
+            Seeker, Caregiver, Rebel, Hermit — said in plain English. A username
             chooses a house by its first letter. The two letters that weigh most
             after that set the manner and the field. Allies and enemies live on the{" "}
             <Link to="/circle" search={{ house: selectedHouse }} className="text-primary">
