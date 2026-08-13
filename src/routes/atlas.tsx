@@ -2,7 +2,6 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { LetterDetail } from "@/components/letterology/LetterDetail";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { PageShare } from "@/components/letterology/PageShare";
-import { KeyLink, Plainly } from "@/components/letterology/Gloss";
 import { themeOf } from "@/lib/letterology/lexicon";
 import { pageCardMeta } from "@/lib/letterology/share";
 import { ALPHABET, type Letter, VOWEL_LETTERS } from "@/lib/letterology/types";
@@ -48,22 +47,16 @@ function AtlasPage() {
           <h1 className="mt-2 font-display text-4xl text-ink sm:text-5xl">Letter Atlas</h1>
           <p className="mt-3 max-w-xl leading-relaxed text-ink/85">
             Each letter has a meaning and a house. The meaning comes from words
-            that start with that letter. The house is the archetype — Seeker,
-            Caregiver, Rebel, and so on. Vowels lean inward. Consonants lean
-            outward.
+            that start with that letter. The house is the role that letter sits —
+            Seeker, Caregiver, Rebel, and so on. Vowels describe the private life.
+            Consonants describe how a person shows up. Pick a letter.
           </p>
-          <Plainly>
-            Pick a letter to read its job. Vowels describe the private life.
-            Consonants describe how a person shows up. The house is the role that
-            letter sits — not a fortune.
-          </Plainly>
-          <KeyLink />
-          <p className="mt-1">
+          <p className="mt-2">
             <Link
               to="/bond"
               className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
             >
-              Bond two names
+              Compare two usernames
             </Link>
           </p>
           <PageShare

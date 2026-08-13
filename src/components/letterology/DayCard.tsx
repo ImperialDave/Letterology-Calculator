@@ -2,12 +2,12 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Check, Copy } from "lucide-react";
 import { CourtLines } from "@/components/letterology/CourtLines";
-import { TermStack } from "@/components/letterology/Gloss";
+import { Explain } from "@/components/letterology/Gloss";
 import { Button } from "@/components/ui/button";
 import { houseOf } from "@/lib/letterology/archetypes";
 import { dayReadingOf } from "@/lib/letterology/day-reading";
 import { copyToClipboard } from "@/lib/letterology/clipboard";
-import { WEATHER_COPY, gloss } from "@/lib/letterology/glossary";
+import { WEATHER_COPY } from "@/lib/letterology/glossary";
 import { themeOf } from "@/lib/letterology/lexicon";
 import { composeXPost, portraitUrl, publicSiteOrigin, tweetDay } from "@/lib/letterology/share";
 import type { CivilDate } from "@/lib/letterology/calendar";
@@ -63,23 +63,32 @@ export function DayCard({
       <p className="mt-5 font-display text-sm text-ink">{reading.invitation}</p>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
-        <DaySeat label="Date" letter={reading.day.date} note={todayHouse.noun} hint={gloss("wear")} />
+        <DaySeat
+          label="Date"
+          letter={reading.day.date}
+          note={todayHouse.noun}
+          hint="Today’s date names a role — the house this day sits."
+        />
         <DaySeat
           label={reading.day.hinge ? "Hinge" : "Fortnight"}
           letter={reading.day.fortnight}
           note={houseOf(reading.day.fortnight).adj}
-          hint={reading.day.hinge ? gloss("hinge") : gloss("fortnight")}
+          hint={
+            reading.day.hinge
+              ? "Leftover days between year-walks. No numbered house. The Fool holds the gate."
+              : "The two-week seat the year is walking through right now."
+          }
         />
         <DaySeat
           label="Weekday"
           letter={reading.day.weekday}
           note={`${reading.day.weekdayRole} · ${houseOf(reading.day.weekday).noun}`}
-          hint={gloss("field")}
+          hint="What today’s work is about — house, ally, or enemy of your first letter."
         />
       </div>
 
       <div className="mt-5">
-        <TermStack id="climate" />
+        <Explain title="Climate">Year and month only color the background. They do not rename the day.</Explain>
         <p className="mt-2 text-sm text-muted">{reading.climateNote}</p>
       </div>
       <div className="mt-5 flex flex-wrap items-center gap-3">

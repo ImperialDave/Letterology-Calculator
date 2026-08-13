@@ -2,11 +2,9 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo } from "react";
 import { BondForm } from "@/components/letterology/BondForm";
 import { BondView } from "@/components/letterology/BondView";
-import { KeyLink, Plainly } from "@/components/letterology/Gloss";
 import { PageShare } from "@/components/letterology/PageShare";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { compareNames } from "@/lib/letterology/compatibility";
-import { BOND_PLAIN, gloss } from "@/lib/letterology/glossary";
 import { saveRecent, saveRecentBond } from "@/lib/letterology/recent";
 import {
   bondCardFile,
@@ -87,9 +85,6 @@ function BondPage() {
                 work, the letters they share, and the allies one already carries for the other —
                 that is the bond. Keep the metaphors. The number is only a fit.
               </p>
-              <Plainly>{BOND_PLAIN}</Plainly>
-              <p className="mt-2 text-sm text-muted">{gloss("affinity")}</p>
-              <KeyLink />
               <PageShare
                 path="/bond"
                 caption={"Certificate of Bond\nCompare two usernames on the wheel."}

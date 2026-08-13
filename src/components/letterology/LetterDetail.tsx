@@ -4,8 +4,7 @@ import { bondsOf } from "@/lib/letterology/circle";
 import { themeOf } from "@/lib/letterology/lexicon";
 import type { Letter } from "@/lib/letterology/types";
 import { VOWEL_LETTERS } from "@/lib/letterology/types";
-import { gloss } from "@/lib/letterology/glossary";
-import { TermStack } from "@/components/letterology/Gloss";
+import { Explain } from "@/components/letterology/Gloss";
 
 export function LetterDetail({ letter }: { letter: Letter }) {
   const theme = themeOf(letter);
@@ -20,19 +19,20 @@ export function LetterDetail({ letter }: { letter: Letter }) {
         <p className="font-display text-6xl leading-none text-primary">{letter}</p>
         <div className="text-right">
           <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">{kind}</p>
-          <p className="mt-1 text-sm text-muted">{isInner ? gloss("vowels") : gloss("consonants")}</p>
+          <p className="mt-1 text-sm text-muted">
+            {isInner
+              ? "A vowel: the private life — how this letter feels from the inside."
+              : "A consonant: how this letter shows up in a room."}
+          </p>
           <h3 className="mt-1 font-display text-2xl text-ink">{theme.name}</h3>
         </div>
       </div>
       <div className="mt-4 border-t border-ink/10 pt-4">
         <p className="font-display text-lg text-ink">{house.house}</p>
         <p className="mt-1 text-sm italic text-ink/70">{house.myth}</p>
-        <p className="mt-1 font-display text-xs tracking-[0.14em] text-muted uppercase">
-          {house.tradition}
+        <p className="mt-2 text-sm text-ink/70">
+          Old tables call this {house.tradition} — {house.correspondence}. A likeness, not a creed.
         </p>
-        <p className="mt-1 text-sm text-muted">{gloss("tradition")}</p>
-        <p className="mt-2 text-sm text-ink/65">{house.correspondence}</p>
-        <p className="mt-1 text-sm text-muted">{gloss("correspondence")}</p>
         <p className="mt-3 text-sm leading-relaxed text-ink/90">{house.doctrine}</p>
       </div>
       <p className="mt-4 text-sm tracking-wide text-muted">{theme.keywords.join(" · ")}</p>
@@ -53,13 +53,13 @@ export function LetterDetail({ letter }: { letter: Letter }) {
       </div>
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <div className="border-t border-ink/10 pt-4">
-          <TermStack id="allies" />
+          <Explain title="Allies">The three houses that complete this one’s work.</Explain>
           <p className="mt-2 font-display text-lg tracking-[0.12em] text-ink">
             {allies.map((item) => item.other).join(" · ")}
           </p>
         </div>
         <div className="border-t border-ink/10 pt-4">
-          <TermStack id="enemies" />
+          <Explain title="Enemies">The three houses that work against it — a blind spot, not a villain.</Explain>
           <p className="mt-2 font-display text-lg tracking-[0.12em] text-ink">
             {enemies.map((item) => item.other).join(" · ")}
           </p>

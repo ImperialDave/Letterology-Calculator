@@ -16,9 +16,8 @@ import { alliesOf, enemiesOf } from "@/lib/letterology/circle";
 import { themeOf } from "@/lib/letterology/lexicon";
 import { ALPHABET, type Letter, type Triad } from "@/lib/letterology/types";
 import { PageShare } from "@/components/letterology/PageShare";
-import { KeyLink, Plainly, TermStack } from "@/components/letterology/Gloss";
+import { Explain } from "@/components/letterology/Gloss";
 import { pageCardMeta } from "@/lib/letterology/share";
-import { gloss } from "@/lib/letterology/glossary";
 import { cn } from "@/lib/utils";
 
 type Search = { house?: string; code?: string };
@@ -92,27 +91,21 @@ function HousesPage() {
           </p>
           <h1 className="mt-2 font-display text-4xl text-ink sm:text-5xl">The Houses</h1>
           <p className="mt-3 max-w-xl leading-relaxed text-ink/85">
-            Twenty-six houses, one for each letter. They are the old figures —
-            Seeker, Caregiver, Rebel, Hermit — said in plain English. A username
-            chooses a house by its first letter. The two letters that weigh most
-            after that set the manner and the field. Allies and enemies live on the{" "}
+            Twenty-six houses, one for each letter. A username chooses a house by
+            its first letter — that is the role. The two letters that weigh most
+            after that set the manner (how the role works) and the field (where).
+            Allies complete the job. Enemies are the blind spot. See them on the{" "}
             <Link to="/circle" search={{ house: selectedHouse }} className="text-primary">
               Circle of Houses
             </Link>
             .
           </p>
-          <Plainly>
-            A house is a role. The first letter of a username names it. The two
-            letters that show up most after that describe how that role works, and
-            where. {gloss("allies")} {gloss("enemies")}
-          </Plainly>
-          <KeyLink />
-          <p className="mt-1">
+          <p className="mt-2">
             <Link
               to="/bond"
               className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
             >
-              Bond two names
+              Compare two usernames
             </Link>
           </p>
           <PageShare
@@ -146,7 +139,9 @@ function HousesPage() {
         </form>
 
         <section className="mt-8">
-          <TermStack id="house" term="House · first letter" />
+          <Explain title="House · first letter">
+            The role. A username sits this house by the letter it starts with.
+          </Explain>
           <div className="mt-3 grid grid-cols-5 gap-2 sm:grid-cols-7">
             {houses.map((item) => {
               const active = item.letter === selectedHouse;
@@ -173,12 +168,10 @@ function HousesPage() {
             <div className="mt-4 max-w-2xl">
               <p className="font-display text-xl text-ink">{selectedMeta.house}</p>
               <p className="mt-1 text-sm italic text-ink/70">{selectedMeta.myth}</p>
-              <p className="mt-1 font-display text-xs tracking-[0.14em] text-muted uppercase">
-                {selectedMeta.tradition}
+              <p className="mt-2 text-sm text-ink/70">
+                Old tables call this {selectedMeta.tradition} — {selectedMeta.correspondence}. A
+                likeness, not a creed.
               </p>
-              <p className="mt-1 text-sm text-muted">{gloss("tradition")}</p>
-              <p className="mt-1 text-sm text-ink/65">{selectedMeta.correspondence}</p>
-              <p className="mt-1 text-sm text-muted">{gloss("correspondence")}</p>
               <p className="mt-3 text-sm leading-relaxed text-ink/85">{selectedMeta.doctrine}</p>
               <p className="mt-3 text-sm text-muted">
                 Allies{" "}
@@ -201,7 +194,9 @@ function HousesPage() {
         </section>
 
         <section className="mt-8">
-          <TermStack id="manner" term="Manner · most common letter" />
+          <Explain title="Manner · most common letter">
+            How the role works. Repeats count. First and last letters of each word count extra.
+          </Explain>
           <div className="mt-3 grid grid-cols-5 gap-2 sm:grid-cols-7">
             {ALPHABET.map((letter) => {
               const active = letter === manner;
@@ -238,7 +233,9 @@ function HousesPage() {
           <h2 className="font-display text-xs tracking-[0.18em] text-muted uppercase">
             Field · the third letter
           </h2>
-          <p className="mt-1 text-sm text-muted">{gloss("field")}</p>
+          <p className="mt-1 text-sm text-muted">
+            Where the work happens — the kind of place, not a job title.
+          </p>
           <ul className="mt-3 divide-y divide-ink/10 rounded-xl bg-raised px-4 shadow-[var(--shadow-border)]">
             {column.map((item) => {
               const active = item.code === selectedArchetype.code;

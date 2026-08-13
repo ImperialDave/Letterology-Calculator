@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import type { Archetype } from "@/lib/letterology/types";
 import { themeOf } from "@/lib/letterology/lexicon";
-import { gloss, TRIAD_LABELS } from "@/lib/letterology/glossary";
+import { TRIAD_LABELS } from "@/lib/letterology/glossary";
 
 export function ArchetypeCard({
   archetype,
@@ -46,12 +46,10 @@ export function ArchetypeCard({
         {archetype.code} · {archetype.house}
       </p>
       <p className="mt-1 text-sm italic text-ink/70">{archetype.myth}</p>
-      <p className="mt-2 font-display text-xs tracking-[0.14em] text-muted uppercase">
-        {archetype.tradition}
+      <p className="mt-2 text-sm text-ink/70">
+        Old tables call this {archetype.tradition} — {archetype.correspondence}. A likeness, not a
+        creed.
       </p>
-      <p className="mt-1 text-sm text-muted">{gloss("tradition")}</p>
-      <p className="mt-2 text-sm text-ink/65">{archetype.correspondence}</p>
-      <p className="mt-1 text-sm text-muted">{gloss("correspondence")}</p>
       <p className="mt-4 max-w-3xl text-sm leading-relaxed text-ink/80">{archetype.doctrine}</p>
       <p className="mt-4 max-w-3xl leading-relaxed text-ink/90">{archetype.portrait}</p>
       <div className="mt-6 grid gap-4 sm:grid-cols-2">

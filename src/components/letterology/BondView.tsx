@@ -2,12 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Check, Copy, ExternalLink, Share2 } from "lucide-react";
 import { HouseCircle } from "@/components/letterology/HouseCircle";
-import { KeyLink, Plainly, TermStack } from "@/components/letterology/Gloss";
+import { Explain } from "@/components/letterology/Gloss";
 import { Button } from "@/components/ui/button";
 import { copyToClipboard, openXIntent } from "@/lib/letterology/clipboard";
 import type { BondReading } from "@/lib/letterology/compatibility";
 import { dayReadingOf } from "@/lib/letterology/day-reading";
-import { gloss, WEATHER_COPY } from "@/lib/letterology/glossary";
+import { WEATHER_COPY } from "@/lib/letterology/glossary";
 import { themeOf } from "@/lib/letterology/lexicon";
 import {
   bondCardImageUrl,
@@ -90,7 +90,10 @@ export function BondView({ bond }: { bond: BondReading }) {
     <div className="stagger-in space-y-8">
       <header className="flex flex-col items-center text-center">
         <p className="font-display text-xs tracking-[0.22em] text-muted uppercase">Certificate of Bond</p>
-        <p className="mt-2 text-sm text-muted">{gloss("bond")}</p>
+        <p className="mt-2 max-w-md text-sm text-muted">
+          Two usernames, read together. The number is a fit of their houses, how they work, and
+          the letters they share.
+        </p>
         <div className="mt-6 flex w-full max-w-xl items-end justify-between gap-3">
           <PersonMark
             letter={bond.a.signature}
@@ -111,10 +114,7 @@ export function BondView({ bond }: { bond: BondReading }) {
         <h2 className="mt-2 font-display text-3xl leading-tight text-ink sm:text-4xl">{bond.title}</h2>
         <p className="mt-3 max-w-2xl leading-relaxed text-ink/90">{bond.verdict}</p>
         <p className="mt-3 font-display text-ink">{bond.invitation}</p>
-        <Plainly className="w-full max-w-2xl text-left sm:text-center">{bond.plainly}</Plainly>
-        <div className="mt-2">
-          <KeyLink />
-        </div>
+        <p className="mt-4 max-w-2xl text-sm leading-relaxed text-ink/80">{bond.plainly}</p>
       </header>
 
       <section className="overflow-hidden rounded-xl bg-primary text-primary-fg shadow-[var(--shadow-border)]">
@@ -152,7 +152,7 @@ export function BondView({ bond }: { bond: BondReading }) {
             <div>
               <p className="font-display text-xs tracking-[0.22em] uppercase opacity-80">Share the certificate</p>
               <p className="mt-2 text-sm leading-relaxed text-primary-fg/85">
-                Copy this post, or open X. The card is the picture — both names sit on it. {gloss("certificate")}
+                Copy this post, or open X. The card is the picture — both names sit on it.
               </p>
             </div>
             <figure className="mt-4 rounded-lg bg-primary-fg/10 px-4 py-3 outline outline-1 -outline-offset-1 outline-primary-fg/15">
@@ -225,7 +225,13 @@ export function BondView({ bond }: { bond: BondReading }) {
       <section className="grid gap-4 md:grid-cols-3">
         {bond.seats.map((seat) => (
           <article key={seat.seat} className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)]">
-            <TermStack id={seat.seat} term={seat.label} />
+            <Explain title={seat.label}>
+              {seat.seat === "house"
+                ? "The role each first letter names."
+                : seat.seat === "manner"
+                  ? "How each name tends to work."
+                  : "Where each name’s work happens."}
+            </Explain>
             <div className="mt-4 flex items-end justify-between gap-3">
               <LetterLink letter={seat.a} noun={seat.aNoun} />
               <span className="font-display text-xs tracking-[0.14em] text-muted uppercase">
@@ -239,10 +245,11 @@ export function BondView({ bond }: { bond: BondReading }) {
       </section>
 
       <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
-        <TermStack id="wheel" term="On the wheel" />
+        <Explain title="On the wheel">
+          Gold is an ally. Dark is an enemy. Tap a letter to open that house on the circle.
+        </Explain>
         <p className="mt-3 max-w-3xl text-sm leading-relaxed text-ink/85">
-          {bond.a.displayName} sits {bond.a.signature}. {bond.b.displayName} sits {bond.b.signature}. Gold is
-          an ally. Dark is an enemy. Tap a letter to open that house on the circle.
+          {bond.a.displayName} sits {bond.a.signature}. {bond.b.displayName} sits {bond.b.signature}.
         </p>
         <div className="mt-6">
           <HouseCircle selected={bond.a.signature} partner={bond.b.signature} asLinks />
@@ -265,7 +272,9 @@ export function BondView({ bond }: { bond: BondReading }) {
 
       {dayA && dayB ? (
         <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
-          <TermStack id="almanac" term="How they meet today" />
+          <Explain title="How they meet today">
+            Each handle has its own weather for this date. Open the almanac to walk the day.
+          </Explain>
           <div className="mt-5 grid gap-6 md:grid-cols-2">
             <DayMeet reading={dayA} />
             <DayMeet reading={dayB} />

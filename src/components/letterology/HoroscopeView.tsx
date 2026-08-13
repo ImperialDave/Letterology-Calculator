@@ -4,7 +4,7 @@ import { Check, Copy } from "lucide-react";
 import { ArchetypeCard } from "@/components/letterology/ArchetypeCard";
 import { ArchetypeList } from "@/components/letterology/ArchetypeList";
 import { DayCard } from "@/components/letterology/DayCard";
-import { KeyLink, TermStack } from "@/components/letterology/Gloss";
+import { Explain } from "@/components/letterology/Gloss";
 import { LetterDetail } from "@/components/letterology/LetterDetail";
 import { LetterMap } from "@/components/letterology/LetterMap";
 import { ShareBar } from "@/components/letterology/ShareBar";
@@ -13,7 +13,6 @@ import { houseOf } from "@/lib/letterology/archetypes";
 import type { CivilDate } from "@/lib/letterology/calendar";
 import { bondCopy } from "@/lib/letterology/circle";
 import { copyToClipboard } from "@/lib/letterology/clipboard";
-import { gloss } from "@/lib/letterology/glossary";
 import { composeXPost, portraitUrl, publicSiteOrigin, tweetReading } from "@/lib/letterology/share";
 import { themeOf } from "@/lib/letterology/lexicon";
 import type { Horoscope, Letter } from "@/lib/letterology/types";
@@ -85,7 +84,6 @@ export function HoroscopeView({
             <p className="font-display text-xs tracking-[0.2em] text-muted uppercase">
               Letterological Horoscope
             </p>
-            <p className="mt-1 text-sm text-muted">{gloss("horoscope")}</p>
             <h2 className="mt-1 font-display text-3xl leading-tight text-ink sm:text-4xl">
               {horoscope.displayName}
             </h2>
@@ -93,9 +91,6 @@ export function HoroscopeView({
             <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
               {horoscope.statements.method}
             </p>
-            <div className="mt-1">
-              <KeyLink />
-            </div>
           </div>
         </div>
         <div className="flex flex-col items-stretch gap-2 self-start sm:self-auto">
@@ -121,7 +116,10 @@ export function HoroscopeView({
 
       <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <TermStack id="wheel" term="On the wheel" />
+          <Explain title="On the wheel">
+            Each house has three allies that complete its work, and three enemies that keep
+            it honest. Gold is an ally. Dark is an enemy.
+          </Explain>
           <Link
             to="/circle"
             search={{ house: horoscope.signature }}
@@ -135,7 +133,7 @@ export function HoroscopeView({
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
           <WheelColumn
             title="Allies"
-            glossId="allies"
+            hint="These three houses complete the job. If the letter is already in the name, you carry that help."
             house={horoscope.signature}
             letters={horoscope.allies}
             present={horoscope.kinPresent}
@@ -144,7 +142,7 @@ export function HoroscopeView({
           />
           <WheelColumn
             title="Enemies"
-            glossId="enemies"
+            hint="These three are the counterweight — a blind spot, not a villain."
             house={horoscope.signature}
             letters={horoscope.enemies}
             present={horoscope.crossPresent}
@@ -157,7 +155,7 @@ export function HoroscopeView({
       <ArchetypeList
         items={horoscope.kindred}
         caption="Same manner and field, sitting in an allied house"
-        note={gloss("kindred")}
+        note="Kindred archetypes share how you work and where, but sit a neighboring role. Useful people, not copies of you."
       />
 
       <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
@@ -212,11 +210,15 @@ export function HoroscopeView({
 
       <section className="grid gap-4 md:grid-cols-2">
         <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)]">
-          <TermStack id="vowels" />
+          <Explain title="Vowels">
+            Vowels describe the private life — how this name feels from the inside.
+          </Explain>
           <p className="mt-3 text-sm leading-relaxed">{horoscope.statements.vowelNote}</p>
         </article>
         <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)]">
-          <TermStack id="consonants" />
+          <Explain title="Consonants">
+            Consonants describe how this name shows up in a room.
+          </Explain>
           <p className="mt-3 text-sm leading-relaxed">{horoscope.statements.consonantNote}</p>
         </article>
       </section>
@@ -268,7 +270,7 @@ export function HoroscopeView({
 
 function WheelColumn({
   title,
-  glossId,
+  hint,
   house,
   letters,
   present,
@@ -276,7 +278,7 @@ function WheelColumn({
   onSelect,
 }: {
   title: string;
-  glossId: string;
+  hint: string;
   house: Letter;
   letters: Letter[];
   present: Letter[];
@@ -285,7 +287,7 @@ function WheelColumn({
 }) {
   return (
     <div>
-      <TermStack id={glossId} term={title} />
+      <Explain title={title}>{hint}</Explain>
       <ul className="mt-3 divide-y divide-ink/10">
         {letters.map((letter) => {
           const inName = present.includes(letter);

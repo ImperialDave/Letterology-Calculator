@@ -5,15 +5,12 @@ import { DayCard } from "@/components/letterology/DayCard";
 import { NameForm } from "@/components/letterology/NameForm";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { PageShare } from "@/components/letterology/PageShare";
-import { KeyLink, Plainly } from "@/components/letterology/Gloss";
-import { CALENDAR_PLAIN, gloss } from "@/lib/letterology/glossary";
 import { buildHoroscope } from "@/lib/letterology/engine";
 import { pageCardMeta } from "@/lib/letterology/share";
 import { houseOf } from "@/lib/letterology/archetypes";
 import {
   addDays,
   almanacOf,
-  calendarMethod,
   daysInMonth,
   fortnightDoctrine,
   isoOf,
@@ -100,9 +97,12 @@ function AlmanacPage() {
             The year on the wheel
           </p>
           <h1 className="mt-2 font-display text-4xl text-ink sm:text-5xl">Almanac</h1>
-          <p className="mt-3 max-w-xl leading-relaxed text-ink/85">{calendarMethod()}</p>
-          <Plainly>{CALENDAR_PLAIN}</Plainly>
-          <KeyLink />
+          <p className="mt-3 max-w-xl leading-relaxed text-ink/85">
+            The year is split into twenty-six two-week seats, one per letter, starting
+            21 March. Today’s date names a role. The current fortnight says how the
+            season is working. The weekday says what today’s work is about. Year and
+            month only color the background — they do not rename the day.
+          </p>
           <PageShare
             path={`/almanac?date=${selected.iso}`}
             caption={`${selected.iso} sits the ${houseOf(selected.dateLetter).house}`}
@@ -143,7 +143,11 @@ function AlmanacPage() {
         <section className="mt-10 grid gap-4 sm:grid-cols-3">
           <ClimateCard
             label={selected.fortnight.hinge ? "Hinge" : "This fortnight"}
-            hint={selected.fortnight.hinge ? gloss("hinge") : gloss("fortnight")}
+            hint={
+              selected.fortnight.hinge
+                ? "Leftover days between year-walks. No numbered house."
+                : "The current two-week seat of the year."
+            }
             letter={selected.fortnight.letter}
             detail={
               selected.fortnight.hinge
@@ -154,14 +158,14 @@ function AlmanacPage() {
           />
           <ClimateCard
             label="This month"
-            hint={gloss("climate")}
+            hint="Month only colors the background. It does not rename the day."
             letter={monthSeat}
             detail={`${monthName(selectedCivil.month)} · ${monthSeats.join(" · ")}`}
             copy={`The mid-month sits in ${houseOf(monthSeat).house}. Climate around the days, not their house.`}
           />
           <ClimateCard
             label="Civil year"
-            hint={gloss("climate")}
+            hint="The civil year is climate around the days — not their house."
             letter={yearSeat}
             detail={String(selectedCivil.year)}
             copy={`${yearDoctrine(yearSeat)} Background climate — it does not sit today's house.`}
@@ -232,7 +236,7 @@ function AlmanacPage() {
           </p>
           <p className="mt-4 max-w-3xl leading-relaxed text-ink/90">
             Today sits as {houseOf(selected.dateLetter).noun} — the {selected.civil.day}
-            {ordinal(selected.civil.day)} wears that house ({gloss("wear")}). The sun's fortnight
+            {ordinal(selected.civil.day)} wears that house (the date names the day’s role). The sun's fortnight
             sets the manner: {houseOf(selected.fortnight.letter).noun}
             {selected.fortnight.hinge ? " on the hinge" : `, day ${selected.fortnight.dayInSeat} of 14`}
             — how the season is working. {selected.weekdayName} is the {selected.weekdayRole} aspect
@@ -264,7 +268,9 @@ function AlmanacPage() {
           />
           <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)]">
             <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">Background climate</p>
-            <p className="mt-1 text-sm text-muted">{gloss("climate")}</p>
+            <p className="mt-1 text-sm text-muted">
+              Year and month sit behind the day. They color it. They do not name it.
+            </p>
             <p className="mt-3 text-sm leading-relaxed text-ink/85">
               <span className="font-display text-ink">
                 {selected.yearLetter} {houseOf(selected.yearLetter).noun}
@@ -389,7 +395,9 @@ function CourtCard({
   return (
     <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)]">
       <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">{label}</p>
-      <p className="mt-1 text-sm text-muted">{gloss("court")}</p>
+      <p className="mt-1 text-sm text-muted">
+        The house, plus the three letters that complete it and the three that work against it.
+      </p>
       <h3 className="mt-2 font-display text-2xl text-ink">
         {letter} · {houseOf(letter).noun}
       </h3>
