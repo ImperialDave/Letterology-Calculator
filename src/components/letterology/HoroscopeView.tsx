@@ -126,7 +126,7 @@ export function HoroscopeView({ horoscope }: { horoscope: Horoscope }) {
 
       <ArchetypeList
         items={horoscope.kindred}
-        caption="Same manner and field, seated in an allied house"
+        caption="Same manner and field, sitting in an allied house"
       />
 
       <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
@@ -161,7 +161,7 @@ export function HoroscopeView({ horoscope }: { horoscope: Horoscope }) {
         </article>
         <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-6">
           <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">
-            {horoscope.tension ? "Living cross" : "Growth edge"}
+            {horoscope.tension ? "Main tension" : "Growth edge"}
           </p>
           {horoscope.tension ? (
             <h3 className="mt-2 font-display text-xl text-ink">{horoscope.tension.title}</h3>
@@ -171,7 +171,7 @@ export function HoroscopeView({ horoscope }: { horoscope: Horoscope }) {
       </section>
 
       <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
-        <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">The climate</p>
+        <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">In short</p>
         <p className="mt-3 max-w-3xl text-lg leading-relaxed">{horoscope.statements.synthesis}</p>
       </section>
 
@@ -233,13 +233,13 @@ export function HoroscopeView({ horoscope }: { horoscope: Horoscope }) {
       <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-6">
         <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">Living map</p>
+            <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">Letter map</p>
             <p className="mt-1 text-sm text-muted">
               The path follows the name. Darker cells carry more weight. Gold rings are allies. Dark rings are enemies.
             </p>
           </div>
           <p className="text-sm text-muted">
-            Unlived seats{" "}
+            Letters not in the name{" "}
             {horoscope.shadows.map((letter) => (
               <button
                 key={letter}
@@ -258,8 +258,8 @@ export function HoroscopeView({ horoscope }: { horoscope: Horoscope }) {
       <LetterDetail letter={selected} />
 
       <p className="text-center text-sm italic text-muted">
-        The letters we carry are already speaking. This is a mirror, not a sentence.
-        {theme ? ` ${theme.name} is one climate among many.` : ""}
+        This is a portrait, not a prediction.
+        {theme ? ` ${theme.name} is one letter among twenty-six.` : ""}
       </p>
     </div>
   );
