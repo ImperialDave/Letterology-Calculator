@@ -94,6 +94,8 @@ export function HoroscopeView({
         </Button>
       </header>
 
+      <DayCard horoscope={horoscope} date={date} />
+
       <ShareBar horoscope={horoscope} />
 
       <ArchetypeCard archetype={horoscope.archetype} featured />
@@ -195,7 +197,6 @@ export function HoroscopeView({
         </article>
       </section>
 
-      <DayCard horoscope={horoscope} date={date} />
       <p className="text-center">
         <Link
           to="/almanac"
