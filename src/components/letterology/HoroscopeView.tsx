@@ -1,10 +1,13 @@
 import { useMemo, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { Check, Copy } from "lucide-react";
 import { ArchetypeCard } from "@/components/letterology/ArchetypeCard";
 import { ArchetypeList } from "@/components/letterology/ArchetypeList";
 import { LetterDetail } from "@/components/letterology/LetterDetail";
 import { LetterMap } from "@/components/letterology/LetterMap";
 import { Button } from "@/components/ui/button";
+import { houseOf } from "@/lib/letterology/archetypes";
+import { bondCopy } from "@/lib/letterology/circle";
 import { readingAsText } from "@/lib/letterology/engine";
 import { themeOf } from "@/lib/letterology/lexicon";
 import type { Horoscope, Letter } from "@/lib/letterology/types";
@@ -37,7 +40,7 @@ function Pill({
 }
 
 export function HoroscopeView({ horoscope }: { horoscope: Horoscope }) {
-  const [selected, setSelected] = useState<Letter>(horoscope.primary.letter);
+  const [selected, setSelected] = useState<Letter>(horoscope.signature);
   const [copied, setCopied] = useState(false);
   const theme = themeOf(selected);
   const text = useMemo(() => readingAsText(horoscope), [horoscope]);
@@ -70,6 +73,9 @@ export function HoroscopeView({ horoscope }: { horoscope: Horoscope }) {
               {horoscope.displayName}
             </h2>
             <p className="mt-1 text-sm tracking-wide text-muted">{horoscope.normalized}</p>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
+              {horoscope.statements.method}
+            </p>
           </div>
         </div>
         <Button variant="outline" onClick={copyReading} className="self-start sm:self-auto">
@@ -80,9 +86,44 @@ export function HoroscopeView({ horoscope }: { horoscope: Horoscope }) {
 
       <ArchetypeCard archetype={horoscope.archetype} featured />
 
+      <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">On the wheel</p>
+            <h3 className="mt-2 font-display text-2xl text-ink">{horoscope.archetype.house}</h3>
+          </div>
+          <Link
+            to="/circle"
+            search={{ house: horoscope.signature }}
+            className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+          >
+            Open the circle
+          </Link>
+        </div>
+        <p className="mt-3 max-w-3xl leading-relaxed text-ink/90">{horoscope.statements.wheel}</p>
+        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+          <WheelColumn
+            title="Allies"
+            house={horoscope.signature}
+            letters={horoscope.allies}
+            present={horoscope.kinPresent}
+            kind="ally"
+            onSelect={setSelected}
+          />
+          <WheelColumn
+            title="Enemies"
+            house={horoscope.signature}
+            letters={horoscope.enemies}
+            present={horoscope.crossPresent}
+            kind="enemy"
+            onSelect={setSelected}
+          />
+        </div>
+      </section>
+
       <ArchetypeList
         items={horoscope.kindred}
-        caption="Kindred archetypes in this house"
+        caption="Same manner and field, seated in an allied house"
       />
 
       <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
@@ -117,7 +158,7 @@ export function HoroscopeView({ horoscope }: { horoscope: Horoscope }) {
         </article>
         <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-6">
           <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">
-            {horoscope.tension ? "Tension" : "Growth edge"}
+            {horoscope.tension ? "Living cross" : "Growth edge"}
           </p>
           {horoscope.tension ? (
             <h3 className="mt-2 font-display text-xl text-ink">{horoscope.tension.title}</h3>
@@ -127,7 +168,7 @@ export function HoroscopeView({ horoscope }: { horoscope: Horoscope }) {
       </section>
 
       <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
-        <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">Portrait</p>
+        <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">The climate</p>
         <p className="mt-3 max-w-3xl text-lg leading-relaxed">{horoscope.statements.synthesis}</p>
       </section>
 
@@ -176,11 +217,11 @@ export function HoroscopeView({ horoscope }: { horoscope: Horoscope }) {
           <div>
             <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">Living map</p>
             <p className="mt-1 text-sm text-muted">
-              The path traces the name across the alphabet. Darker cells carry more weight.
+              The path traces the name. Darker cells carry more weight. Gold rings are allies; ink rings are enemies.
             </p>
           </div>
           <p className="text-sm text-muted">
-            Shadow fields{" "}
+            Unlived seats{" "}
             {horoscope.shadows.map((letter) => (
               <button
                 key={letter}
@@ -202,6 +243,51 @@ export function HoroscopeView({ horoscope }: { horoscope: Horoscope }) {
         The letters we carry are already speaking. This is a mirror, not a sentence.
         {theme ? ` ${theme.name} is one climate among many.` : ""}
       </p>
+    </div>
+  );
+}
+
+function WheelColumn({
+  title,
+  house,
+  letters,
+  present,
+  kind,
+  onSelect,
+}: {
+  title: string;
+  house: Letter;
+  letters: Letter[];
+  present: Letter[];
+  kind: "ally" | "enemy";
+  onSelect: (letter: Letter) => void;
+}) {
+  return (
+    <div>
+      <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">{title}</p>
+      <ul className="mt-3 divide-y divide-ink/10">
+        {letters.map((letter) => {
+          const inName = present.includes(letter);
+          return (
+            <li key={letter} className="py-3 first:pt-0 last:pb-0">
+              <button
+                type="button"
+                onClick={() => onSelect(letter)}
+                className="flex min-h-11 w-full items-baseline gap-3 text-left"
+              >
+                <span className="font-display text-2xl text-primary">{letter}</span>
+                <span>
+                  <span className="font-display text-ink">{houseOf(letter).noun}</span>
+                  <span className="ml-2 text-xs tracking-wide text-muted uppercase">
+                    {inName ? "in the name" : "unlived"}
+                  </span>
+                </span>
+              </button>
+              <p className="mt-1 text-sm leading-relaxed text-ink/80">{bondCopy(house, letter, kind)}</p>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

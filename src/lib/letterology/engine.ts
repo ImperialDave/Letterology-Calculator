@@ -1,5 +1,6 @@
 import { findTension, LEXICON, themeOf } from "./lexicon";
-import { archetypeOf, kindredArchetypes, pickTriad } from "./archetypes";
+import { alliesOf, bondCopy, enemiesOf } from "./circle";
+import { archetypeOf, houseOf, pickTriad } from "./archetypes";
 import type {
   Horoscope,
   Letter,
@@ -7,7 +8,7 @@ import type {
   NamePart,
   TensionPair,
 } from "./types";
-import { ALPHABET, MAJOR_FIELDS, VOWEL_LETTERS } from "./types";
+import { ALPHABET, VOWEL_LETTERS } from "./types";
 
 const FOLDS: Record<string, string> = {
   Æ: "AE",
@@ -39,10 +40,12 @@ export function parseName(raw: string): { displayName: string; parts: NamePart[]
   const displayName = raw.trim().replace(/\s+/g, " ");
   const folded = foldCharacters(displayName);
   const tokens = folded.split(/[^A-Za-z]+/).filter(Boolean);
-  const parts: NamePart[] = tokens.map((token) => ({
-    original: token,
-    letters: token.toUpperCase().replace(/[^A-Z]/g, ""),
-  })).filter((p) => p.letters.length > 0);
+  const parts: NamePart[] = tokens
+    .map((token) => ({
+      original: token,
+      letters: token.toUpperCase().replace(/[^A-Z]/g, ""),
+    }))
+    .filter((p) => p.letters.length > 0);
   return { displayName, parts };
 }
 
@@ -98,7 +101,37 @@ function compareInventory(a: LetterInventory, b: LetterInventory): number {
   return a.firstIndex - b.firstIndex;
 }
 
-function pickTension(ranked: LetterInventory[]): TensionPair | null {
+function splitCircle(ranked: LetterInventory[], signature: Letter) {
+  const present = new Set(ranked.map((item) => item.letter));
+  const allies = alliesOf(signature);
+  const enemies = enemiesOf(signature);
+  return {
+    allies: [...allies],
+    enemies: [...enemies],
+    kinPresent: allies.filter((letter) => present.has(letter)),
+    kinAbsent: allies.filter((letter) => !present.has(letter)),
+    crossPresent: enemies.filter((letter) => present.has(letter)),
+    crossAbsent: enemies.filter((letter) => !present.has(letter)),
+  };
+}
+
+function pickTension(
+  ranked: LetterInventory[],
+  signature: Letter,
+  crossPresent: Letter[],
+): TensionPair | null {
+  const living = crossPresent[0];
+  if (living) {
+    const aHouse = houseOf(signature).noun;
+    const bHouse = houseOf(living).noun;
+    return {
+      a: signature,
+      b: living,
+      title: `${aHouse} and ${bHouse}`,
+      copy: bondCopy(signature, living, "enemy"),
+    };
+  }
+
   const top = ranked.slice(0, 6);
   let best: { pair: TensionPair; score: number } | null = null;
   for (let i = 0; i < top.length; i++) {
@@ -112,18 +145,15 @@ function pickTension(ranked: LetterInventory[]): TensionPair | null {
   return best?.pair ?? null;
 }
 
-function pickShadows(ranked: LetterInventory[], primary: Letter): Letter[] {
-  const present = new Set(ranked.map((r) => r.letter));
-  const complements = themeOf(primary).complements.filter((l) => !present.has(l));
-  const majors = MAJOR_FIELDS.filter((l) => l !== primary && !present.has(l));
+function pickAbsentSeats(kinAbsent: Letter[], crossAbsent: Letter[], primary: Letter): Letter[] {
   const out: Letter[] = [];
-  for (const letter of [...complements, ...majors]) {
+  for (const letter of [...kinAbsent, ...crossAbsent]) {
     if (!out.includes(letter)) out.push(letter);
     if (out.length >= 2) break;
   }
   if (out.length < 2) {
     for (const letter of ALPHABET) {
-      if (letter === primary || present.has(letter) || out.includes(letter)) continue;
+      if (letter === primary || out.includes(letter)) continue;
       out.push(letter);
       if (out.length >= 2) break;
     }
@@ -167,6 +197,10 @@ function article(word: string): string {
   return /^[aeiou]/i.test(word) ? "an" : "a";
 }
 
+function listHouses(letters: Letter[]): string {
+  return letters.map((letter) => `${houseOf(letter).noun} (${letter})`).join(", ");
+}
+
 export function buildHoroscope(rawName: string, now = new Date()): Horoscope | null {
   const { displayName, parts } = parseName(rawName);
   const inventory = scoreParts(parts);
@@ -175,9 +209,10 @@ export function buildHoroscope(rawName: string, now = new Date()): Horoscope | n
   const primary = inventory[0];
   const secondaries = inventory.slice(1, 4);
   const gifts = [primary, ...secondaries.slice(0, 2)].map((x) => x.letter);
-  const tension = pickTension(inventory);
-  const shadows = pickShadows(inventory, primary.letter);
   const signature = inventory.find((x) => x.isSignature)?.letter ?? primary.letter;
+  const circle = splitCircle(inventory, signature);
+  const tension = pickTension(inventory, signature, circle.crossPresent);
+  const shadows = pickAbsentSeats(circle.kinAbsent, circle.crossAbsent, primary.letter);
   const vowels = inventory.filter((x) => x.isVowel);
   const consonants = inventory.filter((x) => !x.isVowel);
 
@@ -210,7 +245,7 @@ export function buildHoroscope(rawName: string, now = new Date()): Horoscope | n
     : g1.gift;
 
   const challengeStatement = tension
-    ? `${tension.copy} ${s1 ? `Meanwhile the quieter field of ${s1.letter} — ${s1.name.toLowerCase()} — waits as a shadow invitation: ${s1.invitation}` : ""}`.trim()
+    ? `${tension.copy} ${circle.kinAbsent[0] ? `Meanwhile the unused ally of ${houseOf(circle.kinAbsent[0]).house} waits as practice, not as lack: ${themeOf(circle.kinAbsent[0]).invitation}` : ""}`.trim()
     : s2
       ? `A growth edge appears where ${s1.name.toLowerCase()} and ${s2.name.toLowerCase()} are nearly silent. ${s1.invitation} ${s2.invitation}`
       : s1.challenge;
@@ -224,27 +259,38 @@ export function buildHoroscope(rawName: string, now = new Date()): Horoscope | n
 
   const triad = pickTriad(inventory, signature);
   const archetype = archetypeOf(triad);
-  const kindred = kindredArchetypes(triad, 8);
+  const kindred = circle.allies.map((letter) => archetypeOf([letter, triad[1], triad[2]]));
+  const mannerTheme = themeOf(triad[1]);
+  const fieldTheme = themeOf(triad[2]);
+
+  const methodStatement = `The first letter of the first name sits the house (${signature}, ${houseOf(signature).noun}). The next two letters by weight set the manner (${triad[1]}, ${mannerTheme.name.toLowerCase()}) and the field (${triad[2]}, ${fieldTheme.name.toLowerCase()}).`;
+
+  const wheelStatement = [
+    circle.kinPresent.length
+      ? `This name already carries allied seats: ${listHouses(circle.kinPresent)}.`
+      : `None of the ${houseOf(signature).noun}'s allies appear in the letters — kinship is asked from outside the name.`,
+    circle.crossPresent.length
+      ? `The living cross is ${listHouses(circle.crossPresent)}.`
+      : `The opposing seats are quiet in this name.`,
+    circle.kinAbsent.length
+      ? `Unlived allies remain: ${listHouses(circle.kinAbsent)}.`
+      : `Every allied seat is already sounding.`,
+  ].join(" ");
 
   const synthesis = [
-    `${displayName} meets the world through the ${archetype.house} (${archetype.correspondence}), a climate of ${p.name.toLowerCase()}${g2 ? `, with ${g2.name.toLowerCase()} close behind` : ", with little secondary weather to dilute it"}. ${archetype.myth} ${archetype.doctrine}`,
+    `${displayName} stands in the ${archetype.house} (${archetype.correspondence}). ${archetype.myth}`,
     tension
-      ? `A living tension — ${tension.title.toLowerCase()} — gives the configuration its characteristic pressure.`
-      : `${p.invitation}`,
-    shadows.length
-      ? `The letters do not sentence you. They describe a climate. The quieter fields of ${shadows.map((l) => `${l} (${themeOf(l).name.toLowerCase()})`).join(" and ")} remain available as practice, not as lack.`
-      : "",
+      ? `The characteristic pressure is ${tension.title.toLowerCase()}.`
+      : p.invitation,
     `Notice where ${p.name.toLowerCase()} already shows up in ordinary days. Letterology is a mirror, not a forecast.`,
-  ]
-    .filter(Boolean)
-    .join(" ");
+  ].join(" ");
 
   const dailyStatement = `Today's letter in this name is ${daily} — ${dailyTheme.name}. ${dailyTheme.invitation}`;
   const periodStatement = `This week's period focus is ${period} (${periodTheme.name.toLowerCase()}). ${periodTheme.invitation}`;
 
   return {
     displayName,
-    normalized: parts.map((p) => p.letters).join(" "),
+    normalized: parts.map((part) => part.letters).join(" "),
     parts,
     signature,
     primary,
@@ -255,6 +301,12 @@ export function buildHoroscope(rawName: string, now = new Date()): Horoscope | n
     tension,
     shadows,
     gifts,
+    allies: circle.allies,
+    enemies: circle.enemies,
+    kinPresent: circle.kinPresent,
+    kinAbsent: circle.kinAbsent,
+    crossPresent: circle.crossPresent,
+    crossAbsent: circle.crossAbsent,
     daily,
     period,
     triad,
@@ -265,6 +317,8 @@ export function buildHoroscope(rawName: string, now = new Date()): Horoscope | n
       gifts: giftsStatement,
       challenge: challengeStatement,
       synthesis,
+      method: methodStatement,
+      wheel: wheelStatement,
       daily: dailyStatement,
       period: periodStatement,
       vowelNote: innerNote,
@@ -282,9 +336,12 @@ export function readingAsText(h: Horoscope): string {
     `Primary: ${h.primary.letter} — ${themeOf(h.primary.letter).name}`,
     `Triad: ${h.archetype.code}`,
     `Archetype: ${h.archetype.title} (${h.archetype.house})`,
+    `Method: ${h.statements.method}`,
     `Secondary: ${h.secondaries.map((s) => `${s.letter} (${themeOf(s.letter).name})`).join(", ") || "—"}`,
     h.tension ? `Tension: ${h.tension.title}` : "",
-    `Shadow fields: ${h.shadows.map((s) => `${s} (${themeOf(s).name})`).join(", ")}`,
+    `Allies: ${h.allies.join(", ")}`,
+    `Enemies: ${h.enemies.join(", ")}`,
+    `Unlived seats: ${h.shadows.map((s) => `${s} (${themeOf(s).name})`).join(", ")}`,
     `Daily letter: ${h.daily} — ${themeOf(h.daily).name}`,
     `Period focus: ${h.period} — ${themeOf(h.period).name}`,
     "",
@@ -293,9 +350,12 @@ export function readingAsText(h: Horoscope): string {
     `${h.archetype.title}`,
     h.archetype.myth,
     h.archetype.correspondence,
+    h.archetype.doctrine,
     h.archetype.portrait,
     `Shadow: ${h.archetype.shadow}`,
     `Gold: ${h.archetype.gold}`,
+    "",
+    h.statements.wheel,
     "",
     h.statements.gifts,
     "",

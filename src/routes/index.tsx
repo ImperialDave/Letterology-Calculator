@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { HoroscopeView } from "@/components/letterology/HoroscopeView";
 import { NameForm } from "@/components/letterology/NameForm";
@@ -84,11 +84,10 @@ function Home() {
                 Letterology
               </h1>
               <p className="mt-4 max-w-xl text-base leading-relaxed text-ink/85">
-                Every letter is a condensed field of meaning, and each letter-house is a
-                traditional figure — Seeker, Caregiver, Rebel, Hermit, Sage, Lover, Magician —
-                meeting the new-age work of becoming whole. A name is a personal constellation
-                of those fields: not a prediction, a portrait. The first letter names the house;
-                the two most common letters complete the archetype.
+                A name is a seat on the Circle of Houses. The first letter sits the house —
+                Seeker, Caregiver, Rebel, Hermit, and the rest. The two letters that weigh
+                most after that set the manner and the field. Allies complete the work.
+                Enemies keep it honest. This is a portrait, not a prediction.
               </p>
             </div>
             <div className="mt-10 rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
@@ -117,6 +116,13 @@ function Home() {
                 {daily.letter} — {daily.name}
               </p>
               <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">{daily.invitation}</p>
+              <Link
+                to="/circle"
+                search={{ house: daily.letter }}
+                className="mt-4 inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+              >
+                See it on the circle
+              </Link>
             </aside>
           </section>
         ) : (

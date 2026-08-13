@@ -731,7 +731,6 @@ function buildPortrait(a: LetterRole, b: LetterRole, c: LetterRole, triad: Triad
 
   return [
     a.calling,
-    a.doctrine,
     b.method,
     c.field,
     ...repeats,
@@ -775,13 +774,9 @@ export function frequencyRank(inventory: LetterInventory[]): LetterInventory[] {
 }
 
 export function pickTriad(inventory: LetterInventory[], signature: Letter): Triad {
-  const freq = frequencyRank(inventory);
-  const others = freq.filter((item) => item.letter !== signature);
-  const second = others[0]?.letter ?? freq[0]?.letter ?? signature;
-  const third =
-    others[1]?.letter ??
-    freq.find((item) => item.letter !== second)?.letter ??
-    second;
+  const others = inventory.filter((item) => item.letter !== signature);
+  const second = others[0]?.letter ?? signature;
+  const third = others[1]?.letter ?? others[0]?.letter ?? signature;
   return [signature, second, third];
 }
 

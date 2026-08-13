@@ -45,6 +45,7 @@ export function ArchetypeCard({
         {archetype.tradition}
       </p>
       <p className="mt-1 text-sm text-ink/65">{archetype.correspondence}</p>
+      <p className="mt-4 max-w-3xl text-sm leading-relaxed text-ink/80">{archetype.doctrine}</p>
       <p className="mt-4 max-w-3xl leading-relaxed text-ink/90">{archetype.portrait}</p>
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <div className="border-t border-ink/10 pt-4">

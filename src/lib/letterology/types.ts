@@ -67,6 +67,12 @@ export interface Horoscope {
   tension: TensionPair | null;
   shadows: Letter[];
   gifts: Letter[];
+  allies: Letter[];
+  enemies: Letter[];
+  kinPresent: Letter[];
+  kinAbsent: Letter[];
+  crossPresent: Letter[];
+  crossAbsent: Letter[];
   daily: Letter;
   period: Letter;
   triad: Triad;
@@ -77,6 +83,8 @@ export interface Horoscope {
     gifts: string;
     challenge: string;
     synthesis: string;
+    method: string;
+    wheel: string;
     daily: string;
     period: string;
     vowelNote: string;

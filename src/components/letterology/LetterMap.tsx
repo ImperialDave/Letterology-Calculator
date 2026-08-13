@@ -64,8 +64,10 @@ export function LetterMap({
           const { x, y } = cellCenter(letter);
           const item = byLetter.get(letter);
           const intensity = item ? Math.max(0.14, item.weight / maxWeight) : 0;
-          const isPrimary = horoscope.primary.letter === letter;
+          const isPrimary = horoscope.signature === letter;
           const isSelected = selected === letter;
+          const isAlly = horoscope.allies.includes(letter);
+          const isEnemy = horoscope.enemies.includes(letter);
           return (
             <g key={letter}>
               <rect
@@ -80,8 +82,22 @@ export function LetterMap({
                 )}
                 opacity={isPrimary ? 1 : item ? 0.18 + intensity * 0.72 : 1}
                 onClick={() => onSelect?.(letter)}
-                aria-label={`${letter} — ${themeOf(letter).name}${item ? `, ${item.count} times` : ", silent in this name"}`}
+                aria-label={`${letter} — ${themeOf(letter).name}${item ? `, ${item.count} times` : ", silent in this name"}${isAlly ? ", ally" : ""}${isEnemy ? ", enemy" : ""}`}
               />
+              {isAlly || isEnemy ? (
+                <rect
+                  x={x - CELL / 2 + 2}
+                  y={y - CELL / 2 + 2}
+                  width={CELL - 4}
+                  height={CELL - 4}
+                  rx="4"
+                  fill="none"
+                  className={isAlly ? "stroke-primary/70" : "stroke-ink/45"}
+                  strokeWidth="1.25"
+                  strokeDasharray={isEnemy ? "3 3" : undefined}
+                  pointerEvents="none"
+                />
+              ) : null}
               {isSelected ? (
                 <rect
                   x={x - CELL / 2 - 1.5}

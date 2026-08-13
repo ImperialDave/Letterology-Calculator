@@ -9,8 +9,10 @@ import {
   ARCHETYPE_COUNT,
   allHouseNames,
   archetypeOf,
+  houseOf,
   parseTriadCode,
 } from "@/lib/letterology/archetypes";
+import { alliesOf, enemiesOf } from "@/lib/letterology/circle";
 import { themeOf } from "@/lib/letterology/lexicon";
 import { ALPHABET, type Letter, type Triad } from "@/lib/letterology/types";
 import { cn } from "@/lib/utils";
@@ -135,6 +137,22 @@ function HousesPage() {
               </p>
               <p className="mt-1 text-sm text-ink/65">{selectedMeta.correspondence}</p>
               <p className="mt-3 text-sm leading-relaxed text-ink/85">{selectedMeta.doctrine}</p>
+              <p className="mt-3 text-sm text-muted">
+                Allies{" "}
+                {alliesOf(selectedHouse).map((letter) => (
+                  <span key={letter} className="ml-1 font-display text-ink">
+                    {letter} {houseOf(letter).noun}
+                  </span>
+                ))}
+              </p>
+              <p className="mt-1 text-sm text-muted">
+                Enemies{" "}
+                {enemiesOf(selectedHouse).map((letter) => (
+                  <span key={letter} className="ml-1 font-display text-ink">
+                    {letter} {houseOf(letter).noun}
+                  </span>
+                ))}
+              </p>
             </div>
           ) : null}
         </section>
