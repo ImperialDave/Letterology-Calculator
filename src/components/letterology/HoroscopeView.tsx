@@ -185,7 +185,7 @@ export function HoroscopeView({ horoscope }: { horoscope: Horoscope }) {
 
       <section className="grid gap-4 md:grid-cols-2">
         <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)]">
-          <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">Daily letter</p>
+          <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">Today's date letter</p>
           <button
             type="button"
             onClick={() => setSelected(horoscope.daily)}
@@ -198,7 +198,7 @@ export function HoroscopeView({ horoscope }: { horoscope: Horoscope }) {
           <p className="mt-2 text-sm leading-relaxed">{horoscope.statements.daily}</p>
         </article>
         <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)]">
-          <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">Period focus</p>
+          <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">This fortnight</p>
           <button
             type="button"
             onClick={() => setSelected(horoscope.period)}
@@ -211,6 +211,14 @@ export function HoroscopeView({ horoscope }: { horoscope: Horoscope }) {
           <p className="mt-2 text-sm leading-relaxed">{horoscope.statements.period}</p>
         </article>
       </section>
+      <p className="text-center">
+        <Link
+          to="/almanac"
+          className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+        >
+          Open the almanac
+        </Link>
+      </p>
 
       <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-6">
         <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">

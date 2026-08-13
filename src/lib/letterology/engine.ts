@@ -1,5 +1,6 @@
 import { findTension, LEXICON, themeOf } from "./lexicon";
 import { alliesOf, bondCopy, enemiesOf } from "./circle";
+import { almanacOf } from "./calendar";
 import { archetypeOf, houseOf, pickTriad } from "./archetypes";
 import type {
   Horoscope,
@@ -161,33 +162,6 @@ function pickAbsentSeats(kinAbsent: Letter[], crossAbsent: Letter[], primary: Le
   return out.slice(0, 2);
 }
 
-function hashString(input: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < input.length; i++) {
-    h ^= input.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
-
-function dayKey(date = new Date()): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function weekKey(date = new Date()): number {
-  const start = new Date(date.getFullYear(), 0, 1);
-  const diff = date.getTime() - start.getTime();
-  return Math.floor(diff / (7 * 24 * 60 * 60 * 1000));
-}
-
-function pickRotating(letters: Letter[], salt: string, fallback: Letter): Letter {
-  if (letters.length === 0) return fallback;
-  return letters[hashString(salt) % letters.length] ?? fallback;
-}
-
 function possessive(name: string): string {
   if (!name) return "This name's";
   return name.endsWith("s") || name.endsWith("S") ? `${name}'` : `${name}'s`;
@@ -216,14 +190,9 @@ export function buildHoroscope(rawName: string, now = new Date()): Horoscope | n
   const vowels = inventory.filter((x) => x.isVowel);
   const consonants = inventory.filter((x) => !x.isVowel);
 
-  const lettersInName = inventory.map((x) => x.letter);
-  const daily = pickRotating(lettersInName, `${dayKey(now)}:${displayName.toLowerCase()}`, primary.letter);
-  const periodPool = (secondaries.length > 0 ? secondaries : inventory).map((x) => x.letter);
-  const period = pickRotating(
-    periodPool,
-    `w${weekKey(now)}:${displayName.toLowerCase()}`,
-    secondaries[0]?.letter ?? primary.letter,
-  );
+  const almanac = almanacOf(now);
+  const daily = almanac.dateLetter;
+  const period = almanac.fortnight.letter;
 
   const p = themeOf(primary.letter);
   const g1 = themeOf(gifts[0]);
@@ -285,8 +254,15 @@ export function buildHoroscope(rawName: string, now = new Date()): Horoscope | n
     `Notice where ${p.name.toLowerCase()} already shows up in ordinary days. Letterology is a mirror, not a forecast.`,
   ].join(" ");
 
-  const dailyStatement = `Today's letter in this name is ${daily} — ${dailyTheme.name}. ${dailyTheme.invitation}`;
-  const periodStatement = `This week's period focus is ${period} (${periodTheme.name.toLowerCase()}). ${periodTheme.invitation}`;
+  const lettersInName = inventory.map((item) => item.letter);
+  const dailyInName = lettersInName.includes(daily);
+  const periodHouse = houseOf(period);
+  const dailyStatement = almanac.fortnight.hinge
+    ? `Today is a hinge day — the Fool's gate between walks. The date still wears ${daily} (${dailyTheme.name}). ${dailyTheme.invitation}`
+    : `Today's date letter is ${daily} — ${dailyTheme.name}${dailyInName ? ", which already lives in this name" : ", silent in this name"}. ${dailyTheme.invitation}`;
+  const periodStatement = almanac.fortnight.hinge
+    ? `The year is between circles. These leftover days belong to the Fool before the Seeker opens the walk again.`
+    : `This fortnight the sun sits in ${period} — the ${periodHouse.house}, day ${almanac.fortnight.dayInSeat} of 14. ${periodTheme.invitation}`;
 
   return {
     displayName,
@@ -342,8 +318,8 @@ export function readingAsText(h: Horoscope): string {
     `Allies: ${h.allies.join(", ")}`,
     `Enemies: ${h.enemies.join(", ")}`,
     `Unlived seats: ${h.shadows.map((s) => `${s} (${themeOf(s).name})`).join(", ")}`,
-    `Daily letter: ${h.daily} — ${themeOf(h.daily).name}`,
-    `Period focus: ${h.period} — ${themeOf(h.period).name}`,
+    `Date letter: ${h.daily} — ${themeOf(h.daily).name}`,
+    `Fortnight: ${h.period} — ${themeOf(h.period).name}`,
     "",
     h.statements.primary,
     "",

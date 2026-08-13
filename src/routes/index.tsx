@@ -4,8 +4,9 @@ import { HoroscopeView } from "@/components/letterology/HoroscopeView";
 import { NameForm } from "@/components/letterology/NameForm";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { buildHoroscope } from "@/lib/letterology/engine";
+import { almanacOf, monthName } from "@/lib/letterology/calendar";
+import { houseOf } from "@/lib/letterology/archetypes";
 import { themeOf } from "@/lib/letterology/lexicon";
-import { ALPHABET } from "@/lib/letterology/types";
 
 type Search = { name?: string };
 
@@ -28,13 +29,6 @@ function saveRecent(name: string) {
   window.localStorage.setItem(RECENT_KEY, JSON.stringify(next));
 }
 
-function siteDailyLetter() {
-  const now = new Date();
-  const start = Date.UTC(now.getUTCFullYear(), 0, 0);
-  const day = Math.floor((Date.now() - start) / 86400000);
-  return ALPHABET[day % 26] ?? "L";
-}
-
 export const Route = createFileRoute("/")({
   validateSearch: (search: Record<string, unknown>): Search => ({
     name: typeof search.name === "string" ? search.name : undefined,
@@ -47,7 +41,9 @@ function Home() {
   const navigate = useNavigate({ from: "/" });
   const [recent, setRecent] = useState<string[]>([]);
   const horoscope = useMemo(() => (name ? buildHoroscope(name) : null), [name]);
-  const daily = themeOf(siteDailyLetter());
+  const almanac = almanacOf();
+  const daily = themeOf(almanac.dateLetter);
+  const fortnightHouse = houseOf(almanac.fortnight.letter);
 
   useEffect(() => {
     setRecent(loadRecent());
@@ -111,17 +107,26 @@ function Home() {
               </div>
             ) : null}
             <aside className="mt-12 border-t border-ink/10 pt-8 text-center">
-              <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">Letter of the day</p>
+              <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">Today on the wheel</p>
               <p className="mt-2 font-display text-3xl text-ink">
-                {daily.letter} — {daily.name}
+                {almanac.dateLetter} — {daily.name}
               </p>
-              <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">{daily.invitation}</p>
+              <p className="mt-1 text-sm text-muted">
+                Date {almanac.civil.day} {monthName(almanac.civil.month)} · year {almanac.yearLetter} ·{" "}
+                {almanac.fortnight.hinge ? "hinge" : `fortnight ${almanac.fortnight.letter}`}
+              </p>
+              <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">
+                {almanac.fortnight.hinge
+                  ? "The Fool holds the leftover days between one walk and the next."
+                  : `The sun is in the ${fortnightHouse.house}, day ${almanac.fortnight.dayInSeat} of 14.`}{" "}
+                {daily.invitation}
+              </p>
               <Link
-                to="/circle"
-                search={{ house: daily.letter }}
+                to="/almanac"
+                search={{ date: almanac.iso }}
                 className="mt-4 inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
               >
-                See it on the circle
+                Open the almanac
               </Link>
             </aside>
           </section>

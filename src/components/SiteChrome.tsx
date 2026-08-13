@@ -27,10 +27,10 @@ function AuthSlot() {
   );
 }
 
-export function SiteHeader({ current }: { current: "read" | "atlas" | "houses" | "circle" | "login" }) {
+export function SiteHeader({ current }: { current: "read" | "atlas" | "houses" | "circle" | "almanac" | "login" }) {
   return (
     <header className="border-b border-ink/10">
-      <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-3 px-4 sm:px-6">
+      <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3 sm:h-16 sm:flex-nowrap sm:py-0 sm:px-6">
         <Link to="/" className="flex items-center gap-3 min-w-0">
           <img
             src="/seal.jpg"
@@ -43,7 +43,7 @@ export function SiteHeader({ current }: { current: "read" | "atlas" | "houses" |
             Letterology
           </span>
         </Link>
-        <nav className="flex items-center gap-0.5 sm:gap-2">
+        <nav className="flex flex-wrap items-center gap-0.5 sm:gap-2">
           <Link
             to="/"
             className={cn(
@@ -79,6 +79,15 @@ export function SiteHeader({ current }: { current: "read" | "atlas" | "houses" |
             )}
           >
             Circle
+          </Link>
+          <Link
+            to="/almanac"
+            className={cn(
+              "inline-flex h-9 items-center rounded-md px-2 font-display text-xs tracking-[0.14em] uppercase sm:px-3",
+              current === "almanac" ? "text-ink" : "text-muted hover:text-ink",
+            )}
+          >
+            Year
           </Link>
           <AuthSlot />
         </nav>
