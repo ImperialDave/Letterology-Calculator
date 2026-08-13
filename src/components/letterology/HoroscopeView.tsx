@@ -4,12 +4,13 @@ import { Check, Copy } from "lucide-react";
 import { ArchetypeCard } from "@/components/letterology/ArchetypeCard";
 import { ArchetypeList } from "@/components/letterology/ArchetypeList";
 import { CourtLines } from "@/components/letterology/CourtLines";
+import { DayCard } from "@/components/letterology/DayCard";
 import { LetterDetail } from "@/components/letterology/LetterDetail";
 import { LetterMap } from "@/components/letterology/LetterMap";
 import { ShareBar } from "@/components/letterology/ShareBar";
 import { Button } from "@/components/ui/button";
 import { houseOf } from "@/lib/letterology/archetypes";
-import { almanacOf } from "@/lib/letterology/calendar";
+import type { CivilDate } from "@/lib/letterology/calendar";
 import { bondCopy } from "@/lib/letterology/circle";
 import { readingAsText } from "@/lib/letterology/engine";
 import { themeOf } from "@/lib/letterology/lexicon";
@@ -42,12 +43,17 @@ function Pill({
   );
 }
 
-export function HoroscopeView({ horoscope }: { horoscope: Horoscope }) {
+export function HoroscopeView({
+  horoscope,
+  date,
+}: {
+  horoscope: Horoscope;
+  date?: Date | CivilDate;
+}) {
   const [selected, setSelected] = useState<Letter>(horoscope.signature);
   const [copied, setCopied] = useState(false);
   const theme = themeOf(selected);
   const text = useMemo(() => readingAsText(horoscope), [horoscope]);
-  const almanac = useMemo(() => almanacOf(), []);
 
   async function copyReading() {
     try {
@@ -189,41 +195,7 @@ export function HoroscopeView({ horoscope }: { horoscope: Horoscope }) {
         </article>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2">
-        <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)]">
-          <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">Today's date letter</p>
-          <button
-            type="button"
-            onClick={() => setSelected(horoscope.daily)}
-            className="mt-2 text-left"
-          >
-            <h3 className="font-display text-2xl text-ink">
-              {horoscope.daily} — {themeOf(horoscope.daily).name}
-            </h3>
-          </button>
-          <p className="mt-2 text-sm leading-relaxed">{horoscope.statements.daily}</p>
-          <CourtLines letter={horoscope.daily} />
-        </article>
-        <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)]">
-          <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">This fortnight</p>
-          <button
-            type="button"
-            onClick={() => setSelected(horoscope.period)}
-            className="mt-2 text-left"
-          >
-            <h3 className="font-display text-2xl text-ink">
-              {horoscope.period} — {themeOf(horoscope.period).name}
-            </h3>
-          </button>
-          <p className="mt-2 text-sm leading-relaxed">{horoscope.statements.period}</p>
-          <CourtLines letter={horoscope.period} />
-        </article>
-      </section>
-      <p className="text-center text-sm text-muted">
-        Background climate: {almanac.yearLetter} {houseOf(almanac.yearLetter).noun} holds the year,{" "}
-        {almanac.monthLetter} {houseOf(almanac.monthLetter).noun} holds the month. They color the season.
-        They do not sit today's house.
-      </p>
+      <DayCard horoscope={horoscope} date={date} />
       <p className="text-center">
         <Link
           to="/almanac"

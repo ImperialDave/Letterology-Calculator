@@ -37,6 +37,52 @@ export interface TensionPair {
 
 export type Triad = [Letter, Letter, Letter];
 
+export type MeetKind = "same" | "ally" | "enemy" | "none";
+
+export type DayWeather =
+  | "homecoming"
+  | "kinship"
+  | "crossing"
+  | "friction"
+  | "exile"
+  | "hinge"
+  | "ordinary";
+
+export interface DayReading {
+  iso: string;
+  weather: DayWeather;
+  person: {
+    signature: Letter;
+    manner: Letter;
+    field: Letter;
+    title: string;
+    house: string;
+    displayName: string;
+  };
+  day: {
+    date: Letter;
+    fortnight: Letter;
+    weekday: Letter;
+    weekdayRole: "house" | "ally" | "enemy";
+    hinge: boolean;
+    fortnightAge: "early" | "mid" | "late";
+  };
+  climate: { year: Letter; month: Letter };
+  relations: {
+    toDate: MeetKind;
+    toWeekday: MeetKind;
+    mannerToFortnight: MeetKind;
+  };
+  carried: { date: boolean; fortnight: boolean; weekday: boolean };
+  headline: string;
+  dayJob: string;
+  meeting: string;
+  manner: string;
+  climateNote: string;
+  invitation: string;
+  fullText: string;
+}
+
 export interface Archetype {
   triad: Triad;
   code: string;

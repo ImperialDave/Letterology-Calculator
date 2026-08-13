@@ -33,7 +33,7 @@ function sealDataUri(): string | null {
   return null;
 }
 
-export function portraitSvg(h: Horoscope): string {
+export function portraitSvg(h: Horoscope, dayLine?: string): string {
   const [house, manner, field] = h.triad;
   const houseTheme = themeOf(house);
   const mannerTheme = themeOf(manner);
@@ -41,7 +41,7 @@ export function portraitSvg(h: Horoscope): string {
   const name = fit(h.displayName, 28);
   const title = fit(h.archetype.title, 36);
   const houseName = fit(h.archetype.house, 42);
-  const myth = fit(h.archetype.myth, 92);
+  const myth = fit(dayLine || h.archetype.myth, 92);
   const seal = sealDataUri();
 
   return `<?xml version="1.0" encoding="UTF-8"?>

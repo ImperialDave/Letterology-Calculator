@@ -48,8 +48,10 @@ export function portraitUrl(name: string, origin = serverOrigin()): string {
   return `${origin}${portraitPath(name)}`;
 }
 
-export function cardImageUrl(name: string, origin = serverOrigin()): string {
-  return `${origin}/api/card?n=${encodeURIComponent(name.trim())}`;
+export function cardImageUrl(name: string, origin = serverOrigin(), date?: string): string {
+  const params = new URLSearchParams({ n: name.trim() });
+  if (date) params.set("date", date);
+  return `${origin}/api/card?${params.toString()}`;
 }
 
 export function tweetText(h: Horoscope): string {

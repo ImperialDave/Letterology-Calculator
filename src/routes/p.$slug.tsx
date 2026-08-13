@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { HoroscopeView } from "@/components/letterology/HoroscopeView";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
+import { parseIso } from "@/lib/letterology/calendar";
+import { dayReadingOf } from "@/lib/letterology/day-reading";
 import {
   cardImageUrl,
   nameToSlug,
@@ -12,9 +14,13 @@ import {
 } from "@/lib/letterology/share";
 
 export const Route = createFileRoute("/p/$slug")({
-  loader: ({ params }) => {
+  validateSearch: (search: Record<string, unknown>) => ({
+    date: typeof search.date === "string" ? search.date : undefined,
+  }),
+  loader: ({ params, location }) => {
     const name = slugToName(params.slug);
-    return { name, horoscope: portraitOf(name) };
+    const date = new URL(location.href, "https://letterology.club").searchParams.get("date") ?? undefined;
+    return { name, horoscope: portraitOf(name), date };
   },
   head: ({ loaderData }) => {
     const origin = serverOrigin();
@@ -24,9 +30,11 @@ export const Route = createFileRoute("/p/$slug")({
         meta: [{ title: "Letterology" }],
       };
     }
-    const title = portraitTitle(horoscope);
-    const description = portraitDescription(horoscope);
-    const image = cardImageUrl(horoscope.displayName, origin);
+    const civil = parseIso(loaderData.date);
+    const day = dayReadingOf(horoscope, civil ?? undefined);
+    const title = day ? `${horoscope.displayName} · ${day.headline}` : portraitTitle(horoscope);
+    const description = day ? `${day.headline}. ${day.invitation}` : portraitDescription(horoscope);
+    const image = cardImageUrl(horoscope.displayName, origin, loaderData.date);
     return {
       meta: [
         { title },
@@ -39,7 +47,12 @@ export const Route = createFileRoute("/p/$slug")({
         { property: "og:type", content: "website" },
         { property: "og:title", content: title },
         { property: "og:description", content: description },
-        { property: "og:url", content: `${origin}/p/${encodeURIComponent(nameToSlug(horoscope.displayName))}` },
+        {
+          property: "og:url",
+          content: `${origin}/p/${encodeURIComponent(nameToSlug(horoscope.displayName))}${
+            loaderData.date ? `?date=${loaderData.date}` : ""
+          }`,
+        },
         { property: "og:image", content: image },
         { property: "og:image:width", content: "1200" },
         { property: "og:image:height", content: "630" },
@@ -51,7 +64,8 @@ export const Route = createFileRoute("/p/$slug")({
 });
 
 function PortraitPage() {
-  const { name, horoscope } = Route.useLoaderData();
+  const { name, horoscope, date } = Route.useLoaderData();
+  const civil = parseIso(date);
 
   if (!horoscope) {
     return (
@@ -77,7 +91,11 @@ function PortraitPage() {
     <div className="min-h-dvh">
       <SiteHeader current="read" />
       <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
-        <HoroscopeView key={horoscope.normalized} horoscope={horoscope} />
+        <HoroscopeView
+          key={`${horoscope.normalized}:${date ?? "today"}`}
+          horoscope={horoscope}
+          date={civil ?? undefined}
+        />
       </main>
       <SiteFooter />
     </div>

@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { parseIso } from "@/lib/letterology/calendar";
+import { dayReadingOf } from "@/lib/letterology/day-reading";
 import { portraitSvg } from "@/lib/letterology/share-card";
 import { portraitOf } from "@/lib/letterology/share";
 
@@ -22,8 +24,10 @@ export const Route = createFileRoute("/api/card")({
         if (!horoscope) {
           return new Response("Name required", { status: 400 });
         }
+        const civil = parseIso(url.searchParams.get("date") ?? undefined);
+        const day = dayReadingOf(horoscope, civil ?? new Date());
         try {
-          const png = await renderPng(portraitSvg(horoscope));
+          const png = await renderPng(portraitSvg(horoscope, day?.headline));
           return new Response(new Uint8Array(png), {
             headers: {
               "Content-Type": "image/png",

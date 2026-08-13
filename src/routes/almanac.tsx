@@ -1,7 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArchetypeCard } from "@/components/letterology/ArchetypeCard";
 import { CourtLines } from "@/components/letterology/CourtLines";
+import { DayCard } from "@/components/letterology/DayCard";
+import { NameForm } from "@/components/letterology/NameForm";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
+import { buildHoroscope } from "@/lib/letterology/engine";
 import { houseOf } from "@/lib/letterology/archetypes";
 import {
   addDays,
@@ -25,21 +28,23 @@ import {
 import { themeOf } from "@/lib/letterology/lexicon";
 import { cn } from "@/lib/utils";
 
-type Search = { date?: string };
+type Search = { date?: string; name?: string };
 
 export const Route = createFileRoute("/almanac")({
   validateSearch: (search: Record<string, unknown>): Search => ({
     date: typeof search.date === "string" ? search.date : undefined,
+    name: typeof search.name === "string" ? search.name : undefined,
   }),
   component: AlmanacPage,
 });
 
 function AlmanacPage() {
-  const { date: dateParam } = Route.useSearch();
+  const { date: dateParam, name: nameParam } = Route.useSearch();
   const navigate = useNavigate({ from: "/almanac" });
   const today = toCivil(new Date());
   const selectedCivil = parseIso(dateParam) ?? today;
   const selected = almanacOf(selectedCivil);
+  const person = nameParam ? buildHoroscope(nameParam) : null;
   const todayIso = isoOf(today);
   const monthDays = daysInMonth(selectedCivil.year, selectedCivil.month);
   const leadingBlanks = monthDays[0]?.weekday ?? 0;
@@ -52,8 +57,8 @@ function AlmanacPage() {
   const monthSeat = monthLetter(selectedCivil.year, selectedCivil.month);
   const monthSeats = monthLetters(selectedCivil.year, selectedCivil.month);
 
-  function openDay(civil: CivilDate) {
-    navigate({ search: { date: isoOf(civil) } });
+  function openDay(civil: CivilDate, name = nameParam) {
+    navigate({ search: { date: isoOf(civil), name: name || undefined } });
   }
 
   function shiftMonth(delta: number) {
@@ -74,6 +79,25 @@ function AlmanacPage() {
           <h1 className="mt-2 font-display text-4xl text-ink sm:text-5xl">Almanac</h1>
           <p className="mt-3 max-w-xl leading-relaxed text-ink/85">{calendarMethod()}</p>
         </header>
+
+        <section className="mt-8 max-w-xl rounded-xl bg-raised p-5 shadow-[var(--shadow-border)]">
+          <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">
+            Read this day for a name
+          </p>
+          <div className="mt-3">
+            <NameForm
+              initial={nameParam ?? ""}
+              compact
+              onSubmit={(name) => openDay(selectedCivil, name)}
+            />
+          </div>
+        </section>
+
+        {person ? (
+          <div className="mt-8">
+            <DayCard horoscope={person} date={selectedCivil} />
+          </div>
+        ) : null}
 
         <section className="mt-10 grid gap-4 sm:grid-cols-3">
           <ClimateCard
