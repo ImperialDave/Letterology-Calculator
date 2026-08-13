@@ -1,4 +1,6 @@
+import { Link } from "@tanstack/react-router";
 import { houseOf } from "@/lib/letterology/archetypes";
+import { bondsOf } from "@/lib/letterology/circle";
 import { themeOf } from "@/lib/letterology/lexicon";
 import type { Letter } from "@/lib/letterology/types";
 import { VOWEL_LETTERS } from "@/lib/letterology/types";
@@ -6,6 +8,7 @@ import { VOWEL_LETTERS } from "@/lib/letterology/types";
 export function LetterDetail({ letter }: { letter: Letter }) {
   const theme = themeOf(letter);
   const house = houseOf(letter);
+  const { allies, enemies } = bondsOf(letter);
   const kind = VOWEL_LETTERS.has(letter) || letter === "Y" ? "Inner orientation" : "Outer expression";
 
   return (
@@ -42,9 +45,30 @@ export function LetterDetail({ letter }: { letter: Letter }) {
           <p className="mt-2 text-sm leading-relaxed text-ink/85">{house.gold}</p>
         </div>
       </div>
+      <div className="mt-5 grid gap-4 sm:grid-cols-2">
+        <div className="border-t border-ink/10 pt-4">
+          <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">Allies</p>
+          <p className="mt-2 font-display text-lg tracking-[0.12em] text-ink">
+            {allies.map((item) => item.other).join(" · ")}
+          </p>
+        </div>
+        <div className="border-t border-ink/10 pt-4">
+          <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">Enemies</p>
+          <p className="mt-2 font-display text-lg tracking-[0.12em] text-ink">
+            {enemies.map((item) => item.other).join(" · ")}
+          </p>
+        </div>
+      </div>
       <p className="mt-5 border-t border-ink/10 pt-4 text-sm leading-relaxed text-muted">
         {house.invitation}
       </p>
+      <Link
+        to="/circle"
+        search={{ house: letter }}
+        className="mt-4 inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+      >
+        See on the circle
+      </Link>
     </article>
   );
 }

@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { FormEvent, useMemo, useState } from "react";
 import { ArchetypeCard } from "@/components/letterology/ArchetypeCard";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
@@ -72,6 +72,11 @@ function HousesPage() {
             returning in myth: Pearson's twelve, Jung's psyche, the Tarot, the
             hermetic work, the contemplative path. A name chooses a house by its first
             letter; the two most common letters complete the chord — house, manner, and field.
+            Their alliances and oppositions live on the{" "}
+            <Link to="/circle" search={{ house: selectedHouse }} className="text-primary">
+              Circle of Houses
+            </Link>
+            .
           </p>
         </header>
 

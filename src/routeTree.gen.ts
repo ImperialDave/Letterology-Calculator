@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ArchetypesRouteImport } from './routes/archetypes'
 import { Route as AtlasRouteImport } from './routes/atlas'
+import { Route as CircleRouteImport } from './routes/circle'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
@@ -30,6 +31,11 @@ const AtlasRoute = AtlasRouteImport.update({
   path: '/atlas',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CircleRoute = CircleRouteImport.update({
+  id: '/circle',
+  path: '/circle',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -45,6 +51,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/archetypes': typeof ArchetypesRoute
   '/atlas': typeof AtlasRoute
+  '/circle': typeof CircleRoute
   '/login': typeof LoginRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -52,6 +59,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/archetypes': typeof ArchetypesRoute
   '/atlas': typeof AtlasRoute
+  '/circle': typeof CircleRoute
   '/login': typeof LoginRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -60,21 +68,31 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/archetypes': typeof ArchetypesRoute
   '/atlas': typeof AtlasRoute
+  '/circle': typeof CircleRoute
   '/login': typeof LoginRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/archetypes' | '/atlas' | '/login' | '/api/auth/$'
+  fullPaths:
+    '/' | '/archetypes' | '/atlas' | '/circle' | '/login' | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/archetypes' | '/atlas' | '/login' | '/api/auth/$'
-  id: '__root__' | '/' | '/archetypes' | '/atlas' | '/login' | '/api/auth/$'
+  to: '/' | '/archetypes' | '/atlas' | '/circle' | '/login' | '/api/auth/$'
+  id:
+    | '__root__'
+    | '/'
+    | '/archetypes'
+    | '/atlas'
+    | '/circle'
+    | '/login'
+    | '/api/auth/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ArchetypesRoute: typeof ArchetypesRoute
   AtlasRoute: typeof AtlasRoute
+  CircleRoute: typeof CircleRoute
   LoginRoute: typeof LoginRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
@@ -102,6 +120,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AtlasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/circle': {
+      id: '/circle'
+      path: '/circle'
+      fullPath: '/circle'
+      preLoaderRoute: typeof CircleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -123,6 +148,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ArchetypesRoute: ArchetypesRoute,
   AtlasRoute: AtlasRoute,
+  CircleRoute: CircleRoute,
   LoginRoute: LoginRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }

@@ -27,7 +27,7 @@ function AuthSlot() {
   );
 }
 
-export function SiteHeader({ current }: { current: "read" | "atlas" | "houses" | "login" }) {
+export function SiteHeader({ current }: { current: "read" | "atlas" | "houses" | "circle" | "login" }) {
   return (
     <header className="border-b border-ink/10">
       <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-3 px-4 sm:px-6">
@@ -51,7 +51,7 @@ export function SiteHeader({ current }: { current: "read" | "atlas" | "houses" |
               current === "read" ? "text-ink" : "text-muted hover:text-ink",
             )}
           >
-            Reading
+            Read
           </Link>
           <Link
             to="/atlas"
@@ -70,6 +70,15 @@ export function SiteHeader({ current }: { current: "read" | "atlas" | "houses" |
             )}
           >
             Houses
+          </Link>
+          <Link
+            to="/circle"
+            className={cn(
+              "inline-flex h-9 items-center rounded-md px-2 font-display text-xs tracking-[0.14em] uppercase sm:px-3",
+              current === "circle" ? "text-ink" : "text-muted hover:text-ink",
+            )}
+          >
+            Circle
           </Link>
           <AuthSlot />
         </nav>
