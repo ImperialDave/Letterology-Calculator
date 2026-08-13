@@ -4,32 +4,15 @@ import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import appCss from "../styles.css?url";
 
 const APP_NAME = "Letterology";
-const host = import.meta.env.VITE_PUBLIC_HOSTNAME;
-const ogImage = host ? `https://${host}/og.jpg` : undefined;
 
 export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: APP_NAME },
-      {
-        name: "description",
-        content:
-          "Read a name through twenty-six houses. First letter sits the house. The next two set how and where you work.",
-      },
       { name: "apple-mobile-web-app-title", content: APP_NAME },
       { name: "theme-color", content: "#efe6d6" },
       { name: "twitter:card", content: "summary_large_image" },
-      { property: "og:type", content: "website" },
-      { property: "og:title", content: APP_NAME },
-      ...(ogImage
-        ? [
-            { property: "og:image", content: ogImage },
-            { property: "og:image:width", content: "1200" },
-            { property: "og:image:height", content: "630" },
-          ]
-        : []),
     ],
     links: [
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },

@@ -8,8 +8,13 @@ import { buildHoroscope } from "@/lib/letterology/engine";
 import { almanacOf, monthName } from "@/lib/letterology/calendar";
 import { houseOf } from "@/lib/letterology/archetypes";
 import { themeOf } from "@/lib/letterology/lexicon";
+import { publicSiteOrigin } from "@/lib/letterology/share";
 
 type Search = { name?: string };
+
+const HOME_TITLE = "Letterology";
+const HOME_DESCRIPTION =
+  "Read a name through twenty-six houses. First letter sits the house. The next two set how and where you work.";
 
 const RECENT_KEY = "letterology:recent";
 
@@ -34,6 +39,28 @@ export const Route = createFileRoute("/")({
   validateSearch: (search: Record<string, unknown>): Search => ({
     name: typeof search.name === "string" ? search.name : undefined,
   }),
+  head: () => {
+    const origin = publicSiteOrigin();
+    return {
+      title: HOME_TITLE,
+      meta: [
+        { title: HOME_TITLE },
+        { name: "description", content: HOME_DESCRIPTION },
+        { name: "twitter:title", content: HOME_TITLE },
+        { name: "twitter:description", content: HOME_DESCRIPTION },
+        { name: "twitter:image", content: `${origin}/og.jpg` },
+        { property: "og:type", content: "website" },
+        { property: "og:title", content: HOME_TITLE },
+        { property: "og:description", content: HOME_DESCRIPTION },
+        { property: "og:url", content: origin },
+        { property: "og:site_name", content: HOME_TITLE },
+        { property: "og:image", content: `${origin}/og.jpg` },
+        { property: "og:image:width", content: "1200" },
+        { property: "og:image:height", content: "630" },
+        { property: "og:image:type", content: "image/jpeg" },
+      ],
+    };
+  },
   component: Home,
 });
 

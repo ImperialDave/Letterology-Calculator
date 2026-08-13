@@ -1,15 +1,14 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { HoroscopeView } from "@/components/letterology/HoroscopeView";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { parseIso } from "@/lib/letterology/calendar";
-import { dayReadingOf } from "@/lib/letterology/day-reading";
 import {
   cardImageUrl,
   nameToSlug,
   portraitDescription,
   portraitOf,
   portraitTitle,
-  serverOrigin,
+  publicSiteOrigin,
   slugToName,
 } from "@/lib/letterology/share";
 
@@ -17,25 +16,30 @@ export const Route = createFileRoute("/p/$slug")({
   validateSearch: (search: Record<string, unknown>) => ({
     date: typeof search.date === "string" ? search.date : undefined,
   }),
+  beforeLoad: ({ params }) => {
+    const name = slugToName(params.slug);
+    const canonical = nameToSlug(name);
+    if (canonical && params.slug !== canonical) {
+      throw redirect({ to: "/p/$slug", params: { slug: canonical } });
+    }
+  },
   loader: ({ params, location }) => {
     const name = slugToName(params.slug);
-    const date = new URL(location.href, "https://letterology.club").searchParams.get("date") ?? undefined;
+    const date = new URL(location.href, "https://www.letterology.club").searchParams.get("date") ?? undefined;
     return { name, horoscope: portraitOf(name), date };
   },
   head: ({ loaderData }) => {
-    const origin = serverOrigin();
+    const origin = publicSiteOrigin();
     const horoscope = loaderData?.horoscope;
     if (!horoscope) {
-      return {
-        meta: [{ title: "Letterology" }],
-      };
+      return { title: "Letterology", meta: [{ title: "Letterology" }] };
     }
-    const civil = parseIso(loaderData.date);
-    const day = dayReadingOf(horoscope, civil ?? undefined);
-    const title = day ? `${horoscope.displayName} · ${day.headline}` : portraitTitle(horoscope);
-    const description = day ? `${day.headline}. ${day.invitation}` : portraitDescription(horoscope);
-    const image = cardImageUrl(horoscope.displayName, origin, loaderData.date);
+    const title = portraitTitle(horoscope);
+    const description = portraitDescription(horoscope);
+    const image = cardImageUrl(horoscope.displayName, origin);
+    const url = `${origin}/p/${nameToSlug(horoscope.displayName)}`;
     return {
+      title,
       meta: [
         { title },
         { name: "description", content: description },
@@ -45,17 +49,14 @@ export const Route = createFileRoute("/p/$slug")({
         { name: "twitter:image", content: image },
         { name: "twitter:image:alt", content: title },
         { property: "og:type", content: "website" },
+        { property: "og:site_name", content: "Letterology" },
         { property: "og:title", content: title },
         { property: "og:description", content: description },
-        {
-          property: "og:url",
-          content: `${origin}/p/${encodeURIComponent(nameToSlug(horoscope.displayName))}${
-            loaderData.date ? `?date=${loaderData.date}` : ""
-          }`,
-        },
+        { property: "og:url", content: url },
         { property: "og:image", content: image },
         { property: "og:image:width", content: "1200" },
         { property: "og:image:height", content: "630" },
+        { property: "og:image:type", content: "image/jpeg" },
         { property: "og:image:alt", content: title },
       ],
     };

@@ -156,7 +156,7 @@ export default defineConfig(({ command }) => ({
             // false, so removing this silently unwires /?install=1 on deploys.
             serverDir: "./server",
             // Native addon — keep it out of the Nitro bundle.
-            externals: { external: ["@resvg/resvg-js"] },
+            externals: { external: ["@resvg/resvg-js", "sharp"] },
           }),
         ]
       : []),

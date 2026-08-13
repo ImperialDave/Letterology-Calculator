@@ -10,7 +10,8 @@ export function nameToSlug(name: string): string {
     .replace(/[^\p{L}\p{N}'’-]/gu, "")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "")
-    .slice(0, MAX_SLUG);
+    .slice(0, MAX_SLUG)
+    .toLowerCase();
 }
 
 export function slugToName(slug: string): string {
@@ -20,7 +21,11 @@ export function slugToName(slug: string): string {
   } catch {
     raw = slug;
   }
-  return raw.replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim();
+  return raw
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\S+/g, (word) => word.charAt(0).toUpperCase() + word.slice(1));
 }
 
 export function portraitOf(name: string): Horoscope | null {
@@ -29,14 +34,19 @@ export function portraitOf(name: string): Horoscope | null {
   return buildHoroscope(cleaned);
 }
 
-export function serverOrigin(): string {
+export function publicSiteOrigin(): string {
+  if (import.meta.env.PROD) return "https://www.letterology.club";
   const fromEnv = String(import.meta.env.VITE_PUBLIC_HOSTNAME ?? "")
     .trim()
     .replace(/^https?:\/\//, "")
     .replace(/\/$/, "");
   if (fromEnv) return `https://${fromEnv}`;
-  if (import.meta.env.PROD) return "https://www.letterology.club";
   return "http://localhost:8080";
+}
+
+/** @deprecated use publicSiteOrigin */
+export function serverOrigin(): string {
+  return publicSiteOrigin();
 }
 
 export function portraitPath(name: string): string {
@@ -44,14 +54,14 @@ export function portraitPath(name: string): string {
   return `/p/${encodeURIComponent(slug)}`;
 }
 
-export function portraitUrl(name: string, origin = serverOrigin()): string {
+export function portraitUrl(name: string, origin = publicSiteOrigin()): string {
   return `${origin}${portraitPath(name)}`;
 }
 
-export function cardImageUrl(name: string, origin = serverOrigin(), date?: string): string {
-  const params = new URLSearchParams({ n: name.trim() });
-  if (date) params.set("date", date);
-  return `${origin}/api/card?${params.toString()}`;
+export function cardImageUrl(name: string, origin = publicSiteOrigin(), date?: string): string {
+  const slug = nameToSlug(name);
+  if (date) return `${origin}/og/${slug}-${date}.jpg`;
+  return `${origin}/og/${slug}.jpg`;
 }
 
 export function tweetText(h: Horoscope): string {
@@ -59,7 +69,7 @@ export function tweetText(h: Horoscope): string {
   return `${h.displayName} sits the ${h.archetype.house}\n${house} · ${manner} · ${field} — house, manner, field`;
 }
 
-export function xIntentUrl(h: Horoscope, origin = serverOrigin()): string {
+export function xIntentUrl(h: Horoscope, origin = publicSiteOrigin()): string {
   const url = new URL("https://x.com/intent/post");
   url.searchParams.set("text", tweetText(h));
   url.searchParams.set("url", portraitUrl(h.displayName, origin));

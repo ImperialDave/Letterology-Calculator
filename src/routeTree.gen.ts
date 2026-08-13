@@ -16,6 +16,7 @@ import { Route as AtlasRouteImport } from './routes/atlas'
 import { Route as CircleRouteImport } from './routes/circle'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ApiCardRouteImport } from './routes/api/card'
+import { Route as OgFileRouteImport } from './routes/og.$file'
 import { Route as PSlugRouteImport } from './routes/p.$slug'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
@@ -54,6 +55,11 @@ const ApiCardRoute = ApiCardRouteImport.update({
   path: '/api/card',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OgFileRoute = OgFileRouteImport.update({
+  id: '/og/$file',
+  path: '/og/$file',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PSlugRoute = PSlugRouteImport.update({
   id: '/p/$slug',
   path: '/p/$slug',
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/circle': typeof CircleRoute
   '/login': typeof LoginRoute
   '/api/card': typeof ApiCardRoute
+  '/og/$file': typeof OgFileRoute
   '/p/$slug': typeof PSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -84,6 +91,7 @@ export interface FileRoutesByTo {
   '/circle': typeof CircleRoute
   '/login': typeof LoginRoute
   '/api/card': typeof ApiCardRoute
+  '/og/$file': typeof OgFileRoute
   '/p/$slug': typeof PSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -96,6 +104,7 @@ export interface FileRoutesById {
   '/circle': typeof CircleRoute
   '/login': typeof LoginRoute
   '/api/card': typeof ApiCardRoute
+  '/og/$file': typeof OgFileRoute
   '/p/$slug': typeof PSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -109,6 +118,7 @@ export interface FileRouteTypes {
     | '/circle'
     | '/login'
     | '/api/card'
+    | '/og/$file'
     | '/p/$slug'
     | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
@@ -120,6 +130,7 @@ export interface FileRouteTypes {
     | '/circle'
     | '/login'
     | '/api/card'
+    | '/og/$file'
     | '/p/$slug'
     | '/api/auth/$'
   id:
@@ -131,6 +142,7 @@ export interface FileRouteTypes {
     | '/circle'
     | '/login'
     | '/api/card'
+    | '/og/$file'
     | '/p/$slug'
     | '/api/auth/$'
   fileRoutesById: FileRoutesById
@@ -143,6 +155,7 @@ export interface RootRouteChildren {
   CircleRoute: typeof CircleRoute
   LoginRoute: typeof LoginRoute
   ApiCardRoute: typeof ApiCardRoute
+  OgFileRoute: typeof OgFileRoute
   PSlugRoute: typeof PSlugRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
@@ -198,6 +211,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/og/$file': {
+      id: '/og/$file'
+      path: '/og/$file'
+      fullPath: '/og/$file'
+      preLoaderRoute: typeof OgFileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/p/$slug': {
       id: '/p/$slug'
       path: '/p/$slug'
@@ -223,6 +243,7 @@ const rootRouteChildren: RootRouteChildren = {
   CircleRoute: CircleRoute,
   LoginRoute: LoginRoute,
   ApiCardRoute: ApiCardRoute,
+  OgFileRoute: OgFileRoute,
   PSlugRoute: PSlugRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
