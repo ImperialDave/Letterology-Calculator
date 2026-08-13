@@ -29,9 +29,11 @@ function AtlasPage() {
           <p className="font-display text-xs tracking-[0.22em] text-muted uppercase">The twenty-six fields</p>
           <h1 className="mt-2 font-display text-4xl text-ink sm:text-5xl">Letter Atlas</h1>
           <p className="mt-3 max-w-xl leading-relaxed text-ink/85">
-            Each theme is drawn from the conceptual neighborhood of words that begin
-            with the letter. Vowels tend to speak of inner orientation; consonants of
-            outer expression.
+            Each letter is a field of meaning and a house of the psyche. The fields
+            come from the conceptual neighborhood of words that begin with the letter.
+            The houses are the old figures — Pearson, Jung, Tarot, hermetic and
+            contemplative work — through which that field becomes a life. Vowels tend
+            to speak of inner orientation; consonants of outer expression.
           </p>
         </header>
 

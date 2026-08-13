@@ -222,8 +222,12 @@ export function buildHoroscope(rawName: string, now = new Date()): Horoscope | n
     ? `Consonants speak of ${consLead.name.toLowerCase()} in the outer life: ${consLead.outer}`
     : "This name is almost all vowel — an unusually inward constellation.";
 
+  const triad = pickTriad(inventory, signature);
+  const archetype = archetypeOf(triad);
+  const kindred = kindredArchetypes(triad, 8);
+
   const synthesis = [
-    `${displayName} tends to meet the world through ${p.name.toLowerCase()}, with ${g2 ? `${g2.name.toLowerCase()} close behind` : "little secondary weather to dilute it"}.`,
+    `${displayName} meets the world through the ${archetype.house}, a climate of ${p.name.toLowerCase()}${g2 ? `, with ${g2.name.toLowerCase()} close behind` : ", with little secondary weather to dilute it"}. ${archetype.myth}`,
     tension
       ? `A living tension — ${tension.title.toLowerCase()} — gives the configuration its characteristic pressure.`
       : `${p.invitation}`,
@@ -237,10 +241,6 @@ export function buildHoroscope(rawName: string, now = new Date()): Horoscope | n
 
   const dailyStatement = `Today's letter in this name is ${daily} — ${dailyTheme.name}. ${dailyTheme.invitation}`;
   const periodStatement = `This week's period focus is ${period} (${periodTheme.name.toLowerCase()}). ${periodTheme.invitation}`;
-
-  const triad = pickTriad(inventory, signature);
-  const archetype = archetypeOf(triad);
-  const kindred = kindredArchetypes(triad, 8);
 
   return {
     displayName,

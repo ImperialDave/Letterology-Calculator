@@ -6,7 +6,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     name: "Aspiration",
     keywords: ["ambition", "authenticity", "awakening", "abundance"],
     essence:
-      "A is the first step spoken aloud. It names the appetite to become, the upright beginning that will not stay small.",
+      "A is the Seeker's letter: the first step spoken aloud. It names the appetite to become, the upright beginning that will not stay small.",
     inner: "Inwardly, A keeps a private hunger for a truer life — not louder, but more itself.",
     outer: "Outwardly, A leans forward: it starts things, names them, and asks the room to rise.",
     gift: "You tend to meet the world as a beginning. Wanting, in you, is a form of honesty.",
@@ -20,7 +20,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     name: "Binding",
     keywords: ["balance", "belonging", "bravery", "beauty"],
     essence:
-      "B is the letter that holds. It gathers what would scatter and makes a home of two things that chose each other.",
+      "B is the Caregiver's letter: the one that holds. It gathers what would scatter and makes a home of two things that chose each other.",
     inner: "Inwardly, B seeks a center that can be trusted — a balance that is felt, not performed.",
     outer: "Outwardly, B makes circles: friendships, rooms, loyalties, the quiet courage of staying.",
     gift: "You carry the gift of making people and ideas belong to one another.",
@@ -34,7 +34,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     name: "Catalysis",
     keywords: ["curiosity", "courage", "creation", "change"],
     essence:
-      "C is the spark that will not leave a still room still. It is curiosity with a match in its hand.",
+      "C is the Rebel's spark — the letter that will not leave a still room still. It is curiosity with a match in its hand.",
     inner: "Inwardly, C is a restlessness of mind — a need to turn the object over and see the other face.",
     outer: "Outwardly, C starts reactions: conversations, projects, departures, the first honest sentence.",
     gift: "You tend to be the reason something begins that would not have begun without you.",
@@ -48,7 +48,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     name: "Depth",
     keywords: ["discipline", "determination", "discernment", "devotion"],
     essence:
-      "D is the descent. It prefers the root to the blossom, the kept practice to the bright announcement.",
+      "D is the Hermit's descent. It prefers the root to the blossom, the kept practice to the bright announcement.",
     inner: "Inwardly, D is a long attention — a willingness to stay with what is not yet clear.",
     outer: "Outwardly, D shows as craft, loyalty, and the unfashionable work of finishing.",
     gift: "You tend to give things the dignity of time. What you devote yourself to, you change.",
@@ -62,7 +62,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     name: "Expansion",
     keywords: ["empathy", "evolution", "energy", "emergence"],
     essence:
-      "E is the opening of the ribcage. It is the letter that says there is more room than you were using.",
+      "E is the Explorer's ribcage opening. It is the letter that says there is more room than you were using.",
     inner: "Inwardly, E is a widening of feeling — empathy as a kind of weather you walk through.",
     outer: "Outwardly, E reaches: new people, new work, the next version of a life already in motion.",
     gift: "You tend to make more space than the situation asked for — and someone always needs it.",
@@ -76,7 +76,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     name: "Freedom",
     keywords: ["focus", "faith", "flow", "fidelity"],
     essence:
-      "F is the open gate and the chosen path through it. Freedom here is not escape; it is uncoerced attention.",
+      "F is the Fool's open gate, and the chosen path through it. Freedom here is not escape; it is uncoerced attention — beginner's mind with a spine.",
     inner: "Inwardly, F protects a private sovereignty — the right to move as the inner weather asks.",
     outer: "Outwardly, F shows as independence, clean focus, and a refusal to be owned by noise.",
     gift: "You tend to keep a corridor of air around your life. Others breathe easier near it.",
@@ -90,7 +90,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     name: "Growth",
     keywords: ["gratitude", "grace", "grounding", "generosity"],
     essence:
-      "G is the green fact: what is tended increases. It is growth with roots, not merely accumulation.",
+      "G is the Creator's green fact: what is tended increases. It is growth with roots, not merely accumulation.",
     inner: "Inwardly, G is a patient becoming — gratitude as the soil in which the next self can stand.",
     outer: "Outwardly, G gives. It grounds rooms, feeds work, and makes increase look like courtesy.",
     gift: "You tend to leave people and projects larger than you found them, without making a speech of it.",
@@ -104,7 +104,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     name: "Horizon",
     keywords: ["harmony", "honesty", "hope", "hospitality"],
     essence:
-      "H is the far line that organizes the walk. It is hope with a backbone, and a door left unlatched.",
+      "H is the Prophet's far line. It is hope with a backbone, and a door left unlatched.",
     inner: "Inwardly, H keeps faith with a farther self — honesty as the only reliable compass.",
     outer: "Outwardly, H hosts: it makes a climate in which other people can tell the truth.",
     gift: "You tend to hold a longer view, and to offer it without forcing anyone to share it.",
@@ -118,7 +118,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     name: "Illumination",
     keywords: ["insight", "integrity", "imagination", "interiority"],
     essence:
-      "I is the inner lamp. It is the letter of the solitary yes — insight before applause.",
+      "I is the Sage's inner lamp. It is the letter of the solitary yes — insight before applause.",
     inner: "Inwardly, I is a well-lit room that not everyone is invited into. Imagination lives there first.",
     outer: "Outwardly, I appears as integrity: a life whose inside and outside are trying to rhyme.",
     gift: "You tend to see the pattern before it is fashionable, and to keep faith with what you see.",
@@ -132,7 +132,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     name: "Journey",
     keywords: ["joy", "justice", "judgment", "juxtaposition"],
     essence:
-      "J is the road that thinks. It is motion with a conscience — joy that does not look away.",
+      "J is the Hero's road that thinks. It is motion with a conscience — joy that does not look away.",
     inner: "Inwardly, J compares, weighs, and will not rest in a false peace.",
     outer: "Outwardly, J travels, argues, celebrates, and places unlikely things beside each other until they speak.",
     gift: "You tend to move a life (your own or another's) from here to a more just there.",
@@ -146,7 +146,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     name: "Kinship",
     keywords: ["knowledge", "kindness", "key", "kinship"],
     essence:
-      "K is the key left on the table for one's people. It is knowledge that wants to be useful to someone named.",
+      "K is the Orphan's key left on the table for one's people. It is knowledge that wants to be useful to someone named — belonging as a craft.",
     inner: "Inwardly, K is a loyalty of mind — you understand by standing with.",
     outer: "Outwardly, K knits: family, chosen family, the small republic of those who know your real name.",
     gift: "You tend to be the person who remembers, who opens, who makes knowledge feel like kindness.",
@@ -160,7 +160,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     name: "Luminosity",
     keywords: ["love", "light", "leadership", "loyalty"],
     essence:
-      "L is light that has chosen a person. It is love as a form of leadership: the willingness to go first in warmth.",
+      "L is the Lover's light once it has chosen a person. It is love as a form of leadership: the willingness to go first in warmth.",
     inner: "Inwardly, L is a steady lamp — loyalty to what (and whom) has already been loved.",
     outer: "Outwardly, L clarifies a room. People find their edges in your light, and sometimes their courage.",
     gift: "You tend to make the better thing visible, and to stay with it after the first shine fades.",
@@ -174,7 +174,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     name: "Momentum",
     keywords: ["mindfulness", "mystery", "mastery", "movement"],
     essence:
-      "M is mass in motion. It is the letter of the practice that has begun to carry itself.",
+      "M is the Warrior's mass in motion. It is the letter of the practice that has begun to carry itself.",
     inner: "Inwardly, M holds both mystery and method — attention that does not flatten what it studies.",
     outer: "Outwardly, M is work with a pulse: movement toward mastery, not merely activity.",
     gift: "You tend to get things moving and keep them moving until they have a life of their own.",
@@ -188,7 +188,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     name: "Nurture",
     keywords: ["novelty", "nobility", "noticing", "nourishment"],
     essence:
-      "N is the hand that notices before it fixes. It is nurture as a form of nobility — care without condescension.",
+      "N is the Healer's hand that notices before it fixes. It is nurture as a form of nobility — care without condescension.",
     inner: "Inwardly, N is a fine attention to what is young, tender, or not yet named.",
     outer: "Outwardly, N feeds: people, ideas, rooms, the unglamorous work of keeping life edible.",
     gift: "You tend to see what needs feeding while others are still arguing about the menu.",
@@ -202,7 +202,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     name: "Opening",
     keywords: ["openness", "order", "opportunity", "origin"],
     essence:
-      "O is the circle that does not close against the world. It is origin and opportunity in the same breath.",
+      "O is the Priestess's circle that does not close against the world. It is origin and opportunity in the same breath.",
     inner: "Inwardly, O is a willingness to be revised — openness as a discipline, not a mood.",
     outer: "Outwardly, O makes order that can still admit a guest, a chance, a second beginning.",
     gift: "You tend to leave a door unlatched in systems that prefer locks.",
@@ -216,7 +216,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     name: "Purpose",
     keywords: ["passion", "patience", "presence", "potential"],
     essence:
-      "P is the point of the spear and the patience to carve it. Purpose here is presence with a direction.",
+      "P is the Ruler's point of the spear, and the patience to carve it. Purpose here is presence with a direction.",
     inner: "Inwardly, P is a heat that wants a worthy object — passion that has agreed to wait.",
     outer: "Outwardly, P aims. It turns potential into a sequence of kept days.",
     gift: "You tend to give scattered energy a spine. People remember what they were for, near you.",
@@ -230,7 +230,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     name: "Quest",
     keywords: ["quiet", "quality", "questioning", "quintessence"],
     essence:
-      "Q is the rare letter of the real question. It prefers quiet quality to a crowded answer.",
+      "Q is the Mystic's rare letter of the real question. It prefers quiet quality to a crowded answer.",
     inner: "Inwardly, Q is a monastic curiosity — the wish to touch the quintessence and leave the rest.",
     outer: "Outwardly, Q goes looking. It will cross a desert for a better question.",
     gift: "You tend to refuse the cheap version. Your standards are a form of love.",
@@ -244,7 +244,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     name: "Resonance",
     keywords: ["resilience", "reflection", "rhythm", "reverence"],
     essence:
-      "R is the sounding board. It is the letter that answers vibration with a truer tone.",
+      "R is the Bard's sounding board. It is the letter that answers vibration with a truer tone.",
     inner: "Inwardly, R reflects until the signal is clean — reverence as a way of listening.",
     outer: "Outwardly, R keeps rhythm: returning, recovering, making a life that can be danced as well as endured.",
     gift: "You tend to restore pitch — in a conversation, a team, a day that had gone sharp.",
@@ -258,7 +258,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     name: "Synergy",
     keywords: ["strength", "serenity", "sincerity", "synthesis"],
     essence:
-      "S is the braid. It is strength that comes from things agreeing to be more together than apart.",
+      "S is the Weaver's braid. It is strength that comes from things agreeing to be more together than apart.",
     inner: "Inwardly, S seeks a serene honesty — sincerity that does not need to raise its voice.",
     outer: "Outwardly, S composes: people, ideas, efforts, the quiet architecture of we.",
     gift: "You tend to make combinations that no single part could have invented.",
@@ -272,7 +272,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     name: "Transformation",
     keywords: ["truth", "trust", "tension", "transcendence"],
     essence:
-      "T is the crossing. It is truth that costs something, and the tension that makes a new shape possible.",
+      "T is the Alchemist's crossing. It is truth that costs something, and the tension that makes a new shape possible.",
     inner: "Inwardly, T will not live in a story that has expired. Trust is offered after the old skin is shed.",
     outer: "Outwardly, T marks thresholds: the hard conversation, the changed work, the life that no longer fits.",
     gift: "You tend to midwife necessary change — not by force, but by refusing the comfortable lie.",
@@ -286,7 +286,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     name: "Unity",
     keywords: ["understanding", "uniqueness", "unfolding", "uprightness"],
     essence:
-      "U is the vessel that holds difference without erasing it. Unity here includes the unique.",
+      "U is the Peacemaker's vessel that holds difference without erasing it. Unity here includes the unique.",
     inner: "Inwardly, U is an unfolding toward wholeness — uprightness as a spine, not a pose.",
     outer: "Outwardly, U reconciles. It looks for the understanding that lets two true things stand together.",
     gift: "You tend to make a we that does not require anyone to become a smaller I.",
@@ -300,7 +300,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     name: "Vision",
     keywords: ["vitality", "virtue", "vulnerability", "vocation"],
     essence:
-      "V is the far-seeing that still has a pulse. Vision here is vocation with blood in it.",
+      "V is the Oracle's far-seeing that still has a pulse. Vision here is vocation with blood in it.",
     inner: "Inwardly, V is a vivid picture of a life that would be worth the risk of being seen.",
     outer: "Outwardly, V points. It names a direction with enough vitality that others can walk toward it.",
     gift: "You tend to see the shape of a future while it is still only weather, and to say so.",
@@ -314,7 +314,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     name: "Wonder",
     keywords: ["wisdom", "will", "witness", "weaving"],
     essence:
-      "W is the open eye that has not agreed to be bored. Wonder is wisdom before it hardens into advice.",
+      "W is the Innocent's open eye that has not agreed to be bored. Wonder is wisdom before it hardens into advice.",
     inner: "Inwardly, W stays available to being changed by what it sees.",
     outer: "Outwardly, W weaves and witnesses: it connects strands, and it is willing to be present without fixing.",
     gift: "You tend to restore astonishment — a rare and practical mercy.",
@@ -328,7 +328,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     name: "Edge",
     keywords: ["the rare", "the extreme", "the crossing", "the unknown"],
     essence:
-      "X is the mark at the margin. It is the rare letter of the crossing, the unknown variable, the life that will not stay inside the lines.",
+      "X is the Trickster's mark at the margin. It is the rare letter of the crossing, the unknown variable, the life that will not stay inside lines that have begun to lie.",
     inner: "Inwardly, X keeps a private wilderness — a refusal to be fully mapped.",
     outer: "Outwardly, X appears as the unusual choice, the sharp talent, the place where you do not resemble the family pattern.",
     gift: "You tend to bring the missing variable. Rooms become more honest when you arrive.",
@@ -342,7 +342,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     name: "Yielding",
     keywords: ["yearning", "youth", "yes", "the flexible axis"],
     essence:
-      "Y is the fork that can still bend. It is yearning that has learned the word yes — and the word not-yet.",
+      "Y is the Shapeshifter's fork that can still bend. It is yearning that has learned the word yes — and the word not-yet.",
     inner: "Inwardly, Y is a young, living hinge: a self that can turn without breaking.",
     outer: "Outwardly, Y adapts, consents, redirects. Flexibility becomes a form of intelligence.",
     gift: "You tend to keep options humane. You know how to say yes without becoming a door anyone may walk through.",
@@ -356,7 +356,7 @@ export const LEXICON: Record<Letter, LetterTheme> = {
     name: "Zenith",
     keywords: ["zeal", "zen", "final intensity", "the pure peak"],
     essence:
-      "Z is the last letter and the high point. It is zeal that has been distilled — intensity without waste.",
+      "Z is the Magician's last letter and high point. It is zeal that has been distilled — intensity without waste, will made clean enough to use.",
     inner: "Inwardly, Z wants the pure version: the peak experience, the finished thought, the undiluted yes.",
     outer: "Outwardly, Z concentrates. It will spend a season on a single altitude.",
     gift: "You tend to raise the ceiling of a room simply by refusing the lukewarm.",

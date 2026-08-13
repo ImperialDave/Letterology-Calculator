@@ -37,6 +37,7 @@ function HousesPage() {
   const manner = selected[1];
   const selectedArchetype = useMemo(() => archetypeOf(selected), [selected]);
   const houses = allHouseNames();
+  const selectedMeta = houses.find((item) => item.letter === selectedHouse) ?? houses[0];
   const [query, setQuery] = useState(code ?? "");
 
   const column = useMemo(
@@ -67,9 +68,10 @@ function HousesPage() {
           </p>
           <h1 className="mt-2 font-display text-4xl text-ink sm:text-5xl">The Houses</h1>
           <p className="mt-3 max-w-xl leading-relaxed text-ink/85">
-            An archetype is a chord of three letters: the first letter of a name
-            as primary theme, then the two most common letters in that name.
-            Every triad in the alphabet has a house, a title, and a climate.
+            Twenty-six houses, one for each letter, drawn from the figures that keep
+            returning in myth: Pearson's twelve, Jung's psyche, the Tarot, the
+            hermetic work, the contemplative path. A name chooses a house by its first
+            letter; the two most common letters complete the chord — house, manner, and field.
           </p>
         </header>
 
@@ -91,7 +93,7 @@ function HousesPage() {
             </Button>
           </div>
           <p id="triad-hint" className="mt-2 text-sm text-muted">
-            Three letters. First is the house; the next two are the common field.
+            Three letters. First is the house; the next two are manner and field.
           </p>
         </form>
 
@@ -119,6 +121,15 @@ function HousesPage() {
               );
             })}
           </div>
+          {selectedMeta ? (
+            <div className="mt-4 max-w-xl">
+              <p className="font-display text-xl text-ink">{selectedMeta.house}</p>
+              <p className="mt-1 text-sm italic text-ink/70">{selectedMeta.myth}</p>
+              <p className="mt-1 font-display text-xs tracking-[0.14em] text-muted uppercase">
+                {selectedMeta.tradition}
+              </p>
+            </div>
+          ) : null}
         </section>
 
         <section className="mt-8">
@@ -150,7 +161,7 @@ function HousesPage() {
         </section>
 
         <p className="mt-6 text-sm text-muted">
-          {themeOf(selectedHouse).name} with {themeOf(manner).name.toLowerCase()} · 26 of 676 in this house
+          {selectedMeta?.noun} with a {themeOf(manner).name.toLowerCase()} manner · 26 of 676 in this house
         </p>
 
         <div className="mt-6">
@@ -177,7 +188,7 @@ function HousesPage() {
                     <span className="min-w-0">
                       <span className="font-display">{item.title}</span>
                       <span className="mt-0.5 block text-sm text-muted">
-                        {themeOf(item.triad[2]).name}
+                        {themeOf(item.triad[2]).name} · {item.summary.split(" · ").pop()}
                       </span>
                     </span>
                     <span className="shrink-0 font-display tracking-[0.16em]">{item.code}</span>

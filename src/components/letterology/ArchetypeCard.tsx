@@ -29,7 +29,7 @@ export function ArchetypeCard({
               {letter}
             </span>
             <span className="font-display text-xs tracking-[0.14em] text-muted uppercase">
-              {index === 0 ? "Primary" : index === 1 ? "Most common" : "Next common"}
+              {index === 0 ? "House" : index === 1 ? "Manner" : "Field"}
             </span>
           </span>
         ))}
@@ -40,11 +40,16 @@ export function ArchetypeCard({
       <p className="mt-2 text-sm tracking-wide text-muted">
         {archetype.code} · {archetype.house}
       </p>
+      <p className="mt-1 text-sm italic text-ink/70">{archetype.myth}</p>
+      <p className="mt-2 font-display text-xs tracking-[0.14em] text-muted uppercase">
+        {archetype.tradition}
+      </p>
       <p className="mt-4 max-w-3xl leading-relaxed text-ink/90">{archetype.portrait}</p>
       <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted">{archetype.invitation}</p>
       <p className="mt-5 text-sm text-muted">
-        {themeOf(first).name} first; then the most common letters {themeOf(second).name.toLowerCase()} and{" "}
-        {themeOf(third).name.toLowerCase()}.
+        {themeOf(first).name} names the house; {themeOf(second).name.toLowerCase()} is the manner;
+        {" "}
+        {themeOf(third).name.toLowerCase()} is the field.
       </p>
       <Link
         to="/archetypes"

@@ -84,9 +84,11 @@ function Home() {
                 Letterology
               </h1>
               <p className="mt-4 max-w-xl text-base leading-relaxed text-ink/85">
-                Every letter is a condensed field of meaning. A name is a personal
-                constellation of those fields — not a prediction, a portrait. The first
-                letter names the house; the two most common letters complete an archetype.
+                Every letter is a condensed field of meaning, and each letter-house is a
+                traditional figure — Seeker, Caregiver, Rebel, Hermit, Sage, Lover, Magician —
+                meeting the new-age work of becoming whole. A name is a personal constellation
+                of those fields: not a prediction, a portrait. The first letter names the house;
+                the two most common letters complete the archetype.
               </p>
             </div>
             <div className="mt-10 rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
