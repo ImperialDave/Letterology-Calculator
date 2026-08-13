@@ -15,6 +15,8 @@ import { Route as ArchetypesRouteImport } from './routes/archetypes'
 import { Route as AtlasRouteImport } from './routes/atlas'
 import { Route as CircleRouteImport } from './routes/circle'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ApiCardRouteImport } from './routes/api/card'
+import { Route as PSlugRouteImport } from './routes/p.$slug'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const IndexRoute = IndexRouteImport.update({
@@ -47,6 +49,16 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCardRoute = ApiCardRouteImport.update({
+  id: '/api/card',
+  path: '/api/card',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PSlugRoute = PSlugRouteImport.update({
+  id: '/p/$slug',
+  path: '/p/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -60,6 +72,8 @@ export interface FileRoutesByFullPath {
   '/atlas': typeof AtlasRoute
   '/circle': typeof CircleRoute
   '/login': typeof LoginRoute
+  '/api/card': typeof ApiCardRoute
+  '/p/$slug': typeof PSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesByTo {
@@ -69,6 +83,8 @@ export interface FileRoutesByTo {
   '/atlas': typeof AtlasRoute
   '/circle': typeof CircleRoute
   '/login': typeof LoginRoute
+  '/api/card': typeof ApiCardRoute
+  '/p/$slug': typeof PSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesById {
@@ -79,6 +95,8 @@ export interface FileRoutesById {
   '/atlas': typeof AtlasRoute
   '/circle': typeof CircleRoute
   '/login': typeof LoginRoute
+  '/api/card': typeof ApiCardRoute
+  '/p/$slug': typeof PSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRouteTypes {
@@ -90,6 +108,8 @@ export interface FileRouteTypes {
     | '/atlas'
     | '/circle'
     | '/login'
+    | '/api/card'
+    | '/p/$slug'
     | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -99,6 +119,8 @@ export interface FileRouteTypes {
     | '/atlas'
     | '/circle'
     | '/login'
+    | '/api/card'
+    | '/p/$slug'
     | '/api/auth/$'
   id:
     | '__root__'
@@ -108,6 +130,8 @@ export interface FileRouteTypes {
     | '/atlas'
     | '/circle'
     | '/login'
+    | '/api/card'
+    | '/p/$slug'
     | '/api/auth/$'
   fileRoutesById: FileRoutesById
 }
@@ -118,6 +142,8 @@ export interface RootRouteChildren {
   AtlasRoute: typeof AtlasRoute
   CircleRoute: typeof CircleRoute
   LoginRoute: typeof LoginRoute
+  ApiCardRoute: typeof ApiCardRoute
+  PSlugRoute: typeof PSlugRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
@@ -165,6 +191,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/card': {
+      id: '/api/card'
+      path: '/api/card'
+      fullPath: '/api/card'
+      preLoaderRoute: typeof ApiCardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/p/$slug': {
+      id: '/p/$slug'
+      path: '/p/$slug'
+      fullPath: '/p/$slug'
+      preLoaderRoute: typeof PSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -182,17 +222,10 @@ const rootRouteChildren: RootRouteChildren = {
   AtlasRoute: AtlasRoute,
   CircleRoute: CircleRoute,
   LoginRoute: LoginRoute,
+  ApiCardRoute: ApiCardRoute,
+  PSlugRoute: PSlugRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

@@ -6,6 +6,7 @@ import { ArchetypeList } from "@/components/letterology/ArchetypeList";
 import { CourtLines } from "@/components/letterology/CourtLines";
 import { LetterDetail } from "@/components/letterology/LetterDetail";
 import { LetterMap } from "@/components/letterology/LetterMap";
+import { ShareBar } from "@/components/letterology/ShareBar";
 import { Button } from "@/components/ui/button";
 import { houseOf } from "@/lib/letterology/archetypes";
 import { almanacOf } from "@/lib/letterology/calendar";
@@ -86,6 +87,8 @@ export function HoroscopeView({ horoscope }: { horoscope: Horoscope }) {
           {copied ? "Copied" : "Copy reading"}
         </Button>
       </header>
+
+      <ShareBar horoscope={horoscope} />
 
       <ArchetypeCard archetype={horoscope.archetype} featured />
 
