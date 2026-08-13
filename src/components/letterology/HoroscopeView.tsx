@@ -12,7 +12,8 @@ import { Button } from "@/components/ui/button";
 import { houseOf } from "@/lib/letterology/archetypes";
 import type { CivilDate } from "@/lib/letterology/calendar";
 import { bondCopy } from "@/lib/letterology/circle";
-import { readingAsText } from "@/lib/letterology/engine";
+import { copyToClipboard } from "@/lib/letterology/clipboard";
+import { composeXPost, portraitUrl, publicSiteOrigin, tweetReading } from "@/lib/letterology/share";
 import { themeOf } from "@/lib/letterology/lexicon";
 import type { Horoscope, Letter } from "@/lib/letterology/types";
 
@@ -53,15 +54,19 @@ export function HoroscopeView({
   const [selected, setSelected] = useState<Letter>(horoscope.signature);
   const [copied, setCopied] = useState(false);
   const theme = themeOf(selected);
-  const text = useMemo(() => readingAsText(horoscope), [horoscope]);
+  const text = useMemo(
+    () =>
+      composeXPost(
+        tweetReading(horoscope),
+        portraitUrl(horoscope.displayName, publicSiteOrigin()),
+      ).text,
+    [horoscope],
+  );
 
   async function copyReading() {
-    try {
-      await navigator.clipboard.writeText(text);
+    if (await copyToClipboard(text)) {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1800);
-    } catch {
-      setCopied(false);
     }
   }
 

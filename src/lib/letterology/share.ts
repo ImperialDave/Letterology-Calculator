@@ -35,8 +35,9 @@ export function portraitOf(name: string): Horoscope | null {
 }
 
 export function publicSiteOrigin(): string {
-  if (import.meta.env.PROD) return "https://www.letterology.club";
-  const fromEnv = String(import.meta.env.VITE_PUBLIC_HOSTNAME ?? "")
+  const env = (import.meta as { env?: { PROD?: boolean; VITE_PUBLIC_HOSTNAME?: string } }).env ?? {};
+  if (env.PROD) return "https://www.letterology.club";
+  const fromEnv = String(env.VITE_PUBLIC_HOSTNAME ?? "")
     .trim()
     .replace(/^https?:\/\//, "")
     .replace(/\/$/, "");
@@ -64,24 +65,107 @@ export function cardImageUrl(name: string, origin = publicSiteOrigin(), date?: s
   return `${origin}/og/${slug}.jpg`;
 }
 
+export const X_TITLE_MAX = 70;
+export const X_DESC_MAX = 160;
+const TCO = 23;
+
+export function clip(value: string, max: number): string {
+  const clean = value.replace(/\s+/g, " ").trim();
+  if (clean.length <= max) return clean;
+  return `${clean.slice(0, Math.max(0, max - 1)).trimEnd()}…`;
+}
+
+/**
+ * Caption + blank line + www URL for the clipboard.
+ * Intent uses `text` + `url` separately so X does not double the link.
+ * Budget is a free 280-character post after one t.co wrapper.
+ */
+export function composeXPost(
+  caption: string,
+  url: string,
+): { caption: string; text: string; href: string } {
+  const reserved = TCO + 2;
+  let body = caption.replace(/\s+\n/g, "\n").trim();
+  const budget = 280 - reserved;
+  if (body.length > budget) body = `${body.slice(0, Math.max(0, budget - 1)).trimEnd()}…`;
+  const text = `${body}\n\n${url}`;
+  return {
+    caption: body,
+    text,
+    href: `https://x.com/intent/post?text=${encodeURIComponent(body)}&url=${encodeURIComponent(url)}`,
+  };
+}
+
 export function tweetText(h: Horoscope): string {
   const [house, manner, field] = h.triad;
-  return `${h.displayName} sits the ${h.archetype.house}\n${house} · ${manner} · ${field} — house, manner, field`;
+  return `${h.displayName} sits the ${h.archetype.house}\n${house} · ${manner} · ${field}`;
+}
+
+/** Short enough to paste into a free X compose and still look like a reading. */
+export function tweetReading(h: Horoscope): string {
+  const first = h.statements.synthesis.split(/(?<=\.)\s/)[0]?.trim() || h.archetype.myth;
+  return `${tweetText(h)}\n${first}`;
+}
+
+export function tweetDay(headline: string, invitation: string): string {
+  return `${headline.trim()}\n${invitation.trim()}`;
 }
 
 export function xIntentUrl(h: Horoscope, origin = publicSiteOrigin()): string {
-  const url = new URL("https://x.com/intent/post");
-  url.searchParams.set("text", tweetText(h));
-  url.searchParams.set("url", portraitUrl(h.displayName, origin));
-  return url.toString();
+  const url = portraitUrl(h.displayName, origin);
+  return composeXPost(tweetText(h), url).href;
+}
+
+export function readingWithUrl(reading: string, url: string): string {
+  return composeXPost(reading, url).text;
 }
 
 export function portraitDescription(h: Horoscope): string {
   const [house, manner, field] = h.triad;
-  const myth = h.archetype.myth.replace(/\s+/g, " ").trim();
-  return `${h.archetype.title}. ${house} sits the house, ${manner} is the manner, ${field} is the field. ${myth}`;
+  return clip(
+    `${house} sits the house, ${manner} the manner, ${field} the field. ${h.archetype.myth}`,
+    X_DESC_MAX,
+  );
 }
 
 export function portraitTitle(h: Horoscope): string {
-  return `${h.displayName} · ${h.archetype.title}`;
+  return clip(`${h.displayName} · ${h.archetype.title}`, X_TITLE_MAX);
+}
+
+export function pageCardMeta(input: {
+  title: string;
+  description: string;
+  path: string;
+  imagePath: string;
+}): {
+  title: string;
+  meta: Array<Record<string, string>>;
+} {
+  const origin = publicSiteOrigin();
+  const title = clip(input.title, X_TITLE_MAX);
+  const description = clip(input.description, X_DESC_MAX);
+  const url = `${origin}${input.path}`;
+  const image = `${origin}${input.imagePath}`;
+  return {
+    title,
+    meta: [
+      { title },
+      { name: "description", content: description },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: title },
+      { name: "twitter:description", content: description },
+      { name: "twitter:image", content: image },
+      { name: "twitter:image:alt", content: title },
+      { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "Letterology" },
+      { property: "og:title", content: title },
+      { property: "og:description", content: description },
+      { property: "og:url", content: url },
+      { property: "og:image", content: image },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:type", content: "image/jpeg" },
+      { property: "og:image:alt", content: title },
+    ],
+  };
 }

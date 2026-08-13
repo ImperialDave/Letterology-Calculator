@@ -15,6 +15,8 @@ import {
 import { alliesOf, enemiesOf } from "@/lib/letterology/circle";
 import { themeOf } from "@/lib/letterology/lexicon";
 import { ALPHABET, type Letter, type Triad } from "@/lib/letterology/types";
+import { PageShare } from "@/components/letterology/PageShare";
+import { pageCardMeta } from "@/lib/letterology/share";
 import { cn } from "@/lib/utils";
 
 type Search = { house?: string; code?: string };
@@ -27,6 +29,24 @@ export const Route = createFileRoute("/archetypes")({
     const house =
       houseRaw && ALPHABET.includes(houseRaw) ? houseRaw : parsed ? parsed[0] : "A";
     return { house, code: parsed?.join("") };
+  },
+  loader: ({ location }) => {
+    const params = new URL(location.href, "https://www.letterology.club").searchParams;
+    const houseRaw = params.get("house")?.toUpperCase();
+    const parsed = parseTriadCode(params.get("code")?.toUpperCase());
+    const house =
+      houseRaw && ALPHABET.includes(houseRaw) ? houseRaw : parsed ? parsed[0] : "A";
+    return { house, code: parsed?.join("") };
+  },
+  head: ({ loaderData }) => {
+    const letter = (loaderData?.house ?? "A") as Letter;
+    const house = houseOf(letter);
+    return pageCardMeta({
+      title: house.house,
+      description: house.myth,
+      path: `/archetypes?house=${letter}`,
+      imagePath: `/og/house-${letter.toLowerCase()}.jpg`,
+    });
   },
   component: HousesPage,
 });
@@ -79,6 +99,11 @@ function HousesPage() {
             </Link>
             .
           </p>
+          <PageShare
+            path={`/archetypes?house=${selectedHouse}`}
+            caption={`${houseOf(selectedHouse).house}\n${houseOf(selectedHouse).myth}`}
+            imagePath={`/og/house-${selectedHouse.toLowerCase()}.jpg`}
+          />
         </header>
 
         <form onSubmit={handleCode} className="mt-8 max-w-md">

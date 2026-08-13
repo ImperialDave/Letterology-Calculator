@@ -4,6 +4,8 @@ import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { houseOf } from "@/lib/letterology/archetypes";
 import { bondsOf, isCircleLetter } from "@/lib/letterology/circle";
 import { themeOf } from "@/lib/letterology/lexicon";
+import { PageShare } from "@/components/letterology/PageShare";
+import { pageCardMeta } from "@/lib/letterology/share";
 import type { Letter } from "@/lib/letterology/types";
 
 type Search = { house?: string };
@@ -12,6 +14,21 @@ export const Route = createFileRoute("/circle")({
   validateSearch: (search: Record<string, unknown>): Search => {
     const raw = typeof search.house === "string" ? search.house.toUpperCase() : "A";
     return { house: isCircleLetter(raw) ? raw : "A" };
+  },
+  loader: ({ location }) => {
+    const raw = new URL(location.href, "https://www.letterology.club").searchParams.get("house") ?? "A";
+    const house = raw.toUpperCase();
+    return { house: isCircleLetter(house) ? house : "A" };
+  },
+  head: ({ loaderData }) => {
+    const letter = (loaderData?.house ?? "A") as Letter;
+    const house = houseOf(letter);
+    return pageCardMeta({
+      title: `Circle · ${house.noun}`,
+      description: house.myth,
+      path: `/circle?house=${letter}`,
+      imagePath: `/og/circle-${letter.toLowerCase()}.jpg`,
+    });
   },
   component: CirclePage,
 });
@@ -39,6 +56,11 @@ function CirclePage() {
             that show its blind spot. An enemy is not a villain. It is the house
             that will not let this one sleep.
           </p>
+          <PageShare
+            path={`/circle?house=${selected}`}
+            caption={`${meta.house}\nAllies ${allies.map((b) => b.other).join(" · ")}`}
+            imagePath={`/og/circle-${selected.toLowerCase()}.jpg`}
+          />
         </header>
 
         <section className="mt-10 rounded-xl bg-raised px-2 py-6 shadow-[var(--shadow-border)] sm:px-6 sm:py-8">

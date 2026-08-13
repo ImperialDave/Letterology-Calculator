@@ -38,3 +38,25 @@ test("keeps apostrophes in a usable slug", () => {
   assert.equal(nameToSlug("O'Brien"), "o'brien");
   assert.equal(slugToName("o'brien"), "O'brien");
 });
+
+function composeXPost(caption, url) {
+  const tco = 23;
+  let body = caption.replace(/\s+\n/g, "\n").trim();
+  const budget = 280 - tco - 2;
+  if (body.length > budget) body = `${body.slice(0, budget - 1).trimEnd()}…`;
+  return {
+    caption: body,
+    text: `${body}\n\n${url}`,
+    href: `https://x.com/intent/post?text=${encodeURIComponent(body)}&url=${encodeURIComponent(url)}`,
+  };
+}
+
+test("X post always ends with the www URL and stays in budget", () => {
+  const url = "https://www.letterology.club/p/ada-lovelace";
+  const post = composeXPost("Ada Lovelace sits the House of the Seeker\nA · L · E", url);
+  assert.ok(post.text.endsWith(url));
+  assert.match(post.text, /\n\nhttps:\/\/www\.letterology\.club\//);
+  const counted = post.text.slice(0, post.text.lastIndexOf("\n\n")).length + 2 + 23;
+  assert.ok(counted <= 280);
+  assert.match(post.href, /url=https%3A%2F%2Fwww\.letterology\.club/);
+});

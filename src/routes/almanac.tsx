@@ -4,7 +4,9 @@ import { CourtLines } from "@/components/letterology/CourtLines";
 import { DayCard } from "@/components/letterology/DayCard";
 import { NameForm } from "@/components/letterology/NameForm";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
+import { PageShare } from "@/components/letterology/PageShare";
 import { buildHoroscope } from "@/lib/letterology/engine";
+import { pageCardMeta } from "@/lib/letterology/share";
 import { houseOf } from "@/lib/letterology/archetypes";
 import {
   addDays,
@@ -35,6 +37,25 @@ export const Route = createFileRoute("/almanac")({
     date: typeof search.date === "string" ? search.date : undefined,
     name: typeof search.name === "string" ? search.name : undefined,
   }),
+  loader: ({ location }) => {
+    const params = new URL(location.href, "https://www.letterology.club").searchParams;
+    return {
+      date: params.get("date") ?? undefined,
+      name: params.get("name") ?? undefined,
+    };
+  },
+  head: ({ loaderData }) => {
+    const iso = loaderData?.date;
+    const civil = parseIso(iso) ?? undefined;
+    const day = almanacOf(civil ?? new Date());
+    const house = houseOf(day.dateLetter);
+    return pageCardMeta({
+      title: `${day.iso} · ${house.noun}`,
+      description: house.myth,
+      path: `/almanac?date=${day.iso}`,
+      imagePath: `/og/day-${day.iso}.jpg`,
+    });
+  },
   component: AlmanacPage,
 });
 
@@ -78,6 +99,11 @@ function AlmanacPage() {
           </p>
           <h1 className="mt-2 font-display text-4xl text-ink sm:text-5xl">Almanac</h1>
           <p className="mt-3 max-w-xl leading-relaxed text-ink/85">{calendarMethod()}</p>
+          <PageShare
+            path={`/almanac?date=${selected.iso}`}
+            caption={`${selected.iso} sits the ${houseOf(selected.dateLetter).house}`}
+            imagePath={`/og/day-${selected.iso}.jpg`}
+          />
         </header>
 
         <section className="mt-8 max-w-xl rounded-xl bg-raised p-5 shadow-[var(--shadow-border)]">

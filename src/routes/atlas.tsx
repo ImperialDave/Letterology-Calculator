@@ -1,7 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { LetterDetail } from "@/components/letterology/LetterDetail";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
+import { PageShare } from "@/components/letterology/PageShare";
 import { themeOf } from "@/lib/letterology/lexicon";
+import { pageCardMeta } from "@/lib/letterology/share";
 import { ALPHABET, type Letter, VOWEL_LETTERS } from "@/lib/letterology/types";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +14,21 @@ export const Route = createFileRoute("/atlas")({
     const raw = typeof search.letter === "string" ? search.letter.toUpperCase() : "A";
     const letter = ALPHABET.includes(raw) ? raw : "A";
     return { letter };
+  },
+  loader: ({ location }) => {
+    const raw = new URL(location.href, "https://www.letterology.club").searchParams.get("letter") ?? "A";
+    const letter = raw.toUpperCase();
+    return { letter: ALPHABET.includes(letter) ? letter : "A" };
+  },
+  head: ({ loaderData }) => {
+    const letter = loaderData?.letter ?? "A";
+    const theme = themeOf(letter);
+    return pageCardMeta({
+      title: `${letter} — ${theme.name}`,
+      description: theme.essence,
+      path: `/atlas?letter=${letter}`,
+      imagePath: `/og/letter-${letter.toLowerCase()}.jpg`,
+    });
   },
   component: AtlasPage,
 });
@@ -34,6 +51,11 @@ function AtlasPage() {
             Caregiver, Rebel, and so on. Vowels lean inward. Consonants lean
             outward.
           </p>
+          <PageShare
+            path={`/atlas?letter=${selected}`}
+            caption={`${selected} — ${themeOf(selected).name}\n${themeOf(selected).essence}`}
+            imagePath={`/og/letter-${selected.toLowerCase()}.jpg`}
+          />
         </header>
 
         <div className="mt-8 grid grid-cols-5 gap-2 sm:grid-cols-7">

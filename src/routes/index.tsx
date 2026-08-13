@@ -8,7 +8,8 @@ import { buildHoroscope } from "@/lib/letterology/engine";
 import { almanacOf, monthName } from "@/lib/letterology/calendar";
 import { houseOf } from "@/lib/letterology/archetypes";
 import { themeOf } from "@/lib/letterology/lexicon";
-import { publicSiteOrigin } from "@/lib/letterology/share";
+import { PageShare } from "@/components/letterology/PageShare";
+import { pageCardMeta } from "@/lib/letterology/share";
 
 type Search = { name?: string };
 
@@ -39,28 +40,13 @@ export const Route = createFileRoute("/")({
   validateSearch: (search: Record<string, unknown>): Search => ({
     name: typeof search.name === "string" ? search.name : undefined,
   }),
-  head: () => {
-    const origin = publicSiteOrigin();
-    return {
+  head: () =>
+    pageCardMeta({
       title: HOME_TITLE,
-      meta: [
-        { title: HOME_TITLE },
-        { name: "description", content: HOME_DESCRIPTION },
-        { name: "twitter:title", content: HOME_TITLE },
-        { name: "twitter:description", content: HOME_DESCRIPTION },
-        { name: "twitter:image", content: `${origin}/og.jpg` },
-        { property: "og:type", content: "website" },
-        { property: "og:title", content: HOME_TITLE },
-        { property: "og:description", content: HOME_DESCRIPTION },
-        { property: "og:url", content: origin },
-        { property: "og:site_name", content: HOME_TITLE },
-        { property: "og:image", content: `${origin}/og.jpg` },
-        { property: "og:image:width", content: "1200" },
-        { property: "og:image:height", content: "630" },
-        { property: "og:image:type", content: "image/jpeg" },
-      ],
-    };
-  },
+      description: HOME_DESCRIPTION,
+      path: "/",
+      imagePath: "/og.jpg",
+    }),
   component: Home,
 });
 
@@ -113,6 +99,11 @@ function Home() {
                 how you work and where you work. Allies complete the job. Enemies keep
                 it honest. This is a portrait, not a prediction.
               </p>
+              <PageShare
+                path="/"
+                caption={"Letterology\nRead a name through twenty-six houses."}
+                imagePath="/og.jpg"
+              />
             </div>
             <div className="mt-10 rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
               <NameForm initial={name ?? ""} onSubmit={readName} />
