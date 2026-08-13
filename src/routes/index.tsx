@@ -75,16 +75,16 @@ function Home() {
                 className="size-24 rounded-full object-cover outline outline-1 -outline-offset-1 outline-ink/10 sm:size-28"
               />
               <p className="mt-6 font-display text-xs tracking-[0.28em] text-muted uppercase">
-                A living map of the alphabet
+                The alphabet as twenty-six houses
               </p>
               <h1 className="mt-3 font-display text-4xl leading-[1.05] text-ink sm:text-6xl">
                 Letterology
               </h1>
               <p className="mt-4 max-w-xl text-base leading-relaxed text-ink/85">
-                A name is a seat on the Circle of Houses. The first letter sits the house —
-                Seeker, Caregiver, Rebel, Hermit, and the rest. The two letters that weigh
-                most after that set the manner and the field. Allies complete the work.
-                Enemies keep it honest. This is a portrait, not a prediction.
+                Type a name. The first letter sits a house — Seeker, Caregiver, Rebel,
+                Hermit, and the rest. The two letters that weigh most after that set
+                how you work and where you work. Allies complete the job. Enemies keep
+                it honest. This is a portrait, not a prediction.
               </p>
             </div>
             <div className="mt-10 rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">

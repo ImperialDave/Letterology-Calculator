@@ -29,24 +29,23 @@ const ROLES: Record<Letter, LetterRole> = {
     adj: "Rising",
     realm: "Threshold",
     tradition: "Pearson Seeker · Campbell's departure",
-    myth: "Before there is a hero, there is only the honest ache to become.",
-    correspondence: "Air · East · the first hour",
+    myth: "You leave a life that isn't yours and start one that is.",
+    correspondence: "Air · East · first hour",
     doctrine:
-      "Leave the life you inherited if it isn't yours. You leave not because home is worthless, but because you have already heard a farther call. The work is not to collect experiences. The work is to become someone who can keep a promise.",
+      "Stop living someone else's plan. Collecting experiences is not the same as becoming someone. Pick a direction and keep a promise to it.",
     shadow:
-      "Restlessness dressed as destiny. Many thresholds, no crossing. You keep shopping for a self.",
+      "You restart so often nothing finishes. Restlessness looks like destiny. You keep shopping for a self.",
     gold:
-      "A single kept vow. Appetite becomes direction. The life you wanted is no longer a rumor; it is a path you can walk.",
+      "One choice you actually follow through. Wanting becomes a plan you can walk.",
     calling:
-      "You stand as the Seeker. Jung called this the moment you notice you have been living someone else's life. Pearson named the figure who will not stay that way. Wanting, in you, is not greed and it is not drama. It is honesty: you already know this room is too small.",
+      "You stand as the Seeker. You already know this version of your life is too small. Wanting more is not drama. It is information.",
     method:
-      "The manner is rising. You begin before the plan is finished. You treat the life you want as a decision, not a mood, and you take the first real step while the old version of you is still close.",
+      "The manner is rising. You start before you feel ready. You take the first real step instead of waiting for a perfect plan.",
     field:
-      "The realm is the Threshold — the thin place between the known story and the true one. Contemplatives call it the veil. Folk stories call it the first gate. Either way, it is not scenery. It is a door that will not open from the sofa.",
+      "The realm is the Threshold — the gap between the life you have and the one you keep thinking about. It only changes if you move.",
     doubled:
-      "When the Seeker doubles, craving multiplies and nothing is finished. Two beginnings will not make a self. Complete one crossing.",
-    invitation:
-      "Name the life you already want, and take one step as if you meant it.",
+      "When the Seeker doubles, you start twice and finish nothing. Complete one crossing.",
+    invitation: "Say what you actually want, then do one thing that matches it.",
   },
   B: {
     letter: "B",
@@ -55,24 +54,23 @@ const ROLES: Record<Letter, LetterRole> = {
     adj: "Devoted",
     realm: "Hearth",
     tradition: "Pearson Caregiver · the Great Mother",
-    myth: "The oldest work after birth itself: making a world safe enough to grow in.",
+    myth: "You make people and projects safe enough to grow.",
     correspondence: "Earth · North · the vessel",
     doctrine:
-      "Nothing living does well without protection. The Great Mother is not sweetness; she is the intelligence that builds a rim around a fire so the fire can cook. To care is to decide what you will protect, and for how long, without turning the protected person or project into a possession.",
+      "Care is deciding what you will protect, and for how long, without owning it. Protection with no door becomes control.",
     shadow:
-      "Fusion dressed as love. You keep the other so close they cannot breathe, or you disappear inside their need and call it virtue.",
+      "You disappear into other people's needs, or you hold them so tight they cannot breathe.",
     gold:
-      "A home that warms without consuming. Belonging with a door. People and ideas can stay, and still remain themselves.",
+      "People can stay close to you and still be themselves.",
     calling:
-      "You stand as the Caregiver — kin to the mother of grain, the nurse of gods, the one who makes a place people can rest. Pearson placed this among the first adult tasks: to feed, keep, and guard. You make a home of two things that have chosen each other, and you do not call that small work.",
+      "You stand as the Caregiver. Feeding, keeping, and guarding is real work. You make a home of two things that chose each other.",
     method:
-      "The manner is devoted keeping. You hold what would scatter. You know the difference between a bond and a lid. Loyalty, in you, is a craft with edges.",
+      "The manner is devoted keeping. You hold what would fall apart. You know the difference between loyalty and control.",
     field:
-      "The realm is the Hearth — the circle in which a nervous system can rest. Without a hearth, the Seeker has nowhere to return, the Warrior nowhere to put the sword down, the Lover nowhere to sleep. Until someone builds this, the other houses have nowhere to land.",
+      "The realm is the Hearth — a place a body can rest. Without that, nobody recovers.",
     doubled:
-      "When the Caregiver doubles, belonging thickens into fusion. Hold without gripping. Let the ones you tend have their own breath.",
-    invitation:
-      "Keep what is actually living. Release what has become a lid dressed as love.",
+      "When the Caregiver doubles, care becomes fusion. Hold without gripping. Let people have their own breath.",
+    invitation: "Keep what is actually alive. Let go of the care that is really control.",
   },
   C: {
     letter: "C",
@@ -81,24 +79,23 @@ const ROLES: Record<Letter, LetterRole> = {
     adj: "Wild",
     realm: "Spark",
     tradition: "Pearson Outlaw · the necessary no",
-    myth: "Every order that has gone to sleep needs a figure who will not pretend.",
-    correspondence: "Fire · South · the unlicensed flame",
+    myth: "You say no when a rule has stopped serving people.",
+    correspondence: "Fire · South · the first break",
     doctrine:
-      "A polite lie is still a lie. The Rebel is not the enemy of order; the Rebel is the enemy of dead order — the rule that no longer serves the life it claimed to protect. A clean no is how a person, or a culture, avoids dying of its own manners.",
+      "A polite lie is still a lie. You are not against order. You are against dead order. A clean no makes room for a better yes.",
     shadow:
-      "Contradiction as a personality. You burn the house to prove you are not trapped in it, then stand in the ash with nothing to tend.",
+      "You blow things up to prove you are free, then have nothing left to live in.",
     gold:
-      "One true refusal that makes room for a truer yes. Ignition with a vessel. Change that can be lived in.",
+      "One refusal that actually improves the situation.",
     calling:
-      "You stand as the Rebel — Pearson's Outlaw, cousin to every trickster who would not bow to a sleeping king. You are not chaos for sport. You are the reason a still room does not stay dishonestly still. The first honest sentence in a dishonest system often sounds like trouble. It is not always trouble.",
+      "You stand as the Rebel. You are not chaos for sport. You are why a dishonest room does not stay quiet.",
     method:
-      "The manner is wild ignition. You start the reaction others only complain about. Curiosity, in you, carries a match — and you are willing to strike it in public.",
+      "The manner is wild ignition. You start the change other people only complain about, and you do it in public.",
     field:
-      "The realm is the Spark: the first refusal, the first laugh that breaks a spell, the first flame that changes the air and cannot be unspoken. After the spark comes the long work of not becoming the thing you overthrew.",
+      "The realm is the Spark — the first honest sentence, the first break with a bad rule. After that comes the work of not becoming the next bad rule.",
     doubled:
-      "When the Rebel doubles, ignition stacks and nothing is tended. Stay long enough to see whether the flame warms or only consumes.",
-    invitation:
-      "Start one reaction worth keeping, then give it a vessel so it can become a life instead of a scene.",
+      "When the Rebel doubles, you start fires and tend none of them. Stay long enough to see if the change helps.",
+    invitation: "Start one change worth keeping, then stay long enough to make it livable.",
   },
   D: {
     letter: "D",
@@ -107,24 +104,23 @@ const ROLES: Record<Letter, LetterRole> = {
     adj: "Hidden",
     realm: "Well",
     tradition: "Tarot IX · Jung's inward turn",
-    myth: "The lantern in the wilderness: wisdom that will not perform.",
+    myth: "You go quiet long enough to see clearly, then you bring it back.",
     correspondence: "Earth · midnight · the lantern",
     doctrine:
-      "Some truths will not survive applause. The Hermit withdraws not to punish the world, but to hear the signal under the noise. Jung treated solitude as a method: you go down far enough to meet what you have been avoiding, and you bring back only what can live in daylight.",
+      "Some truths die if you perform them too soon. Solitude is a method, not a personality. Go in, face what you have been avoiding, and come back with something people can use.",
     shadow:
-      "Exile mistaken for purity. The well has no ladder. Insight hoarded until it sours into contempt for ordinary people.",
+      "You hide and call it purity. Insight turns into contempt for ordinary people.",
     gold:
-      "A private seeing that becomes useful. Depth with a return ticket. The lantern is carried back to the road.",
+      "Private seeing that becomes useful. You return.",
     calling:
-      "You stand as the Hermit — the Tarot's ninth mystery, the walker with a lamp who has left the marketplace on purpose. Depth is not shyness in you. It is a vocation. You prefer the root to the announcement, the kept practice to the bright career of being understood.",
+      "You stand as the Hermit. Depth is not shyness. You prefer the practice to the announcement.",
     method:
-      "The manner is hidden descent. You give long attention to what is not yet clear. You will not be hurried by those who live only at the surface and call that honesty.",
+      "The manner is hidden descent. You stay with what is not clear yet. You will not be hurried by people who only live on the surface.",
     field:
-      "The realm is the Well — the shaft that changes whoever stays. What you fetch from below is meant, eventually, to be drunk in the open air. A mystery that never feeds anyone is only a private museum.",
+      "The realm is the Well — the quiet work that changes you. What you learn there is meant to be used in daylight.",
     doubled:
-      "When the Hermit doubles, the shaft goes deeper and the ladder is forgotten. Bring something back. Solitude is a method, not a citizenship.",
-    invitation:
-      "Let one private devotion become visible. Depth still wants a witness, or it begins to lie to itself.",
+      "When the Hermit doubles, you go so far in you forget to come back. Bring something with you.",
+    invitation: "Let one private practice become visible. Depth that never speaks starts lying to itself.",
   },
   E: {
     letter: "E",
@@ -133,24 +129,23 @@ const ROLES: Record<Letter, LetterRole> = {
     adj: "Open",
     realm: "Horizon",
     tradition: "Pearson Explorer · the wider world",
-    myth: "The soul that will not confuse a familiar cage with a home.",
+    myth: "You leave a small map so the life can get larger.",
     correspondence: "Air · the far edge · the open road",
     doctrine:
-      "The world is larger than the wound. The Explorer does not leave because the village is worthless; the Explorer leaves because a life mapped only by fear is already too small. Distance, used well, is medicine. Distance used as a habit is only another cage with a better view.",
+      "The world is larger than the wound. Leaving is useful when fear has shrunk your life. Leaving as a habit is just a nicer cage.",
     shadow:
-      "Tourism of the soul. New places, same self. Intimacy postponed in the name of freedom until nothing is close enough to change you.",
+      "New places, same self. You postpone closeness and call it freedom.",
     gold:
-      "A wider life that still has a shoreline. Movement that teaches. You come home larger, not merely farther.",
+      "A wider life that still has a home. You come back larger, not just farther.",
     calling:
-      "You stand as the Explorer — Pearson's figure of freedom through distance. Where the Seeker leaves an old self, you leave an old map. You make more room than the situation asked for, and someone usually needs it. Feeling, in you, is something other people can share, not a private storm.",
+      "You stand as the Explorer. Where the Seeker leaves an old self, you leave an old map. You make more room than the situation asked for, and someone usually needs it.",
     method:
-      "The manner is open widening. You grow a life by walking into what you do not yet know how to name. You trust the body when it says: there is more world than this argument.",
+      "The manner is open widening. You grow by walking into what you cannot name yet. You trust the part of you that says there is more world than this argument.",
     field:
-      "The realm is the Horizon — the far line that organizes the walk. Expansion here is not escape. It is the knowledge that a person can outgrow a story without betraying the people inside it.",
+      "The realm is the Horizon — the next range, not an excuse to never arrive. You can outgrow a story without betraying the people in it.",
     doubled:
-      "When the Explorer doubles, space multiplies until nothing is intimate. Grow in one direction. A horizon is a guide, not a refusal to arrive.",
-    invitation:
-      "Expand toward a shoreline you can love, not toward every empty distance at once.",
+      "When the Explorer doubles, everything is distant and nothing is close. Grow in one direction.",
+    invitation: "Expand toward one place you could actually love, not every empty distance at once.",
   },
   F: {
     letter: "F",
@@ -159,24 +154,23 @@ const ROLES: Record<Letter, LetterRole> = {
     adj: "Free",
     realm: "Gate",
     tradition: "Tarot 0 · Pearson Fool · beginner's mind",
-    myth: "The zero before the numbered life: sacred innocence with a staff and a cliff.",
+    myth: "You start without pretending you already know who you are.",
     correspondence: "Aether · the unnumbered card · the cliff",
     doctrine:
-      "You cannot enter a new life wearing the full armor of the old one. The Fool is not stupid. The Fool is unowned. Zero, in the Tarot, is not nothing; it is the only number that can become any other number. Zen called this beginner's mind: attention that has not yet agreed to be a résumé.",
+      "You cannot enter a new life wearing the full armor of the old one. The Fool is not stupid. The Fool is unowned. Beginner's mind means attention that has not yet become a résumé.",
     shadow:
-      "Refusal to vow anything. You stay light by never putting your weight down, and call the emptiness wisdom.",
+      "You never commit. You stay light by never putting your weight down, and call that wisdom.",
     gold:
-      "A chosen lightness. You travel unburdened and still keep one fidelity. The gate stays open because you are not hiding in it.",
+      "You travel light and still keep one promise.",
     calling:
-      "You stand as the Fool — the card before the numbered life, Pearson's holy beginner. This is uncoerced attention: a soul that has not signed the contract that says you must already know who you are. The old stories put a dog at your heels and a cliff at your feet. Both are honest. Joy and risk arrive together, or not at all.",
+      "You stand as the Fool. You have not signed the contract that says you must already know who you are. Joy and risk arrive together, or not at all.",
     method:
-      "The manner is free. You keep a corridor of air around the day. You move as you actually need to move, and you will not be shamed for traveling light — only asked, eventually, to land.",
+      "The manner is free. You leave room in the day. You move as you actually need to move, and you will not be shamed for traveling light — only asked, eventually, to land.",
     field:
-      "The realm is the Gate: an opening that remains chosen. Freedom here is a discipline, not a mood. It is the daily refusal to be herded by fear, fashion, or the person you were last year.",
+      "The realm is the Gate — an opening you choose and keep choosing. Freedom is a daily refusal to be herded by fear, fashion, or last year's self.",
     doubled:
-      "When the Fool doubles, the gate swings so wide that nothing is vowed. Stay freely. Fidelity is what keeps freedom from becoming drift.",
-    invitation:
-      "Keep the corridor of air, and give it one fidelity that is still yours.",
+      "When the Fool doubles, nothing is vowed. Stay freely. One promise is what keeps freedom from becoming drift.",
+    invitation: "Keep the open space, and give it one promise that is still yours.",
   },
   G: {
     letter: "G",
@@ -185,24 +179,23 @@ const ROLES: Record<Letter, LetterRole> = {
     adj: "Generative",
     realm: "Grove",
     tradition: "Pearson Creator · the living work",
-    myth: "The impulse that cannot only witness — it must make.",
+    myth: "You make something that was not there yesterday.",
     correspondence: "Earth · spring · the green work",
     doctrine:
-      "Unused ability turns against its owner. The Creator is not a personality type for artists; it is the human need to bring something into form that was not there yesterday. What you will not make, you will eventually criticize. What you tend, increases.",
+      "Unused ability turns against you. The Creator is not only for artists. It is the need to bring something into form. What you will not make, you will eventually criticize. What you tend, grows.",
     shadow:
-      "Production without winter. You cannot stop making, or you make only to be seen making. The grove becomes a factory, and the living thing dies of attention.",
+      "You cannot stop producing, or you only make to be seen making. The work dies of attention.",
     gold:
-      "A work that can outlive a mood. Increase with roots. You leave the world slightly more habitable than you found it.",
+      "A piece of work that outlives a mood. You leave the room more habitable than you found it.",
     calling:
-      "You stand as the Creator — Pearson's maker of worlds, however small. Growth, in you, has roots. You do not merely accumulate projects; you tend until something living stands where there was only intention. This is closer to gardening than to genius. Talent comes and goes. Tending is a decision.",
+      "You stand as the Creator. You do not collect projects. You stay until something living stands where there was only intention. Talent comes and goes. Tending is a decision.",
     method:
-      "The manner is generative. Gratitude is your soil — not niceness, the accurate seeing that something wants to live and you are in a position to help it. You stay through the unglamorous season.",
+      "The manner is generative. You see what wants to live and you help it. You stay through the unglamorous season.",
     field:
-      "The realm is the Grove: lives, crafts, children of the mind, rooms of practice that grow because someone refused to leave. A grove is not a monument. It is a place that keeps making shade after you are tired.",
+      "The realm is the Grove — work, children of the mind, rooms of practice that grow because someone refused to leave. It keeps giving after you are tired.",
     doubled:
-      "When the Creator doubles, the green thickens until nothing can winter. Allow a fallow. Even a grove needs a clearing.",
-    invitation:
-      "Tend one living work as if increase were already promised — and let it rest when it asks.",
+      "When the Creator doubles, nothing is allowed to rest. Let one thing lie fallow.",
+    invitation: "Tend one living work, and let it rest when it asks.",
   },
   H: {
     letter: "H",
@@ -210,25 +203,24 @@ const ROLES: Record<Letter, LetterRole> = {
     noun: "Prophet",
     adj: "Far-seeing",
     realm: "Vista",
-    tradition: "The prophetic voice · conscience of the tribe",
-    myth: "The one who sees the farther order and must speak it without becoming a tyrant of hope.",
+    tradition: "The prophetic voice · conscience of the group",
+    myth: "You say what the group said it loved, when the group has started living otherwise.",
     correspondence: "Air · the high place · the unwelcome word",
     doctrine:
-      "A people die first in their speech. The prophet is not a fortune-teller and not a brand. In the older sense, the prophet is the one who remembers what the group said it loved, and says so when the group has begun to live otherwise. Hope without a backbone is entertainment. A backbone without hospitality is a weapon.",
+      "The prophet is not a fortune-teller and not a brand. You remember the vow. Hope without a backbone is entertainment. A backbone without hospitality is a weapon.",
     shadow:
-      "Moral grandeur. You live so far ahead of the room that you cannot set a plate. The future becomes a stick you use on the present.",
+      "You live so far ahead of the room that you cannot sit down. The future becomes a stick you use on people.",
     gold:
-      "A longer honesty that still feeds people. You speak the far line and keep the near table. Vision stays human.",
+      "A longer honesty that still feeds people. You speak the far line and keep the near table.",
     calling:
-      "You stand as the Prophet — the figure who holds a longer honesty. Every tradition has this voice: the one who will not let a family, a craft, or a culture forget its own vow. You see what is coming. The task is to say it in a language the living can hear, and then to stay for the meal.",
+      "You stand as the Prophet. You will not let a family, a craft, or a culture forget its own vow. You see what is coming. The task is to say it in a language the living can hear, then stay for the meal.",
     method:
       "The manner is far-seeing. You offer the longer view without forcing anyone to kneel to it. Hospitality is how your vision stays from becoming a sermon.",
     field:
-      "The realm is the Vista — the far line that organizes today's table. A prophecy that cannot cook, console, or keep a promise is only talk with better adjectives.",
+      "The realm is the Vista — the far line that organizes today's table. A vision that cannot help anyone through an ordinary day is just talk.",
     doubled:
-      "When the Prophet doubles, the line recedes and the near is neglected. Set the nearest table. The future is fed by the present meal.",
-    invitation:
-      "Keep the far line, and be hospitable to the person already in the room.",
+      "When the Prophet doubles, the near is neglected. Set the nearest table. The future is fed by the present meal.",
+    invitation: "Keep the far line, and be decent to the person already in the room.",
   },
   I: {
     letter: "I",
@@ -237,24 +229,23 @@ const ROLES: Record<Letter, LetterRole> = {
     adj: "Lucid",
     realm: "Lamp",
     tradition: "Pearson Sage · Jung's Wise Old One",
-    myth: "Insight before applause: the inner lamp that does not need a stage.",
+    myth: "You would rather understand than win.",
     correspondence: "Air · Mercury's study · the inner lamp",
     doctrine:
-      "Understanding is a form of love, and display is not. The Sage would rather be accurate than impressive. Jung's Wise Old Man and Wise Old Woman are not gurus; they are the psyche's own capacity to see a pattern without needing to own it. Insight that never leaves the study is only furniture. Insight that never sat still is only opinion.",
+      "Understanding is a form of love. Display is not. The Sage would rather be accurate than impressive. Insight that never leaves the study is furniture. Insight that never sat still is only opinion.",
     shadow:
-      "The locked study. Knowing as superiority. You collect insight the way a dragon collects gold, and the village goes unlit.",
+      "You collect knowledge the way a dragon collects gold, and nobody else gets any light.",
     gold:
-      "A seeing that can be shared at an ordinary table. Integrity: the inside and the outside begin to match.",
+      "A seeing you can share at an ordinary table. The inside and the outside match.",
     calling:
-      "You stand as the Sage — Pearson's seeker of truth, the figure who would rather understand than win. Imagination lives in you first as a private room. That is correct. The second movement is also required: to let one unused light fall where someone else is trying to see.",
+      "You stand as the Sage. Imagination lives in you first as a private room. That is correct. The second move is also required: let one unused insight help someone who is trying to see.",
     method:
-      "The manner is lucid. You keep the inner light faithful before it is shown. You revise. You wait until the sentence is true, then you risk saying it.",
+      "The manner is lucid. You keep the thought honest before you show it. You revise. You wait until the sentence is true, then you risk saying it.",
     field:
-      "The realm is the Lamp. A lamp is not a bonfire. It is a small, tended brightness meant for work, reading, and the faces of the people you will not abandon to their confusion.",
+      "The realm is the Lamp. A lamp is not a bonfire. It is a small, tended brightness for work, reading, and the people you will not leave confused.",
     doubled:
-      "When the Sage doubles, the study locks. Speak one private seeing. Light unused is furniture, and furniture begins to look like wisdom if you sit among it long enough.",
-    invitation:
-      "Bring one unused insight into speech, and let ordinary life test it.",
+      "When the Sage doubles, the study locks. Speak one private seeing. Unused light starts looking like wisdom if you sit among it long enough.",
+    invitation: "Say one unused insight out loud, and let ordinary life test it.",
   },
   J: {
     letter: "J",
@@ -263,24 +254,23 @@ const ROLES: Record<Letter, LetterRole> = {
     adj: "Steadfast",
     realm: "Road",
     tradition: "Jung / Campbell · the heroic journey",
-    myth: "The one who leaves, suffers a real cost, and returns with something the village can use.",
+    myth: "You leave, pay a real cost, and come back with something people can use.",
     correspondence: "Fire · the ordeal · the road home",
     doctrine:
-      "Courage without a return is only tourism with better scars. Campbell's hero leaves, is unmade, and comes back with a gift — a skill, a truth, a medicine the village did not have. If you cannot come home, you have not finished.",
+      "Courage that never comes home is just travel with better scars. The hero leaves, is changed, and returns with a skill, a truth, or a medicine the village did not have. If you cannot come home, you have not finished.",
     shadow:
-      "The pack that never drops. Endless ordeal as identity. You need a dragon more than you need a table, because rest would ask who you are without the fight.",
+      "The fight never ends because rest would ask who you are without it.",
     gold:
-      "A cost that became medicine. You went, you paid, you returned. Other people can use what you learned.",
+      "A cost that became useful. You went, you paid, you returned. Other people can use what you learned.",
     calling:
-      "You stand as the Hero — not the swaggering statue, the traveler who will not look away. This is motion with a conscience. Joy, in you, is not a prize at the end; it is part of how you travel, or the road becomes only punishment. You move a life from a smaller honesty to a larger one.",
+      "You stand as the Hero — not the statue, the traveler who will not look away. Joy is part of how you travel, or the road is only punishment. You move a life from a smaller honesty to a larger one.",
     method:
-      "The manner is steadfast travel. You take the next mile when the prize is not visible. You put unlikely things beside each other until they make sense. You do not confuse delay with destiny.",
+      "The manner is steadfast travel. You take the next mile when the prize is not visible. You do not confuse delay with destiny.",
     field:
-      "The realm is the Road — the honest miles between a smaller self and a larger duty. Arrival is part of heroism. So is washing the dust off and sitting down among the people you left.",
+      "The realm is the Road — the honest miles between a smaller self and a larger duty. Arrival is part of the work. So is sitting down among the people you left.",
     doubled:
-      "When the Hero doubles, the pack never drops. Arrive somewhere. A journey that cannot rest becomes exile with better branding.",
-    invitation:
-      "Take the next honest mile, and let joy be part of the equipment, not a prize withheld until the end.",
+      "When the Hero doubles, you never arrive. A journey that cannot rest is just exile with better branding.",
+    invitation: "Take the next honest mile, and let joy come along instead of waiting at the end.",
   },
   K: {
     letter: "K",
@@ -289,24 +279,23 @@ const ROLES: Record<Letter, LetterRole> = {
     adj: "Kindred",
     realm: "Table",
     tradition: "Pearson Orphan · the search for belonging",
-    myth: "The child who learns that home is made, not merely inherited.",
+    myth: "You learn that home is made, not inherited.",
     correspondence: "Water · the lost child · the made table",
     doctrine:
-      "Exile can become a craft. The Orphan is not a life sentence; it is the moment you discover the world is not automatically kind, and then refuse to become unkind in return. Pearson put this figure after the Innocent: paradise ends, and the real work of kinship begins. The ones who build the best tables are often those who remember being left outside one.",
+      "The world is not automatically kind. The work is to refuse to become unkind in return. The people who build the best tables often remember being left outside one.",
     shadow:
-      "A closed room of the wounded. You collect only those who share the injury, and call that family. The stranger stays in the cold to prove the wound was real.",
+      "You collect only the wounded and call that family. The stranger stays outside to prove the wound was real.",
     gold:
-      "Chosen kinship with a spare chair. You know how to make belonging because you know what its absence costs.",
+      "Chosen family with a spare chair. You know how to make belonging because you know what its absence costs.",
     calling:
       "You stand as the Orphan — not as a wound to display, as the beginning of real kinship. You understand by standing with people. What you know wants to be useful to someone specific.",
     method:
       "The manner is kindred. You knit family and chosen family. Kindness is not decoration on your intelligence. It is how you think.",
     field:
-      "The realm is the Table — the place the excluded are fed and the insider is asked to make room. A key that only opens for blood is not yet a key. It is a lock with a story.",
+      "The realm is the Table — the place the outsider is fed and the insider is asked to make room. A key that only opens for blood is just a lock with a story.",
     doubled:
-      "When the Orphan doubles, the room closes around the wound. Leave a place for the one who does not yet belong. Belonging that cannot welcome is only a prettier exile.",
-    invitation:
-      "Offer one precise kindness to kin, then one to someone who has no claim on you yet.",
+      "When the Orphan doubles, the room closes around the wound. Leave a place for the one who does not yet belong.",
+    invitation: "Offer one precise kindness to kin, then one to someone who has no claim on you yet.",
   },
   L: {
     letter: "L",
@@ -314,25 +303,24 @@ const ROLES: Record<Letter, LetterRole> = {
     noun: "Lover",
     adj: "Radiant",
     realm: "Flame",
-    tradition: "Pearson Lover · Eros as a path to the Self",
-    myth: "The one who will not live uncommitted to beauty, body, or beloved.",
+    tradition: "Pearson Lover · Eros as a path",
+    myth: "You will not live uncommitted to beauty, body, or a beloved.",
     correspondence: "Water and fire · Venus · the chosen flame",
     doctrine:
-      "Desire is a teacher, not a lifestyle. The Lover is not merely the one who falls in love. The Lover is the one who lets beauty, body, and a beloved rearrange what they will do next. Passion that cannot stay is only hunger. Passion that cannot rest is only performance.",
+      "Desire is a teacher, not a lifestyle. The Lover lets beauty, body, and a beloved change what they will do next. Passion that cannot stay is only hunger. Passion that cannot rest is only performance.",
     shadow:
-      "Brightness as display. You spend the whole lamp on the hallway of almost-loves, and the one true thing goes unlit. Fatigue hides behind radiance.",
+      "You spend all the heat on almost-loves. Fatigue hides behind charm.",
     gold:
-      "A chosen warmth that stays after the first shine. Love as leadership: you go first, and you sleep, and you return.",
+      "A warmth that stays after the first shine. You go first, you sleep, you return.",
     calling:
-      "You stand as the Lover — Pearson's figure of union. Light, in you, has chosen a person, a craft, a world. You lead by going first in warmth. This is not softness as collapse. It is the older meaning of devotion: you put your heat where you have said it belongs.",
+      "You stand as the Lover. You lead by going first in warmth. This is not collapse. It is putting your heat where you said it belongs.",
     method:
-      "The manner is radiant. Care is your form of authority. You make a room visible because you will not hoard the lamp, and you know when the lamp needs oil.",
+      "The manner is radiant. Care is your form of authority. You make a room visible, and you know when you need rest.",
     field:
-      "The realm is the Flame — not the firework, the hearth-fire that cooks and consoles. Passion here is loyalty with heat. A flame that never becomes care is only a show for the dark.",
+      "The realm is the Flame — not the firework, the fire that actually cooks. Passion here is loyalty with heat. Heat that never becomes care is only a show.",
     doubled:
-      "When the Lover doubles, brightness performs and fatigue hides. Rest the lamp. Love that cannot sleep becomes display.",
-    invitation:
-      "Shine on one true thing. Do not spend the whole light on the hallway of almost-loves.",
+      "When the Lover doubles, brightness performs and fatigue hides. Rest. Love that cannot sleep becomes display.",
+    invitation: "Give your attention to one true thing. Stop lighting every hallway.",
   },
   M: {
     letter: "M",
@@ -344,21 +332,20 @@ const ROLES: Record<Letter, LetterRole> = {
     myth: "Strength that has agreed to serve something, not merely to win.",
     correspondence: "Fire · Mars · the kept edge",
     doctrine:
-      "Force without a worthy object is only restlessness in armor. The Warrior is not the brawler and not the martyr. The Warrior is the part of you that can keep a boundary, finish a difficult hour, and put the weapon down. In the old training, the sword had a purpose larger than the person holding it. Without that, you only get better at fighting.",
+      "Force without a worthy object is just restlessness in armor. The Warrior is not the brawler and not the martyr. It is the part of you that can keep a boundary, finish a hard hour, and put the weapon down.",
     shadow:
-      "Speed as virtue. Every hour is a campaign. You cannot pause without feeling unmanned, and so meaning never catches the motion.",
+      "Every hour is a campaign. You cannot pause without feeling weak, so meaning never catches up.",
     gold:
-      "A clean edge in service of a living thing. Consistency. The fight you refuse is as holy as the one you take.",
+      "A clean edge in service of something living. The fight you refuse is as important as the one you take.",
     calling:
-      "You stand as the Warrior — Pearson's figure of brave action and kept limits. This is not violence. It is a practice that has begun to carry itself. You give scattered energy a spine. People remember what they were for, near you, because you will not flatter a fog.",
+      "You stand as the Warrior. This is not violence. It is a practice that has begun to carry itself. You give scattered energy a spine. People remember what they were for, near you.",
     method:
-      "The manner is swift and rhythmic. You move toward mastery, not merely activity. The day's work has a pulse. You return to it when mood would like a different war.",
+      "The manner is swift and rhythmic. You move toward mastery, not just activity. You return to the work when mood would like a different war.",
     field:
-      "The realm is the Wheel — work that continues. A warrior's real strength is the daily return, not the single blow that gets remembered.",
+      "The realm is the Wheel — work that continues. Real strength is showing up again tomorrow, not the one blow people remember.",
     doubled:
-      "When the Warrior doubles, speed outruns meaning. Pause without losing the current. A fight without a worthy object is only restlessness in armor.",
-    invitation:
-      "Give the true motion the dignity of a daily return, and know which battles are beneath you.",
+      "When the Warrior doubles, speed outruns meaning. Pause. A fight without a worthy object is just restlessness in armor.",
+    invitation: "Give the real work a daily return, and know which battles are beneath you.",
   },
   N: {
     letter: "N",
@@ -367,14 +354,14 @@ const ROLES: Record<Letter, LetterRole> = {
     adj: "Gentle",
     realm: "Garden",
     tradition: "Jung's wounded healer · the medicine path",
-    myth: "The one who noticed their own wound and made a vocation of tending.",
+    myth: "You noticed your own wound and made a job of tending.",
     correspondence: "Water · Chiron · the garden rows",
     doctrine:
-      "You can only help with what you are willing to go through yourself. Chiron, the wounded teacher, is the old name for this: the injury did not disqualify you; it trained your hands. Healing is not fixing people so they stop bothering the room. Healing is the unglamorous restoration of what is already trying to live. A healer who will not be healed becomes a subtle tyrant of care.",
+      "You can only help with what you are willing to go through yourself. Healing is not fixing people so they stop bothering the room. It is restoring what is already trying to live. A healer who will not be healed becomes a subtle tyrant of care.",
     shadow:
-      "The feeder who starves. You notice everyone except the one doing the noticing. Care becomes control, or novelty abandons what was just beginning to root.",
+      "You notice everyone except yourself. Care becomes control, or you abandon what was just starting to root.",
     gold:
-      "Tending that includes the tender. You keep life workable — for others and for yourself — without making a religion of being needed.",
+      "Tending that includes the tender. You keep life workable — for others and for yourself — without needing to be needed.",
     calling:
       "You stand as the Healer. You notice before you fix. Care, in you, has no condescension. You see what needs feeding while others are still arguing about the problem.",
     method:
@@ -382,9 +369,8 @@ const ROLES: Record<Letter, LetterRole> = {
     field:
       "The realm is the Garden — the rows where recovery actually happens. No one applauds a well-watered root. That is how you know you are close to the real work.",
     doubled:
-      "When the Healer doubles, the feeder can starve. Include yourself in the noticing. Maintenance of the healer is not vanity.",
-    invitation:
-      "Feed what is already alive in you. Then feed what is alive near you. In that order, or both fail.",
+      "When the Healer doubles, the feeder starves. Include yourself. Taking care of the healer is not vanity.",
+    invitation: "Feed what is already alive in you. Then feed what is alive near you. In that order.",
   },
   O: {
     letter: "O",
@@ -393,24 +379,23 @@ const ROLES: Record<Letter, LetterRole> = {
     adj: "Receptive",
     realm: "Circle",
     tradition: "Tarot II · the sacred vessel",
-    myth: "The one who holds the space in which the unseen can enter without being forced.",
-    correspondence: "Water · the Moon · the temenos",
+    myth: "You hold a room so something true can enter without being forced.",
+    correspondence: "Water · the Moon · the held room",
     doctrine:
-      "Mystery needs a rim or it spills, and the rim must not become a wall. The Priestess — a vocation, not a gender — keeps the space in which something larger than the ego may arrive. You do not haul the unseen into the room. You make the room fit to be entered.",
+      "Mystery needs a rim or it spills. The rim must not become a wall. The Priestess is a vocation, not a gender. You do not haul the unseen into the room. You make the room fit to be entered.",
     shadow:
-      "Rite without life. The circle freezes. You police the atmosphere, or you open every door until the space is only a draft and call the chill holy.",
+      "Empty ritual, or every door open until the room is only a draft. You call the chill holy.",
     gold:
-      "A living threshold. People can enter, be changed, and leave intact. Order serves openness; openness has a shape.",
+      "People can enter, be changed, and leave intact. Order serves openness. Openness has a shape.",
     calling:
-      "You stand as the Priestess — the High Priestess of the Tarot, keeper of the veil between the said and the unsayable. Origin and opportunity live in the same breath in you. You open, and you keep the opening from becoming chaos. This is not performance of the sacred. It is hospitality toward what cannot be scheduled.",
+      "You stand as the Priestess. You open, and you keep the opening from becoming chaos. This is not a performance of the sacred. It is hospitality toward what cannot be scheduled.",
     method:
-      "The manner is receptive. You make order that can still admit a guest, a chance, a second beginning. You know when to speak and when the speaking would scare the thing away.",
+      "The manner is receptive. You make order that can still admit a guest, a chance, a second beginning. You know when to speak and when speaking would scare the thing away.",
     field:
       "The realm is the Circle. A circle is a decision about what belongs inside tonight. Too tight, and life cannot enter. Too loose, and nothing can ripen.",
     doubled:
-      "When the Priestess doubles, the circle freezes into rite without life. Unlatch one true door, and keep the room behind it warm.",
-    invitation:
-      "Open the door that is actually yours to open, and give the space a simple, kept order.",
+      "When the Priestess doubles, the circle freezes into empty rite. Open one real door, and keep the room behind it warm.",
+    invitation: "Open the door that is actually yours to open, and give the space a simple, kept order.",
   },
   P: {
     letter: "P",
@@ -419,24 +404,23 @@ const ROLES: Record<Letter, LetterRole> = {
     adj: "Sovereign",
     realm: "Crown",
     tradition: "Pearson Ruler · sacred kingship",
-    myth: "The one who creates order so that others may flourish inside it.",
+    myth: "You make order so other people can flourish inside it.",
     correspondence: "Fire and earth · the Sun · the ring of responsibility",
     doctrine:
-      "Power is the permission to set the conditions others live under. Sacred kingship, in the old sense, was not domination; it was the vow to keep the land fertile and the people able to plan. The Ruler's risk is inflation — mistaking the office for the self. The Ruler's gift is a spine other people can plan a harvest around. A crown that cannot listen is only a hat.",
+      "Power is the permission to set the conditions others live under. That is not domination. It is the vow to keep the land workable and the people able to plan. The risk is mistaking the office for yourself. A crown that cannot listen is only a hat.",
     shadow:
-      "The hardened script. Purpose becomes a tyrant. You would rather be obeyed than be in contact, and you call the loneliness dignity.",
+      "Purpose becomes a tyrant. You would rather be obeyed than be in contact, and you call the loneliness dignity.",
     gold:
-      "Order that still breathes. You aim the room without erasing the people in it. Authority as a climate others can grow in.",
+      "Order that still breathes. You aim the room without erasing the people in it.",
     calling:
-      "You stand as the Ruler — Pearson's sovereign, the sacred king and queen of older myth. Purpose, in you, is presence with a direction. You are not here to dominate. You are here to give scattered lives a shape they can trust, including your own.",
+      "You stand as the Ruler. Purpose, in you, is presence with a direction. You are not here to dominate. You are here to give scattered lives a shape they can trust, including your own.",
     method:
-      "The manner is sovereign aiming. You turn potential into a sequence of kept days. Passion has agreed, in you, to wait for a worthy object — which is how passion becomes a plan instead of a mood.",
+      "The manner is sovereign aiming. You turn potential into a sequence of kept days. Passion waits for a worthy object, which is how it becomes a plan instead of a mood.",
     field:
-      "The realm is the Crown: not jewelry, the ring of responsibility. Whoever wears it must remain larger than their favorite plan, or the land dries out around a single idea.",
+      "The realm is the Crown: not jewelry, the ring of responsibility. Whoever wears it must stay larger than their favorite plan, or the land dries out around a single idea.",
     doubled:
       "When the Ruler doubles, the script hardens. Let purpose stay larger than one aim. A crown that cannot listen is only a hat.",
-    invitation:
-      "Name the work that would still matter if it were slower, then be present to the next inch of it.",
+    invitation: "Name the work that would still matter if it were slower, then do the next inch of it.",
   },
   Q: {
     letter: "Q",
@@ -444,25 +428,24 @@ const ROLES: Record<Letter, LetterRole> = {
     noun: "Mystic",
     adj: "Quiet",
     realm: "Cloister",
-    tradition: "The contemplative path · union with the Real",
-    myth: "The one who prefers the living question to the crowded answer.",
+    tradition: "The contemplative path · union with the real",
+    myth: "You prefer a living question to a crowded answer.",
     correspondence: "Aether · the inner courtyard · the unspeakable",
     doctrine:
-      "The real will not be herded by a clever sentence. The mystic — monk, sufi, desert mother, quiet neighbor — crosses a kind of desert for a better question. Union is the old word for a life no longer split against itself. A rapture that cannot wash a dish is only aesthetic. A dish washed without any interior is only hygiene. The path wants both.",
+      "The real will not be herded by a clever sentence. Union means a life no longer split against itself. A rapture that cannot wash a dish is only aesthetic. A dish washed with no interior is only hygiene. The path wants both.",
     shadow:
-      "Contempt for the ordinary day. You use silence as exit. The living are treated as noise on the way to an experience.",
+      "You use silence as an exit. Ordinary people become noise on the way to an experience.",
     gold:
-      "A question you can live near. Quiet that still loves the world. The unspeakable makes the spoken more exact, not less.",
+      "A question you can live near. Quiet that still loves the world.",
     calling:
-      "You stand as the Mystic. Pearson has no perfect name for you; the contemplative traditions do. You would rather touch the quintessence and leave the rest than win an argument about the whole. Quiet quality is how you love. That love is stricter than it looks.",
+      "You stand as the Mystic. You would rather touch the real thing and leave the rest than win an argument about the whole. Quiet quality is how you love. That love is stricter than it looks.",
     method:
-      "The manner is quiet questioning. You will not be rushed into a cheap version of the true. You wait. You discard. You keep the one thing that still rings when everything fashionable has gone dull.",
+      "The manner is quiet questioning. You will not be rushed into a cheap version of the true. You wait. You discard. You keep the one thing that still rings when the fashion has gone dull.",
     field:
-      "The realm is the Cloister — not escape from life, the inner courtyard from which life can be seen without being owned by its noise. You go there to return more accurately, not to disappear.",
+      "The realm is the Cloister — not escape, the inner courtyard from which life can be seen without being owned by its noise. You go there to return more accurately, not to disappear.",
     doubled:
       "When the Mystic doubles, the ordinary day is despised. Live near the question without leaving the living.",
-    invitation:
-      "Ask the one question that would alter the week, and stay beside it without demanding an audience.",
+    invitation: "Ask the one question that would change the week, and stay beside it without needing an audience.",
   },
   R: {
     letter: "R",
@@ -471,24 +454,23 @@ const ROLES: Record<Letter, LetterRole> = {
     adj: "Attuned",
     realm: "Song",
     tradition: "The Celtic bard · the resonant word",
-    myth: "The one who restores a people to themselves by finding the true note.",
+    myth: "You restore a group to itself by finding the true note.",
     correspondence: "Air · the throat · the true note",
     doctrine:
-      "The inner law is that a people come back to themselves through a sound they recognize. Before psychology there were songs that held grief, law, and memory in one pattern a body could enter. The Bard is not an entertainer first. The Bard is a tuner. You hear when a conversation, a grief, or a day has gone sharp, and you have the strange authority to return it to pitch — sometimes with a word, sometimes with a silence that is shaped like music.",
+      "People come back to themselves through a sound they recognize. The Bard is not an entertainer first. The Bard is a tuner. You hear when a conversation, a grief, or a day has gone sharp, and you can bring it back to pitch.",
     shadow:
-      "Echo instead of voice. You become the room's mood. Resilience curdles into never changing key, or charm replaces the thing that needed saying.",
+      "You become the room's mood. Charm replaces the thing that needed saying.",
     gold:
-      "A note that is yours, offered in time. Meaning people can hum. The tribe remembers who it is when you speak.",
+      "A note that is yours, offered in time. Meaning people can actually use.",
     calling:
-      "You stand as the Bard — memory-keeper, sounding board, the one who answers vibration with a truer tone. You restore pitch. This is why people tell you things they did not plan to tell. They can hear themselves better in your presence, which is a responsibility.",
+      "You stand as the Bard. You restore pitch. This is why people tell you things they did not plan to tell. They can hear themselves better in your presence, which is a responsibility.",
     method:
-      "The manner is attuned returning. You listen until the signal is clean. Reverence is your way of hearing — not piety, the refusal to interrupt a true sound with a cleverer one.",
+      "The manner is attuned returning. You listen until the signal is clean. You refuse to interrupt a true sound with a cleverer one.",
     field:
-      "The realm is the Song: a pattern a nervous system can enter. If it cannot be lived in the body, it is not yet a song. It is only an idea with rhythm attached.",
+      "The realm is the Song — a pattern a body can enter. If it cannot be lived, it is not yet a song. It is only an idea with rhythm attached.",
     doubled:
-      "When the Bard doubles, echo can replace voice. Change key when the old one is spent. Resilience is not the same as never modulating.",
-    invitation:
-      "Listen for the note that is yours, and return to it once before night.",
+      "When the Bard doubles, echo replaces voice. Change key when the old one is spent.",
+    invitation: "Listen for the note that is yours, and return to it once before night.",
   },
   S: {
     letter: "S",
@@ -497,24 +479,23 @@ const ROLES: Record<Letter, LetterRole> = {
     adj: "Shared",
     realm: "Weave",
     tradition: "The fate-weavers · synergy of souls",
-    myth: "The Norns, the Fates, the spider at the center: strength that comes from joining.",
+    myth: "Strength that comes from joining, not from standing alone.",
     correspondence: "Earth · the loom · the unseen pattern",
     doctrine:
-      "Nothing important happens as a solo. The old fate-weavers were not cruel so much as accurate: lives are threads, and the cloth is the point. Meaning often shows up as a join you did not force. Keep one thread that is still yours, or you vanish into the pattern you serve.",
+      "Nothing important happens as a solo. Lives are threads. The cloth is the point. Keep one thread that is still yours, or you vanish into the pattern you serve.",
     shadow:
-      "Self-erasure in the name of we. You become the braid and lose the name. Or you force joins that wanted to remain two.",
+      "You disappear into the we. Or you force joins that wanted to stay two.",
     gold:
-      "A living cloth. Combinations no single part could invent. You belong without dissolving, and you join without colonizing.",
+      "Combinations no single part could invent. You belong without dissolving.",
     calling:
-      "You stand as the Weaver — older than the modern self. You make combinations. You can feel when two lives, two ideas, or two hours want to be more together than apart, and you have the patience to let the join set.",
+      "You stand as the Weaver. You make combinations. You can feel when two lives, two ideas, or two hours want to be more together than apart, and you have the patience to let the join set.",
     method:
-      "The manner is shared joining. You braid people, efforts, timings. Sincerity does not need to raise its voice. The strongest seams are often the ones no one applauds.",
+      "The manner is shared joining. You braid people, efforts, timings. The strongest seams are often the ones no one applauds.",
     field:
-      "The realm is the Weave — relationship, timing, and meaning as one cloth. You live at the loom, which means you also live with loose ends. A finished tapestry with no new thread is a funeral.",
+      "The realm is the Weave — relationship, timing, and meaning as one cloth. You also live with loose ends. A finished tapestry with no new thread is a funeral.",
     doubled:
-      "When the Weaver doubles, the self dissolves into the pattern. Keep one unsurrendered thread. A we that has no I is only a prettier erasure.",
-    invitation:
-      "Join what wants joining, and keep a name that is still yours.",
+      "When the Weaver doubles, the self dissolves into the pattern. Keep one unsurrendered thread.",
+    invitation: "Join what wants joining, and keep a name that is still yours.",
   },
   T: {
     letter: "T",
@@ -523,24 +504,23 @@ const ROLES: Record<Letter, LetterRole> = {
     adj: "Fierce",
     realm: "Crucible",
     tradition: "Hermetic art · Pearson Destroyer · death and rebirth",
-    myth: "Solve et coagula: dissolve what is false, recombine what is true.",
-    correspondence: "Fire · nigredo · the vessel that can take heat",
+    myth: "Dissolve what is false. Rebuild what is true.",
+    correspondence: "Fire · the blackening · the vessel that can take heat",
     doctrine:
-      "Some forms must die for the next form to live. The alchemists wrote solve et coagula — dissolve, then recombine — because they had watched this in metal and in the soul. Pearson's Destroyer is the same figure without the laboratory: the one who will not keep a dead story walking. The blackening is allowed. So is the return of gold. What is not allowed is making a lifestyle of the furnace.",
+      "Some forms must die for the next form to live. Dissolve, then recombine. You will not keep a dead story walking. The hard season is allowed. Making a lifestyle of crisis is not.",
     shadow:
-      "Crisis as a style. You torch what needed tending. Transformation becomes an addiction, and ordinary happiness looks like a failure of nerve.",
+      "You torch what needed tending. Transformation becomes an addiction. Ordinary happiness looks like a failure of nerve.",
     gold:
-      "A necessary death that was not cruel. You named what was over, crossed, and stayed to tend what the fire revealed.",
+      "A necessary ending that was not cruel. You named what was over, crossed, and stayed to tend what remained.",
     calling:
-      "You stand as the Alchemist — hermetic cousin to the Destroyer. Truth, in you, costs something. You midwife change not by cruelty, but by refusing the comfortable lie. People may experience this as loss. Sometimes it is. Not every loss is a mistake.",
+      "You stand as the Alchemist. Truth, in you, costs something. You midwife change not by cruelty, but by refusing the comfortable lie. People may experience this as loss. Sometimes it is. Not every loss is a mistake.",
     method:
-      "The manner is fierce crossing. You will not live in an expired story. Tension is the heat that makes a new shape possible. Trust comes after the old skin is shed, not before — which is why trust, when it comes, is real.",
+      "The manner is fierce crossing. You will not live in an expired story. Tension is the heat that makes a new shape possible. Trust comes after the old skin is shed, not before.",
     field:
-      "The realm is the Crucible: the vessel that can take fire without leaking. Transformation without a vessel is only a burn. You are responsible for the vessel as much as for the flame.",
+      "The realm is the Crucible: a container that can take heat without leaking. Change without a container is only a burn. You are responsible for the container as much as for the flame.",
     doubled:
       "When the Alchemist doubles, crisis becomes a style. Tend what the last fire revealed. Not every day is for the furnace.",
-    invitation:
-      "Name the one thing that is already over, and cross with as much tenderness as courage.",
+    invitation: "Name the one thing that is already over, and cross with as much tenderness as courage.",
   },
   U: {
     letter: "U",
@@ -549,24 +529,23 @@ const ROLES: Record<Letter, LetterRole> = {
     adj: "Whole",
     realm: "Vessel",
     tradition: "Jung's Self · the union of opposites",
-    myth: "The one who can hold two true things without making either of them smaller.",
-    correspondence: "Water · the bowl · coincidentia oppositorum",
+    myth: "You can hold two true things without making either of them smaller.",
+    correspondence: "Water · the bowl · the meeting of opposites",
     doctrine:
-      "Wholeness is not sameness. Jung called the aim of the work a life large enough to include what the ego wanted to exile. Peace, here, is not the absence of edge. It is the presence of a container that can bear a quarrel without splitting the world in two.",
+      "Wholeness is not sameness. Peace is not the absence of edge. It is a container that can bear a quarrel without splitting the world in two.",
     shadow:
-      "Niceness. You paper conflict until the real thing goes underground and returns as illness, spite, or a sudden break. Unity becomes a muzzle.",
+      "Niceness. You paper conflict until it returns as illness, spite, or a sudden break.",
     gold:
-      "A we that does not require a smaller I. Two honest forces stand in one room. The vessel holds.",
+      "A we that does not require a smaller I. Two honest forces stand in one room.",
     calling:
-      "You stand as the Peacemaker — not the smoother of conflict, the holder of opposites. You make a we that does not require anyone to become a lesser version of themselves. This is harder than charm. Charm asks people to get along. The vessel asks them to stay true and still remain in the room.",
+      "You stand as the Peacemaker — not the smoother of conflict, the holder of opposites. Charm asks people to get along. The vessel asks them to stay true and still remain in the room.",
     method:
-      "The manner is whole-making. You look for the understanding that lets two honest forces stand together. Uprightness is a spine, not a pose. You will disappoint people who wanted you to pick a smaller side.",
+      "The manner is whole-making. You look for the understanding that lets two honest forces stand together. You will disappoint people who wanted you to pick a smaller side.",
     field:
-      "The realm is the Vessel — the bowl that can hold difference without cracking. If the bowl is too fine, it shatters. If it is too thick, nothing can be tasted. You live in that calibration.",
+      "The realm is the Vessel — the bowl that can hold difference without cracking. Too fine, it shatters. Too thick, nothing can be tasted.",
     doubled:
       "When the Peacemaker doubles, conflict is papered. Let one necessary edge remain. Unity that cannot bear a quarrel is only niceness.",
-    invitation:
-      "Hold the whole, and keep one unblended contour of yourself.",
+    invitation: "Hold the whole, and keep one unblended contour of yourself.",
   },
   V: {
     letter: "V",
@@ -575,24 +554,23 @@ const ROLES: Record<Letter, LetterRole> = {
     adj: "Vivid",
     realm: "Sanctum",
     tradition: "The Pythia · vocation as seeing",
-    myth: "The one who sees a future with a face, and therefore a pulse.",
+    myth: "You see a future with a face, and then you take the next ordinary step.",
     correspondence: "Aether · Delphi · the inner temple",
     doctrine:
-      "A vision without a body is a daydream with better lighting. The Pythia sat over a cleft in the earth — meaning the seeing came up from below, not down from a pedestal. Vocation is the same structure: an image rises that has blood in it, and you are asked to live toward it in ordinary inches. An oracle that will not take the next ordinary step is only theater.",
+      "A vision without a body is a daydream with better lighting. Vocation means an image rises and you live toward it in ordinary inches. An oracle that will not take the next step is only theater.",
     shadow:
-      "Refusal of the near. You live in the picture and starve the path. Vulnerability is avoided, so the vision hardens into a statue you serve.",
+      "You live in the picture and starve the path. The vision hardens into a statue you serve.",
     gold:
-      "A picture you are willing to be seen seeing — and a humble step that belongs to it. Sight incarnate.",
+      "A picture you are willing to be seen seeing — and a humble step that belongs to it.",
     calling:
-      "You stand as the Oracle — seer, not soothsayer. This is vocation, not prediction. You see the shape of a life while it is still only an idea, and you are willing to be seen seeing it. That willingness is the real risk. The picture was never the hard part.",
+      "You stand as the Oracle — seer, not soothsayer. This is vocation, not prediction. You see the shape of a life while it is still only an idea, and you are willing to be seen seeing it. That willingness is the real risk.",
     method:
-      "The manner is vivid pointing. You name a direction with enough vitality that others can walk toward it. You keep the image warm by remaining human beside it.",
+      "The manner is vivid pointing. You name a direction with enough life that others can walk toward it. You keep the image warm by remaining human beside it.",
     field:
-      "The realm is the Sanctum — the inner temple where the picture is received before it is announced. What is received in private must be tested in public, or it remains a private religion.",
+      "The realm is the Sanctum — the private room where the picture is received before it is announced. What is received in private must be tested in public, or it remains a private religion.",
     doubled:
-      "When the Oracle doubles, the near is refused. Take one humble inch that belongs to the picture. Sight without incarnation is only daydream.",
-    invitation:
-      "Tell the true picture, then take the ordinary step that proves you mean it.",
+      "When the Oracle doubles, the near is refused. Take one humble inch that belongs to the picture.",
+    invitation: "Tell the true picture, then take the ordinary step that proves you mean it.",
   },
   W: {
     letter: "W",
@@ -601,24 +579,23 @@ const ROLES: Record<Letter, LetterRole> = {
     adj: "Awake",
     realm: "Dawn",
     tradition: "Pearson Innocent · Jung's Divine Child",
-    myth: "The open eye that has not agreed to be bored.",
+    myth: "You will not let the hurt have the last word on what the world is.",
     correspondence: "Air · first light · the Divine Child",
     doctrine:
-      "Astonishment is a form of intelligence. The Innocent is not the person who has never been hurt. The Innocent is the one who will not let the hurt have the last word on what the world is. Wonder that will not act becomes tourism. Action without wonder becomes a machine.",
+      "Astonishment is a form of intelligence. The Innocent is not the person who has never been hurt. Wonder that will not act becomes tourism. Action without wonder becomes a machine.",
     shadow:
-      "Looking instead of doing. Or a performed sweetness that refuses the dark and so cannot be trusted when the dark arrives.",
+      "Looking instead of doing. Or a performed sweetness that refuses the dark and cannot be trusted when the dark arrives.",
     gold:
-      "A second beginning that is not amnesia. You see clearly, including the wound, and you still join two strands with your hands.",
+      "A second beginning that is not amnesia. You see clearly, including the wound, and you still put your hands to the work.",
     calling:
-      "You stand as the Innocent — Pearson's first figure, the Divine Child who has not agreed to be bored. Wonder is wisdom before it hardens into advice. You remain available to being changed by what you see. This is rarer than cleverness, and more useful.",
+      "You stand as the Innocent. Wonder is wisdom before it hardens into advice. You remain available to being changed by what you see. This is rarer than cleverness, and more useful.",
     method:
       "The manner is awake witnessing. You look again. You restore astonishment as a practical mercy — the kind that makes a tired person able to continue.",
     field:
       "The realm is the Dawn: the hour when the world is not yet argued over. Innocence is a way of beginning again. It is not a way of remaining uninformed.",
     doubled:
-      "When the Innocent doubles, looking can replace doing. Put a hand to the weave. Wonder that will not act becomes tourism.",
-    invitation:
-      "Look again at what you think you already understand, then join two strands with your hands.",
+      "When the Innocent doubles, looking replaces doing. Put a hand to the work.",
+    invitation: "Look again at what you think you already understand, then join two strands with your hands.",
   },
   X: {
     letter: "X",
@@ -627,24 +604,23 @@ const ROLES: Record<Letter, LetterRole> = {
     adj: "Liminal",
     realm: "Edge",
     tradition: "Jung's Trickster · the holy disruption",
-    myth: "Hermes, Coyote, Loki: the figure who breaks the false rule so a truer one can appear.",
+    myth: "You break the false rule so a truer one can appear.",
     correspondence: "Aether · the crossroads · the unmarked variable",
     doctrine:
-      "A rule that has begun to lie must be broken before it can be rewritten. The Trickster — Hermes at the boundary, Coyote in the desert, the jester who may say the king is naked — is not a vandal. The Trickster is medicine that arrives as inconvenience. A joke that never builds is only sabotage. A disruption that serves life is how the next order gets in.",
+      "A rule that has begun to lie must be broken before it can be rewritten. The Trickster is not a vandal. A joke that never builds is only sabotage. A disruption that serves life is how the next order gets in.",
     shadow:
-      "Exile as a brand. You stay outside to remain special. Disruption becomes a style, and you cannot bear to be useful inside a room that is working.",
+      "You stay outside to remain special. Disruption becomes a style, and you cannot bear to be useful inside a room that is working.",
     gold:
       "The missing term, brought back across the line. Rooms become more honest. The rare thing serves more than your difference.",
     calling:
-      "You stand as the Trickster — the unmarked variable, the life that will not stay inside lines that have begun to lie. The rare thing in you is not a costume. It is medicine. Rooms become more honest when you arrive, even if they do not thank you at once. That delay is part of the office.",
+      "You stand as the Trickster. The rare thing in you is not a costume. It is medicine. Rooms become more honest when you arrive, even if they do not thank you at once.",
     method:
-      "The manner is liminal. You work from the margin. You bring the unknown term into a finished room and watch the furniture rearrange — then you help set the table again, or the trick was only cruelty.",
+      "The manner is liminal. You work from the margin. You bring the missing term into a finished room — then you help set the table again, or the trick was only cruelty.",
     field:
-      "The realm is the Edge: crossings, extremes, the honesty of the unmapped. The gift is movement between worlds, not a permanent address in exile. Hermes was a messenger. Messengers deliver, and then they leave the house standing.",
+      "The realm is the Edge: crossings, extremes, the honesty of the unmapped. The gift is movement between worlds, not a permanent address in exile. Messengers deliver, then they leave the house standing.",
     doubled:
-      "When the Trickster doubles, exile becomes a habit and disruption a style. Let the rare thing serve more than your difference.",
-    invitation:
-      "Honor what does not resemble the pattern, and bring it back across the line so others can use it.",
+      "When the Trickster doubles, exile becomes a habit. Let the rare thing serve more than your difference.",
+    invitation: "Honor what does not match the pattern, and bring it back so others can use it.",
   },
   Y: {
     letter: "Y",
@@ -652,25 +628,24 @@ const ROLES: Record<Letter, LetterRole> = {
     noun: "Shapeshifter",
     adj: "Yielding",
     realm: "Fork",
-    tradition: "Campbell's shapeshifter · anima and the flexible soul",
-    myth: "Proteus, the moon, the empath: a self that can turn without breaking.",
+    tradition: "Campbell's shapeshifter · the flexible soul",
+    myth: "A self that can turn without breaking.",
     correspondence: "Water · the moon's face · the living hinge",
     doctrine:
-      "Identity is something you do, not a costume you keep. Proteus would not be held, and that was his wisdom and his danger. Campbell's shapeshifter teaches the hero that allies change form — which is also how the inner life works. Yielding is intelligence. Yielding without a spine is how a soul becomes a hallway.",
+      "Identity is something you do, not a costume you keep. Yielding is intelligence. Yielding without a spine is how a person becomes a hallway.",
     shadow:
-      "The postponed stand. You can be anyone, so you are no one. Empathy becomes a leak. Every yes is temporary, and nothing can build on you.",
+      "You can be anyone, so you are no one. Empathy becomes a leak. Every yes is temporary, and nothing can build on you.",
     gold:
-      "A self that can turn and still keep a vow. Flexibility with a hinge, not a smear. You adapt without disappearing.",
+      "A self that can turn and still keep a vow. You adapt without disappearing.",
     calling:
-      "You stand as the Shapeshifter — Campbell's ambiguous ally, the one who teaches that a living identity will not freeze. Yearning, in you, has learned both yes and not-yet. People call this the empath. The older word is simply a soul that refuses to become a statue of itself.",
+      "You stand as the Shapeshifter. Yearning, in you, has learned both yes and not-yet. People call this the empath. The older word is a soul that refuses to become a statue of itself.",
     method:
-      "The manner is yielding. You bend where bending is wisdom. You know how to say yes without becoming a door anyone may walk through. That second half is the whole art.",
+      "The manner is yielding. You bend where bending is wisdom. You know how to say yes without becoming a door anyone may walk through.",
     field:
-      "The realm is the Fork — the place a life can still choose. You keep options humane. A fork is not an excuse to walk both roads until you starve. It is the dignity of a real choice, still open, not yet wasted.",
+      "The realm is the Fork — the place a life can still choose. A fork is not an excuse to walk both roads until you starve. It is a real choice, still open.",
     doubled:
-      "When the Shapeshifter doubles, the stand is postponed. Let one yes become a spine. A self that can be anything will finally be no one.",
-    invitation:
-      "Bend where bending is wisdom. Then keep one unbent vow.",
+      "When the Shapeshifter doubles, the stand is postponed. Let one yes become a spine.",
+    invitation: "Bend where bending is wisdom. Then keep one unbent vow.",
   },
   Z: {
     letter: "Z",
@@ -679,24 +654,23 @@ const ROLES: Record<Letter, LetterRole> = {
     adj: "Complete",
     realm: "Peak",
     tradition: "Pearson Magician · will made form",
-    myth: "The one who knows that inner image and outer event can be brought into line.",
+    myth: "You bring the inner picture and the outer day into line.",
     correspondence: "Fire · the peak · the aligned will",
     doctrine:
-      "The inner picture and the outer day can be brought into line — and that is work, not a spell you purchase. The Magician is Pearson's figure of change through alignment: attention becomes a tool. Manifestation, in the older sense, is simply a will clean enough to use. The peak is a visit. The world is the rest of the mountain.",
+      "Inner picture and outer day can be brought into line. That is work, not a spell you buy. Manifestation is a will clean enough to use. The peak is a visit. The world is the rest of the mountain.",
     shadow:
-      "Inflation. You live at altitude and call ordinary life a failure of vision. Intensity without descent. The lukewarm are treated as a different species.",
+      "You live at altitude and call ordinary life a failure of vision. Intensity without descent.",
     gold:
-      "A season of clean will, then a graceful walk down. The unseen made practicable. Power that can become ordinary again.",
+      "A season of clean will, then a walk back down. Power that can become ordinary again.",
     calling:
-      "You stand as the Magician. This is not stagecraft. It is zeal distilled: intensity without waste. You raise the ceiling of a room by refusing the lukewarm. You make the unseen practicable. People feel, near you, that a life can actually be aimed — which is why you must remain kind to the part of them that is still climbing.",
+      "You stand as the Magician. This is not stagecraft. It is intensity without waste. You raise the ceiling of a room by refusing the lukewarm. People feel, near you, that a life can actually be aimed — which is why you must stay kind to the part of them that is still climbing.",
     method:
-      "The manner is complete concentration. You will spend a season on a single altitude. That is the gift. The corresponding duty is to know when the season has done its work.",
+      "The manner is complete concentration. You will spend a season on a single height. The duty is to know when the season has done its work.",
     field:
-      "The realm is the Peak — a place to visit with the whole self, not a climate to inhabit. The magician who cannot descend has mistaken the summit for the world, and the world, unvisited, grows wild in their absence.",
+      "The realm is the Peak — a place to visit with the whole self, not a climate to inhabit. The magician who cannot descend has mistaken the summit for the world.",
     doubled:
-      "When the Magician doubles, the climb starves the descent. Come down with grace. Power that cannot become ordinary is only inflation.",
-    invitation:
-      "Give zeal one worthy height, and practice the walk back down as part of the work.",
+      "When the Magician doubles, the climb starves the descent. Come down. Power that cannot become ordinary is only inflation.",
+    invitation: "Give zeal one worthy height, and practice the walk back down as part of the work.",
   },
 };
 
@@ -724,17 +698,16 @@ function buildTitle(a: LetterRole, b: LetterRole, c: LetterRole, triad: Triad): 
 }
 
 function buildPortrait(a: LetterRole, b: LetterRole, c: LetterRole, triad: Triad, title: string): string {
-  const [x, y, z] = triad;
   const repeats: string[] = [];
-  if (x === y || x === z) repeats.push(a.doubled);
-  if (y === z && y !== x) repeats.push(b.doubled);
+  if (triad[0] === triad[1] || triad[0] === triad[2]) repeats.push(a.doubled);
+  if (triad[1] === triad[2] && triad[1] !== triad[0]) repeats.push(b.doubled);
 
   return [
     a.calling,
     b.method,
     c.field,
     ...repeats,
-    `${title} is not a costume. It is ${a.noun.toLowerCase()} work done in a ${b.adj.toLowerCase()} manner, on the path of the ${c.realm}.`,
+    `${title} is ${a.noun.toLowerCase()} work done in a ${b.adj.toLowerCase()} way, on the path of the ${c.realm}.`,
   ].join(" ");
 }
 

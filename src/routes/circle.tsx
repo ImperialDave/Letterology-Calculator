@@ -34,11 +34,10 @@ function CirclePage() {
           </p>
           <h1 className="mt-2 font-display text-4xl text-ink sm:text-5xl">Circle of Houses</h1>
           <p className="mt-3 max-w-xl leading-relaxed text-ink/85">
-            The alphabet stands in a single wheel, A at the crown. Each house has
-            three allies — figures that complete its work — and three enemies —
-            figures that will not let it sleep. An enemy is not a villain. It is
-            the necessary opposition: the house that exposes the shadow of the one
-            you are standing in.
+            The alphabet stands in a wheel, A at the top. Each house has three
+            allies — figures that complete its work — and three enemies — figures
+            that show its blind spot. An enemy is not a villain. It is the house
+            that will not let this one sleep.
           </p>
         </header>
 

@@ -49,11 +49,11 @@ export function ArchetypeCard({
       <p className="mt-4 max-w-3xl leading-relaxed text-ink/90">{archetype.portrait}</p>
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <div className="border-t border-ink/10 pt-4">
-          <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">Shadow</p>
+          <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">When it fails</p>
           <p className="mt-2 text-sm leading-relaxed text-ink/85">{archetype.shadow}</p>
         </div>
         <div className="border-t border-ink/10 pt-4">
-          <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">Gold</p>
+          <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">When it works</p>
           <p className="mt-2 text-sm leading-relaxed text-ink/85">{archetype.gold}</p>
         </div>
       </div>

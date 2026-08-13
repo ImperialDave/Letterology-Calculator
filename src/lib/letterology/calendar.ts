@@ -251,7 +251,7 @@ export function walkFortnights(walkYear: number): FortnightSeat[] {
 
 export function yearDoctrine(letter: Letter): string {
   const house = houseOf(letter);
-  return `The civil year sits in the ${house.house}. ${house.myth}`;
+  return `The civil year sits in the ${house.house}. ${house.myth} This colors the year. It does not sit today's house.`;
 }
 
 export function fortnightDoctrine(seat: FortnightSeat): string {

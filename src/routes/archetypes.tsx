@@ -70,11 +70,10 @@ function HousesPage() {
           </p>
           <h1 className="mt-2 font-display text-4xl text-ink sm:text-5xl">The Houses</h1>
           <p className="mt-3 max-w-xl leading-relaxed text-ink/85">
-            Twenty-six houses, one for each letter, drawn from the figures that keep
-            returning in myth: Pearson's twelve, Jung's psyche, the Tarot, the
-            hermetic work, the contemplative path. A name chooses a house by its first
-            letter; the two most common letters complete the chord — house, manner, and field.
-            Their alliances and oppositions live on the{" "}
+            Twenty-six houses, one for each letter. They are the old figures —
+            Seeker, Caregiver, Rebel, Hermit — said in plain English. A name
+            chooses a house by its first letter. The two letters that weigh most
+            after that set the manner and the field. Allies and enemies live on the{" "}
             <Link to="/circle" search={{ house: selectedHouse }} className="text-primary">
               Circle of Houses
             </Link>

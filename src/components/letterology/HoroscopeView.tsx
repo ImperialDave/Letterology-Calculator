@@ -235,7 +235,7 @@ export function HoroscopeView({ horoscope }: { horoscope: Horoscope }) {
           <div>
             <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">Living map</p>
             <p className="mt-1 text-sm text-muted">
-              The path traces the name. Darker cells carry more weight. Gold rings are allies; ink rings are enemies.
+              The path follows the name. Darker cells carry more weight. Gold rings are allies. Dark rings are enemies.
             </p>
           </div>
           <p className="text-sm text-muted">
@@ -297,7 +297,7 @@ function WheelColumn({
                 <span>
                   <span className="font-display text-ink">{houseOf(letter).noun}</span>
                   <span className="ml-2 text-xs tracking-wide text-muted uppercase">
-                    {inName ? "in the name" : "unlived"}
+                    {inName ? "in the name" : "not in the name"}
                   </span>
                 </span>
               </button>

@@ -167,10 +167,6 @@ function possessive(name: string): string {
   return name.endsWith("s") || name.endsWith("S") ? `${name}'` : `${name}'s`;
 }
 
-function article(word: string): string {
-  return /^[aeiou]/i.test(word) ? "an" : "a";
-}
-
 function listHouses(letters: Letter[]): string {
   return letters.map((letter) => `${houseOf(letter).noun} (${letter})`).join(", ");
 }
@@ -206,25 +202,25 @@ export function buildHoroscope(rawName: string, now = new Date()): Horoscope | n
   const vowelLead = vowels[0] ? themeOf(vowels[0].letter) : null;
   const consLead = consonants[0] ? themeOf(consonants[0].letter) : null;
 
-  const primaryStatement = `${possessive(displayName)} signature pressure is ${p.name} — ${article(p.name)} ${p.name.toLowerCase()} field gathered around ${primary.letter}. ${p.essence}`;
+  const primaryStatement = `The first letter of ${possessive(displayName)} name sits ${primary.letter} — the ${houseOf(primary.letter).noun}. That is the house of this reading. ${p.essence}`;
 
   const giftBits = [g1, g2, g3].filter(Boolean).map((t) => `${t!.letter} (${t!.name.toLowerCase()})`);
   const giftsStatement = g2
-    ? `The letters ${giftBits.join(", ")} keep company in this name. ${g1.gift} ${g2.gift}`
+    ? `The letters that weigh most after that are ${giftBits.join(", ")}. ${g1.gift} ${g2.gift}`
     : g1.gift;
 
   const challengeStatement = tension
-    ? `${tension.copy} ${circle.kinAbsent[0] ? `Meanwhile the unused ally of ${houseOf(circle.kinAbsent[0]).house} waits as practice, not as lack: ${themeOf(circle.kinAbsent[0]).invitation}` : ""}`.trim()
+    ? `${tension.copy} ${circle.kinAbsent[0] ? `An unused ally is ${houseOf(circle.kinAbsent[0]).house}: ${themeOf(circle.kinAbsent[0]).invitation}` : ""}`.trim()
     : s2
-      ? `A growth edge appears where ${s1.name.toLowerCase()} and ${s2.name.toLowerCase()} are nearly silent. ${s1.invitation} ${s2.invitation}`
+      ? `${s1.name} and ${s2.name.toLowerCase()} are nearly silent in this name. ${s1.invitation} ${s2.invitation}`
       : s1.challenge;
 
   const innerNote = vowelLead
-    ? `Vowels in this name lean toward ${vowelLead.name.toLowerCase()}: ${vowelLead.inner}`
-    : "This name carries almost no vowel field — a rare, highly articulated outer signature.";
+    ? `The vowels lean toward ${vowelLead.name.toLowerCase()}: ${vowelLead.inner}`
+    : "This name has almost no vowels — a very outward signature.";
   const outerNote = consLead
-    ? `Consonants speak of ${consLead.name.toLowerCase()} in the outer life: ${consLead.outer}`
-    : "This name is almost all vowel — an unusually inward constellation.";
+    ? `The consonants speak of ${consLead.name.toLowerCase()} in the outer life: ${consLead.outer}`
+    : "This name is almost all vowels — a very inward signature.";
 
   const triad = pickTriad(inventory, signature);
   const archetype = archetypeOf(triad);
@@ -236,33 +232,33 @@ export function buildHoroscope(rawName: string, now = new Date()): Horoscope | n
 
   const wheelStatement = [
     circle.kinPresent.length
-      ? `This name already carries allied seats: ${listHouses(circle.kinPresent)}.`
-      : `None of the ${houseOf(signature).noun}'s allies appear in the letters — kinship is asked from outside the name.`,
+      ? `This name already carries allied houses: ${listHouses(circle.kinPresent)}.`
+      : `None of the ${houseOf(signature).noun}'s allies appear in the letters — those relationships come from outside the name.`,
     circle.crossPresent.length
-      ? `The living cross is ${listHouses(circle.crossPresent)}.`
-      : `The opposing seats are quiet in this name.`,
+      ? `The opposing houses in the name are ${listHouses(circle.crossPresent)}.`
+      : `The opposing houses are quiet in this name.`,
     circle.kinAbsent.length
-      ? `Unlived allies remain: ${listHouses(circle.kinAbsent)}.`
-      : `Every allied seat is already sounding.`,
+      ? `Allies not in the name: ${listHouses(circle.kinAbsent)}.`
+      : `Every allied house already appears in the letters.`,
   ].join(" ");
 
   const synthesis = [
-    `${displayName} stands in the ${archetype.house} (${archetype.correspondence}). ${archetype.myth}`,
+    `${displayName} stands in the ${archetype.house}. ${archetype.myth}`,
     tension
-      ? `The characteristic pressure is ${tension.title.toLowerCase()}.`
+      ? `The main tension is ${tension.title.toLowerCase()}.`
       : p.invitation,
-    `Notice where ${p.name.toLowerCase()} already shows up in ordinary days. Letterology is a mirror, not a forecast.`,
+    `Watch where ${p.name.toLowerCase()} already shows up in ordinary days. This is a portrait, not a prediction.`,
   ].join(" ");
 
   const lettersInName = inventory.map((item) => item.letter);
   const dailyInName = lettersInName.includes(daily);
   const periodHouse = houseOf(period);
   const dailyStatement = almanac.fortnight.hinge
-    ? `Today is a hinge day — the Fool's gate between walks. The date still wears ${daily} (${dailyTheme.name}). ${dailyTheme.invitation}`
-    : `Today's date letter is ${daily} — ${dailyTheme.name}${dailyInName ? ", which already lives in this name" : ", silent in this name"}. ${dailyTheme.invitation}`;
+    ? `Today is a leftover day between one year-walk and the next. The date still wears ${daily} (${dailyTheme.name}). ${dailyTheme.invitation}`
+    : `Today's date letter is ${daily} — ${dailyTheme.name}${dailyInName ? ", which already lives in this name" : ", which does not appear in this name"}. ${dailyTheme.invitation}`;
   const periodStatement = almanac.fortnight.hinge
     ? `The year is between circles. These leftover days belong to the Fool before the Seeker opens the walk again.`
-    : `This fortnight the sun sits in ${period} — the ${periodHouse.house}, day ${almanac.fortnight.dayInSeat} of 14. ${periodTheme.invitation}`;
+    : `For these fourteen days the sun sits in ${period} — the ${periodHouse.house}, day ${almanac.fortnight.dayInSeat} of 14. ${periodTheme.invitation}`;
 
   return {
     displayName,
@@ -317,7 +313,7 @@ export function readingAsText(h: Horoscope): string {
     h.tension ? `Tension: ${h.tension.title}` : "",
     `Allies: ${h.allies.join(", ")}`,
     `Enemies: ${h.enemies.join(", ")}`,
-    `Unlived seats: ${h.shadows.map((s) => `${s} (${themeOf(s).name})`).join(", ")}`,
+    `Allies not in the name: ${h.shadows.map((s) => `${s} (${themeOf(s).name})`).join(", ")}`,
     `Date letter: ${h.daily} — ${themeOf(h.daily).name}`,
     `Fortnight: ${h.period} — ${themeOf(h.period).name}`,
     "",
@@ -328,8 +324,8 @@ export function readingAsText(h: Horoscope): string {
     h.archetype.correspondence,
     h.archetype.doctrine,
     h.archetype.portrait,
-    `Shadow: ${h.archetype.shadow}`,
-    `Gold: ${h.archetype.gold}`,
+    `When it fails: ${h.archetype.shadow}`,
+    `When it works: ${h.archetype.gold}`,
     "",
     h.statements.wheel,
     "",
@@ -342,7 +338,7 @@ export function readingAsText(h: Horoscope): string {
     h.statements.vowelNote,
     h.statements.consonantNote,
     "",
-    "This reading is reflective, not deterministic. The letters we carry are already speaking.",
+    "This reading is a portrait, not a prediction. The letters you already carry are the material.",
   ];
   return lines.filter((line, i, arr) => !(line === "" && arr[i - 1] === "")).join("\n");
 }

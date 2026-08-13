@@ -25,7 +25,7 @@ export function NameForm({
 
   return (
     <form onSubmit={handleSubmit} className="w-full">
-      <Label htmlFor="full-name">The name you carry</Label>
+      <Label htmlFor="full-name">Your name</Label>
       <div className="mt-2 flex flex-col gap-2 sm:flex-row">
         <Input
           id="full-name"

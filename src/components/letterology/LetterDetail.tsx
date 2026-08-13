@@ -37,11 +37,11 @@ export function LetterDetail({ letter }: { letter: Letter }) {
       </div>
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <div className="border-t border-ink/10 pt-4">
-          <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">Shadow</p>
+          <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">When it fails</p>
           <p className="mt-2 text-sm leading-relaxed text-ink/85">{house.shadow}</p>
         </div>
         <div className="border-t border-ink/10 pt-4">
-          <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">Gold</p>
+          <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">When it works</p>
           <p className="mt-2 text-sm leading-relaxed text-ink/85">{house.gold}</p>
         </div>
       </div>
