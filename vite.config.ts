@@ -146,7 +146,11 @@ export default defineConfig(({ command }) => ({
     ...(command === "build"
       ? [
           nitro({
-            preset: "vercel",
+            // Railway (and any Node host) needs a standalone server. The Grok
+            // sandbox originally targeted Vercel functions; hardcoding that
+            // preset made Railway start `dist/server/server.js` and crash.
+            // Override with NITRO_PRESET=vercel if you deploy there instead.
+            preset: process.env.NITRO_PRESET || "node-server",
             // Auto-registers server/middleware/* (the PWA install page +
             // manifest + head-tag middleware). Nitro v3 defaults serverDir to
             // false, so removing this silently unwires /?install=1 on deploys.
