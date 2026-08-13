@@ -4,12 +4,15 @@ import { bondsOf } from "@/lib/letterology/circle";
 import { themeOf } from "@/lib/letterology/lexicon";
 import type { Letter } from "@/lib/letterology/types";
 import { VOWEL_LETTERS } from "@/lib/letterology/types";
+import { gloss } from "@/lib/letterology/glossary";
+import { TermStack } from "@/components/letterology/Gloss";
 
 export function LetterDetail({ letter }: { letter: Letter }) {
   const theme = themeOf(letter);
   const house = houseOf(letter);
   const { allies, enemies } = bondsOf(letter);
-  const kind = VOWEL_LETTERS.has(letter) || letter === "Y" ? "Inner orientation" : "Outer expression";
+  const isInner = VOWEL_LETTERS.has(letter) || letter === "Y";
+  const kind = isInner ? "Inner orientation" : "Outer expression";
 
   return (
     <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-6">
@@ -17,6 +20,7 @@ export function LetterDetail({ letter }: { letter: Letter }) {
         <p className="font-display text-6xl leading-none text-primary">{letter}</p>
         <div className="text-right">
           <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">{kind}</p>
+          <p className="mt-1 text-sm text-muted">{isInner ? gloss("vowels") : gloss("consonants")}</p>
           <h3 className="mt-1 font-display text-2xl text-ink">{theme.name}</h3>
         </div>
       </div>
@@ -26,7 +30,9 @@ export function LetterDetail({ letter }: { letter: Letter }) {
         <p className="mt-1 font-display text-xs tracking-[0.14em] text-muted uppercase">
           {house.tradition}
         </p>
-        <p className="mt-1 text-sm text-ink/65">{house.correspondence}</p>
+        <p className="mt-1 text-sm text-muted">{gloss("tradition")}</p>
+        <p className="mt-2 text-sm text-ink/65">{house.correspondence}</p>
+        <p className="mt-1 text-sm text-muted">{gloss("correspondence")}</p>
         <p className="mt-3 text-sm leading-relaxed text-ink/90">{house.doctrine}</p>
       </div>
       <p className="mt-4 text-sm tracking-wide text-muted">{theme.keywords.join(" · ")}</p>
@@ -47,13 +53,13 @@ export function LetterDetail({ letter }: { letter: Letter }) {
       </div>
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <div className="border-t border-ink/10 pt-4">
-          <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">Allies</p>
+          <TermStack id="allies" />
           <p className="mt-2 font-display text-lg tracking-[0.12em] text-ink">
             {allies.map((item) => item.other).join(" · ")}
           </p>
         </div>
         <div className="border-t border-ink/10 pt-4">
-          <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">Enemies</p>
+          <TermStack id="enemies" />
           <p className="mt-2 font-display text-lg tracking-[0.12em] text-ink">
             {enemies.map((item) => item.other).join(" · ")}
           </p>

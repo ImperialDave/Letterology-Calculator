@@ -27,7 +27,18 @@ function AuthSlot() {
   );
 }
 
-export function SiteHeader({ current }: { current: "read" | "atlas" | "houses" | "circle" | "almanac" | "login" }) {
+const NAV: { to: "/" | "/atlas" | "/archetypes" | "/circle" | "/almanac" | "/key"; label: string; current: HeaderCurrent }[] = [
+  { to: "/", label: "Read", current: "read" },
+  { to: "/atlas", label: "Atlas", current: "atlas" },
+  { to: "/archetypes", label: "Houses", current: "houses" },
+  { to: "/circle", label: "Circle", current: "circle" },
+  { to: "/almanac", label: "Year", current: "almanac" },
+  { to: "/key", label: "Key", current: "key" },
+];
+
+export type HeaderCurrent = "read" | "atlas" | "houses" | "circle" | "almanac" | "login" | "key";
+
+export function SiteHeader({ current }: { current: HeaderCurrent }) {
   return (
     <header className="border-b border-ink/10">
       <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3 sm:h-16 sm:flex-nowrap sm:py-0 sm:px-6">
@@ -44,51 +55,18 @@ export function SiteHeader({ current }: { current: "read" | "atlas" | "houses" |
           </span>
         </Link>
         <nav className="flex flex-wrap items-center gap-0.5 sm:gap-2">
-          <Link
-            to="/"
-            className={cn(
-              "inline-flex h-9 items-center rounded-md px-2 font-display text-xs tracking-[0.14em] uppercase sm:px-3",
-              current === "read" ? "text-ink" : "text-muted hover:text-ink",
-            )}
-          >
-            Read
-          </Link>
-          <Link
-            to="/atlas"
-            className={cn(
-              "inline-flex h-9 items-center rounded-md px-2 font-display text-xs tracking-[0.14em] uppercase sm:px-3",
-              current === "atlas" ? "text-ink" : "text-muted hover:text-ink",
-            )}
-          >
-            Atlas
-          </Link>
-          <Link
-            to="/archetypes"
-            className={cn(
-              "inline-flex h-9 items-center rounded-md px-2 font-display text-xs tracking-[0.14em] uppercase sm:px-3",
-              current === "houses" ? "text-ink" : "text-muted hover:text-ink",
-            )}
-          >
-            Houses
-          </Link>
-          <Link
-            to="/circle"
-            className={cn(
-              "inline-flex h-9 items-center rounded-md px-2 font-display text-xs tracking-[0.14em] uppercase sm:px-3",
-              current === "circle" ? "text-ink" : "text-muted hover:text-ink",
-            )}
-          >
-            Circle
-          </Link>
-          <Link
-            to="/almanac"
-            className={cn(
-              "inline-flex h-9 items-center rounded-md px-2 font-display text-xs tracking-[0.14em] uppercase sm:px-3",
-              current === "almanac" ? "text-ink" : "text-muted hover:text-ink",
-            )}
-          >
-            Year
-          </Link>
+          {NAV.map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              className={cn(
+                "inline-flex h-9 items-center rounded-md px-2 font-display text-xs tracking-[0.14em] uppercase sm:px-3",
+                current === item.current ? "text-ink" : "text-muted hover:text-ink",
+              )}
+            >
+              {item.label}
+            </Link>
+          ))}
           <AuthSlot />
         </nav>
       </div>
@@ -99,8 +77,14 @@ export function SiteHeader({ current }: { current: "read" | "atlas" | "houses" |
 export function SiteFooter() {
   return (
     <footer className="mt-16 border-t border-ink/10">
-      <div className="mx-auto max-w-5xl px-4 py-8 text-center text-sm text-muted sm:px-6">
-        Twenty-six houses. A portrait of a username, not a prediction.
+      <div className="mx-auto flex max-w-5xl flex-col items-center gap-2 px-4 py-8 text-center text-sm text-muted sm:px-6">
+        <p>Twenty-six houses. A portrait of a username, not a prediction.</p>
+        <Link
+          to="/key"
+          className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+        >
+          How to read this
+        </Link>
       </div>
     </footer>
   );

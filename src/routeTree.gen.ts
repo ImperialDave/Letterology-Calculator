@@ -14,6 +14,7 @@ import { Route as AlmanacRouteImport } from './routes/almanac'
 import { Route as ArchetypesRouteImport } from './routes/archetypes'
 import { Route as AtlasRouteImport } from './routes/atlas'
 import { Route as CircleRouteImport } from './routes/circle'
+import { Route as KeyRouteImport } from './routes/key'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ApiCardRouteImport } from './routes/api/card'
 import { Route as OgFileRouteImport } from './routes/og.$file'
@@ -43,6 +44,11 @@ const AtlasRoute = AtlasRouteImport.update({
 const CircleRoute = CircleRouteImport.update({
   id: '/circle',
   path: '/circle',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KeyRoute = KeyRouteImport.update({
+  id: '/key',
+  path: '/key',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -77,6 +83,7 @@ export interface FileRoutesByFullPath {
   '/archetypes': typeof ArchetypesRoute
   '/atlas': typeof AtlasRoute
   '/circle': typeof CircleRoute
+  '/key': typeof KeyRoute
   '/login': typeof LoginRoute
   '/api/card': typeof ApiCardRoute
   '/og/$file': typeof OgFileRoute
@@ -89,6 +96,7 @@ export interface FileRoutesByTo {
   '/archetypes': typeof ArchetypesRoute
   '/atlas': typeof AtlasRoute
   '/circle': typeof CircleRoute
+  '/key': typeof KeyRoute
   '/login': typeof LoginRoute
   '/api/card': typeof ApiCardRoute
   '/og/$file': typeof OgFileRoute
@@ -102,6 +110,7 @@ export interface FileRoutesById {
   '/archetypes': typeof ArchetypesRoute
   '/atlas': typeof AtlasRoute
   '/circle': typeof CircleRoute
+  '/key': typeof KeyRoute
   '/login': typeof LoginRoute
   '/api/card': typeof ApiCardRoute
   '/og/$file': typeof OgFileRoute
@@ -116,6 +125,7 @@ export interface FileRouteTypes {
     | '/archetypes'
     | '/atlas'
     | '/circle'
+    | '/key'
     | '/login'
     | '/api/card'
     | '/og/$file'
@@ -128,6 +138,7 @@ export interface FileRouteTypes {
     | '/archetypes'
     | '/atlas'
     | '/circle'
+    | '/key'
     | '/login'
     | '/api/card'
     | '/og/$file'
@@ -140,6 +151,7 @@ export interface FileRouteTypes {
     | '/archetypes'
     | '/atlas'
     | '/circle'
+    | '/key'
     | '/login'
     | '/api/card'
     | '/og/$file'
@@ -153,6 +165,7 @@ export interface RootRouteChildren {
   ArchetypesRoute: typeof ArchetypesRoute
   AtlasRoute: typeof AtlasRoute
   CircleRoute: typeof CircleRoute
+  KeyRoute: typeof KeyRoute
   LoginRoute: typeof LoginRoute
   ApiCardRoute: typeof ApiCardRoute
   OgFileRoute: typeof OgFileRoute
@@ -195,6 +208,13 @@ declare module '@tanstack/react-router' {
       path: '/circle'
       fullPath: '/circle'
       preLoaderRoute: typeof CircleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/key': {
+      id: '/key'
+      path: '/key'
+      fullPath: '/key'
+      preLoaderRoute: typeof KeyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -241,6 +261,7 @@ const rootRouteChildren: RootRouteChildren = {
   ArchetypesRoute: ArchetypesRoute,
   AtlasRoute: AtlasRoute,
   CircleRoute: CircleRoute,
+  KeyRoute: KeyRoute,
   LoginRoute: LoginRoute,
   ApiCardRoute: ApiCardRoute,
   OgFileRoute: OgFileRoute,
@@ -250,3 +271,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}

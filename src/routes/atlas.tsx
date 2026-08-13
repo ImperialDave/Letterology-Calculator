@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { LetterDetail } from "@/components/letterology/LetterDetail";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { PageShare } from "@/components/letterology/PageShare";
+import { KeyLink, Plainly } from "@/components/letterology/Gloss";
 import { themeOf } from "@/lib/letterology/lexicon";
 import { pageCardMeta } from "@/lib/letterology/share";
 import { ALPHABET, type Letter, VOWEL_LETTERS } from "@/lib/letterology/types";
@@ -51,6 +52,12 @@ function AtlasPage() {
             Caregiver, Rebel, and so on. Vowels lean inward. Consonants lean
             outward.
           </p>
+          <Plainly>
+            Pick a letter to read its job. Vowels describe the private life.
+            Consonants describe how a person shows up. The house is the role that
+            letter sits — not a fortune.
+          </Plainly>
+          <KeyLink />
           <PageShare
             path={`/atlas?letter=${selected}`}
             caption={`${selected} — ${themeOf(selected).name}\n${themeOf(selected).essence}`}

@@ -43,7 +43,8 @@ export function NameForm({
         </Button>
       </div>
       <p id="username-hint" className="mt-2 text-sm text-muted">
-        The handle you live under. @ is optional. Diacritics fold; only A–Z are read.
+        The handle you live under — your username. @ is optional. Accents fold away; only A–Z are
+        read.
       </p>
       {!compact ? (
         <div className="mt-5 flex flex-wrap gap-2">

@@ -202,11 +202,11 @@ export function buildHoroscope(rawName: string, now = new Date()): Horoscope | n
   const vowelLead = vowels[0] ? themeOf(vowels[0].letter) : null;
   const consLead = consonants[0] ? themeOf(consonants[0].letter) : null;
 
-  const primaryStatement = `The first letter of ${possessive(displayName)} username sits ${primary.letter} — the ${houseOf(primary.letter).noun}. That is the house of this reading. ${p.essence}`;
+  const primaryStatement = `The first letter of ${possessive(displayName)} username sits ${primary.letter} — the ${houseOf(primary.letter).noun}. That is the house of this reading: the role this name starts in. ${p.essence}`;
 
   const giftBits = [g1, g2, g3].filter(Boolean).map((t) => `${t!.letter} (${t!.name.toLowerCase()})`);
   const giftsStatement = g2
-    ? `The letters that weigh most after that are ${giftBits.join(", ")}. ${g1.gift} ${g2.gift}`
+    ? `The letters that weigh most after that — the ones that show up most, with first and last letters counting extra — are ${giftBits.join(", ")}. ${g1.gift} ${g2.gift}`
     : g1.gift;
 
   const challengeStatement = tension
@@ -228,7 +228,7 @@ export function buildHoroscope(rawName: string, now = new Date()): Horoscope | n
   const mannerTheme = themeOf(triad[1]);
   const fieldTheme = themeOf(triad[2]);
 
-  const methodStatement = `The first letter of the username sits the house (${signature}, ${houseOf(signature).noun}). The next two letters by weight set the manner (${triad[1]}, ${mannerTheme.name.toLowerCase()}) and the field (${triad[2]}, ${fieldTheme.name.toLowerCase()}).`;
+  const methodStatement = `The first letter of the username sits the house (${signature}, ${houseOf(signature).noun}) — the role this name starts in. The next two letters by weight set the manner (${triad[1]}, ${mannerTheme.name.toLowerCase()}: how you work) and the field (${triad[2]}, ${fieldTheme.name.toLowerCase()}: where you work).`;
 
   const wheelStatement = [
     circle.kinPresent.length

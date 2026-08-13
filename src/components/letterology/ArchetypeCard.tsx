@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import type { Archetype } from "@/lib/letterology/types";
 import { themeOf } from "@/lib/letterology/lexicon";
+import { gloss, TRIAD_LABELS } from "@/lib/letterology/glossary";
 
 export function ArchetypeCard({
   archetype,
@@ -10,11 +11,15 @@ export function ArchetypeCard({
   featured?: boolean;
 }) {
   const [first, second, third] = archetype.triad;
+  const labels = [TRIAD_LABELS.house, TRIAD_LABELS.manner, TRIAD_LABELS.field];
 
   return (
     <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
       <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">
         {featured ? "Your archetype" : "Archetype"}
+      </p>
+      <p className="mt-1 text-sm text-muted">
+        Three letters: the role, how you work, and where the work happens.
       </p>
       <div className="mt-4 flex flex-wrap items-end gap-3">
         {[first, second, third].map((letter, index) => (
@@ -29,7 +34,7 @@ export function ArchetypeCard({
               {letter}
             </span>
             <span className="font-display text-xs tracking-[0.14em] text-muted uppercase">
-              {index === 0 ? "House" : index === 1 ? "Manner" : "Field"}
+              {labels[index]?.term}
             </span>
           </span>
         ))}
@@ -44,7 +49,9 @@ export function ArchetypeCard({
       <p className="mt-2 font-display text-xs tracking-[0.14em] text-muted uppercase">
         {archetype.tradition}
       </p>
-      <p className="mt-1 text-sm text-ink/65">{archetype.correspondence}</p>
+      <p className="mt-1 text-sm text-muted">{gloss("tradition")}</p>
+      <p className="mt-2 text-sm text-ink/65">{archetype.correspondence}</p>
+      <p className="mt-1 text-sm text-muted">{gloss("correspondence")}</p>
       <p className="mt-4 max-w-3xl text-sm leading-relaxed text-ink/80">{archetype.doctrine}</p>
       <p className="mt-4 max-w-3xl leading-relaxed text-ink/90">{archetype.portrait}</p>
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -59,9 +66,8 @@ export function ArchetypeCard({
       </div>
       <p className="mt-5 max-w-3xl text-sm leading-relaxed text-muted">{archetype.invitation}</p>
       <p className="mt-5 text-sm text-muted">
-        {themeOf(first).name} names the house; {themeOf(second).name.toLowerCase()} is the manner;
-        {" "}
-        {themeOf(third).name.toLowerCase()} is the field.
+        {themeOf(first).name} names the house (the role); {themeOf(second).name.toLowerCase()} is the
+        manner (how); {themeOf(third).name.toLowerCase()} is the field (where).
       </p>
       <Link
         to="/archetypes"

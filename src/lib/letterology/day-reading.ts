@@ -121,7 +121,7 @@ function dayJobOf(
       : age === "late"
         ? "The fortnight is nearly spent."
         : "The fortnight is in its middle work.";
-  return `Today sits the ${d.house}. ${d.myth} ${ageLine} For these fourteen days the sun works as ${f.adj}. The weekday field is ${w.noun} (${weekdayRole}).`;
+  return `Today sits the ${d.house} — the role the date names. ${d.myth} ${ageLine} For these fourteen days the sun works as ${f.adj} (the current two-week seat). The weekday field is ${w.noun} (${weekdayRole}) — what today's work is about.`;
 }
 
 function meetingOf(

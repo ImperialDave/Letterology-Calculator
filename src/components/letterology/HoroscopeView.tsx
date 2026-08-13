@@ -3,8 +3,8 @@ import { Link } from "@tanstack/react-router";
 import { Check, Copy } from "lucide-react";
 import { ArchetypeCard } from "@/components/letterology/ArchetypeCard";
 import { ArchetypeList } from "@/components/letterology/ArchetypeList";
-import { CourtLines } from "@/components/letterology/CourtLines";
 import { DayCard } from "@/components/letterology/DayCard";
+import { KeyLink, TermStack } from "@/components/letterology/Gloss";
 import { LetterDetail } from "@/components/letterology/LetterDetail";
 import { LetterMap } from "@/components/letterology/LetterMap";
 import { ShareBar } from "@/components/letterology/ShareBar";
@@ -13,6 +13,7 @@ import { houseOf } from "@/lib/letterology/archetypes";
 import type { CivilDate } from "@/lib/letterology/calendar";
 import { bondCopy } from "@/lib/letterology/circle";
 import { copyToClipboard } from "@/lib/letterology/clipboard";
+import { gloss } from "@/lib/letterology/glossary";
 import { composeXPost, portraitUrl, publicSiteOrigin, tweetReading } from "@/lib/letterology/share";
 import { themeOf } from "@/lib/letterology/lexicon";
 import type { Horoscope, Letter } from "@/lib/letterology/types";
@@ -84,6 +85,7 @@ export function HoroscopeView({
             <p className="font-display text-xs tracking-[0.2em] text-muted uppercase">
               Letterological Horoscope
             </p>
+            <p className="mt-1 text-sm text-muted">{gloss("horoscope")}</p>
             <h2 className="mt-1 font-display text-3xl leading-tight text-ink sm:text-4xl">
               {horoscope.displayName}
             </h2>
@@ -91,6 +93,9 @@ export function HoroscopeView({
             <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
               {horoscope.statements.method}
             </p>
+            <div className="mt-1">
+              <KeyLink />
+            </div>
           </div>
         </div>
         <Button variant="outline" onClick={copyReading} className="self-start sm:self-auto">
@@ -107,10 +112,7 @@ export function HoroscopeView({
 
       <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">On the wheel</p>
-            <h3 className="mt-2 font-display text-2xl text-ink">{horoscope.archetype.house}</h3>
-          </div>
+          <TermStack id="wheel" term="On the wheel" />
           <Link
             to="/circle"
             search={{ house: horoscope.signature }}
@@ -119,10 +121,12 @@ export function HoroscopeView({
             Open the circle
           </Link>
         </div>
+        <h3 className="mt-3 font-display text-2xl text-ink">{horoscope.archetype.house}</h3>
         <p className="mt-3 max-w-3xl leading-relaxed text-ink/90">{horoscope.statements.wheel}</p>
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
           <WheelColumn
             title="Allies"
+            glossId="allies"
             house={horoscope.signature}
             letters={horoscope.allies}
             present={horoscope.kinPresent}
@@ -131,6 +135,7 @@ export function HoroscopeView({
           />
           <WheelColumn
             title="Enemies"
+            glossId="enemies"
             house={horoscope.signature}
             letters={horoscope.enemies}
             present={horoscope.crossPresent}
@@ -143,10 +148,15 @@ export function HoroscopeView({
       <ArchetypeList
         items={horoscope.kindred}
         caption="Same manner and field, sitting in an allied house"
+        note={gloss("kindred")}
       />
 
       <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
         <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">Primary theme</p>
+        <p className="mt-1 text-sm text-muted">
+          The letter that weighs most in this name — often the first letter, sometimes another if
+          it repeats.
+        </p>
         <h3 className="mt-2 font-display text-3xl text-ink">
           {horoscope.primary.letter} — {themeOf(horoscope.primary.letter).name}
         </h3>
@@ -193,11 +203,11 @@ export function HoroscopeView({
 
       <section className="grid gap-4 md:grid-cols-2">
         <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)]">
-          <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">Vowels · inner</p>
+          <TermStack id="vowels" />
           <p className="mt-3 text-sm leading-relaxed">{horoscope.statements.vowelNote}</p>
         </article>
         <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)]">
-          <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">Consonants · outer</p>
+          <TermStack id="consonants" />
           <p className="mt-3 text-sm leading-relaxed">{horoscope.statements.consonantNote}</p>
         </article>
       </section>
@@ -216,7 +226,8 @@ export function HoroscopeView({
           <div>
             <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">Letter map</p>
             <p className="mt-1 text-sm text-muted">
-              The path follows the name. Darker cells carry more weight. Gold rings are allies. Dark rings are enemies.
+              The path follows the name. Darker cells carry more weight — they appear more, or sit
+              first or last. Gold rings are allies. Dark rings are enemies.
             </p>
           </div>
           <p className="text-sm text-muted">
@@ -248,6 +259,7 @@ export function HoroscopeView({
 
 function WheelColumn({
   title,
+  glossId,
   house,
   letters,
   present,
@@ -255,6 +267,7 @@ function WheelColumn({
   onSelect,
 }: {
   title: string;
+  glossId: string;
   house: Letter;
   letters: Letter[];
   present: Letter[];
@@ -263,7 +276,7 @@ function WheelColumn({
 }) {
   return (
     <div>
-      <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">{title}</p>
+      <TermStack id={glossId} term={title} />
       <ul className="mt-3 divide-y divide-ink/10">
         {letters.map((letter) => {
           const inName = present.includes(letter);

@@ -4,9 +4,11 @@ import type { Archetype } from "@/lib/letterology/types";
 export function ArchetypeList({
   items,
   caption,
+  note,
 }: {
   items: Archetype[];
   caption?: string;
+  note?: string;
 }) {
   if (items.length === 0) return null;
 
@@ -15,6 +17,7 @@ export function ArchetypeList({
       {caption ? (
         <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">{caption}</p>
       ) : null}
+      {note ? <p className="mt-1 text-sm text-muted">{note}</p> : null}
       <ul className="mt-4 divide-y divide-ink/10">
         {items.map((item) => (
           <li key={item.code}>

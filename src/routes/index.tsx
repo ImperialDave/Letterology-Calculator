@@ -9,6 +9,8 @@ import { almanacOf, monthName } from "@/lib/letterology/calendar";
 import { houseOf } from "@/lib/letterology/archetypes";
 import { themeOf } from "@/lib/letterology/lexicon";
 import { PageShare } from "@/components/letterology/PageShare";
+import { KeyLink, Plainly, TermStack } from "@/components/letterology/Gloss";
+import { METHOD_PLAIN, gloss } from "@/lib/letterology/glossary";
 import { pageCardMeta } from "@/lib/letterology/share";
 
 type Search = { name?: string };
@@ -100,6 +102,10 @@ function Home() {
                 keep it honest. The handle is the destiny. This is a portrait, not a
                 prediction.
               </p>
+              <Plainly className="w-full max-w-xl text-left sm:text-center">{METHOD_PLAIN}</Plainly>
+              <div className="mt-2">
+                <KeyLink />
+              </div>
               <PageShare
                 path="/"
                 caption={"Letterology\nRead a username through twenty-six houses."}
@@ -128,8 +134,8 @@ function Home() {
             ) : null}
             <aside className="mt-12 border-t border-ink/10 pt-8">
               <div className="text-center">
-                <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">Today on the wheel</p>
-                <p className="mt-2 font-display text-3xl text-ink">
+                <TermStack id="wheel" term="Today on the wheel" className="mx-auto max-w-md" />
+                <p className="mt-3 font-display text-3xl text-ink">
                   {almanac.dateLetter} — {daily.name}
                 </p>
                 <p className="mt-1 text-sm text-muted">
@@ -138,17 +144,21 @@ function Home() {
                 </p>
                 <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">
                   {almanac.fortnight.hinge
-                    ? "The Fool holds the leftover days between one walk and the next."
-                    : `The sun is in the ${fortnightHouse.house}, day ${almanac.fortnight.dayInSeat} of 14.`}{" "}
+                    ? `The Fool holds the leftover days between one walk and the next. ${gloss("hinge")}`
+                    : `The sun is in the ${fortnightHouse.house}, day ${almanac.fortnight.dayInSeat} of 14 — ${gloss("fortnight")}`}{" "}
                   {daily.invitation}
                 </p>
               </div>
               <div className="mx-auto mt-6 grid max-w-3xl gap-4 sm:grid-cols-3">
                 <HomeCourt label="Today" letter={almanac.dateLetter} />
-                <HomeCourt label="Fortnight" letter={almanac.fortnight.letter} />
+                <HomeCourt
+                  label={almanac.fortnight.hinge ? "Hinge" : "Fortnight"}
+                  letter={almanac.fortnight.letter}
+                  note={almanac.fortnight.hinge ? gloss("hinge") : gloss("fortnight")}
+                />
                 <div className="rounded-xl bg-raised p-4 text-left shadow-[var(--shadow-border)]">
-                  <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">Climate</p>
-                  <p className="mt-1 text-sm leading-relaxed text-ink/85">
+                  <TermStack id="climate" term="Climate" />
+                  <p className="mt-2 text-sm leading-relaxed text-ink/85">
                     Year {almanac.yearLetter} {houseOf(almanac.yearLetter).noun} · month {almanac.monthLetter}{" "}
                     {houseOf(almanac.monthLetter).noun}. Background only.
                   </p>
@@ -179,10 +189,11 @@ function Home() {
   );
 }
 
-function HomeCourt({ label, letter }: { label: string; letter: string }) {
+function HomeCourt({ label, letter, note }: { label: string; letter: string; note?: string }) {
   return (
     <div className="rounded-xl bg-raised p-4 text-left shadow-[var(--shadow-border)]">
       <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">{label}</p>
+      {note ? <p className="mt-1 text-sm leading-snug text-muted">{note}</p> : null}
       <p className="mt-1 font-display text-xl text-ink">
         {letter} · {houseOf(letter).noun}
       </p>

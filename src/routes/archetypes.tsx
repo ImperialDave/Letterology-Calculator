@@ -16,7 +16,9 @@ import { alliesOf, enemiesOf } from "@/lib/letterology/circle";
 import { themeOf } from "@/lib/letterology/lexicon";
 import { ALPHABET, type Letter, type Triad } from "@/lib/letterology/types";
 import { PageShare } from "@/components/letterology/PageShare";
+import { KeyLink, Plainly, TermStack } from "@/components/letterology/Gloss";
 import { pageCardMeta } from "@/lib/letterology/share";
+import { gloss } from "@/lib/letterology/glossary";
 import { cn } from "@/lib/utils";
 
 type Search = { house?: string; code?: string };
@@ -99,6 +101,12 @@ function HousesPage() {
             </Link>
             .
           </p>
+          <Plainly>
+            A house is a role. The first letter of a username names it. The two
+            letters that show up most after that describe how that role works, and
+            where. {gloss("allies")} {gloss("enemies")}
+          </Plainly>
+          <KeyLink />
           <PageShare
             path={`/archetypes?house=${selectedHouse}`}
             caption={`${houseOf(selectedHouse).house}\n${houseOf(selectedHouse).myth}`}
@@ -124,12 +132,13 @@ function HousesPage() {
             </Button>
           </div>
           <p id="triad-hint" className="mt-2 text-sm text-muted">
-            Three letters. First is the house; the next two are manner and field.
+            Three letters. First is the house (the role); the next two are manner (how)
+            and field (where).
           </p>
         </form>
 
         <section className="mt-8">
-          <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">House · first letter</p>
+          <TermStack id="house" term="House · first letter" />
           <div className="mt-3 grid grid-cols-5 gap-2 sm:grid-cols-7">
             {houses.map((item) => {
               const active = item.letter === selectedHouse;
@@ -159,7 +168,9 @@ function HousesPage() {
               <p className="mt-1 font-display text-xs tracking-[0.14em] text-muted uppercase">
                 {selectedMeta.tradition}
               </p>
+              <p className="mt-1 text-sm text-muted">{gloss("tradition")}</p>
               <p className="mt-1 text-sm text-ink/65">{selectedMeta.correspondence}</p>
+              <p className="mt-1 text-sm text-muted">{gloss("correspondence")}</p>
               <p className="mt-3 text-sm leading-relaxed text-ink/85">{selectedMeta.doctrine}</p>
               <p className="mt-3 text-sm text-muted">
                 Allies{" "}
@@ -182,9 +193,7 @@ function HousesPage() {
         </section>
 
         <section className="mt-8">
-          <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">
-            Manner · most common letter
-          </p>
+          <TermStack id="manner" term="Manner · most common letter" />
           <div className="mt-3 grid grid-cols-5 gap-2 sm:grid-cols-7">
             {ALPHABET.map((letter) => {
               const active = letter === manner;
@@ -221,6 +230,7 @@ function HousesPage() {
           <h2 className="font-display text-xs tracking-[0.18em] text-muted uppercase">
             Field · the third letter
           </h2>
+          <p className="mt-1 text-sm text-muted">{gloss("field")}</p>
           <ul className="mt-3 divide-y divide-ink/10 rounded-xl bg-raised px-4 shadow-[var(--shadow-border)]">
             {column.map((item) => {
               const active = item.code === selectedArchetype.code;

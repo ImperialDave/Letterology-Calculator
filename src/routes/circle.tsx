@@ -5,6 +5,8 @@ import { houseOf } from "@/lib/letterology/archetypes";
 import { bondsOf, isCircleLetter } from "@/lib/letterology/circle";
 import { themeOf } from "@/lib/letterology/lexicon";
 import { PageShare } from "@/components/letterology/PageShare";
+import { KeyLink, Plainly, TermStack } from "@/components/letterology/Gloss";
+import { gloss } from "@/lib/letterology/glossary";
 import { pageCardMeta } from "@/lib/letterology/share";
 import type { Letter } from "@/lib/letterology/types";
 
@@ -56,6 +58,8 @@ function CirclePage() {
             that show its blind spot. An enemy is not a villain. It is the house
             that will not let this one sleep.
           </p>
+          <Plainly>{gloss("wheel")} {gloss("allies")} {gloss("enemies")}</Plainly>
+          <KeyLink />
           <PageShare
             path={`/circle?house=${selected}`}
             caption={`${meta.house}\nAllies ${allies.map((b) => b.other).join(" · ")}`}
@@ -71,11 +75,11 @@ function CirclePage() {
           <div className="mt-6 flex flex-wrap items-center justify-center gap-5 text-sm text-muted">
             <span className="inline-flex items-center gap-2">
               <span className="h-px w-6 bg-primary" aria-hidden="true" />
-              Ally
+              Ally — completes the work
             </span>
             <span className="inline-flex items-center gap-2">
               <span className="h-px w-6 border-t border-dashed border-ink/50" aria-hidden="true" />
-              Enemy
+              Enemy — shows the blind spot
             </span>
           </div>
         </section>
@@ -84,8 +88,11 @@ function CirclePage() {
           <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">
             {theme.name} · {meta.correspondence}
           </p>
+          <p className="mt-1 text-sm text-muted">{gloss("correspondence")}</p>
           <h2 className="mt-2 font-display text-3xl text-ink">{meta.house}</h2>
           <p className="mt-2 text-sm italic text-ink/70">{meta.myth}</p>
+          <p className="mt-1 font-display text-xs tracking-[0.14em] text-muted uppercase">{meta.tradition}</p>
+          <p className="mt-1 text-sm text-muted">{gloss("tradition")}</p>
           <p className="mt-4 max-w-3xl leading-relaxed text-ink/90">{meta.doctrine}</p>
           <p className="mt-4">
             <Link
@@ -99,8 +106,8 @@ function CirclePage() {
         </section>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
-          <BondColumn kind="Allies" items={allies} onSelect={(letter) => navigate({ search: { house: letter } })} />
-          <BondColumn kind="Enemies" items={enemies} onSelect={(letter) => navigate({ search: { house: letter } })} />
+          <BondColumn kind="Allies" glossId="allies" items={allies} onSelect={(letter) => navigate({ search: { house: letter } })} />
+          <BondColumn kind="Enemies" glossId="enemies" items={enemies} onSelect={(letter) => navigate({ search: { house: letter } })} />
         </div>
       </main>
       <SiteFooter />
@@ -110,16 +117,18 @@ function CirclePage() {
 
 function BondColumn({
   kind,
+  glossId,
   items,
   onSelect,
 }: {
   kind: "Allies" | "Enemies";
+  glossId: string;
   items: { other: Letter; copy: string }[];
   onSelect: (letter: Letter) => void;
 }) {
   return (
     <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-6">
-      <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">{kind}</p>
+      <TermStack id={glossId} term={kind} />
       <ul className="mt-4 divide-y divide-ink/10">
         {items.map((item) => {
           const other = houseOf(item.other);

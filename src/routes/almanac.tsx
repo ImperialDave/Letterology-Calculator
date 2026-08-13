@@ -5,6 +5,8 @@ import { DayCard } from "@/components/letterology/DayCard";
 import { NameForm } from "@/components/letterology/NameForm";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { PageShare } from "@/components/letterology/PageShare";
+import { KeyLink, Plainly } from "@/components/letterology/Gloss";
+import { CALENDAR_PLAIN, gloss } from "@/lib/letterology/glossary";
 import { buildHoroscope } from "@/lib/letterology/engine";
 import { pageCardMeta } from "@/lib/letterology/share";
 import { houseOf } from "@/lib/letterology/archetypes";
@@ -99,6 +101,8 @@ function AlmanacPage() {
           </p>
           <h1 className="mt-2 font-display text-4xl text-ink sm:text-5xl">Almanac</h1>
           <p className="mt-3 max-w-xl leading-relaxed text-ink/85">{calendarMethod()}</p>
+          <Plainly>{CALENDAR_PLAIN}</Plainly>
+          <KeyLink />
           <PageShare
             path={`/almanac?date=${selected.iso}`}
             caption={`${selected.iso} sits the ${houseOf(selected.dateLetter).house}`}
@@ -128,6 +132,7 @@ function AlmanacPage() {
         <section className="mt-10 grid gap-4 sm:grid-cols-3">
           <ClimateCard
             label={selected.fortnight.hinge ? "Hinge" : "This fortnight"}
+            hint={selected.fortnight.hinge ? gloss("hinge") : gloss("fortnight")}
             letter={selected.fortnight.letter}
             detail={
               selected.fortnight.hinge
@@ -138,12 +143,14 @@ function AlmanacPage() {
           />
           <ClimateCard
             label="This month"
+            hint={gloss("climate")}
             letter={monthSeat}
             detail={`${monthName(selectedCivil.month)} · ${monthSeats.join(" · ")}`}
             copy={`The mid-month sits in ${houseOf(monthSeat).house}. Climate around the days, not their house.`}
           />
           <ClimateCard
             label="Civil year"
+            hint={gloss("climate")}
             letter={yearSeat}
             detail={String(selectedCivil.year)}
             copy={`${yearDoctrine(yearSeat)} Background climate — it does not sit today's house.`}
@@ -198,7 +205,8 @@ function AlmanacPage() {
             ))}
           </div>
           <p className="mt-4 text-center text-sm text-muted">
-            The large letter is the date. The small letter is the fortnight the sun is walking.
+            The large letter is the date — the role that day's number names. The small letter is the
+            fortnight the sun is walking: the current two-week seat.
           </p>
         </section>
 
@@ -213,16 +221,17 @@ function AlmanacPage() {
           </p>
           <p className="mt-4 max-w-3xl leading-relaxed text-ink/90">
             Today sits as {houseOf(selected.dateLetter).noun} — the {selected.civil.day}
-            {ordinal(selected.civil.day)} wears that house. The sun's fortnight sets the manner:{" "}
-            {houseOf(selected.fortnight.letter).noun}
-            {selected.fortnight.hinge ? " on the hinge" : `, day ${selected.fortnight.dayInSeat} of 14`}.{" "}
-            {selected.weekdayName} is the {selected.weekdayRole} aspect of that fortnight —{" "}
-            {houseOf(selected.weekdayLetter).noun} ({selected.weekdayLetter}), which is the field.
+            {ordinal(selected.civil.day)} wears that house ({gloss("wear")}). The sun's fortnight
+            sets the manner: {houseOf(selected.fortnight.letter).noun}
+            {selected.fortnight.hinge ? " on the hinge" : `, day ${selected.fortnight.dayInSeat} of 14`}
+            — how the season is working. {selected.weekdayName} is the {selected.weekdayRole} aspect
+            of that fortnight — {houseOf(selected.weekdayLetter).noun} ({selected.weekdayLetter}),
+            which is the field: what today's work is about.
           </p>
           <p className="mt-3 text-sm text-muted">
             Year {selected.civil.year} ({selected.yearLetter} {houseOf(selected.yearLetter).noun}) and{" "}
-            {monthName(selected.civil.month)} ({selected.monthLetter} {houseOf(selected.monthLetter).noun}) are
-            climate around this day. They do not sit the house.
+            {monthName(selected.civil.month)} ({selected.monthLetter} {houseOf(selected.monthLetter).noun}){" "}
+            are climate around this day — background color, not today's job. They do not sit the house.
           </p>
           <WeekAspects day={selected} />
         </section>
@@ -244,6 +253,7 @@ function AlmanacPage() {
           />
           <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)]">
             <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">Background climate</p>
+            <p className="mt-1 text-sm text-muted">{gloss("climate")}</p>
             <p className="mt-3 text-sm leading-relaxed text-ink/85">
               <span className="font-display text-ink">
                 {selected.yearLetter} {houseOf(selected.yearLetter).noun}
@@ -331,11 +341,13 @@ function ordinal(day: number): string {
 
 function ClimateCard({
   label,
+  hint,
   letter,
   detail,
   copy,
 }: {
   label: string;
+  hint?: string;
   letter: string;
   detail: string;
   copy: string;
@@ -343,6 +355,7 @@ function ClimateCard({
   return (
     <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)]">
       <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">{label}</p>
+      {hint ? <p className="mt-1 text-sm leading-snug text-muted">{hint}</p> : null}
       <p className="mt-3 font-display text-5xl leading-none text-primary">{letter}</p>
       <h3 className="mt-2 font-display text-xl text-ink">{houseOf(letter).house}</h3>
       <p className="mt-1 text-sm text-muted">{detail}</p>
@@ -365,6 +378,7 @@ function CourtCard({
   return (
     <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)]">
       <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">{label}</p>
+      <p className="mt-1 text-sm text-muted">{gloss("court")}</p>
       <h3 className="mt-2 font-display text-2xl text-ink">
         {letter} · {houseOf(letter).noun}
       </h3>
