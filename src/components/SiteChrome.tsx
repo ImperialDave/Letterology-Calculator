@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { CLUB_NAME, SITE_LOCKUP, SYSTEM_NAME } from "@/lib/letterology/brand";
 import { SignedIn, SignedOut, UserButton } from "@/lib/auth/gates";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { cn } from "@/lib/utils";
@@ -50,8 +51,13 @@ export function SiteHeader({ current }: { current: HeaderCurrent }) {
             height={36}
             className="size-9 rounded-full object-cover outline outline-1 -outline-offset-1 outline-ink/10"
           />
-          <span className="truncate font-display text-lg tracking-[0.04em] text-ink">
-            Letterology
+          <span className="min-w-0 leading-tight">
+            <span className="block truncate font-display text-lg tracking-[0.14em] text-ink">
+              {CLUB_NAME}
+            </span>
+            <span className="block truncate font-display text-[0.62rem] tracking-[0.2em] text-muted uppercase">
+              {SYSTEM_NAME}
+            </span>
           </span>
         </Link>
         <nav className="flex flex-wrap items-center gap-0.5 sm:gap-2">
@@ -78,6 +84,7 @@ export function SiteFooter() {
   return (
     <footer className="mt-16 border-t border-ink/10">
       <div className="mx-auto flex max-w-5xl flex-col items-center gap-2 px-4 py-8 text-center text-sm text-muted sm:px-6">
+        <p className="font-display text-xs tracking-[0.2em] text-ink uppercase">{SITE_LOCKUP}</p>
         <p>Twenty-six houses. A portrait of a username, not a prediction.</p>
         <Link
           to="/bond"

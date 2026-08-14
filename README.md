@@ -1,6 +1,6 @@
 # Letterology
 
-Twenty-six houses. Read a username. Not a prediction.
+CC33. Twenty-six houses. Read a username. Not a prediction.
 
 Live source: [`ImperialDave/Letterology-Calculator`](https://github.com/ImperialDave/Letterology-Calculator)  
 Default branch: `main`  

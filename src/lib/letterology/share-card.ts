@@ -102,8 +102,9 @@ function paperShell(): string {
 }
 
 function brandKicker(): string {
-  return `<text x="80" y="96" font-family="${FACE}" font-size="18" letter-spacing="7" fill="${WINE}">LETTEROLOGY</text>
-  <line x1="80" y1="112" x2="248" y2="112" stroke="${WINE}" stroke-opacity="0.28" stroke-width="1"/>`;
+  return `<text x="80" y="88" font-family="${FACE}" font-size="20" letter-spacing="6" fill="${WINE}">CC33</text>
+  <text x="80" y="110" font-family="${FACE}" font-size="13" letter-spacing="5" fill="${MUTED}">LETTEROLOGY</text>
+  <line x1="80" y1="122" x2="248" y2="122" stroke="${WINE}" stroke-opacity="0.28" stroke-width="1"/>`;
 }
 
 export function portraitSvg(h: Horoscope, dayLine?: string): string {

@@ -1,3 +1,4 @@
+import { CLUB_NAME } from "./brand";
 import { buildHoroscope } from "./engine";
 import type { Horoscope } from "./types";
 
@@ -190,7 +191,7 @@ export function pageCardMeta(input: {
       { name: "twitter:image", content: image },
       { name: "twitter:image:alt", content: title },
       { property: "og:type", content: "website" },
-      { property: "og:site_name", content: "Letterology" },
+      { property: "og:site_name", content: CLUB_NAME },
       { property: "og:title", content: title },
       { property: "og:description", content: description },
       { property: "og:url", content: url },

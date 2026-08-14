@@ -8,7 +8,7 @@ export const Route = createFileRoute("/key")({
   head: () =>
     pageCardMeta({
       title: "The Key",
-      description: "How to read Letterology. The metaphors stay. The translations sit beside them.",
+      description: "How to read Letterology in a CC33 house. The metaphors stay. The translations sit beside them.",
       path: "/key",
       imagePath: "/og.jpg",
     }),
@@ -27,6 +27,10 @@ const STEPS = [
   {
     term: "Field",
     detail: "The next letter by weight is where the work happens — the kind of place, not a job title.",
+  },
+  {
+    term: "Letter Path",
+    detail: "Three letters together: the role, how you work, and where. That path has a name and a mixed color.",
   },
   {
     term: "Allies and enemies",
@@ -52,7 +56,7 @@ function KeyPage() {
           </p>
           <h1 className="mt-2 font-display text-4xl text-ink sm:text-5xl">The Key</h1>
           <p className="mt-3 max-w-xl leading-relaxed text-ink/85">
-            Letterology keeps its weird metaphors. It also has to speak to people who did not
+            CC33 keeps Letterology’s weird metaphors. It also has to speak to people who did not
             arrive already fluent. This page is the audit: every coined term on the site, said
             twice — once in the house tongue, once in plain speech.
           </p>
@@ -62,7 +66,7 @@ function KeyPage() {
           </div>
           <PageShare
             path="/key"
-            caption={"The Key\nHow to read Letterology without already being a wizard."}
+            caption={"The Key\nHow to read CC33 Letterology without already being a wizard."}
             imagePath="/og.jpg"
           />
         </header>

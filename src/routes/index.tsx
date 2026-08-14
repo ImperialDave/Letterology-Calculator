@@ -16,9 +16,9 @@ import { pageCardMeta } from "@/lib/letterology/share";
 
 type Search = { name?: string };
 
-const HOME_TITLE = "Letterology";
+const HOME_TITLE = "CC33 · Letterology";
 const HOME_DESCRIPTION =
-  "Read a username through twenty-six houses — or compare two and get a certificate you can post.";
+  "CC33. Read a username through twenty-six houses — or compare two and get a certificate you can post.";
 
 export const Route = createFileRoute("/")({
   validateSearch: (search: Record<string, unknown>): Search => ({
@@ -76,7 +76,7 @@ function Home() {
                 className="mx-auto size-24 rounded-full object-cover outline outline-1 -outline-offset-1 outline-ink/10 sm:size-28"
               />
               <p className="mt-6 font-display text-xs tracking-[0.28em] text-muted uppercase">
-                The alphabet as twenty-six houses
+                CC33 · The alphabet as twenty-six houses
               </p>
               <h1 className="mt-3 font-display text-4xl leading-[1.05] text-ink sm:text-6xl">
                 Letterology
@@ -89,7 +89,7 @@ function Home() {
               </p>
               <PageShare
                 path="/"
-                caption={"Letterology\nRead a username — or compare two."}
+                caption={"CC33 · Letterology\nRead a username — or compare two."}
                 imagePath="/og.jpg"
               />
             </section>

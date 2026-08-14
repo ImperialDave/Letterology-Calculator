@@ -307,7 +307,7 @@ export function readingAsText(h: Horoscope): string {
     `Signature letter: ${h.signature}`,
     `Primary: ${h.primary.letter} — ${themeOf(h.primary.letter).name}`,
     `Triad: ${h.archetype.code}`,
-    `Archetype: ${h.archetype.title} (${h.archetype.house})`,
+    `Letter Path: ${h.archetype.title} (${h.archetype.house})`,
     `Method: ${h.statements.method}`,
     `Secondary: ${h.secondaries.map((s) => `${s.letter} (${themeOf(s.letter).name})`).join(", ") || "—"}`,
     h.tension ? `Tension: ${h.tension.title}` : "",

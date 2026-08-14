@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { PigmentMix, PigmentPip } from "@/components/letterology/Pigment";
+import { LETTER_PATH } from "@/lib/letterology/brand";
 import { TRIAD_LABELS } from "@/lib/letterology/glossary";
 import { themeOf } from "@/lib/letterology/lexicon";
 import { pigmentOf } from "@/lib/letterology/pigment";
@@ -18,7 +19,7 @@ export function ArchetypeCard({
   return (
     <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
       <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">
-        {featured ? "Your archetype" : "Archetype"}
+        {featured ? `Your ${LETTER_PATH}` : LETTER_PATH}
       </p>
       <p className="mt-1 text-sm text-muted">
         Three letters: the role, how you work, and where the work happens. Their pigments mix

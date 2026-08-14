@@ -80,7 +80,7 @@ function CirclePage() {
           <h1 className="mt-2 font-display text-4xl text-ink sm:text-5xl">Circle of Houses</h1>
           <p className="mt-3 max-w-xl leading-relaxed text-ink/85">
             The alphabet stands in a wheel, A at the top. Around it sits a color wheel — each
-            letter a mineral, amber at dawn walking the spectrum back to ochre. An archetype is
+            letter a mineral, amber at dawn walking the spectrum back to ochre. A Letter Path is
             three letters. Its color is those three pigments in one pot: house half, manner
             three-tenths, field two-tenths.
           </p>
@@ -94,7 +94,7 @@ function CirclePage() {
         <section className="mt-10 rounded-xl bg-raised px-2 py-6 shadow-[var(--shadow-border)] sm:px-6 sm:py-8">
           <Explain title="Mix a color">
             Choose which seat you are setting — house, manner, or field — then tap a letter.
-            The well in the middle is the mix. That mix is the archetype’s color.
+            The well in the middle is the mix. That mix is the Letter Path’s color.
           </Explain>
           <div className="mt-5">
             <SeatMixer triad={triad} picking={picking} onPick={setPicking} />

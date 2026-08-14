@@ -77,7 +77,7 @@ function BondPage() {
           <section className="mx-auto max-w-2xl">
             <div className="text-center sm:text-left">
               <p className="font-display text-xs tracking-[0.22em] text-muted uppercase">
-                Two handles, one wheel
+                CC33 · Two handles, one wheel
               </p>
               <h1 className="mt-2 font-display text-4xl text-ink sm:text-5xl">Certificate of Bond</h1>
               <p className="mt-3 max-w-xl leading-relaxed text-ink/85">

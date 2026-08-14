@@ -157,7 +157,7 @@ export function HoroscopeView({
       <ArchetypeList
         items={horoscope.kindred}
         caption="Same manner and field, sitting in an allied house"
-        note="Kindred archetypes share how you work and where, but sit a neighboring role. Useful people, not copies of you."
+        note="Kindred Letter Paths share how you work and where, but sit a neighboring role. Useful people, not copies of you."
       />
 
       <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">

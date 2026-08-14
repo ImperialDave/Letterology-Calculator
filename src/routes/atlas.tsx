@@ -49,7 +49,7 @@ function AtlasPage() {
           <p className="mt-3 max-w-xl leading-relaxed text-ink/85">
             Each letter has a meaning, a house, and a pigment. The meaning comes from words
             that start with that letter. The house is the role that letter sits. The pigment
-            is its seat on the color wheel — three of them mix into an archetype. Vowels
+            is its seat on the color wheel — three of them mix into a Letter Path. Vowels
             describe the private life. Consonants describe how a person shows up.
           </p>
           <p className="mt-2">

@@ -1,9 +1,10 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
-import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
+import { AuthProvider } from "@/lib/auth/provider";
+import { CLUB_NAME } from "@/lib/letterology/brand";
 import appCss from "../styles.css?url";
 
-const APP_NAME = "Letterology";
+const APP_NAME = CLUB_NAME;
 
 export const Route = createRootRoute({
   head: () => ({

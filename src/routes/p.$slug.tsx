@@ -20,7 +20,11 @@ export const Route = createFileRoute("/p/$slug")({
     const name = slugToName(params.slug);
     const canonical = nameToSlug(name);
     if (canonical && params.slug !== canonical) {
-      throw redirect({ to: "/p/$slug", params: { slug: canonical } });
+      throw redirect({
+        to: "/p/$slug",
+        params: { slug: canonical },
+        search: { date: undefined },
+      });
     }
   },
   loader: ({ params, location }) => {
@@ -32,7 +36,7 @@ export const Route = createFileRoute("/p/$slug")({
     const origin = publicSiteOrigin();
     const horoscope = loaderData?.horoscope;
     if (!horoscope) {
-      return { title: "Letterology", meta: [{ title: "Letterology" }] };
+      return { title: "CC33", meta: [{ title: "CC33" }] };
     }
     const title = portraitTitle(horoscope);
     const description = portraitDescription(horoscope);
@@ -49,7 +53,7 @@ export const Route = createFileRoute("/p/$slug")({
         { name: "twitter:image", content: image },
         { name: "twitter:image:alt", content: title },
         { property: "og:type", content: "website" },
-        { property: "og:site_name", content: "Letterology" },
+        { property: "og:site_name", content: "CC33" },
         { property: "og:title", content: title },
         { property: "og:description", content: description },
         { property: "og:url", content: url },

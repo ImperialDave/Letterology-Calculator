@@ -195,7 +195,7 @@ export function BondView({ bond }: { bond: BondReading }) {
           <div className="relative w-full max-w-lg rounded-lg bg-raised p-5 text-ink outline outline-1 -outline-offset-1 outline-primary-fg/20 sm:p-7">
             <CornerMarks />
             <p className="text-center font-display text-[0.65rem] tracking-[0.28em] text-primary uppercase">
-              Letterology
+              CC33
             </p>
             <p className="mt-2 text-center font-display text-xs tracking-[0.2em] text-muted uppercase">
               Certificate of Bond

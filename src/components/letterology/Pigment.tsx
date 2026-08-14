@@ -1,3 +1,4 @@
+import { LETTER_PATH } from "@/lib/letterology/brand";
 import {
   mixLabel,
   mixStyle,
@@ -89,7 +90,7 @@ export function PigmentMix({
       </span>
       <div className="min-w-0">
         <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">
-          {title ?? "Archetype color"}
+          {title ?? `${LETTER_PATH} color`}
         </p>
         <p className="mt-1 font-display text-ink">{mixLabel(triad)}</p>
         <div className="mt-2 flex flex-wrap gap-3">
