@@ -28,16 +28,17 @@ function AuthSlot() {
   );
 }
 
-const NAV: { to: "/" | "/bond" | "/atlas" | "/archetypes" | "/circle" | "/almanac"; label: string; current: HeaderCurrent }[] = [
+const NAV: { to: "/" | "/bond" | "/count" | "/atlas" | "/archetypes" | "/circle" | "/almanac"; label: string; current: HeaderCurrent }[] = [
   { to: "/", label: "Read", current: "read" },
   { to: "/bond", label: "Bond", current: "bond" },
+  { to: "/count", label: "Count", current: "count" },
   { to: "/atlas", label: "Atlas", current: "atlas" },
   { to: "/archetypes", label: "Houses", current: "houses" },
   { to: "/circle", label: "Circle", current: "circle" },
   { to: "/almanac", label: "Year", current: "almanac" },
 ];
 
-export type HeaderCurrent = "read" | "bond" | "atlas" | "houses" | "circle" | "almanac" | "login" | "key";
+export type HeaderCurrent = "read" | "bond" | "count" | "atlas" | "houses" | "circle" | "almanac" | "login" | "key";
 
 export function SiteHeader({ current }: { current: HeaderCurrent }) {
   return (

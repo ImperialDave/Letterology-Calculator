@@ -40,6 +40,10 @@ const STEPS = [
     term: "Bond",
     detail: "Two usernames, compared. Houses, how they work, shared letters, and missing allies the other already carries. The certificate is the postcard.",
   },
+  {
+    term: "The Count",
+    detail: "Numbers must sit as letters. A count has a court of occupants and places, a seat, the walks that made it, and Letter Paths. Zero is the Fool. We do not fold.",
+  },
 ];
 
 function KeyPage() {
@@ -76,6 +80,16 @@ function KeyPage() {
             <article key={step.term} className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)]">
               <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">{step.term}</p>
               <p className="mt-2 text-sm leading-relaxed text-ink/85">{step.detail}</p>
+              {step.term === "The Count" ? (
+                <p className="mt-3">
+                  <Link
+                    to="/count"
+                    className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+                  >
+                    Open the Count
+                  </Link>
+                </p>
+              ) : null}
             </article>
           ))}
         </section>

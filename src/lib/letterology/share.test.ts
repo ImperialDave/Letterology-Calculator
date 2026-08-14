@@ -91,6 +91,7 @@ test("card files parse as portraits, glyphs, and days", () => {
   assert.deepEqual(parseCardFile("letter-r.jpg"), { kind: "letter", letter: "R" });
   assert.deepEqual(parseCardFile("circle-b.jpg"), { kind: "circle", letter: "B" });
   assert.deepEqual(parseCardFile("day-2026-08-13.jpg"), { kind: "day", date: "2026-08-13" });
+  assert.deepEqual(parseCardFile("count-2026.jpg"), { kind: "count", digits: "2026" });
   assert.deepEqual(parseCardFile("bond-lovelace_octavia.jpg"), {
     kind: "bond",
     a: "lovelace",

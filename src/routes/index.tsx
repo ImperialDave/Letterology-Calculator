@@ -1,12 +1,16 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { ArchetypeCard } from "@/components/letterology/ArchetypeCard";
 import { BondForm } from "@/components/letterology/BondForm";
 import { CourtLines } from "@/components/letterology/CourtLines";
+import { DayCard } from "@/components/letterology/DayCard";
 import { Explain } from "@/components/letterology/Gloss";
 import { HoroscopeView } from "@/components/letterology/HoroscopeView";
 import { NameForm } from "@/components/letterology/NameForm";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { PageShare } from "@/components/letterology/PageShare";
+import { useCurrentUser } from "@/lib/auth/use-current-user";
+import { useHouseHoroscope } from "@/lib/firebase/house-provider";
 import { houseOf } from "@/lib/letterology/archetypes";
 import { almanacOf, monthName } from "@/lib/letterology/calendar";
 import { buildHoroscope } from "@/lib/letterology/engine";
@@ -37,6 +41,8 @@ export const Route = createFileRoute("/")({
 function Home() {
   const { name } = Route.useSearch();
   const navigate = useNavigate({ from: "/" });
+  const sittingUser = useCurrentUser();
+  const sitting = useHouseHoroscope();
   const [recent, setRecent] = useState<string[]>([]);
   const horoscope = useMemo(() => (name ? buildHoroscope(name) : null), [name]);
   const almanac = almanacOf();
@@ -65,7 +71,36 @@ function Home() {
     <div className="min-h-dvh">
       <SiteHeader current="read" />
       <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
-        {!horoscope ? (
+        {!horoscope && sitting && sittingUser?.handle ? (
+          <div className="space-y-8">
+            <header>
+              <p className="font-display text-xs tracking-[0.22em] text-muted uppercase">CC33 · Your house</p>
+              <h1 className="mt-2 font-display text-4xl text-ink sm:text-5xl">
+                {sittingUser.displayHandle}
+              </h1>
+              <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
+                Today first. Then the Letter Path. Compare when you want another handle in the room.
+              </p>
+            </header>
+            <DayCard horoscope={sitting} />
+            <ArchetypeCard archetype={sitting.archetype} featured />
+            <section className="rounded-xl bg-primary p-5 text-primary-fg shadow-[var(--shadow-border)] sm:p-7">
+              <p className="font-display text-xs tracking-[0.2em] uppercase opacity-80">Compare me</p>
+              <h2 className="mt-2 font-display text-3xl">Certificate of Bond</h2>
+              <div className="mt-6 rounded-lg bg-raised p-4 text-ink sm:p-5">
+                <BondForm initialA={sittingUser.displayHandle ?? ""} onSubmit={readBond} />
+              </div>
+            </section>
+            <p>
+              <Link
+                to="/house"
+                className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+              >
+                Open the rest of the house
+              </Link>
+            </p>
+          </div>
+        ) : !horoscope ? (
           <div>
             <section className="mx-auto max-w-2xl text-center">
               <img
@@ -142,6 +177,23 @@ function Home() {
                 ) : null}
               </article>
             </section>
+
+            <article className="mt-4 rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
+              <p className="font-display text-xs tracking-[0.2em] text-muted uppercase">The inverse</p>
+              <h2 className="mt-2 font-display text-3xl text-ink">The Count</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+                Numbers are unacceptable. A count must sit as letters — a court, a seat,
+                a Letter Path. Zero is the Fool. We do not fold.
+              </p>
+              <p className="mt-4">
+                <Link
+                  to="/count"
+                  className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+                >
+                  Sit a number
+                </Link>
+              </p>
+            </article>
 
             <aside className="mt-12 border-t border-ink/10 pt-8">
               <div className="text-center">

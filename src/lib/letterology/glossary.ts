@@ -358,6 +358,38 @@ export const GLOSSARY: GlossEntry[] = [
     opacity: "medium",
     surfaces: ["bond"],
   },
+  {
+    id: "count",
+    term: "The Count",
+    metaphor: "We ask a number to sit a house.",
+    plain: "Numbers must sit as letters. A count has a court, a seat, the walks that made it, and Letter Paths from spelling and from places.",
+    opacity: "high",
+    surfaces: ["count", "key", "home"],
+  },
+  {
+    id: "seat",
+    term: "Seat",
+    metaphor: "2026 sits X — Trickster.",
+    plain: "The one house a whole number occupies, the same rule as a date or year. 1 is A. 13 is M. 26 is Z. 27 is A again.",
+    opacity: "high",
+    surfaces: ["count", "year"],
+  },
+  {
+    id: "spelling",
+    term: "Spelling",
+    metaphor: "2026 spells B F B F.",
+    plain: "Each digit becomes a letter. 1 is A through 9 is I. 0 is F, the Fool. That string is then read like a username.",
+    opacity: "high",
+    surfaces: ["count"],
+  },
+  {
+    id: "zero",
+    term: "Zero",
+    metaphor: "Zero is the Fool.",
+    plain: "There is no 0th of the month. 0 sits F, Tarot’s unnumbered card. 6 also sits F, as the sixth house. Same figure, two doors.",
+    opacity: "high",
+    surfaces: ["count", "key"],
+  },
 ];
 
 const BY_ID = new Map(GLOSSARY.map((entry) => [entry.id, entry]));

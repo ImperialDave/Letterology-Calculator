@@ -137,6 +137,14 @@ export function tweetBond(input: {
   return `${input.a} & ${input.b}\n${input.title}\nAffinity ${input.affinity}`;
 }
 
+export function countPath(digits: string): string {
+  return `/count?n=${encodeURIComponent(digits)}`;
+}
+
+export function tweetCount(seat: string, house: string, spelling: string): string {
+  return `${seat} sits the ${house}\n${spelling.split("").join(" · ")}`;
+}
+
 export function bondTitle(a: string, b: string, title: string): string {
   return clip(`${a} & ${b} · ${title}`, X_TITLE_MAX);
 }

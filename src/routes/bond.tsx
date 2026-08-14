@@ -4,6 +4,7 @@ import { BondForm } from "@/components/letterology/BondForm";
 import { BondView } from "@/components/letterology/BondView";
 import { PageShare } from "@/components/letterology/PageShare";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
+import { useHouse } from "@/lib/firebase/house-provider";
 import { compareNames } from "@/lib/letterology/compatibility";
 import { saveRecent, saveRecentBond } from "@/lib/letterology/recent";
 import {
@@ -55,6 +56,8 @@ export const Route = createFileRoute("/bond")({
 function BondPage() {
   const { a, b } = Route.useSearch();
   const navigate = useNavigate({ from: "/bond" });
+  const house = useHouse();
+  const defaultA = a ?? house.profile?.displayHandle ?? "";
   const bond = useMemo(() => (a && b ? compareNames(a, b) : null), [a, b]);
   const missing = Boolean(a && b) && !bond;
 
@@ -93,7 +96,7 @@ function BondPage() {
               />
             </div>
             <div className="mt-10 rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
-              <BondForm initialA={a ?? ""} initialB={b ?? ""} onSubmit={readPair} />
+              <BondForm initialA={defaultA} initialB={b ?? ""} onSubmit={readPair} />
               {missing ? (
                 <p className="mt-4 text-sm text-primary">
                   One of those handles has no A–Z in it. Give the bond two names it can read.

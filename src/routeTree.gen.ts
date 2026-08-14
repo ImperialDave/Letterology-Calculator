@@ -15,6 +15,9 @@ import { Route as ArchetypesRouteImport } from './routes/archetypes'
 import { Route as AtlasRouteImport } from './routes/atlas'
 import { Route as BondRouteImport } from './routes/bond'
 import { Route as CircleRouteImport } from './routes/circle'
+import { Route as ClaimRouteImport } from './routes/claim'
+import { Route as CountRouteImport } from './routes/count'
+import { Route as HouseRouteImport } from './routes/house'
 import { Route as KeyRouteImport } from './routes/key'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ApiCardRouteImport } from './routes/api/card'
@@ -50,6 +53,21 @@ const BondRoute = BondRouteImport.update({
 const CircleRoute = CircleRouteImport.update({
   id: '/circle',
   path: '/circle',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClaimRoute = ClaimRouteImport.update({
+  id: '/claim',
+  path: '/claim',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CountRoute = CountRouteImport.update({
+  id: '/count',
+  path: '/count',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HouseRoute = HouseRouteImport.update({
+  id: '/house',
+  path: '/house',
   getParentRoute: () => rootRouteImport,
 } as any)
 const KeyRoute = KeyRouteImport.update({
@@ -90,6 +108,9 @@ export interface FileRoutesByFullPath {
   '/atlas': typeof AtlasRoute
   '/bond': typeof BondRoute
   '/circle': typeof CircleRoute
+  '/claim': typeof ClaimRoute
+  '/count': typeof CountRoute
+  '/house': typeof HouseRoute
   '/key': typeof KeyRoute
   '/login': typeof LoginRoute
   '/api/card': typeof ApiCardRoute
@@ -104,6 +125,9 @@ export interface FileRoutesByTo {
   '/atlas': typeof AtlasRoute
   '/bond': typeof BondRoute
   '/circle': typeof CircleRoute
+  '/claim': typeof ClaimRoute
+  '/count': typeof CountRoute
+  '/house': typeof HouseRoute
   '/key': typeof KeyRoute
   '/login': typeof LoginRoute
   '/api/card': typeof ApiCardRoute
@@ -119,6 +143,9 @@ export interface FileRoutesById {
   '/atlas': typeof AtlasRoute
   '/bond': typeof BondRoute
   '/circle': typeof CircleRoute
+  '/claim': typeof ClaimRoute
+  '/count': typeof CountRoute
+  '/house': typeof HouseRoute
   '/key': typeof KeyRoute
   '/login': typeof LoginRoute
   '/api/card': typeof ApiCardRoute
@@ -135,6 +162,9 @@ export interface FileRouteTypes {
     | '/atlas'
     | '/bond'
     | '/circle'
+    | '/claim'
+    | '/count'
+    | '/house'
     | '/key'
     | '/login'
     | '/api/card'
@@ -149,6 +179,9 @@ export interface FileRouteTypes {
     | '/atlas'
     | '/bond'
     | '/circle'
+    | '/claim'
+    | '/count'
+    | '/house'
     | '/key'
     | '/login'
     | '/api/card'
@@ -163,6 +196,9 @@ export interface FileRouteTypes {
     | '/atlas'
     | '/bond'
     | '/circle'
+    | '/claim'
+    | '/count'
+    | '/house'
     | '/key'
     | '/login'
     | '/api/card'
@@ -178,6 +214,9 @@ export interface RootRouteChildren {
   AtlasRoute: typeof AtlasRoute
   BondRoute: typeof BondRoute
   CircleRoute: typeof CircleRoute
+  ClaimRoute: typeof ClaimRoute
+  CountRoute: typeof CountRoute
+  HouseRoute: typeof HouseRoute
   KeyRoute: typeof KeyRoute
   LoginRoute: typeof LoginRoute
   ApiCardRoute: typeof ApiCardRoute
@@ -228,6 +267,27 @@ declare module '@tanstack/react-router' {
       path: '/circle'
       fullPath: '/circle'
       preLoaderRoute: typeof CircleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/claim': {
+      id: '/claim'
+      path: '/claim'
+      fullPath: '/claim'
+      preLoaderRoute: typeof ClaimRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/count': {
+      id: '/count'
+      path: '/count'
+      fullPath: '/count'
+      preLoaderRoute: typeof CountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/house': {
+      id: '/house'
+      path: '/house'
+      fullPath: '/house'
+      preLoaderRoute: typeof HouseRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/key': {
@@ -282,6 +342,9 @@ const rootRouteChildren: RootRouteChildren = {
   AtlasRoute: AtlasRoute,
   BondRoute: BondRoute,
   CircleRoute: CircleRoute,
+  ClaimRoute: ClaimRoute,
+  CountRoute: CountRoute,
+  HouseRoute: HouseRoute,
   KeyRoute: KeyRoute,
   LoginRoute: LoginRoute,
   ApiCardRoute: ApiCardRoute,
@@ -292,12 +355,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

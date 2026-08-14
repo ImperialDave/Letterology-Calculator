@@ -6,6 +6,7 @@ import { NameForm } from "@/components/letterology/NameForm";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { PageShare } from "@/components/letterology/PageShare";
 import { buildHoroscope } from "@/lib/letterology/engine";
+import { useHouse } from "@/lib/firebase/house-provider";
 import { pageCardMeta } from "@/lib/letterology/share";
 import { houseOf } from "@/lib/letterology/archetypes";
 import {
@@ -60,11 +61,13 @@ export const Route = createFileRoute("/almanac")({
 
 function AlmanacPage() {
   const { date: dateParam, name: nameParam } = Route.useSearch();
+  const house = useHouse();
+  const sittingHandle = nameParam ?? house.profile?.displayHandle;
   const navigate = useNavigate({ from: "/almanac" });
   const today = toCivil(new Date());
   const selectedCivil = parseIso(dateParam) ?? today;
   const selected = almanacOf(selectedCivil);
-  const person = nameParam ? buildHoroscope(nameParam) : null;
+  const person = sittingHandle ? buildHoroscope(sittingHandle) : null;
   const todayIso = isoOf(today);
   const monthDays = daysInMonth(selectedCivil.year, selectedCivil.month);
   const leadingBlanks = monthDays[0]?.weekday ?? 0;
@@ -77,7 +80,7 @@ function AlmanacPage() {
   const monthSeat = monthLetter(selectedCivil.year, selectedCivil.month);
   const monthSeats = monthLetters(selectedCivil.year, selectedCivil.month);
 
-  function openDay(civil: CivilDate, name = nameParam) {
+  function openDay(civil: CivilDate, name = sittingHandle) {
     navigate({ search: { date: isoOf(civil), name: name || undefined } });
   }
 
@@ -116,7 +119,7 @@ function AlmanacPage() {
           </p>
           <div className="mt-3">
             <NameForm
-              initial={nameParam ?? ""}
+              initial={sittingHandle ?? ""}
               compact
               onSubmit={(name) => openDay(selectedCivil, name)}
             />

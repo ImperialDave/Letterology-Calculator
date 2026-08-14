@@ -1,15 +1,10 @@
 import type { ReactNode } from "react";
+import { HouseProvider } from "@/lib/firebase/house-provider";
 
 /**
- * App-wide client provider mounted once near the root (in `src/routes/__root.tsx`):
- *
- *   <AuthProvider><Outlet /></AuthProvider>
- *
- * Better Auth's React client (`@/lib/auth/client`) needs NO context provider —
- * its `useSession()` works standalone — so this is a passthrough today. It's
- * kept as the single, stable mount point for any future client-side providers
- * (e.g. a toast or theme provider) without churning the root shell.
+ * App-wide client provider. Firebase owns the session for CC33 houses.
+ * Better Auth remains in the tree unused; do not rewrite server.ts.
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
-  return <>{children}</>;
+  return <HouseProvider>{children}</HouseProvider>;
 }
