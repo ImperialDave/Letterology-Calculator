@@ -127,7 +127,7 @@
 
 .affinity-ring {
   background: conic-gradient(
-    var(--color-primary) calc(var(--affinity) * 1%),
+    var(--affinity-mix, var(--color-primary)) calc(var(--affinity) * 1%),
     color-mix(in oklab, var(--color-ink) 12%, transparent) 0
   );
 }

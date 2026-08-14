@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { copyToClipboard, openXIntent } from "@/lib/letterology/clipboard";
 import type { BondAxes, BondReading } from "@/lib/letterology/compatibility";
 import { hopPhrase } from "@/lib/letterology/geometry";
+import { mixPair, pigmentOf } from "@/lib/letterology/pigment";
 import { dayReadingOf } from "@/lib/letterology/day-reading";
 import { WEATHER_COPY } from "@/lib/letterology/glossary";
 import { themeOf } from "@/lib/letterology/lexicon";
@@ -113,7 +114,7 @@ export function BondView({ bond }: { bond: BondReading }) {
             code={bond.a.archetype.code}
             align="left"
           />
-          <AffinityRing value={shown} />
+          <AffinityRing value={shown} mix={mixPair(bond.a.signature, bond.b.signature).css} />
           <PersonMark
             letter={bond.b.signature}
             name={bond.b.displayName}
@@ -355,7 +356,8 @@ export function BondView({ bond }: { bond: BondReading }) {
 
       <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
         <Explain title="On the wheel">
-          Gold is an ally. Dark is an enemy. Tap a letter to open that house on the circle.
+          The outer ring is the color wheel — one mineral per letter. Gold lines are allies.
+          Dark seats are enemies. Tap a letter to open that house.
         </Explain>
         <p className="mt-3 max-w-3xl text-sm leading-relaxed text-ink/85">
           {bond.a.displayName} sits {bond.a.signature}. {bond.b.displayName} sits {bond.b.signature}.
@@ -466,7 +468,7 @@ function PersonMark({
 }) {
   return (
     <div className={align === "right" ? "text-right" : "text-left"}>
-      <p className="font-display text-6xl leading-none text-primary sm:text-7xl">{letter}</p>
+      <p className="font-display text-6xl leading-none sm:text-7xl" style={{ color: pigmentOf(letter).css }}>{letter}</p>
       <p className="mt-2 font-display text-lg leading-tight text-ink">{name}</p>
       <p className="text-sm text-muted">{house}</p>
       <p className="font-display text-xs tracking-[0.14em] text-muted uppercase">{code}</p>
@@ -474,12 +476,12 @@ function PersonMark({
   );
 }
 
-function AffinityRing({ value }: { value: number }) {
+function AffinityRing({ value, mix }: { value: number; mix?: string }) {
   return (
     <div className="flex flex-col items-center">
       <div
         className="affinity-ring grid size-24 place-items-center rounded-full sm:size-28"
-        style={{ ["--affinity" as string]: value }}
+        style={{ ["--affinity" as string]: value, ["--affinity-mix" as string]: mix }}
       >
         <div className="grid size-[4.5rem] place-items-center rounded-full bg-raised sm:size-24">
           <span className="font-display text-3xl leading-none text-primary sm:text-4xl">{value}</span>
@@ -556,7 +558,7 @@ function LetterLink({
       search={{ letter }}
       className={cn("min-w-0", align === "right" ? "text-right" : "text-left")}
     >
-      <span className="font-display text-3xl leading-none text-primary">{letter}</span>
+      <span className="font-display text-3xl leading-none" style={{ color: pigmentOf(letter).css }}>{letter}</span>
       <span className="mt-1 block truncate text-sm text-muted">{noun}</span>
     </Link>
   );

@@ -1,10 +1,11 @@
 import { Link } from "@tanstack/react-router";
+import { Explain } from "@/components/letterology/Gloss";
 import { houseOf } from "@/lib/letterology/archetypes";
 import { bondsOf } from "@/lib/letterology/circle";
 import { themeOf } from "@/lib/letterology/lexicon";
+import { pigmentOf } from "@/lib/letterology/pigment";
 import type { Letter } from "@/lib/letterology/types";
 import { VOWEL_LETTERS } from "@/lib/letterology/types";
-import { Explain } from "@/components/letterology/Gloss";
 
 export function LetterDetail({ letter }: { letter: Letter }) {
   const theme = themeOf(letter);
@@ -16,7 +17,9 @@ export function LetterDetail({ letter }: { letter: Letter }) {
   return (
     <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-6">
       <div className="flex items-end justify-between gap-4">
-        <p className="font-display text-6xl leading-none text-primary">{letter}</p>
+        <p className="font-display text-6xl leading-none" style={{ color: pigmentOf(letter).css }}>
+          {letter}
+        </p>
         <div className="text-right">
           <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">{kind}</p>
           <p className="mt-1 text-sm text-muted">
@@ -25,6 +28,7 @@ export function LetterDetail({ letter }: { letter: Letter }) {
               : "A consonant: how this letter shows up in a room."}
           </p>
           <h3 className="mt-1 font-display text-2xl text-ink">{theme.name}</h3>
+          <p className="mt-1 text-sm text-muted">{pigmentOf(letter).name} on the wheel</p>
         </div>
       </div>
       <div className="mt-4 border-t border-ink/10 pt-4">

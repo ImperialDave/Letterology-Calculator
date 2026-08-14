@@ -3,6 +3,7 @@ import { LetterDetail } from "@/components/letterology/LetterDetail";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { PageShare } from "@/components/letterology/PageShare";
 import { themeOf } from "@/lib/letterology/lexicon";
+import { pigmentOf, pigmentStyle } from "@/lib/letterology/pigment";
 import { pageCardMeta } from "@/lib/letterology/share";
 import { ALPHABET, type Letter, VOWEL_LETTERS } from "@/lib/letterology/types";
 import { cn } from "@/lib/utils";
@@ -46,10 +47,10 @@ function AtlasPage() {
           <p className="font-display text-xs tracking-[0.22em] text-muted uppercase">The twenty-six fields</p>
           <h1 className="mt-2 font-display text-4xl text-ink sm:text-5xl">Letter Atlas</h1>
           <p className="mt-3 max-w-xl leading-relaxed text-ink/85">
-            Each letter has a meaning and a house. The meaning comes from words
-            that start with that letter. The house is the role that letter sits —
-            Seeker, Caregiver, Rebel, and so on. Vowels describe the private life.
-            Consonants describe how a person shows up. Pick a letter.
+            Each letter has a meaning, a house, and a pigment. The meaning comes from words
+            that start with that letter. The house is the role that letter sits. The pigment
+            is its seat on the color wheel — three of them mix into an archetype. Vowels
+            describe the private life. Consonants describe how a person shows up.
           </p>
           <p className="mt-2">
             <Link
@@ -76,13 +77,12 @@ function AtlasPage() {
                 type="button"
                 onClick={() => navigate({ search: { letter: item } })}
                 className={cn(
-                  "flex aspect-square items-center justify-center rounded-md font-display text-lg transition-[background-color,color,transform] duration-150 active:scale-[0.96]",
-                  active
-                    ? "bg-primary text-primary-fg"
-                    : "bg-raised text-ink shadow-[var(--shadow-border)] hover:shadow-[var(--shadow-border-hover)]",
+                  "flex aspect-square items-center justify-center rounded-md font-display text-lg transition-[transform,box-shadow] duration-150 active:scale-[0.96]",
+                  active ? "shadow-[var(--shadow-border)]" : "bg-raised shadow-[var(--shadow-border)] hover:shadow-[var(--shadow-border-hover)]",
                 )}
+                style={active ? pigmentStyle(item) : { color: pigmentOf(item).css }}
                 aria-pressed={active}
-                aria-label={`${item} — ${themeOf(item).name}${isVowel ? ", vowel" : ""}`}
+                aria-label={`${item} — ${themeOf(item).name}, ${pigmentOf(item).name}${isVowel ? ", vowel" : ""}`}
               >
                 {item}
               </button>

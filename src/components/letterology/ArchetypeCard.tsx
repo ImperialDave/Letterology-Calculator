@@ -1,7 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import type { Archetype } from "@/lib/letterology/types";
-import { themeOf } from "@/lib/letterology/lexicon";
+import { PigmentMix, PigmentPip } from "@/components/letterology/Pigment";
 import { TRIAD_LABELS } from "@/lib/letterology/glossary";
+import { themeOf } from "@/lib/letterology/lexicon";
+import { pigmentOf } from "@/lib/letterology/pigment";
+import type { Archetype } from "@/lib/letterology/types";
 
 export function ArchetypeCard({
   archetype,
@@ -19,25 +21,30 @@ export function ArchetypeCard({
         {featured ? "Your archetype" : "Archetype"}
       </p>
       <p className="mt-1 text-sm text-muted">
-        Three letters: the role, how you work, and where the work happens.
+        Three letters: the role, how you work, and where the work happens. Their pigments mix
+        into one color.
       </p>
       <div className="mt-4 flex flex-wrap items-end gap-3">
         {[first, second, third].map((letter, index) => (
           <span key={`${letter}-${index}`} className="flex flex-col items-center gap-1">
             <span
-              className={
-                index === 0
-                  ? "font-display text-6xl leading-none text-primary sm:text-7xl"
-                  : "font-display text-5xl leading-none text-ink sm:text-6xl"
-              }
+              className="font-display leading-none"
+              style={{
+                color: pigmentOf(letter).css,
+                fontSize: index === 0 ? "clamp(3rem, 8vw, 4.5rem)" : "clamp(2.5rem, 7vw, 3.75rem)",
+              }}
             >
               {letter}
             </span>
-            <span className="font-display text-xs tracking-[0.14em] text-muted uppercase">
+            <span className="inline-flex items-center gap-1 font-display text-xs tracking-[0.14em] text-muted uppercase">
+              <PigmentPip letter={letter} size="sm" />
               {labels[index]?.term}
             </span>
           </span>
         ))}
+      </div>
+      <div className="mt-6">
+        <PigmentMix triad={archetype.triad} />
       </div>
       <h3 className="mt-5 font-display text-3xl leading-tight text-ink sm:text-4xl">
         {archetype.title}

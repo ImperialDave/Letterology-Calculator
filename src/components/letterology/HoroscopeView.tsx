@@ -13,6 +13,7 @@ import { houseOf } from "@/lib/letterology/archetypes";
 import type { CivilDate } from "@/lib/letterology/calendar";
 import { bondCopy } from "@/lib/letterology/circle";
 import { copyToClipboard } from "@/lib/letterology/clipboard";
+import { pigmentOf } from "@/lib/letterology/pigment";
 import { composeXPost, portraitUrl, publicSiteOrigin, tweetReading } from "@/lib/letterology/share";
 import { themeOf } from "@/lib/letterology/lexicon";
 import type { Horoscope, Letter } from "@/lib/letterology/types";
@@ -76,7 +77,8 @@ export function HoroscopeView({
         <div className="flex items-end gap-4">
           <span
             aria-hidden="true"
-            className="font-display text-7xl leading-none text-primary sm:text-8xl"
+            className="font-display text-7xl leading-none sm:text-8xl"
+            style={{ color: pigmentOf(horoscope.signature).css }}
           >
             {horoscope.signature}
           </span>
@@ -298,7 +300,7 @@ function WheelColumn({
                 onClick={() => onSelect(letter)}
                 className="flex min-h-11 w-full items-baseline gap-3 text-left"
               >
-                <span className="font-display text-2xl text-primary">{letter}</span>
+                <span className="font-display text-2xl" style={{ color: pigmentOf(letter).css }}>{letter}</span>
                 <span>
                   <span className="font-display text-ink">{houseOf(letter).noun}</span>
                   <span className="ml-2 text-xs tracking-wide text-muted uppercase">

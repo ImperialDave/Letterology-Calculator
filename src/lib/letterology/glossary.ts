@@ -303,6 +303,22 @@ export const GLOSSARY: GlossEntry[] = [
     surfaces: ["home", "footer", "reading"],
   },
   {
+    id: "pigment",
+    term: "Pigment",
+    metaphor: "Amber sits the Seeker. The wheel walks the spectrum back to ochre.",
+    plain: "The color of a letter. A sits dawn gold; the rest walk the color wheel in order. Each pigment has a mineral name.",
+    opacity: "high",
+    surfaces: ["circle", "houses", "reading"],
+  },
+  {
+    id: "mix",
+    term: "Mix",
+    metaphor: "Cobalt with vermilion and jade.",
+    plain: "An archetype’s color. Three letter-pigments combined: the house is half the pot, manner three-tenths, field two-tenths.",
+    opacity: "high",
+    surfaces: ["circle", "houses", "reading"],
+  },
+  {
     id: "bond",
     term: "Bond",
     metaphor: "Two handles sit a bond.",

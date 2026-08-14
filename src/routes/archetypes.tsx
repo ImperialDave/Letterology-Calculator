@@ -18,6 +18,7 @@ import { ALPHABET, type Letter, type Triad } from "@/lib/letterology/types";
 import { PageShare } from "@/components/letterology/PageShare";
 import { Explain } from "@/components/letterology/Gloss";
 import { pageCardMeta } from "@/lib/letterology/share";
+import { mixTriad, pigmentOf, pigmentStyle } from "@/lib/letterology/pigment";
 import { cn } from "@/lib/utils";
 
 type Search = { house?: string; code?: string };
@@ -94,7 +95,8 @@ function HousesPage() {
             Twenty-six houses, one for each letter. A username chooses a house by
             its first letter — that is the role. The two letters that weigh most
             after that set the manner (how the role works) and the field (where).
-            Allies complete the job. Enemies are the blind spot. See them on the{" "}
+            Those three letters mix a color — house half, manner three-tenths, field
+            two-tenths. See the pigments on the{" "}
             <Link to="/circle" search={{ house: selectedHouse }} className="text-primary">
               Circle of Houses
             </Link>
@@ -151,13 +153,12 @@ function HousesPage() {
                   type="button"
                   onClick={() => openTriad([item.letter, manner, selected[2]])}
                   className={cn(
-                    "flex min-h-11 items-center justify-center rounded-md font-display text-lg transition-[background-color,color,transform] duration-150 active:scale-[0.96]",
-                    active
-                      ? "bg-primary text-primary-fg"
-                      : "bg-raised text-ink shadow-[var(--shadow-border)] hover:shadow-[var(--shadow-border-hover)]",
+                    "flex min-h-11 items-center justify-center rounded-md font-display text-lg transition-[transform,box-shadow] duration-150 active:scale-[0.96]",
+                    active ? "shadow-[var(--shadow-border)]" : "bg-raised shadow-[var(--shadow-border)] hover:shadow-[var(--shadow-border-hover)]",
                   )}
+                  style={active ? pigmentStyle(item.letter) : { color: pigmentOf(item.letter).css }}
                   aria-pressed={active}
-                  aria-label={`${item.letter} — ${item.house}`}
+                  aria-label={`${item.letter} — ${item.house}, ${pigmentOf(item.letter).name}`}
                 >
                   {item.letter}
                 </button>
@@ -206,13 +207,12 @@ function HousesPage() {
                   type="button"
                   onClick={() => openTriad([selectedHouse, letter, selected[2]])}
                   className={cn(
-                    "flex min-h-11 items-center justify-center rounded-md font-display text-lg transition-[background-color,color,transform] duration-150 active:scale-[0.96]",
-                    active
-                      ? "bg-primary text-primary-fg"
-                      : "bg-raised text-ink shadow-[var(--shadow-border)] hover:shadow-[var(--shadow-border-hover)]",
+                    "flex min-h-11 items-center justify-center rounded-md font-display text-lg transition-[transform,box-shadow] duration-150 active:scale-[0.96]",
+                    active ? "shadow-[var(--shadow-border)]" : "bg-raised shadow-[var(--shadow-border)] hover:shadow-[var(--shadow-border-hover)]",
                   )}
+                  style={active ? pigmentStyle(letter) : { color: pigmentOf(letter).css }}
                   aria-pressed={active}
-                  aria-label={`${letter} — ${themeOf(letter).name}`}
+                  aria-label={`${letter} — ${themeOf(letter).name}, ${pigmentOf(letter).name}`}
                 >
                   {letter}
                 </button>
@@ -239,6 +239,7 @@ function HousesPage() {
           <ul className="mt-3 divide-y divide-ink/10 rounded-xl bg-raised px-4 shadow-[var(--shadow-border)]">
             {column.map((item) => {
               const active = item.code === selectedArchetype.code;
+              const mix = mixTriad(item.triad);
               return (
                 <li key={item.code}>
                   <button
@@ -249,7 +250,12 @@ function HousesPage() {
                       active ? "text-primary" : "text-ink",
                     )}
                   >
-                    <span className="min-w-0">
+                    <span
+                      className="mt-1 size-3 shrink-0 rounded-full"
+                      style={{ backgroundColor: mix.css }}
+                      aria-hidden="true"
+                    />
+                    <span className="min-w-0 flex-1">
                       <span className="font-display">{item.title}</span>
                       <span className="mt-0.5 block text-sm text-muted">
                         {themeOf(item.triad[2]).name} · {item.summary.split(" · ").pop()}
