@@ -28,17 +28,32 @@ function AuthSlot() {
   );
 }
 
-const NAV: { to: "/" | "/bond" | "/count" | "/atlas" | "/archetypes" | "/circle" | "/almanac"; label: string; current: HeaderCurrent }[] = [
+const NAV: {
+  to: "/" | "/bond" | "/count" | "/stoicheia" | "/atlas" | "/archetypes" | "/circle" | "/almanac";
+  label: string;
+  current: HeaderCurrent;
+}[] = [
   { to: "/", label: "Read", current: "read" },
   { to: "/bond", label: "Bond", current: "bond" },
   { to: "/count", label: "Count", current: "count" },
+  { to: "/stoicheia", label: "Stoicheia", current: "stoicheia" },
   { to: "/atlas", label: "Atlas", current: "atlas" },
   { to: "/archetypes", label: "Houses", current: "houses" },
   { to: "/circle", label: "Circle", current: "circle" },
   { to: "/almanac", label: "Year", current: "almanac" },
 ];
 
-export type HeaderCurrent = "read" | "bond" | "count" | "atlas" | "houses" | "circle" | "almanac" | "login" | "key";
+export type HeaderCurrent =
+  | "read"
+  | "bond"
+  | "count"
+  | "stoicheia"
+  | "atlas"
+  | "houses"
+  | "circle"
+  | "almanac"
+  | "login"
+  | "key";
 
 export function SiteHeader({ current }: { current: HeaderCurrent }) {
   return (
@@ -87,12 +102,32 @@ export function SiteFooter() {
       <div className="mx-auto flex max-w-5xl flex-col items-center gap-2 px-4 py-8 text-center text-sm text-muted sm:px-6">
         <p className="font-display text-xs tracking-[0.2em] text-ink uppercase">{SITE_LOCKUP}</p>
         <p>Twenty-six houses. A portrait of a username, not a prediction.</p>
-        <Link
-          to="/bond"
-          className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
-        >
-          Compare two usernames
-        </Link>
+        <div className="flex flex-wrap items-center justify-center gap-x-5">
+          <Link
+            to="/doctrine"
+            className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+          >
+            The Doctrine
+          </Link>
+          <Link
+            to="/stoicheia"
+            className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+          >
+            Stoicheia
+          </Link>
+          <Link
+            to="/key"
+            className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+          >
+            The Key
+          </Link>
+          <Link
+            to="/bond"
+            className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+          >
+            Compare two usernames
+          </Link>
+        </div>
       </div>
     </footer>
   );

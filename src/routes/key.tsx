@@ -62,7 +62,12 @@ function KeyPage() {
           <p className="mt-3 max-w-xl leading-relaxed text-ink/85">
             CC33 keeps Letterology’s weird metaphors. It also has to speak to people who did not
             arrive already fluent. This page is the audit: every coined term on the site, said
-            twice — once in the house tongue, once in plain speech.
+            twice — once in the house tongue, once in plain speech. The argument for why the
+            machine is shaped this way lives in{" "}
+            <Link to="/doctrine" className="text-primary">
+              The Doctrine
+            </Link>
+            .
           </p>
           <div className="mt-4 border-t border-ink/10 pt-4">
             <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">In other words</p>

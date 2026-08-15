@@ -17,12 +17,21 @@ import { Route as BondRouteImport } from './routes/bond'
 import { Route as CircleRouteImport } from './routes/circle'
 import { Route as ClaimRouteImport } from './routes/claim'
 import { Route as CountRouteImport } from './routes/count'
+import { Route as DoctrineRouteImport } from './routes/doctrine'
 import { Route as HouseRouteImport } from './routes/house'
 import { Route as KeyRouteImport } from './routes/key'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as StoicheiaRouteImport } from './routes/stoicheia'
 import { Route as ApiCardRouteImport } from './routes/api/card'
 import { Route as OgFileRouteImport } from './routes/og.$file'
 import { Route as PSlugRouteImport } from './routes/p.$slug'
+import { Route as StoicheiaIndexRouteImport } from './routes/stoicheia.index'
+import { Route as StoicheiaCalendarRouteImport } from './routes/stoicheia.calendar'
+import { Route as StoicheiaDoctrineRouteImport } from './routes/stoicheia.doctrine'
+import { Route as StoicheiaHoraeRouteImport } from './routes/stoicheia.horae'
+import { Route as StoicheiaHymnRouteImport } from './routes/stoicheia.hymn'
+import { Route as StoicheiaIsopsephyRouteImport } from './routes/stoicheia.isopsephy'
+import { Route as StoicheiaXeniaRouteImport } from './routes/stoicheia.xenia'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const IndexRoute = IndexRouteImport.update({
@@ -65,6 +74,11 @@ const CountRoute = CountRouteImport.update({
   path: '/count',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DoctrineRoute = DoctrineRouteImport.update({
+  id: '/doctrine',
+  path: '/doctrine',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HouseRoute = HouseRouteImport.update({
   id: '/house',
   path: '/house',
@@ -78,6 +92,11 @@ const KeyRoute = KeyRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StoicheiaRoute = StoicheiaRouteImport.update({
+  id: '/stoicheia',
+  path: '/stoicheia',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiCardRoute = ApiCardRouteImport.update({
@@ -95,6 +114,41 @@ const PSlugRoute = PSlugRouteImport.update({
   path: '/p/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StoicheiaIndexRoute = StoicheiaIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => StoicheiaRoute,
+} as any)
+const StoicheiaCalendarRoute = StoicheiaCalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => StoicheiaRoute,
+} as any)
+const StoicheiaDoctrineRoute = StoicheiaDoctrineRouteImport.update({
+  id: '/doctrine',
+  path: '/doctrine',
+  getParentRoute: () => StoicheiaRoute,
+} as any)
+const StoicheiaHoraeRoute = StoicheiaHoraeRouteImport.update({
+  id: '/horae',
+  path: '/horae',
+  getParentRoute: () => StoicheiaRoute,
+} as any)
+const StoicheiaHymnRoute = StoicheiaHymnRouteImport.update({
+  id: '/hymn',
+  path: '/hymn',
+  getParentRoute: () => StoicheiaRoute,
+} as any)
+const StoicheiaIsopsephyRoute = StoicheiaIsopsephyRouteImport.update({
+  id: '/isopsephy',
+  path: '/isopsephy',
+  getParentRoute: () => StoicheiaRoute,
+} as any)
+const StoicheiaXeniaRoute = StoicheiaXeniaRouteImport.update({
+  id: '/xenia',
+  path: '/xenia',
+  getParentRoute: () => StoicheiaRoute,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -110,12 +164,21 @@ export interface FileRoutesByFullPath {
   '/circle': typeof CircleRoute
   '/claim': typeof ClaimRoute
   '/count': typeof CountRoute
+  '/doctrine': typeof DoctrineRoute
   '/house': typeof HouseRoute
   '/key': typeof KeyRoute
   '/login': typeof LoginRoute
+  '/stoicheia': typeof StoicheiaRouteWithChildren
   '/api/card': typeof ApiCardRoute
   '/og/$file': typeof OgFileRoute
   '/p/$slug': typeof PSlugRoute
+  '/stoicheia/calendar': typeof StoicheiaCalendarRoute
+  '/stoicheia/doctrine': typeof StoicheiaDoctrineRoute
+  '/stoicheia/horae': typeof StoicheiaHoraeRoute
+  '/stoicheia/hymn': typeof StoicheiaHymnRoute
+  '/stoicheia/isopsephy': typeof StoicheiaIsopsephyRoute
+  '/stoicheia/xenia': typeof StoicheiaXeniaRoute
+  '/stoicheia/': typeof StoicheiaIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesByTo {
@@ -127,12 +190,20 @@ export interface FileRoutesByTo {
   '/circle': typeof CircleRoute
   '/claim': typeof ClaimRoute
   '/count': typeof CountRoute
+  '/doctrine': typeof DoctrineRoute
   '/house': typeof HouseRoute
   '/key': typeof KeyRoute
   '/login': typeof LoginRoute
   '/api/card': typeof ApiCardRoute
   '/og/$file': typeof OgFileRoute
   '/p/$slug': typeof PSlugRoute
+  '/stoicheia/calendar': typeof StoicheiaCalendarRoute
+  '/stoicheia/doctrine': typeof StoicheiaDoctrineRoute
+  '/stoicheia/horae': typeof StoicheiaHoraeRoute
+  '/stoicheia/hymn': typeof StoicheiaHymnRoute
+  '/stoicheia/isopsephy': typeof StoicheiaIsopsephyRoute
+  '/stoicheia/xenia': typeof StoicheiaXeniaRoute
+  '/stoicheia': typeof StoicheiaIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesById {
@@ -145,12 +216,21 @@ export interface FileRoutesById {
   '/circle': typeof CircleRoute
   '/claim': typeof ClaimRoute
   '/count': typeof CountRoute
+  '/doctrine': typeof DoctrineRoute
   '/house': typeof HouseRoute
   '/key': typeof KeyRoute
   '/login': typeof LoginRoute
+  '/stoicheia': typeof StoicheiaRouteWithChildren
   '/api/card': typeof ApiCardRoute
   '/og/$file': typeof OgFileRoute
   '/p/$slug': typeof PSlugRoute
+  '/stoicheia/calendar': typeof StoicheiaCalendarRoute
+  '/stoicheia/doctrine': typeof StoicheiaDoctrineRoute
+  '/stoicheia/horae': typeof StoicheiaHoraeRoute
+  '/stoicheia/hymn': typeof StoicheiaHymnRoute
+  '/stoicheia/isopsephy': typeof StoicheiaIsopsephyRoute
+  '/stoicheia/xenia': typeof StoicheiaXeniaRoute
+  '/stoicheia/': typeof StoicheiaIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRouteTypes {
@@ -164,12 +244,21 @@ export interface FileRouteTypes {
     | '/circle'
     | '/claim'
     | '/count'
+    | '/doctrine'
     | '/house'
     | '/key'
     | '/login'
+    | '/stoicheia'
     | '/api/card'
     | '/og/$file'
     | '/p/$slug'
+    | '/stoicheia/calendar'
+    | '/stoicheia/doctrine'
+    | '/stoicheia/horae'
+    | '/stoicheia/hymn'
+    | '/stoicheia/isopsephy'
+    | '/stoicheia/xenia'
+    | '/stoicheia/'
     | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -181,12 +270,20 @@ export interface FileRouteTypes {
     | '/circle'
     | '/claim'
     | '/count'
+    | '/doctrine'
     | '/house'
     | '/key'
     | '/login'
     | '/api/card'
     | '/og/$file'
     | '/p/$slug'
+    | '/stoicheia/calendar'
+    | '/stoicheia/doctrine'
+    | '/stoicheia/horae'
+    | '/stoicheia/hymn'
+    | '/stoicheia/isopsephy'
+    | '/stoicheia/xenia'
+    | '/stoicheia'
     | '/api/auth/$'
   id:
     | '__root__'
@@ -198,12 +295,21 @@ export interface FileRouteTypes {
     | '/circle'
     | '/claim'
     | '/count'
+    | '/doctrine'
     | '/house'
     | '/key'
     | '/login'
+    | '/stoicheia'
     | '/api/card'
     | '/og/$file'
     | '/p/$slug'
+    | '/stoicheia/calendar'
+    | '/stoicheia/doctrine'
+    | '/stoicheia/horae'
+    | '/stoicheia/hymn'
+    | '/stoicheia/isopsephy'
+    | '/stoicheia/xenia'
+    | '/stoicheia/'
     | '/api/auth/$'
   fileRoutesById: FileRoutesById
 }
@@ -216,9 +322,11 @@ export interface RootRouteChildren {
   CircleRoute: typeof CircleRoute
   ClaimRoute: typeof ClaimRoute
   CountRoute: typeof CountRoute
+  DoctrineRoute: typeof DoctrineRoute
   HouseRoute: typeof HouseRoute
   KeyRoute: typeof KeyRoute
   LoginRoute: typeof LoginRoute
+  StoicheiaRoute: typeof StoicheiaRouteWithChildren
   ApiCardRoute: typeof ApiCardRoute
   OgFileRoute: typeof OgFileRoute
   PSlugRoute: typeof PSlugRoute
@@ -283,6 +391,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CountRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/doctrine': {
+      id: '/doctrine'
+      path: '/doctrine'
+      fullPath: '/doctrine'
+      preLoaderRoute: typeof DoctrineRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/house': {
       id: '/house'
       path: '/house'
@@ -302,6 +417,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/stoicheia': {
+      id: '/stoicheia'
+      path: '/stoicheia'
+      fullPath: '/stoicheia'
+      preLoaderRoute: typeof StoicheiaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/card': {
@@ -325,6 +447,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/stoicheia/': {
+      id: '/stoicheia/'
+      path: '/'
+      fullPath: '/stoicheia/'
+      preLoaderRoute: typeof StoicheiaIndexRouteImport
+      parentRoute: typeof StoicheiaRoute
+    }
+    '/stoicheia/calendar': {
+      id: '/stoicheia/calendar'
+      path: '/calendar'
+      fullPath: '/stoicheia/calendar'
+      preLoaderRoute: typeof StoicheiaCalendarRouteImport
+      parentRoute: typeof StoicheiaRoute
+    }
+    '/stoicheia/doctrine': {
+      id: '/stoicheia/doctrine'
+      path: '/doctrine'
+      fullPath: '/stoicheia/doctrine'
+      preLoaderRoute: typeof StoicheiaDoctrineRouteImport
+      parentRoute: typeof StoicheiaRoute
+    }
+    '/stoicheia/horae': {
+      id: '/stoicheia/horae'
+      path: '/horae'
+      fullPath: '/stoicheia/horae'
+      preLoaderRoute: typeof StoicheiaHoraeRouteImport
+      parentRoute: typeof StoicheiaRoute
+    }
+    '/stoicheia/hymn': {
+      id: '/stoicheia/hymn'
+      path: '/hymn'
+      fullPath: '/stoicheia/hymn'
+      preLoaderRoute: typeof StoicheiaHymnRouteImport
+      parentRoute: typeof StoicheiaRoute
+    }
+    '/stoicheia/isopsephy': {
+      id: '/stoicheia/isopsephy'
+      path: '/isopsephy'
+      fullPath: '/stoicheia/isopsephy'
+      preLoaderRoute: typeof StoicheiaIsopsephyRouteImport
+      parentRoute: typeof StoicheiaRoute
+    }
+    '/stoicheia/xenia': {
+      id: '/stoicheia/xenia'
+      path: '/xenia'
+      fullPath: '/stoicheia/xenia'
+      preLoaderRoute: typeof StoicheiaXeniaRouteImport
+      parentRoute: typeof StoicheiaRoute
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -335,6 +506,30 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface StoicheiaRouteChildren {
+  StoicheiaCalendarRoute: typeof StoicheiaCalendarRoute
+  StoicheiaDoctrineRoute: typeof StoicheiaDoctrineRoute
+  StoicheiaHoraeRoute: typeof StoicheiaHoraeRoute
+  StoicheiaHymnRoute: typeof StoicheiaHymnRoute
+  StoicheiaIsopsephyRoute: typeof StoicheiaIsopsephyRoute
+  StoicheiaXeniaRoute: typeof StoicheiaXeniaRoute
+  StoicheiaIndexRoute: typeof StoicheiaIndexRoute
+}
+
+const StoicheiaRouteChildren: StoicheiaRouteChildren = {
+  StoicheiaCalendarRoute: StoicheiaCalendarRoute,
+  StoicheiaDoctrineRoute: StoicheiaDoctrineRoute,
+  StoicheiaHoraeRoute: StoicheiaHoraeRoute,
+  StoicheiaHymnRoute: StoicheiaHymnRoute,
+  StoicheiaIsopsephyRoute: StoicheiaIsopsephyRoute,
+  StoicheiaXeniaRoute: StoicheiaXeniaRoute,
+  StoicheiaIndexRoute: StoicheiaIndexRoute,
+}
+
+const StoicheiaRouteWithChildren = StoicheiaRoute._addFileChildren(
+  StoicheiaRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AlmanacRoute: AlmanacRoute,
@@ -344,9 +539,11 @@ const rootRouteChildren: RootRouteChildren = {
   CircleRoute: CircleRoute,
   ClaimRoute: ClaimRoute,
   CountRoute: CountRoute,
+  DoctrineRoute: DoctrineRoute,
   HouseRoute: HouseRoute,
   KeyRoute: KeyRoute,
   LoginRoute: LoginRoute,
+  StoicheiaRoute: StoicheiaRouteWithChildren,
   ApiCardRoute: ApiCardRoute,
   OgFileRoute: OgFileRoute,
   PSlugRoute: PSlugRoute,

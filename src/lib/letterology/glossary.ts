@@ -359,6 +359,14 @@ export const GLOSSARY: GlossEntry[] = [
     surfaces: ["bond"],
   },
   {
+    id: "doctrine",
+    term: "The Doctrine",
+    metaphor: "Why the system is shaped the way it is.",
+    plain: "The argument, written backward from the mechanics. The Key is the dictionary. The Doctrine is the reason.",
+    opacity: "medium",
+    surfaces: ["doctrine", "footer", "key"],
+  },
+  {
     id: "count",
     term: "The Count",
     metaphor: "We ask a number to sit a house.",
