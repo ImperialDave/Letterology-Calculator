@@ -61,6 +61,11 @@
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+    transition:
+      background-color 280ms var(--ease-smooth-out),
+      color 280ms var(--ease-smooth-out);
   }
 
   html,
@@ -75,6 +80,9 @@
     color: var(--color-fg);
     font-family: var(--font-serif);
     line-height: 1.55;
+    transition:
+      background-color 280ms var(--ease-smooth-out),
+      color 280ms var(--ease-smooth-out);
   }
 
   h1,
@@ -106,6 +114,9 @@
     url("/paper.jpg");
   background-size: auto, 640px;
   background-blend-mode: normal, multiply;
+  transition:
+    background-color 280ms var(--ease-smooth-out),
+    color 280ms var(--ease-smooth-out);
 }
 
 [data-tongue="el"].paper-field,
@@ -117,6 +128,73 @@
 .hairline {
   height: 1px;
   background: color-mix(in oklab, var(--color-ink) 14%, transparent);
+}
+
+.tongue-stage {
+  display: grid;
+}
+
+.tongue-pane {
+  grid-area: 1 / 1;
+  transition:
+    opacity 280ms var(--ease-smooth-out),
+    transform 280ms var(--ease-smooth-out);
+}
+
+.tongue-pane.is-on {
+  opacity: 1;
+  transform: none;
+}
+
+.tongue-pane.is-off {
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+}
+
+.tongue-switch {
+  position: relative;
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
+  height: 2.75rem;
+  padding: 0.25rem;
+  border-radius: 999px;
+  background: var(--color-raised);
+  box-shadow: var(--shadow-border);
+}
+
+.tongue-switch-pill {
+  position: absolute;
+  top: 0.25rem;
+  bottom: 0.25rem;
+  left: 0.25rem;
+  width: calc(50% - 0.25rem);
+  border-radius: 999px;
+  background: var(--color-primary);
+  transition: transform 280ms var(--ease-smooth-out);
+}
+
+.tongue-switch[data-on="el"] .tongue-switch-pill {
+  transform: translateX(100%);
+}
+
+.tongue-switch button {
+  position: relative;
+  z-index: 1;
+  height: 2.25rem;
+  padding: 0 0.85rem;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  background: transparent;
+  border: 0;
+}
+
+.tongue-switch button.is-on {
+  color: var(--color-primary-fg);
 }
 
 .stagger-in > * {
@@ -146,6 +224,14 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html,
+  body,
+  .paper-field,
+  .tongue-pane,
+  .tongue-switch-pill {
+    transition: none;
+  }
+
   .stagger-in > * {
     animation: none;
   }

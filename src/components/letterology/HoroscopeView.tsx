@@ -101,8 +101,8 @@ export function HoroscopeView({
             {copied ? "Copied" : "Copy reading"}
           </Button>
           <Link
-            to="/bond"
-            search={{ a: horoscope.displayName }}
+            to="/two"
+            search={{ a: horoscope.displayName, b: undefined, tongue: undefined, mode: undefined }}
             className="inline-flex h-11 items-center justify-center font-display text-xs tracking-[0.14em] text-primary uppercase"
           >
             Compare this handle

@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { AppShell } from "@/components/SiteChrome";
 import { DOCTRINE, DOCTRINE_PREFACE } from "@/lib/letterology/doctrine";
 import { pageCardMeta } from "@/lib/letterology/share";
+import { parseTongue } from "@/lib/letterology/tongue";
 import { VOICE } from "@/lib/letterology/voice";
 import { STOICHEIA_DOCTRINE } from "@/lib/stoicheia/doctrine";
 
@@ -22,6 +24,14 @@ export const Route = createFileRoute("/why")({
 });
 
 function WhyPage() {
+  const tongue = parseTongue(Route.useSearch().tongue);
+
+  useEffect(() => {
+    const id = tongue === "el" ? "greek" : "latin";
+    if (tongue === "la" && !window.location.hash) return;
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [tongue]);
+
   return (
     <AppShell current="why">
       <header>
@@ -29,7 +39,7 @@ function WhyPage() {
         <p className="mt-3 max-w-xl leading-relaxed text-ink/85">{VOICE.doctrineAbstract}</p>
       </header>
 
-      <section className="mt-10 space-y-4">
+      <section id="latin" className="mt-10 space-y-4 scroll-mt-24">
         {DOCTRINE_PREFACE.map((paragraph) => (
           <p key={paragraph.slice(0, 24)} className="leading-relaxed text-ink/90">
             {paragraph}
@@ -49,7 +59,7 @@ function WhyPage() {
         </section>
       ))}
 
-      <section className="mt-16">
+      <section id="greek" className="mt-16 scroll-mt-24">
         <h2 className="font-display text-3xl text-ink">The Greek warrant</h2>
         {STOICHEIA_DOCTRINE.map((section) => (
           <article key={section.title} className="mt-8">

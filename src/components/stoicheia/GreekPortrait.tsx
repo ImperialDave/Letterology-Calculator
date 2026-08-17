@@ -18,7 +18,7 @@ export function GreekPortrait({ reading }: { reading: Stoicheion }) {
   const selected = mark ? portraitOf(mark) : null;
 
   return (
-    <div className="stagger-in space-y-10">
+    <div className="space-y-10">
       <header className="text-center">
         <p className="font-display text-4xl tracking-[0.12em] text-ink sm:text-6xl">{reading.spelled}</p>
         <h1 className="mt-3 font-display text-3xl text-ink sm:text-4xl">{reading.epithet}</h1>

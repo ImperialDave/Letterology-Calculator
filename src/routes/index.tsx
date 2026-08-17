@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { LatinPortrait } from "@/components/letterology/LatinPortrait";
+import { TongueStage } from "@/components/letterology/TongueStage";
 import { AppShell } from "@/components/SiteChrome";
 import { GreekPortrait } from "@/components/stoicheia/GreekPortrait";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import { useCurrentUser } from "@/lib/auth/use-current-user";
 import { useHouseHoroscope } from "@/lib/firebase/house-provider";
 import { buildHoroscope } from "@/lib/letterology/engine";
 import { pageCardMeta } from "@/lib/letterology/share";
-import { parseTongue } from "@/lib/letterology/tongue";
+import { noteHandle, parseTongue } from "@/lib/letterology/tongue";
 import { VOICE } from "@/lib/letterology/voice";
 import { stoicheiaCardFile, stoicheiaNamePath } from "@/lib/stoicheia/copy";
 import { readStoicheion } from "@/lib/stoicheia/engine";
@@ -70,10 +71,18 @@ function Home() {
   const handle = loaded.n ?? search.n ?? sittingUser?.displayHandle ?? "";
   const tongue = parseTongue(loaded.tongue ?? search.tongue);
   const [value, setValue] = useState(handle);
-  const latin = useMemo(() => (handle && tongue === "la" ? buildHoroscope(handle) : null), [handle, tongue]);
-  const greek = useMemo(() => (handle && tongue === "el" ? readStoicheion(handle) : null), [handle, tongue]);
+  const latin = useMemo(() => (handle ? buildHoroscope(handle) : null), [handle]);
+  const greek = useMemo(() => (handle ? readStoicheion(handle) : null), [handle]);
   const empty = Boolean(handle) && !latin && !greek;
   const door = !handle && !sitting;
+
+  useEffect(() => {
+    if (handle) setValue(handle);
+  }, [handle]);
+
+  useEffect(() => {
+    noteHandle(value);
+  }, [value]);
 
   function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -133,8 +142,13 @@ function Home() {
             </Button>
           </form>
           {empty ? <p className="text-sm text-primary">{VOICE.stoicheiaEmpty}</p> : null}
-          {tongue === "el" && greek ? <GreekPortrait reading={greek} /> : null}
-          {tongue === "la" && latin ? <LatinPortrait horoscope={latin} /> : null}
+          {latin || greek ? (
+            <TongueStage
+              tongue={tongue}
+              latin={latin ? <LatinPortrait horoscope={latin} /> : <p className="text-sm text-muted">No Latin letters in this handle.</p>}
+              greek={greek ? <GreekPortrait reading={greek} /> : <p className="text-sm text-muted">{VOICE.stoicheiaEmpty}</p>}
+            />
+          ) : null}
         </div>
       )}
     </AppShell>

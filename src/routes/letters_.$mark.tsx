@@ -1,10 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { LetterDetail } from "@/components/letterology/LetterDetail";
+import { TongueStage } from "@/components/letterology/TongueStage";
 import { AppShell } from "@/components/SiteChrome";
 import { LetterBookView } from "@/components/stoicheia/LetterBook";
 import { letterFromMark } from "@/lib/stoicheia/letters";
 import { portraitOf } from "@/lib/stoicheia/portrait";
 import { pageCardMeta } from "@/lib/letterology/share";
+import { parseTongue } from "@/lib/letterology/tongue";
 import { ALPHABET } from "@/lib/letterology/types";
 
 type Search = { tongue?: "el" };
@@ -40,51 +42,52 @@ export const Route = createFileRoute("/letters_/$mark")({
 
 function LetterPage() {
   const { greek, latin, mark } = Route.useLoaderData();
-  const { tongue } = Route.useSearch();
-  const preferGreek = tongue === "el" || Boolean(greek && !latin);
-
-  if (preferGreek && greek) {
-    const portrait = portraitOf(greek);
-    return (
-      <AppShell current="letters">
-        <p>
-          <Link
-            to="/letters"
-            search={{ tongue: "el" }}
-            className="font-display text-xs tracking-[0.14em] text-muted uppercase"
-          >
-            All hours
-          </Link>
-        </p>
-        <h1 className="mt-4 font-display text-5xl text-ink">
-          {portrait.book.letter} · {portrait.book.spoken}
-        </h1>
-        <div className="mt-8">
-          <LetterBookView portrait={portrait} />
-        </div>
-      </AppShell>
-    );
-  }
-
-  if (latin) {
-    return (
-      <AppShell current="letters">
-        <p>
-          <Link to="/letters" search={{ tongue: undefined }} className="font-display text-xs tracking-[0.14em] text-muted uppercase">
-            All letters
-          </Link>
-        </p>
-        <div className="mt-6">
-          <LetterDetail letter={latin} />
-        </div>
-      </AppShell>
-    );
-  }
+  const tongue = parseTongue(Route.useSearch().tongue);
+  const book = greek ? portraitOf(greek) : null;
 
   return (
     <AppShell current="letters">
-      <h1 className="font-display text-4xl text-ink">That is not a letter we keep</h1>
-      <p className="mt-3 text-muted">Tried {mark}.</p>
+      <p>
+        <Link
+          to="/letters"
+          search={{ tongue: tongue === "el" ? "el" : undefined }}
+          className="font-display text-xs tracking-[0.14em] text-muted uppercase"
+        >
+          {tongue === "el" ? "All hours" : "All letters"}
+        </Link>
+      </p>
+      {latin || book ? (
+        <div className="mt-6">
+          <TongueStage
+            tongue={latin && book ? tongue : book ? "el" : "la"}
+            latin={
+              latin ? (
+                <LetterDetail letter={latin} />
+              ) : (
+                <p className="text-sm text-muted">
+                  {mark} is not a Latin seat. Stay with the Greek mark, or open the wheel.
+                </p>
+              )
+            }
+            greek={
+              book ? (
+                <div>
+                  <h1 className="font-display text-5xl text-ink">
+                    {book.book.letter} · {book.book.spoken}
+                  </h1>
+                  <div className="mt-8">
+                    <LetterBookView portrait={book} />
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted">{mark} is not one of the twenty-four.</p>
+              )
+            }
+          />
+        </div>
+      ) : (
+        <h1 className="mt-6 font-display text-4xl text-ink">That is not a letter we keep</h1>
+      )}
     </AppShell>
   );
 }

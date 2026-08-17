@@ -32,6 +32,11 @@ export const Route = createRootRoute({
     <html lang="en" className="antialiased" suppressHydrationWarning>
       <head>
         <HeadContent />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{if(/[?&]tongue=el/.test(location.search))document.documentElement.dataset.tongue="el"}catch(e){}`,
+          }}
+        />
       </head>
       <body className="min-h-dvh bg-bg text-fg">
         <PreviewHostBridge />

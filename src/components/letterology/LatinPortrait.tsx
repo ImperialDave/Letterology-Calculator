@@ -17,7 +17,7 @@ export function LatinPortrait({ horoscope }: { horoscope: Horoscope }) {
   const todayLine = day?.headline ?? "";
 
   return (
-    <div className="stagger-in space-y-10">
+    <div className="space-y-10">
       <header
         className="rounded-xl px-5 py-10 text-center sm:px-8"
         style={{

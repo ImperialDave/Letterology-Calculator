@@ -1,8 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { FormEvent, useState } from "react";
-import { BondForm } from "@/components/letterology/BondForm";
+import { FormEvent, useEffect, useState } from "react";
 import { BondView } from "@/components/letterology/BondView";
 import { PageShare } from "@/components/letterology/PageShare";
+import { TongueStage } from "@/components/letterology/TongueStage";
 import { AppShell } from "@/components/SiteChrome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,7 @@ import {
   bondTitle,
   pageCardMeta,
 } from "@/lib/letterology/share";
-import { parseTongue } from "@/lib/letterology/tongue";
+import { notePair, parseTongue } from "@/lib/letterology/tongue";
 import { readAgon } from "@/lib/stoicheia/agon";
 import { stoicheiaCardFile, stoicheiaXeniaPath, tweetXenia } from "@/lib/stoicheia/copy";
 import { readXenia } from "@/lib/stoicheia/xenia";
@@ -73,9 +73,18 @@ function TwoPage() {
   const [left, setLeft] = useState(a ?? "");
   const [right, setRight] = useState(b ?? "");
 
-  const latin = tongue === "la" && a && b ? compareNames(a, b) : null;
-  const table = tongue === "el" && a && b ? readXenia(a, b) : null;
-  const stadium = tongue === "el" && mode === "agon" && a && b ? readAgon(a, b) : null;
+  const latin = a && b ? compareNames(a, b) : null;
+  const table = a && b ? readXenia(a, b) : null;
+  const stadium = a && b ? readAgon(a, b) : null;
+
+  useEffect(() => {
+    notePair(left, right);
+  }, [left, right]);
+
+  useEffect(() => {
+    if (a) setLeft(a);
+    if (b) setRight(b);
+  }, [a, b]);
 
   function go(nextA: string, nextB: string, nextMode?: "agon") {
     navigate({
@@ -121,66 +130,77 @@ function TwoPage() {
         ) : null}
       </header>
 
-      {tongue === "la" ? (
-        <div className="mt-8">
-          <BondForm initialA={a ?? ""} initialB={b ?? ""} onSubmit={(nextA, nextB) => go(nextA, nextB)} />
+      <form
+        className="mt-8 grid gap-4 sm:grid-cols-2"
+        onSubmit={(event: FormEvent) => {
+          event.preventDefault();
+          go(left, right, mode);
+        }}
+      >
+        <div>
+          <Label htmlFor="two-a">{tongue === "el" && mode === "agon" ? "First" : tongue === "el" ? "Guest" : "First username"}</Label>
+          <Input id="two-a" className="mt-2" value={left} onChange={(event) => setLeft(event.target.value)} />
         </div>
-      ) : (
-        <form
-          className="mt-8 grid gap-4 sm:grid-cols-2"
-          onSubmit={(event: FormEvent) => {
-            event.preventDefault();
-            go(left, right, mode);
-          }}
-        >
-          <div>
-            <Label htmlFor="two-a">{mode === "agon" ? "First" : "Guest"}</Label>
-            <Input id="two-a" className="mt-2" value={left} onChange={(event) => setLeft(event.target.value)} />
-          </div>
-          <div>
-            <Label htmlFor="two-b">{mode === "agon" ? "Second" : "Host"}</Label>
-            <Input id="two-b" className="mt-2" value={right} onChange={(event) => setRight(event.target.value)} />
-          </div>
-          <Button type="submit" className="h-12 sm:col-span-2 sm:w-fit">
+        <div>
+          <Label htmlFor="two-b">{tongue === "el" && mode === "agon" ? "Second" : tongue === "el" ? "Host" : "Second username"}</Label>
+          <Input id="two-b" className="mt-2" value={right} onChange={(event) => setRight(event.target.value)} />
+        </div>
+        <div className="flex flex-wrap gap-2 sm:col-span-2">
+          <Button type="submit" className="h-12">
             Read these two
           </Button>
-        </form>
-      )}
-
-      {latin ? (
-        <div className="mt-10">
-          <BondView bond={latin} />
+          <Button
+            type="button"
+            variant="outline"
+            className="h-12"
+            onClick={() => {
+              setLeft(right);
+              setRight(left);
+            }}
+          >
+            Swap
+          </Button>
         </div>
-      ) : null}
+      </form>
 
-      {table && mode !== "agon" ? (
-        <section className="mt-10">
-          <PageShare
-            path={stoicheiaXeniaPath(table.a.raw, table.b.raw)}
-            caption={tweetXenia(table)}
-            imagePath={`/og/${stoicheiaCardFile("xenia", `${table.a.raw}-${table.b.raw}`)}`}
+      {latin || table || stadium ? (
+        <div className="mt-10">
+          <TongueStage
+            tongue={tongue}
+            latin={latin ? <BondView bond={latin} /> : <p className="text-sm text-muted">Those two names have no Latin letters to compare.</p>}
+            greek={
+              stadium && mode === "agon" ? (
+                <section>
+                  <h2 className="font-display text-3xl text-ink">{stadium.title}</h2>
+                  <ul className="mt-6 divide-y divide-ink/10">
+                    {stadium.prizes.map((prize) => (
+                      <li key={prize.name} className="py-4">
+                        <p className="font-display text-lg text-ink">{prize.name}</p>
+                        <p className="text-sm text-ink/80">{prize.line}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ) : table ? (
+                <section>
+                  <PageShare
+                    path={stoicheiaXeniaPath(table.a.raw, table.b.raw)}
+                    caption={tweetXenia(table)}
+                    imagePath={`/og/${stoicheiaCardFile("xenia", `${table.a.raw}-${table.b.raw}`)}`}
+                  />
+                  <p className="mt-4 font-display text-xs tracking-[0.16em] text-primary uppercase">{table.weather}</p>
+                  <h2 className="mt-2 font-display text-3xl text-ink">{table.title}</h2>
+                  <p className="mt-3 text-lg leading-relaxed text-ink/90">{table.owe}</p>
+                  <p className="mt-6 text-sm text-muted">
+                    {table.a.spelled} · {table.b.spelled}
+                  </p>
+                </section>
+              ) : (
+                <p className="text-sm text-muted">Those two names have no Greek letters to fold.</p>
+              )
+            }
           />
-          <p className="mt-4 font-display text-xs tracking-[0.16em] text-primary uppercase">{table.weather}</p>
-          <h2 className="mt-2 font-display text-3xl text-ink">{table.title}</h2>
-          <p className="mt-3 text-lg leading-relaxed text-ink/90">{table.owe}</p>
-          <p className="mt-6 text-sm text-muted">
-            {table.a.spelled} · {table.b.spelled}
-          </p>
-        </section>
-      ) : null}
-
-      {stadium ? (
-        <section className="mt-10">
-          <h2 className="font-display text-3xl text-ink">{stadium.title}</h2>
-          <ul className="mt-6 divide-y divide-ink/10">
-            {stadium.prizes.map((prize) => (
-              <li key={prize.name} className="py-4">
-                <p className="font-display text-lg text-ink">{prize.name}</p>
-                <p className="text-sm text-ink/80">{prize.line}</p>
-              </li>
-            ))}
-          </ul>
-        </section>
+        </div>
       ) : null}
     </AppShell>
   );

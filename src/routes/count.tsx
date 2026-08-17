@@ -17,6 +17,10 @@ import { pageCardMeta } from "@/lib/letterology/share";
 import { VOICE } from "@/lib/letterology/voice";
 
 export const Route = createFileRoute("/count")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    n: typeof search.n === "string" ? search.n : undefined,
+    tongue: search.tongue === "el" ? "el" : undefined,
+  }),
   loader: ({ location }) => {
     const n = new URL(location.href, "https://www.letterology.club").searchParams.get("n") ?? undefined;
     return { n };
@@ -31,15 +35,17 @@ export const Route = createFileRoute("/count")({
   component: CountPage,
 });
 
-function openWalk(slug: string) {
-  window.location.assign(`/count/${slug}`);
-}
-
 function CountPage() {
   const [value, setValue] = useState("");
   const [walk, setWalk] = useState<CountWalk>(walkOf(0n));
   const { n } = Route.useLoaderData();
+  const { tongue } = Route.useSearch();
   const confessed = n ? countReadingOf(n) : null;
+
+  function openWalk(slug: string) {
+    const query = tongue === "el" ? "?tongue=el" : "";
+    window.location.assign(`/count/${slug}${query}`);
+  }
 
   useEffect(() => {
     if (!confessed) return;
@@ -74,6 +80,11 @@ function CountPage() {
         <header className="max-w-2xl">
           <h1 className="font-display text-4xl text-ink sm:text-5xl">The Count</h1>
           <p className="mt-3 max-w-xl leading-relaxed text-ink/85">{VOICE.countLede}</p>
+          {tongue === "el" ? (
+            <p className="mt-3 max-w-xl text-sm text-muted">
+              The Count is the Latin walk. Night is only the room — A still means one.
+            </p>
+          ) : null}
           <PageShare
             path="/count"
             caption={"The Count\nWe write amounts as letters."}

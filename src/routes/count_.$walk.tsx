@@ -21,6 +21,9 @@ import {
 import { countPath, pageCardMeta, tweetCount } from "@/lib/letterology/share";
 
 export const Route = createFileRoute("/count_/$walk")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    tongue: search.tongue === "el" ? "el" : undefined,
+  }),
   loader: ({ params }) => ({
     reading: readingFromSlug(params.walk),
   }),
@@ -48,11 +51,13 @@ export const Route = createFileRoute("/count_/$walk")({
 
 function CountWalkPage() {
   const { reading } = Route.useLoaderData();
+  const { tongue } = Route.useSearch();
   const sitting = useHouseHoroscope();
   const [other, setOther] = useState("");
 
   function go(slug: string) {
-    window.location.assign(`/count/${slug}`);
+    const query = tongue === "el" ? "?tongue=el" : "";
+    window.location.assign(`/count/${slug}${query}`);
   }
 
   function onJoin() {
@@ -81,6 +86,7 @@ function CountWalkPage() {
             <p className="mt-6">
               <Link
                 to="/count"
+                search={{ n: undefined, tongue }}
                 className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
               >
                 Back to the Count

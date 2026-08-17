@@ -1,9 +1,16 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { useLayoutEffect, type ReactNode } from "react";
 import { CLUB_NAME } from "@/lib/letterology/brand";
 import { SignedIn, SignedOut, UserButton } from "@/lib/auth/gates";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
-import { parseTongue, type Tongue, type Verb } from "@/lib/letterology/tongue";
+import {
+  applyAtmosphere,
+  carryForVerb,
+  flipTongue,
+  parseTongue,
+  type Tongue,
+  type Verb,
+} from "@/lib/letterology/tongue";
 import { cn } from "@/lib/utils";
 
 function AuthSlot() {
@@ -30,7 +37,7 @@ function AuthSlot() {
   );
 }
 
-const VERBS: { to: "/" | "/two" | "/count"; label: string; verb: Verb }[] = [
+const VERBS: { to: "/" | "/two" | "/count"; label: string; verb: "read" | "two" | "count" }[] = [
   { to: "/", label: "Read", verb: "read" },
   { to: "/two", label: "Two", verb: "two" },
   { to: "/count", label: "Count", verb: "count" },
@@ -52,22 +59,101 @@ function verbOf(current?: HeaderCurrent): Verb | "login" {
 
 function TongueSwitch({ tongue, onChange }: { tongue: Tongue; onChange: (next: Tongue) => void }) {
   return (
-    <div className="inline-flex h-11 items-center rounded-full bg-raised px-1 shadow-[var(--shadow-border)]">
+    <div className="tongue-switch" data-on={tongue} role="radiogroup" aria-label="Tongue">
+      <span className="tongue-switch-pill" aria-hidden="true" />
       {(["la", "el"] as const).map((item) => (
         <button
           key={item}
           type="button"
+          role="radio"
+          aria-checked={tongue === item}
+          className={tongue === item ? "is-on" : undefined}
           onClick={() => onChange(item)}
-          className={cn(
-            "inline-flex h-9 items-center rounded-full px-3 font-display text-xs tracking-[0.14em] uppercase",
-            tongue === item ? "bg-primary text-primary-fg" : "text-muted hover:text-ink",
-          )}
         >
           {item === "la" ? "Latin" : "Greek"}
         </button>
       ))}
     </div>
   );
+}
+
+function goFlip(
+  navigate: ReturnType<typeof useNavigate>,
+  flip: ReturnType<typeof flipTongue>,
+) {
+  const search = flip.search;
+  if (flip.to === "/letters/$mark" && flip.params?.mark) {
+    void navigate({
+      to: "/letters/$mark",
+      params: { mark: flip.params.mark },
+      search: { tongue: search.tongue === "el" ? "el" : undefined },
+      replace: true,
+      resetScroll: false,
+    });
+    return;
+  }
+  if (flip.to === "/count/$walk" && flip.params?.walk) {
+    void navigate({
+      to: "/count/$walk",
+      params: { walk: flip.params.walk },
+      search: { tongue: search.tongue === "el" ? "el" : undefined },
+      replace: true,
+      resetScroll: false,
+    });
+    return;
+  }
+  if (flip.to === "/two") {
+    void navigate({
+      to: "/two",
+      search: {
+        a: search.a,
+        b: search.b,
+        tongue: search.tongue === "el" ? "el" : undefined,
+        mode: search.mode === "agon" ? "agon" : undefined,
+      },
+      replace: true,
+      resetScroll: false,
+    });
+    return;
+  }
+  if (flip.to === "/") {
+    void navigate({
+      to: "/",
+      search: { n: search.n, name: undefined, tongue: search.tongue === "el" ? "el" : undefined },
+      replace: true,
+      resetScroll: false,
+    });
+    return;
+  }
+  if (flip.to === "/letters") {
+    void navigate({
+      to: "/letters",
+      search: { tongue: search.tongue === "el" ? "el" : undefined },
+      replace: true,
+      resetScroll: false,
+    });
+    return;
+  }
+  if (flip.to === "/why") {
+    void navigate({
+      to: "/why",
+      search: { tongue: search.tongue === "el" ? "el" : undefined },
+      hash: flip.hash,
+      replace: true,
+      resetScroll: false,
+    });
+    return;
+  }
+  if (flip.to === "/count") {
+    void navigate({
+      to: "/count",
+      search: { n: undefined, tongue: search.tongue === "el" ? "el" : undefined },
+      replace: true,
+      resetScroll: false,
+    });
+    return;
+  }
+  void navigate({ to: flip.to, replace: true, resetScroll: false });
 }
 
 export function AppShell({
@@ -85,37 +171,42 @@ export function AppShell({
   const tongue = parseTongue(search.tongue);
   const verb = verbOf(current);
 
+  useLayoutEffect(() => {
+    applyAtmosphere(tongue);
+  }, [tongue]);
+
   function setTongue(next: Tongue) {
-    const nextSearch = { ...search, tongue: next === "el" ? "el" : undefined };
-    const path = location.pathname;
-    if (path.startsWith("/stoicheia/xenia") || path === "/bond") {
-      void navigate({ to: "/two", search: nextSearch });
-      return;
-    }
-    if (path.startsWith("/stoicheia/agon")) {
-      void navigate({ to: "/two", search: { ...nextSearch, mode: "agon" } });
-      return;
-    }
-    if (path.startsWith("/stoicheia/horae") || path === "/atlas" || path === "/circle" || path === "/archetypes") {
-      void navigate({ to: "/letters", search: nextSearch });
-      return;
-    }
-    if (path.startsWith("/stoicheia") || path === "/") {
-      void navigate({ to: "/", search: { ...nextSearch, n: search.n ?? search.name } });
-      return;
-    }
-    if (path === "/key" || path === "/doctrine" || path.startsWith("/stoicheia/doctrine") || path === "/almanac") {
-      void navigate({ to: "/why", search: nextSearch });
-      return;
-    }
-    void navigate({ to: path, search: nextSearch });
+    if (next === tongue) return;
+    applyAtmosphere(next);
+    goFlip(
+      navigate,
+      flipTongue({
+        pathname: location.pathname,
+        search,
+        params: location.pathname.split("/").filter(Boolean).length
+          ? {
+              mark: location.pathname.match(/\/(?:letters|horae)\/([^/]+)/)?.[1],
+              walk: location.pathname.match(/^\/count\/([^/]+)/)?.[1],
+              slug: location.pathname.match(/^\/p\/([^/]+)/)?.[1],
+            }
+          : undefined,
+        next,
+      }),
+    );
   }
+
+  const readSearch = carryForVerb("read", search, tongue);
+  const twoSearch = carryForVerb("two", search, tongue);
 
   return (
     <div data-tongue={tongue} className="paper-field min-h-dvh text-fg">
       <header className="border-b border-ink/10">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-3 px-4 sm:px-6">
-          <Link to="/" search={{ n: undefined, name: undefined, tongue: tongue === "el" ? "el" : undefined }} className="flex min-w-0 items-center gap-3">
+          <Link
+            to="/"
+            search={{ n: undefined, name: undefined, tongue: tongue === "el" ? "el" : undefined }}
+            className="flex min-w-0 items-center gap-3"
+          >
             <img
               src="/seal.jpg"
               alt=""
@@ -132,7 +223,13 @@ export function AppShell({
                 <Link
                   key={item.to}
                   to={item.to}
-                  search={item.to === "/" ? { n: search.n ?? search.name, tongue: tongue === "el" ? "el" : undefined } : { tongue: tongue === "el" ? "el" : undefined }}
+                  search={
+                    item.verb === "read"
+                      ? { n: readSearch.n, name: undefined, tongue: readSearch.tongue === "el" ? "el" : undefined }
+                      : item.verb === "two"
+                        ? { a: twoSearch.a, b: twoSearch.b, tongue: twoSearch.tongue === "el" ? "el" : undefined, mode: undefined }
+                        : { tongue: tongue === "el" ? "el" : undefined }
+                  }
                   className={cn(
                     "inline-flex h-11 items-center px-3 font-display text-xs tracking-[0.14em] uppercase",
                     verb === item.verb ? "text-ink" : "text-muted hover:text-ink",
@@ -159,6 +256,7 @@ export function AppShell({
           <Link
             to="/why"
             search={{ tongue: tongue === "el" ? "el" : undefined }}
+            hash={tongue === "el" ? "greek" : "latin"}
             className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
           >
             Why
@@ -172,7 +270,13 @@ export function AppShell({
             <Link
               key={item.to}
               to={item.to}
-              search={item.to === "/" ? { n: search.n ?? search.name, tongue: tongue === "el" ? "el" : undefined } : { tongue: tongue === "el" ? "el" : undefined }}
+              search={
+                item.verb === "read"
+                  ? { n: readSearch.n, name: undefined, tongue: readSearch.tongue === "el" ? "el" : undefined }
+                  : item.verb === "two"
+                    ? { a: twoSearch.a, b: twoSearch.b, tongue: twoSearch.tongue === "el" ? "el" : undefined, mode: undefined }
+                    : { tongue: tongue === "el" ? "el" : undefined }
+              }
               className={cn(
                 "inline-flex h-11 min-w-14 items-center justify-center font-display text-xs tracking-[0.14em] uppercase",
                 verb === item.verb ? "text-ink" : "text-muted",
