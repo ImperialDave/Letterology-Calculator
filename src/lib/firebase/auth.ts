@@ -1,5 +1,6 @@
 import {
   GoogleAuthProvider,
+  OAuthProvider,
   TwitterAuthProvider,
   getAdditionalUserInfo,
   getRedirectResult,
@@ -12,7 +13,7 @@ import {
 } from "firebase/auth";
 import { firebaseConfigured, getFirebaseAuth } from "./app";
 
-export type AuthProviderId = "google" | "x";
+export type AuthProviderId = "google" | "apple" | "x";
 
 /** Twitter/X stays off until there is an app at developer.x.com. */
 export const X_SIGN_IN_READY = false;
@@ -62,6 +63,12 @@ export function explainAuthError(err: unknown): string {
 
 function providerOf(id: AuthProviderId) {
   if (id === "x") return new TwitterAuthProvider();
+  if (id === "apple") {
+    const apple = new OAuthProvider("apple.com");
+    apple.addScope("email");
+    apple.addScope("name");
+    return apple;
+  }
   const google = new GoogleAuthProvider();
   google.setCustomParameters({ prompt: "select_account" });
   return google;
@@ -70,6 +77,7 @@ function providerOf(id: AuthProviderId) {
 function detectProvider(user: User): AuthProviderId {
   const ids = user.providerData.map((item) => item.providerId);
   if (ids.includes("twitter.com")) return "x";
+  if (ids.includes("apple.com")) return "apple";
   return "google";
 }
 

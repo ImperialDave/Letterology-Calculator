@@ -1,6 +1,6 @@
 import type { Horoscope } from "@/lib/letterology/types";
 
-export type HandleSource = "x" | "google" | "linked";
+export type HandleSource = "x" | "google" | "apple" | "linked";
 
 export type RecentBond = { a: string; b: string };
 

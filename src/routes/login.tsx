@@ -39,6 +39,14 @@ function Login() {
               <Button
                 variant="outline"
                 className="w-full"
+                disabled={house.isPending}
+                onClick={() => void house.signIn("apple")}
+              >
+                Continue with Apple
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
                 disabled={house.isPending || !X_SIGN_IN_READY}
                 onClick={() => void house.signIn("x")}
               >
@@ -49,28 +57,7 @@ function Login() {
               ) : null}
             </div>
           )}
-          {house.doorMessage ? (
-            <div className="mt-4 space-y-2 text-sm leading-relaxed text-primary">
-              <p>{house.doorMessage}</p>
-              <p>
-                Open{" "}
-                <a
-                  className="underline"
-                  href="https://console.firebase.google.com/project/cc33-24cc1/authentication/providers"
-                >
-                  Google in Firebase
-                </a>
-                , enable it, Save, then add{" "}
-                <a
-                  className="underline"
-                  href="https://console.firebase.google.com/project/cc33-24cc1/authentication/settings"
-                >
-                  www.letterology.club
-                </a>{" "}
-                under Authorized domains.
-              </p>
-            </div>
-          ) : null}
+          {house.doorMessage ? <p className="mt-4 text-sm leading-relaxed text-primary">{house.doorMessage}</p> : null}
           {house.error ? <p className="mt-4 text-sm text-primary">{house.error}</p> : null}
           <Link
             to="/"

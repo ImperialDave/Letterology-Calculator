@@ -104,7 +104,11 @@ export function HouseProvider({ children }: { children: ReactNode }) {
       async claim(raw) {
         if (!identity) throw new Error("Sign in first.");
         setError(null);
-        const sitting = await claimHandle(identity, raw, identity.xScreenName ? "x" : "google");
+        const sitting = await claimHandle(
+          identity,
+          raw,
+          identity.provider === "x" || identity.provider === "apple" ? identity.provider : "google",
+        );
         setProfile(sitting);
       },
       async signOut() {

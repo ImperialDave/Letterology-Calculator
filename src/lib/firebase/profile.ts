@@ -29,7 +29,8 @@ function asProfile(uid: string, data: Record<string, unknown>): HouseProfile | n
     uid,
     handle,
     displayHandle: typeof data.displayHandle === "string" ? data.displayHandle : handle,
-    source: data.source === "x" || data.source === "linked" ? data.source : "google",
+    source:
+      data.source === "x" || data.source === "apple" || data.source === "linked" ? data.source : "google",
     xScreenName: typeof data.xScreenName === "string" ? data.xScreenName : null,
     photoURL: typeof data.photoURL === "string" ? data.photoURL : null,
     createdAt: typeof data.createdAt === "number" ? data.createdAt : Date.now(),
