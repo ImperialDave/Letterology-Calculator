@@ -1,6 +1,7 @@
 import { initializeApp, getApps, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
+import { publicFirebaseConfig } from "./public-config";
 
 export type FirebaseWebConfig = {
   apiKey: string;
@@ -16,23 +17,34 @@ function env(name: string): string {
   return String(meta[name] ?? "").trim();
 }
 
-function readConfig(): FirebaseWebConfig | null {
-  const apiKey = env("VITE_FIREBASE_API_KEY");
-  const authDomain = env("VITE_FIREBASE_AUTH_DOMAIN");
-  const projectId = env("VITE_FIREBASE_PROJECT_ID");
-  const appId = env("VITE_FIREBASE_APP_ID");
+function complete(cfg: Partial<FirebaseWebConfig> | null | undefined): FirebaseWebConfig | null {
+  const apiKey = String(cfg?.apiKey ?? "").trim();
+  const authDomain = String(cfg?.authDomain ?? "").trim();
+  const projectId = String(cfg?.projectId ?? "").trim();
+  const appId = String(cfg?.appId ?? "").trim();
   if (!apiKey || !authDomain || !projectId || !appId) return null;
   return {
     apiKey,
     authDomain,
     projectId,
     appId,
-    storageBucket: env("VITE_FIREBASE_STORAGE_BUCKET") || undefined,
-    messagingSenderId: env("VITE_FIREBASE_MESSAGING_SENDER_ID") || undefined,
+    storageBucket: String(cfg?.storageBucket ?? "").trim() || undefined,
+    messagingSenderId: String(cfg?.messagingSenderId ?? "").trim() || undefined,
   };
 }
 
-export const firebaseConfig = readConfig();
+function fromEnv(): FirebaseWebConfig | null {
+  return complete({
+    apiKey: env("VITE_FIREBASE_API_KEY"),
+    authDomain: env("VITE_FIREBASE_AUTH_DOMAIN"),
+    projectId: env("VITE_FIREBASE_PROJECT_ID"),
+    appId: env("VITE_FIREBASE_APP_ID"),
+    storageBucket: env("VITE_FIREBASE_STORAGE_BUCKET"),
+    messagingSenderId: env("VITE_FIREBASE_MESSAGING_SENDER_ID"),
+  });
+}
+
+export const firebaseConfig = fromEnv() ?? complete(publicFirebaseConfig);
 export const firebaseConfigured = firebaseConfig !== null;
 
 let app: FirebaseApp | null = null;
