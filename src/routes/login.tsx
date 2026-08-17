@@ -2,6 +2,7 @@ import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { AppShell } from "@/components/SiteChrome";
 import { VOICE } from "@/lib/letterology/voice";
 import { Button } from "@/components/ui/button";
+import { X_SIGN_IN_READY } from "@/lib/firebase/auth";
 import { useHouse } from "@/lib/firebase/house-provider";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 
@@ -28,17 +29,20 @@ function Login() {
             </p>
           ) : (
             <div className="mt-6 space-y-2">
-              <Button className="w-full" disabled={house.isPending} onClick={() => void house.signIn("x")}>
-                Continue with X
+              <Button className="w-full" disabled={house.isPending} onClick={() => void house.signIn("google")}>
+                Continue with Google
               </Button>
               <Button
                 variant="outline"
                 className="w-full"
-                disabled={house.isPending}
-                onClick={() => void house.signIn("google")}
+                disabled={house.isPending || !X_SIGN_IN_READY}
+                onClick={() => void house.signIn("x")}
               >
-                Continue with Google
+                Continue with X
               </Button>
+              {!X_SIGN_IN_READY ? (
+                <p className="pt-1 text-sm leading-relaxed text-muted">{VOICE.loginXSoon}</p>
+              ) : null}
             </div>
           )}
           {house.error ? <p className="mt-4 text-sm text-primary">{house.error}</p> : null}

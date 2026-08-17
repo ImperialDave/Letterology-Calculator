@@ -25,7 +25,8 @@ export const VOICE = {
   homeCountCta: "Write a number as letters",
   loginTitle: "Sign in",
   loginLede:
-    "X brings the username you already post under. Google lets you pick one. We only read A through Z. Your legal name stays off the page.",
+    "Continue with Google, then pick the username you actually use. We only read A through Z. Your legal name stays off the page.",
+  loginXSoon: "X needs its own app. Google works now.",
   loginGuest: "Read without signing in",
   claimTitle: "Claim this username",
   claimLede:

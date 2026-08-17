@@ -2,6 +2,9 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { buildHoroscope } from "@/lib/letterology/engine";
 import { firebaseConfigured } from "./app";
 import {
+  AuthRedirectStarted,
+  consumeRedirectResult,
+  explainAuthError,
   listenAuth,
   signInWith,
   signOutHouse,
@@ -59,9 +62,14 @@ export function HouseProvider({ children }: { children: ReactNode }) {
       setPending(false);
       return;
     }
-    return listenAuth((next) => {
+    const stop = listenAuth((next) => {
       void hydrate(next, false);
     });
+    void consumeRedirectResult().catch((err) => {
+      setError(explainAuthError(err));
+      setPending(false);
+    });
+    return stop;
   }, []);
 
   const value = useMemo<HouseSession>(
@@ -79,7 +87,8 @@ export function HouseProvider({ children }: { children: ReactNode }) {
           const next = await signInWith(id);
           await hydrate(next, id === "x");
         } catch (err) {
-          setError(err instanceof Error ? err.message : "Sign-in did not finish.");
+          if (err instanceof AuthRedirectStarted) return;
+          setError(explainAuthError(err));
           setPending(false);
         }
       },
