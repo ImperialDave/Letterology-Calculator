@@ -8,7 +8,7 @@ export const Route = createFileRoute("/key")({
   head: () =>
     pageCardMeta({
       title: "The Key",
-      description: "How to read Letterology in a CC33 house. The metaphors stay. The translations sit beside them.",
+      description: "How a reading works. The first letter is the role. The next two are how you work and where.",
       path: "/key",
       imagePath: "/og.jpg",
     }),
@@ -17,32 +17,39 @@ export const Route = createFileRoute("/key")({
 
 const STEPS = [
   {
-    term: "House",
-    detail: "The first letter of the username names a role. L sits the Lover. That is who the reading starts as.",
+    term: "Role",
+    detail:
+      "The first letter of the username names a role. L is the Lover. That is who the reading starts as — an entrance, not a cage. The rest of the spelling may argue, complete, or betray that entrance. It does not get to pretend the entrance did not happen.",
   },
   {
-    term: "Manner",
-    detail: "The letter that weighs most after that is how you work. Repeats count. First and last letters count extra.",
+    term: "How you work",
+    detail:
+      "The letter that weighs most after the first is how you work. Repeats count because insistence is information. First and last letters of a word count extra because edges are where a name touches the air. Order after the first letter is an accident of spelling. Weight is not.",
   },
   {
-    term: "Field",
-    detail: "The next letter by weight is where the work happens — the kind of place, not a job title.",
+    term: "Where you work",
+    detail:
+      "The next letter by weight is where the work happens — the kind of place, not a job title. Hearth, road, threshold, forge: a field is a climate for the work, not an office on a door.",
   },
   {
     term: "Letter Path",
-    detail: "Three letters together: the role, how you work, and where. That path has a name and a mixed color.",
+    detail:
+      "Three letters together: the role, how you work, and where. That path has a name and a mixed color — the house leads the mix. Read the title as a likeness. Do not spend it as an excuse.",
   },
   {
     term: "Allies and enemies",
-    detail: "Each house has three complements and three counterweights. An enemy is a blind spot, not a villain.",
+    detail:
+      "Each house has three complements and three counterweights. Allies complete a job this role cannot finish alone. An enemy is a blind spot, not a villain — the work you will not look at.",
   },
   {
     term: "Bond",
-    detail: "Two usernames, compared. Houses, how they work, shared letters, and missing allies the other already carries. The certificate is the postcard.",
+    detail:
+      "Two usernames, compared. Houses, how they work, shared letters, and missing allies the other already carries. The card is only this pair’s. The number is a fit, not a forecast. A high fit can be a trap.",
   },
   {
     term: "The Count",
-    detail: "Numbers must sit as letters. A count has a court of occupants and places, a seat, the walks that made it, and Letter Paths. Zero is the Fool. We do not fold.",
+    detail:
+      "We write amounts as letters so we can count without digits. A is one. Z is twenty-six. AA is twenty-seven. The Fool is the blank page. We do not fold a year into one digit. You can add two letter-counts and stay in letters.",
   },
 ];
 
@@ -60,10 +67,11 @@ function KeyPage() {
           </p>
           <h1 className="mt-2 font-display text-4xl text-ink sm:text-5xl">The Key</h1>
           <p className="mt-3 max-w-xl leading-relaxed text-ink/85">
-            CC33 keeps Letterology’s weird metaphors. It also has to speak to people who did not
-            arrive already fluent. This page is the audit: every coined term on the site, said
-            twice — once in the house tongue, once in plain speech. The argument for why the
-            machine is shaped this way lives in{" "}
+            How a reading works. The first letter of a username is the role. The next two by
+            weight are how you work and where. Allies complete a job. Enemies are the blind
+            spot, not the villain. This page names the few words we still keep — Seeker,
+            Letter Path, allies — and says what they mean, twice if needed. The argument for
+            why the machine is shaped this way lives in{" "}
             <Link to="/doctrine" className="text-primary">
               The Doctrine
             </Link>

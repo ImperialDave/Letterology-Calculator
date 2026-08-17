@@ -41,4 +41,34 @@ export const STOICHEIA_DOCTRINE = [
       "That date belongs to the Latin year-walk and the Fool’s leftover. The Attic year begins after midsummer’s new moon. The leftovers here are Noumenia and the old-and-new day. They sit Hekate. Two clocks in one club, both honest, neither translated.",
     ],
   },
+  {
+    title: "Why the mouth must match the hour",
+    paragraphs: [
+      "Plato’s Cratylus asked whether a name is like the thing it names. We do not settle the metaphysics. We ask a smaller, honest question: do the heaviest consonants of this handle agree with the hour the road finishes in? A name that runs while it tries to keep a hearth is at odds with itself. That is likeness, not fate.",
+    ],
+  },
+  {
+    title: "Why a letter is a book",
+    paragraphs: [
+      "A stoicheion is three facts in one mark: how the mouth moves, which hour it keeps, and what number it writes. The old grammar already sorted the mutes into bare, voiced, and breathed; Empedocles already named four roots; Milesian already used the same signs as quantities. We do not add a twenty-fifth personality. We read the mark as first, last, middle, sung, or as public work — and we leave ϛ ϟ ϡ in the numeral drawer.",
+    ],
+  },
+  {
+    title: "Why the vowels climb",
+    paragraphs: [
+      "The seven planets already have an order, Moon to Saturn. A hymn is not a pile. It is a path on that ladder. Some names climb and harden. Some fall inward. Some circuit. Latin weighs vowels. We watch them move.",
+    ],
+  },
+  {
+    title: "Why the total has a daimon",
+    paragraphs: [
+      "The Milesian seat is an hour-face. Greeks would have heard a daimon there: the attendant of this sum, not a soulmate. We name the charge from that hour’s gift. If today’s hour is the same face, that is an omen we already had a word for.",
+    ],
+  },
+  {
+    title: "Why a table and a stadium",
+    paragraphs: [
+      "Xenia is a duty. Agon is a contest. Greece kept both ethics and did not pretend they were one mood. Two names at a table are guests. Two names in the stadium hold prizes. Neither page prints a soulmate.",
+    ],
+  },
 ];

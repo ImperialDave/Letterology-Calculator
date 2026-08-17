@@ -76,7 +76,7 @@ function DoctrinePage() {
             to="/"
             className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
           >
-            Sit a handle
+            Read a username
           </Link>
           <Link
             to="/count"

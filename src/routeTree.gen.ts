@@ -23,16 +23,20 @@ import { Route as KeyRouteImport } from './routes/key'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as StoicheiaRouteImport } from './routes/stoicheia'
 import { Route as ApiCardRouteImport } from './routes/api/card'
+import { Route as CountWalkRouteImport } from './routes/count_.$walk'
 import { Route as OgFileRouteImport } from './routes/og.$file'
 import { Route as PSlugRouteImport } from './routes/p.$slug'
 import { Route as StoicheiaIndexRouteImport } from './routes/stoicheia.index'
+import { Route as StoicheiaAgonRouteImport } from './routes/stoicheia.agon'
 import { Route as StoicheiaCalendarRouteImport } from './routes/stoicheia.calendar'
+import { Route as StoicheiaCanonRouteImport } from './routes/stoicheia.canon'
 import { Route as StoicheiaDoctrineRouteImport } from './routes/stoicheia.doctrine'
 import { Route as StoicheiaHoraeRouteImport } from './routes/stoicheia.horae'
 import { Route as StoicheiaHymnRouteImport } from './routes/stoicheia.hymn'
 import { Route as StoicheiaIsopsephyRouteImport } from './routes/stoicheia.isopsephy'
 import { Route as StoicheiaXeniaRouteImport } from './routes/stoicheia.xenia'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as StoicheiaHoraeMarkRouteImport } from './routes/stoicheia.horae_.$mark'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -104,6 +108,11 @@ const ApiCardRoute = ApiCardRouteImport.update({
   path: '/api/card',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CountWalkRoute = CountWalkRouteImport.update({
+  id: '/count_/$walk',
+  path: '/count/$walk',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OgFileRoute = OgFileRouteImport.update({
   id: '/og/$file',
   path: '/og/$file',
@@ -119,9 +128,19 @@ const StoicheiaIndexRoute = StoicheiaIndexRouteImport.update({
   path: '/',
   getParentRoute: () => StoicheiaRoute,
 } as any)
+const StoicheiaAgonRoute = StoicheiaAgonRouteImport.update({
+  id: '/agon',
+  path: '/agon',
+  getParentRoute: () => StoicheiaRoute,
+} as any)
 const StoicheiaCalendarRoute = StoicheiaCalendarRouteImport.update({
   id: '/calendar',
   path: '/calendar',
+  getParentRoute: () => StoicheiaRoute,
+} as any)
+const StoicheiaCanonRoute = StoicheiaCanonRouteImport.update({
+  id: '/canon',
+  path: '/canon',
   getParentRoute: () => StoicheiaRoute,
 } as any)
 const StoicheiaDoctrineRoute = StoicheiaDoctrineRouteImport.update({
@@ -154,6 +173,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StoicheiaHoraeMarkRoute = StoicheiaHoraeMarkRouteImport.update({
+  id: '/horae_/$mark',
+  path: '/horae/$mark',
+  getParentRoute: () => StoicheiaRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -170,9 +194,12 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/stoicheia': typeof StoicheiaRouteWithChildren
   '/api/card': typeof ApiCardRoute
+  '/count/$walk': typeof CountWalkRoute
   '/og/$file': typeof OgFileRoute
   '/p/$slug': typeof PSlugRoute
+  '/stoicheia/agon': typeof StoicheiaAgonRoute
   '/stoicheia/calendar': typeof StoicheiaCalendarRoute
+  '/stoicheia/canon': typeof StoicheiaCanonRoute
   '/stoicheia/doctrine': typeof StoicheiaDoctrineRoute
   '/stoicheia/horae': typeof StoicheiaHoraeRoute
   '/stoicheia/hymn': typeof StoicheiaHymnRoute
@@ -180,6 +207,7 @@ export interface FileRoutesByFullPath {
   '/stoicheia/xenia': typeof StoicheiaXeniaRoute
   '/stoicheia/': typeof StoicheiaIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/stoicheia/horae/$mark': typeof StoicheiaHoraeMarkRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -195,9 +223,12 @@ export interface FileRoutesByTo {
   '/key': typeof KeyRoute
   '/login': typeof LoginRoute
   '/api/card': typeof ApiCardRoute
+  '/count/$walk': typeof CountWalkRoute
   '/og/$file': typeof OgFileRoute
   '/p/$slug': typeof PSlugRoute
+  '/stoicheia/agon': typeof StoicheiaAgonRoute
   '/stoicheia/calendar': typeof StoicheiaCalendarRoute
+  '/stoicheia/canon': typeof StoicheiaCanonRoute
   '/stoicheia/doctrine': typeof StoicheiaDoctrineRoute
   '/stoicheia/horae': typeof StoicheiaHoraeRoute
   '/stoicheia/hymn': typeof StoicheiaHymnRoute
@@ -205,6 +236,7 @@ export interface FileRoutesByTo {
   '/stoicheia/xenia': typeof StoicheiaXeniaRoute
   '/stoicheia': typeof StoicheiaIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/stoicheia/horae/$mark': typeof StoicheiaHoraeMarkRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -222,9 +254,12 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/stoicheia': typeof StoicheiaRouteWithChildren
   '/api/card': typeof ApiCardRoute
+  '/count_/$walk': typeof CountWalkRoute
   '/og/$file': typeof OgFileRoute
   '/p/$slug': typeof PSlugRoute
+  '/stoicheia/agon': typeof StoicheiaAgonRoute
   '/stoicheia/calendar': typeof StoicheiaCalendarRoute
+  '/stoicheia/canon': typeof StoicheiaCanonRoute
   '/stoicheia/doctrine': typeof StoicheiaDoctrineRoute
   '/stoicheia/horae': typeof StoicheiaHoraeRoute
   '/stoicheia/hymn': typeof StoicheiaHymnRoute
@@ -232,6 +267,7 @@ export interface FileRoutesById {
   '/stoicheia/xenia': typeof StoicheiaXeniaRoute
   '/stoicheia/': typeof StoicheiaIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/stoicheia/horae_/$mark': typeof StoicheiaHoraeMarkRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -250,9 +286,12 @@ export interface FileRouteTypes {
     | '/login'
     | '/stoicheia'
     | '/api/card'
+    | '/count/$walk'
     | '/og/$file'
     | '/p/$slug'
+    | '/stoicheia/agon'
     | '/stoicheia/calendar'
+    | '/stoicheia/canon'
     | '/stoicheia/doctrine'
     | '/stoicheia/horae'
     | '/stoicheia/hymn'
@@ -260,6 +299,7 @@ export interface FileRouteTypes {
     | '/stoicheia/xenia'
     | '/stoicheia/'
     | '/api/auth/$'
+    | '/stoicheia/horae/$mark'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -275,9 +315,12 @@ export interface FileRouteTypes {
     | '/key'
     | '/login'
     | '/api/card'
+    | '/count/$walk'
     | '/og/$file'
     | '/p/$slug'
+    | '/stoicheia/agon'
     | '/stoicheia/calendar'
+    | '/stoicheia/canon'
     | '/stoicheia/doctrine'
     | '/stoicheia/horae'
     | '/stoicheia/hymn'
@@ -285,6 +328,7 @@ export interface FileRouteTypes {
     | '/stoicheia/xenia'
     | '/stoicheia'
     | '/api/auth/$'
+    | '/stoicheia/horae/$mark'
   id:
     | '__root__'
     | '/'
@@ -301,9 +345,12 @@ export interface FileRouteTypes {
     | '/login'
     | '/stoicheia'
     | '/api/card'
+    | '/count_/$walk'
     | '/og/$file'
     | '/p/$slug'
+    | '/stoicheia/agon'
     | '/stoicheia/calendar'
+    | '/stoicheia/canon'
     | '/stoicheia/doctrine'
     | '/stoicheia/horae'
     | '/stoicheia/hymn'
@@ -311,6 +358,7 @@ export interface FileRouteTypes {
     | '/stoicheia/xenia'
     | '/stoicheia/'
     | '/api/auth/$'
+    | '/stoicheia/horae_/$mark'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -328,6 +376,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   StoicheiaRoute: typeof StoicheiaRouteWithChildren
   ApiCardRoute: typeof ApiCardRoute
+  CountWalkRoute: typeof CountWalkRoute
   OgFileRoute: typeof OgFileRoute
   PSlugRoute: typeof PSlugRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
@@ -433,6 +482,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/count_/$walk': {
+      id: '/count_/$walk'
+      path: '/count/$walk'
+      fullPath: '/count/$walk'
+      preLoaderRoute: typeof CountWalkRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/og/$file': {
       id: '/og/$file'
       path: '/og/$file'
@@ -454,11 +510,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoicheiaIndexRouteImport
       parentRoute: typeof StoicheiaRoute
     }
+    '/stoicheia/agon': {
+      id: '/stoicheia/agon'
+      path: '/agon'
+      fullPath: '/stoicheia/agon'
+      preLoaderRoute: typeof StoicheiaAgonRouteImport
+      parentRoute: typeof StoicheiaRoute
+    }
     '/stoicheia/calendar': {
       id: '/stoicheia/calendar'
       path: '/calendar'
       fullPath: '/stoicheia/calendar'
       preLoaderRoute: typeof StoicheiaCalendarRouteImport
+      parentRoute: typeof StoicheiaRoute
+    }
+    '/stoicheia/canon': {
+      id: '/stoicheia/canon'
+      path: '/canon'
+      fullPath: '/stoicheia/canon'
+      preLoaderRoute: typeof StoicheiaCanonRouteImport
       parentRoute: typeof StoicheiaRoute
     }
     '/stoicheia/doctrine': {
@@ -503,27 +573,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/stoicheia/horae_/$mark': {
+      id: '/stoicheia/horae_/$mark'
+      path: '/horae/$mark'
+      fullPath: '/stoicheia/horae/$mark'
+      preLoaderRoute: typeof StoicheiaHoraeMarkRouteImport
+      parentRoute: typeof StoicheiaRoute
+    }
   }
 }
 
 interface StoicheiaRouteChildren {
+  StoicheiaAgonRoute: typeof StoicheiaAgonRoute
   StoicheiaCalendarRoute: typeof StoicheiaCalendarRoute
+  StoicheiaCanonRoute: typeof StoicheiaCanonRoute
   StoicheiaDoctrineRoute: typeof StoicheiaDoctrineRoute
   StoicheiaHoraeRoute: typeof StoicheiaHoraeRoute
   StoicheiaHymnRoute: typeof StoicheiaHymnRoute
   StoicheiaIsopsephyRoute: typeof StoicheiaIsopsephyRoute
   StoicheiaXeniaRoute: typeof StoicheiaXeniaRoute
   StoicheiaIndexRoute: typeof StoicheiaIndexRoute
+  StoicheiaHoraeMarkRoute: typeof StoicheiaHoraeMarkRoute
 }
 
 const StoicheiaRouteChildren: StoicheiaRouteChildren = {
+  StoicheiaAgonRoute: StoicheiaAgonRoute,
   StoicheiaCalendarRoute: StoicheiaCalendarRoute,
+  StoicheiaCanonRoute: StoicheiaCanonRoute,
   StoicheiaDoctrineRoute: StoicheiaDoctrineRoute,
   StoicheiaHoraeRoute: StoicheiaHoraeRoute,
   StoicheiaHymnRoute: StoicheiaHymnRoute,
   StoicheiaIsopsephyRoute: StoicheiaIsopsephyRoute,
   StoicheiaXeniaRoute: StoicheiaXeniaRoute,
   StoicheiaIndexRoute: StoicheiaIndexRoute,
+  StoicheiaHoraeMarkRoute: StoicheiaHoraeMarkRoute,
 }
 
 const StoicheiaRouteWithChildren = StoicheiaRoute._addFileChildren(
@@ -545,6 +628,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   StoicheiaRoute: StoicheiaRouteWithChildren,
   ApiCardRoute: ApiCardRoute,
+  CountWalkRoute: CountWalkRoute,
   OgFileRoute: OgFileRoute,
   PSlugRoute: PSlugRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
@@ -552,3 +636,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}

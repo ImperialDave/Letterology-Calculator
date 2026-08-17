@@ -10,14 +10,14 @@ export interface GlossEntry {
 }
 
 /**
- * End-to-end audit of coined language.
- * Keep the metaphor. The `plain` line is what a first-time reader needs.
+ * English is the voice. Proper nouns stay.
+ * `plain` is what the site should say. `metaphor` is an example, not a heading.
  */
 export const GLOSSARY: GlossEntry[] = [
   {
     id: "handle",
     term: "Handle",
-    metaphor: "The handle you live under. The handle is the destiny.",
+    metaphor: "The username you chose. We read that, not your legal name.",
     plain: "Your username. That string of letters is the only material this reading uses.",
     opacity: "high",
     surfaces: ["home", "name form", "share cards"],
@@ -33,8 +33,8 @@ export const GLOSSARY: GlossEntry[] = [
   {
     id: "sit",
     term: "Sit",
-    metaphor: "The first letter sits the house. Today sits the House of the Warrior.",
-    plain: "Occupies, or names. A letter sits a house the way a date sits a weekday — it is the seat, not a spell.",
+    metaphor: "The first letter is the role. Today is the Warrior.",
+    plain: "Is, or names. The first letter of a username is that role. The 13th is M. Not a spell.",
     opacity: "high",
     surfaces: ["home", "reading", "year", "generated copy"],
   },
@@ -49,7 +49,7 @@ export const GLOSSARY: GlossEntry[] = [
   {
     id: "manner",
     term: "Manner",
-    metaphor: "The next two letters by weight set the manner and the field.",
+    metaphor: "How you work.",
     plain: "How you work — the letter that weighs most after the first.",
     opacity: "high",
     surfaces: ["reading", "houses", "year"],
@@ -57,7 +57,7 @@ export const GLOSSARY: GlossEntry[] = [
   {
     id: "field",
     term: "Field",
-    metaphor: "The field is where you work. The weekday is the field.",
+    metaphor: "Where you work. On a day, what today is about.",
     plain: "Where the work happens — the next letter by weight, or, on a day, what the weekday is about.",
     opacity: "high",
     surfaces: ["reading", "houses", "year"],
@@ -105,7 +105,7 @@ export const GLOSSARY: GlossEntry[] = [
   {
     id: "destiny",
     term: "Destiny",
-    metaphor: "The handle is the destiny. This is a portrait, not a prediction.",
+    metaphor: "The username is the material. This is a portrait, not a prediction.",
     plain: "The name is the material, not a forecast. Nothing here tells the future.",
     opacity: "high",
     surfaces: ["home", "footer", "reading"],
@@ -169,7 +169,7 @@ export const GLOSSARY: GlossEntry[] = [
   {
     id: "fortnight",
     term: "Fortnight",
-    metaphor: "For fourteen days the sun sits in the House of the Orphan.",
+    metaphor: "For fourteen days the two-week stretch is the Orphan.",
     plain: "The current two-week seat on the year-wheel. There are twenty-six of them, one per letter.",
     opacity: "high",
     surfaces: ["home", "year", "reading"],
@@ -185,7 +185,7 @@ export const GLOSSARY: GlossEntry[] = [
   {
     id: "climate",
     term: "Climate",
-    metaphor: "Year and month are climate around this day. They do not sit the house.",
+    metaphor: "Year and month are background around this day. They do not rename today.",
     plain: "Background color from the calendar year and the month. Mood, not today's job.",
     opacity: "high",
     surfaces: ["home", "year", "reading"],
@@ -321,7 +321,7 @@ export const GLOSSARY: GlossEntry[] = [
   {
     id: "pigment",
     term: "Pigment",
-    metaphor: "Amber sits the Seeker. The wheel walks the spectrum back to ochre.",
+    metaphor: "Amber is the Seeker. The wheel walks the spectrum back to ochre.",
     plain: "The color of a letter. A sits dawn gold; the rest walk the color wheel in order. Each pigment has a mineral name.",
     opacity: "high",
     surfaces: ["circle", "houses", "reading"],
@@ -369,24 +369,24 @@ export const GLOSSARY: GlossEntry[] = [
   {
     id: "count",
     term: "The Count",
-    metaphor: "We ask a number to sit a house.",
-    plain: "Numbers must sit as letters. A count has a court, a seat, the walks that made it, and Letter Paths from spelling and from places.",
+    metaphor: "We write amounts as letters.",
+    plain: "A is one. Z is twenty-six. AA is twenty-seven. The whole amount also has a role, the same way a date does.",
     opacity: "high",
     surfaces: ["count", "key", "home"],
   },
   {
     id: "seat",
     term: "Seat",
-    metaphor: "2026 sits X — Trickster.",
-    plain: "The one house a whole number occupies, the same rule as a date or year. 1 is A. 13 is M. 26 is Z. 27 is A again.",
+    metaphor: "That amount’s role is X, the Trickster.",
+    plain: "The one role a whole amount has, the same rule as a date or year. 1 is A. 13 is M. 26 is Z. 27 is A again.",
     opacity: "high",
     surfaces: ["count", "year"],
   },
   {
     id: "spelling",
     term: "Spelling",
-    metaphor: "2026 spells B F B F.",
-    plain: "Each digit becomes a letter. 1 is A through 9 is I. 0 is F, the Fool. That string is then read like a username.",
+    metaphor: "Old digits can be written as letters too.",
+    plain: "Each old digit becomes a letter (1 is A through 9 is I; 0 is the Fool). That is a translation, not the count.",
     opacity: "high",
     surfaces: ["count"],
   },
@@ -419,9 +419,9 @@ export function termOf(id: string): string {
 }
 
 export const TRIAD_LABELS = {
-  house: { term: "House", id: "house" as const },
-  manner: { term: "Manner", id: "manner" as const },
-  field: { term: "Field", id: "field" as const },
+  house: { term: "Role", id: "house" as const },
+  manner: { term: "How", id: "manner" as const },
+  field: { term: "Where", id: "field" as const },
 };
 
 export const WEATHER_COPY: Record<
@@ -430,68 +430,68 @@ export const WEATHER_COPY: Record<
 > = {
   homecoming: {
     label: "Homecoming",
-    gloss: "Same house. Two lives inside one role — not one person twice.",
+    gloss: "Same house. Two lives inside one role — not one person twice. Use the familiar work; do not disappear into it.",
   },
   kinship: {
     label: "Kinship",
-    gloss: "Allied houses. They complete a job the other started.",
+    gloss: "Allied houses. They complete a job the other started. Let the missing piece come from the other name.",
   },
   crossing: {
     label: "Crossing",
-    gloss: "Useful difference. They meet at an angle and still make something.",
+    gloss: "Useful difference. They meet at an angle and still make something. Stay long enough to see what it is.",
   },
   friction: {
     label: "Friction",
-    gloss: "Opposing houses. The argument is the work, not a failure.",
+    gloss: "Opposing houses. The argument is the work, not a failure. Keep it useful; do not make it a verdict.",
   },
   exile: {
     label: "Exile",
-    gloss: "Opposite grain, and neither name carries the missing ally.",
+    gloss: "Opposite texture, and neither name carries the missing ally. Do the day’s job; do not make it your identity.",
   },
   hinge: {
     label: "Hinge",
-    gloss: "Leftover days between year-walks. No numbered house.",
+    gloss: "Leftover days between years. No numbered house. Travel light. Finish one small thing.",
   },
   ordinary: {
     label: "Unmarked",
-    gloss: "No official bond. They get to write one.",
+    gloss: "No official bond. They get to write one. An unmarked day is still a real day.",
   },
   pact: {
     label: "Pact",
-    gloss: "Each name already carries an ally the other is missing. That is the deal.",
+    gloss: "Each name already carries an ally the other is missing. That is the deal: trade the help you actually have.",
   },
   forge: {
     label: "Forge",
-    gloss: "Heat plus common letters. They make things by arguing well.",
+    gloss: "Heat plus common letters. They make things by arguing well. Keep the heat on the work, not on the person.",
   },
   orbit: {
     label: "Orbit",
-    gloss: "One leans in, one leans out, and the spellings barely overlap. They visit.",
+    gloss: "One leans in, one leans out, and the spellings barely overlap. They visit. Do not force a house they did not ask for.",
   },
   echo: {
     label: "Echo",
-    gloss: "Different roles, same way of working. One method, two lives.",
+    gloss: "Different roles, same way of working. One method, two lives. Name the method so it does not become a secret.",
   },
   harvest: {
     label: "Harvest",
-    gloss: "The place is right and the gifts are already in the names.",
+    gloss: "The place is right and the gifts are already in the names. Take what is ripe. Do not plant a new field today.",
   },
   veil: {
     label: "Veil",
-    gloss: "Both names lean inward. The private life is loud; the room still needs a face.",
+    gloss: "Both names lean inward. The private life is loud; the room still needs a face. Give the day one public hour.",
   },
   carnival: {
     label: "Carnival",
-    gloss: "Both names lean outward and work differently. Plenty of room; keep an inner hour.",
+    gloss: "Both names lean outward and work differently. Plenty of room; keep an inner hour so the feast does not eat the person.",
   },
 };
 
 export const METHOD_PLAIN =
-  "We read the letters of a username. The first letter names a role. The two letters that show up most after that describe how you tend to work, and what you tend to work on. Some roles help this one finish. Some roles push back so it does not fool itself. The name is the material. Nothing here predicts the future.";
+  "We read the letters of a username. The first letter names a role — how you enter. The two letters that show up most after that describe how you tend to work, and what kind of place that work wants. Some roles help this one finish a job it cannot finish alone. Some roles push back so it does not fool itself. The name is the material. Nothing here predicts the future. Use the portrait to notice. Do not obey it.";
 
 export const CALENDAR_PLAIN =
-  "The year is split into twenty-six two-week seats, one per letter, starting 21 March. Today's date names a role. The current two-week seat says how the season is working. The weekday says what today's work is about. The calendar year and the month only color the background — they do not rename the day.";
+  "The year is split into twenty-six two-week seats, one per letter, starting 21 March. Today's date names a role — the job of the day. The current two-week seat says how the season is working. The weekday says what today's work is about: same role, ally, or counterweight. The calendar year and the month only color the background — they do not rename the day. Leftover days before the next 21 March have no numbered role. Travel light.";
 
 export const BOND_PLAIN =
-  "Type two usernames. We compare the role each first letter names, then how each tends to work, then where. Allies complete a job. Enemies keep it honest. Shared letters are common ground. If one name already carries an ally the other is missing, that is a gift. The number is a fit, not a forecast.";
+  "Type two usernames. We compare the role each first letter names, then how each tends to work, then where. Allies complete a job. Enemies keep it honest. Shared letters are common ground. If one name already carries an ally the other is missing, that is a gift — help already in the spelling. The number is a fit, not a forecast. A high fit can be a trap. A hard weather can be a life’s work.";
 

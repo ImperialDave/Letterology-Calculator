@@ -1,7 +1,22 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { dateLetter, yearLetter } from "./calendar";
-import { countReadingOf, placeLetter, seatOf, spellDigits, walkOf } from "./count";
+import {
+  compareWalks,
+  countReadingOf,
+  joinWalks,
+  nextWalk,
+  parseWalk,
+  parseWalkSlug,
+  partWalks,
+  placeLetter,
+  prevWalk,
+  quantityOf,
+  seatOf,
+  spellDigits,
+  walkOf,
+  walkSlug,
+} from "./count";
 
 test("the seat agrees with the almanac", () => {
   assert.equal(seatOf(13), dateLetter(13));
@@ -87,6 +102,30 @@ test("decimals sit a fraction court on the far side of the wheel", () => {
   assert.equal(reading.fractionColumns[1]?.place, "Y");
   assert.ok(reading.placeHoroscope);
   assert.ok(reading.seatHoroscope);
+});
+
+test("the walk inverts and has no letter for nothing", () => {
+  assert.deepEqual(walkOf(0n).chain, []);
+  assert.equal(quantityOf(walkOf(0n)), 0n);
+  assert.equal(quantityOf(walkOf(1n)), 1n);
+  assert.equal(quantityOf(walkOf(26n)), 26n);
+  assert.equal(quantityOf(walkOf(27n)), 27n);
+  assert.equal(quantityOf(walkOf(2026n)), 2026n);
+  assert.deepEqual(walkOf(6n).chain, ["F"]);
+  assert.notEqual(quantityOf(walkOf(6n)), 0n);
+});
+
+test("next and join stay in letters", () => {
+  assert.deepEqual(nextWalk(walkOf(26n)).chain, ["A", "A"]);
+  assert.deepEqual(prevWalk(walkOf(1n)).chain, []);
+  assert.deepEqual(joinWalks(walkOf(26n), walkOf(1n)).chain, ["A", "A"]);
+  assert.equal(partWalks(walkOf(27n), walkOf(1n)).walk.chain.join(""), "Z");
+  assert.equal(compareWalks(walkOf(26n), walkOf(27n)), -1);
+  assert.equal(walkSlug(walkOf(2026n)), "byx");
+  assert.ok(parseWalk("B·Y·X"));
+  assert.deepEqual(parseWalk("byx")?.chain, ["B", "Y", "X"]);
+  assert.deepEqual(parseWalkSlug("fool")?.walk.chain, []);
+  assert.equal(parseWalkSlug("w-byx")?.inverted, true);
 });
 
 test("every column has an occupant letter and a place letter", () => {

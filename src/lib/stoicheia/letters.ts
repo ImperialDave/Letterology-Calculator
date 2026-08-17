@@ -137,3 +137,44 @@ export function foldToStoicheia(raw: string): Stoich[] {
 export function displayStoicheia(letters: Stoich[]): string {
   return letters.join("");
 }
+
+/** URL marks for the 24 hours. Latin-friendly, published. */
+export const HORA_MARKS: { mark: string; letter: Stoich }[] = [
+  { mark: "a", letter: "Α" },
+  { mark: "b", letter: "Β" },
+  { mark: "g", letter: "Γ" },
+  { mark: "d", letter: "Δ" },
+  { mark: "e", letter: "Ε" },
+  { mark: "z", letter: "Ζ" },
+  { mark: "h", letter: "Η" },
+  { mark: "th", letter: "Θ" },
+  { mark: "i", letter: "Ι" },
+  { mark: "k", letter: "Κ" },
+  { mark: "l", letter: "Λ" },
+  { mark: "m", letter: "Μ" },
+  { mark: "n", letter: "Ν" },
+  { mark: "x", letter: "Ξ" },
+  { mark: "o", letter: "Ο" },
+  { mark: "p", letter: "Π" },
+  { mark: "r", letter: "Ρ" },
+  { mark: "s", letter: "Σ" },
+  { mark: "t", letter: "Τ" },
+  { mark: "y", letter: "Υ" },
+  { mark: "ph", letter: "Φ" },
+  { mark: "ch", letter: "Χ" },
+  { mark: "ps", letter: "Ψ" },
+  { mark: "w", letter: "Ω" },
+];
+
+export function markOf(letter: Stoich): string {
+  return HORA_MARKS.find((row) => row.letter === letter)?.mark ?? "a";
+}
+
+export function letterFromMark(mark: string): Stoich | null {
+  const found = HORA_MARKS.find((row) => row.mark === mark.toLowerCase());
+  return found?.letter ?? null;
+}
+
+export function horaPath(letter: Stoich): string {
+  return `/stoicheia/horae/${markOf(letter)}`;
+}

@@ -44,9 +44,9 @@ function ClaimPage() {
       <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
         <header className="mx-auto max-w-xl">
           <p className="font-display text-xs tracking-[0.22em] text-muted uppercase">CC33</p>
-          <h1 className="mt-2 font-display text-4xl text-ink sm:text-5xl">Claim the handle</h1>
+          <h1 className="mt-2 font-display text-4xl text-ink sm:text-5xl">Claim this username</h1>
           <p className="mt-3 leading-relaxed text-ink/85">
-            Type the username you live under. The Letter Path paints as you type. That string is
+            Type the username you use. The Letter Path updates as you type. Those letters are
             the only material.
           </p>
           <form onSubmit={onSubmit} className="mt-8">
@@ -66,7 +66,7 @@ function ClaimPage() {
               </Button>
             </div>
             <p className="mt-2 text-sm text-muted">
-              The handle you live under. @ is optional. Diacritics fold; only A–Z are read.
+              @ is optional. Accents fold away. Only A–Z are read.
             </p>
             {error ? <p className="mt-3 text-sm text-primary">{error}</p> : null}
           </form>

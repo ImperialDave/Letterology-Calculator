@@ -67,12 +67,14 @@ function headlineOf(
   const self = houseOf(signature);
   const today = houseOf(date);
   if (weather === "hinge") {
-    return flavor ? "Hinge day — the Fool holds the leftover hours" : "The Fool's hinge";
+    return flavor
+      ? "Leftover day — the year has finished and not begun again"
+      : "A leftover day before the year starts over";
   }
   if (weather === "homecoming") {
     return flavor
       ? `Homecoming in the ${today.house}`
-      : `The day sits in your house — ${today.noun}`;
+      : `Today is the same role as your username — ${today.noun}`;
   }
   if (weather === "kinship") {
     return flavor
@@ -81,7 +83,7 @@ function headlineOf(
   }
   if (weather === "friction") {
     if (toDate === "none") {
-      return flavor ? `A hard day in the ${today.house}` : `The ${today.noun}'s grain is not yours`;
+      return flavor ? `A hard day in the ${today.house}` : `Today’s texture is not yours — ${today.noun}`;
     }
     return flavor
       ? `Friction: ${self.noun} meets ${today.noun}`
@@ -89,17 +91,17 @@ function headlineOf(
   }
   if (weather === "exile") {
     return flavor
-      ? `Exile weather — ${today.house}`
-      : `A hard grain: ${self.noun} in the ${today.house}`;
+      ? `Exile — ${today.house}`
+      : `A hard day: ${self.noun} in the ${today.house}`;
   }
   if (weather === "crossing") {
     return flavor
       ? `A crossing in the ${today.house}`
-      : `${self.noun} walks into ${today.noun}`;
+      : `${self.noun} meets ${today.noun} today`;
   }
   return flavor
     ? `An ordinary day in the ${today.house}`
-    : `Today sits ${today.noun} — no special bond`;
+    : `Today is ${today.noun} — no special match`;
 }
 
 function dayJobOf(
@@ -111,7 +113,7 @@ function dayJobOf(
   age: "early" | "mid" | "late",
 ): string {
   if (hinge) {
-    return "Today is a leftover day between one year-walk and the next. The Fool holds the gate. There is no numbered house to sit. Travel light.";
+    return "Today is a leftover day between one year and the next. There is no numbered role to hide in. Travel light: finish one small thing, and do not start a new identity.";
   }
   const d = houseOf(date);
   const f = houseOf(fortnight);
@@ -122,7 +124,7 @@ function dayJobOf(
       : age === "late"
         ? "The fortnight is nearly spent."
         : "The fortnight is in its middle work.";
-  return `Today sits the ${d.house} — the role the date names. ${d.myth} ${ageLine} For these fourteen days the sun works as ${f.adj} (the current two-week seat). The weekday field is ${w.noun} (${weekdayRole}) — what today's work is about.`;
+  return `Today’s date names the ${d.house}. ${d.myth} ${ageLine} For these fourteen days the two-week stretch works as ${f.adj} — how the season is moving, not who you are. The weekday is ${w.noun} (${weekdayRole === "house" ? "the same role" : weekdayRole === "ally" ? "an ally of the season" : "a counterweight to the season"}) — what today's work is about. Do the day's job. Do not make it your whole name.`;
 }
 
 function meetingOf(
@@ -138,33 +140,33 @@ function meetingOf(
     : `${date} is visiting — it is not in the name`;
 
   if (toDate === "same") {
-    return `The day is in your own house, the ${today.house}, and ${where}. As a ${self.noun}, you are on home ground.`;
+    return `Today is your own role, the ${today.house}, and ${where}. As a ${self.noun}, you are on home ground — which can be a gift or a trap. Use the familiar work. Do not hide in it.`;
   }
   if (toDate === "ally") {
-    return `The day brings an ally: ${today.noun}. ${where}. ${bondCopy(signature, date, "ally")}`;
+    return `The day brings an ally: ${today.noun}. ${where}. ${bondCopy(signature, date, "ally")} Let that house finish something you usually leave half-done.`;
   }
   if (toDate === "enemy") {
-    return `The day opposes your grain: ${today.noun}. ${where}. ${bondCopy(signature, date, "enemy")}`;
+    return `Today pushes back: ${today.noun}. ${where}. ${bondCopy(signature, date, "enemy")} The friction is information. Do not pretend it is a verdict on the whole life.`;
   }
-  return `The ${today.house} has no official bond with your ${self.noun} — ${hopPhrase(hopDistance(signature, date))}, resonance ${resonanceOf(signature, date)}. ${where}. Meet it as a guest, not a verdict.`;
+  return `The ${today.house} has no official bond with your ${self.noun} — ${hopPhrase(hopDistance(signature, date))}, resonance ${resonanceOf(signature, date)}. ${where}. Meet it as a guest, not a verdict. An unmarked day is still a real day; you get to write what the official table left blank.`;
 }
 
 function mannerOf(manner: Letter, fortnight: Letter, hinge: boolean, toFortnight: MeetKind): string {
   const m = houseOf(manner);
   if (hinge) {
-    return `Your usual manner is ${m.adj}. On a hinge day, hold it loosely.`;
+    return `How you usually work is ${m.adj}. On a leftover day, hold it loosely.`;
   }
   const f = houseOf(fortnight);
   if (toFortnight === "same") {
-    return `Your manner is already ${m.adj} — the same work the sun is doing this fortnight.`;
+    return `How you usually work is already ${m.adj} — the same work this two-week stretch is doing.`;
   }
   if (toFortnight === "ally") {
-    return `Your ${m.adj} manner helps the fortnight's ${f.adj} work. ${bondCopy(manner, fortnight, "ally")}`;
+    return `How you usually work (${m.adj}) helps this two-week stretch (${f.adj}). ${bondCopy(manner, fortnight, "ally")}`;
   }
   if (toFortnight === "enemy") {
-    return `Your ${m.adj} manner rubs the fortnight's ${f.adj} grain. ${bondCopy(manner, fortnight, "enemy")}`;
+    return `How you usually work (${m.adj}) pushes against this two-week stretch (${f.adj}). ${bondCopy(manner, fortnight, "enemy")}`;
   }
-  return `Your manner is ${m.adj}. The fortnight works as ${f.adj}. They do not argue. They also do not complete each other.`;
+  return `How you usually work is ${m.adj}. This two-week stretch works as ${f.adj}. They do not argue. They also do not complete each other.`;
 }
 
 function climateOf(year: Letter, month: Letter, date: Letter, signature: Letter, monthIndex: number): string {
@@ -178,22 +180,22 @@ function climateOf(year: Letter, month: Letter, date: Letter, signature: Letter,
     echoes.push(`the month is also ${month}`);
   }
   const echo = echoes.length
-    ? ` ${echoes.join("; ")}. That does not sit today's house.`
+    ? ` ${echoes.join("; ")}. That does not rename today.`
     : "";
-  return `Climate only — ${y.house} colors ${year} the civil year; ${mo.house} colors ${monthName(monthIndex)}.${echo}`;
+  return `Background only — ${y.house} colors the year ${year}; ${mo.house} colors ${monthName(monthIndex)}. Year and month are weather around the day. They do not get to rename the job.${echo}`;
 }
 
 function invitationOf(weather: DayWeather, signature: Letter, date: Letter): string {
   const self = houseOf(signature);
   const today = houseOf(date);
   if (weather === "hinge") {
-    return "Carry one small thing across the gate. Leave the rest.";
+    return "Carry one small thing across the gate. Leave the rest. A leftover day is for travel, not for founding a new life.";
   }
   if (weather === "homecoming" || weather === "kinship") {
-    return `As a ${self.noun}, ${self.invitation} Today favors that.`;
+    return `As a ${self.noun}, ${self.invitation} Today favors that work. Do it once, all the way through.`;
   }
   if (weather === "friction" || weather === "exile") {
-    return `${today.invitation} Do not pretend the grain is yours.`;
+    return `${today.invitation} Do not pretend today’s texture is yours.`;
   }
   return today.invitation;
 }

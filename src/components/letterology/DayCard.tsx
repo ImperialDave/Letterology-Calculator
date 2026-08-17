@@ -67,7 +67,7 @@ export function DayCard({
           label="Date"
           letter={reading.day.date}
           note={todayHouse.noun}
-          hint="Today’s date names a role — the house this day sits."
+          hint="Today’s date names a role."
         />
         <DaySeat
           label={reading.day.hinge ? "Hinge" : "Fortnight"}
@@ -75,8 +75,8 @@ export function DayCard({
           note={houseOf(reading.day.fortnight).adj}
           hint={
             reading.day.hinge
-              ? "Leftover days between year-walks. No numbered house. The Fool holds the gate."
-              : "The two-week seat the year is walking through right now."
+              ? "Leftover days between years. No numbered role."
+              : "The two-week stretch the year is in right now."
           }
         />
         <DaySeat
@@ -88,7 +88,10 @@ export function DayCard({
       </div>
 
       <div className="mt-5">
-        <Explain title="Climate">Year and month only color the background. They do not rename the day.</Explain>
+        <Explain title="Background">
+          Year and month only color the background. They do not rename the day. Do the
+          date’s job. Do not let the year steal the headline.
+        </Explain>
         <p className="mt-2 text-sm text-muted">{reading.climateNote}</p>
       </div>
       <div className="mt-5 flex flex-wrap items-center gap-3">

@@ -202,7 +202,7 @@ export function buildHoroscope(rawName: string, now = new Date()): Horoscope | n
   const vowelLead = vowels[0] ? themeOf(vowels[0].letter) : null;
   const consLead = consonants[0] ? themeOf(consonants[0].letter) : null;
 
-  const primaryStatement = `The first letter of ${possessive(displayName)} username sits ${primary.letter} — the ${houseOf(primary.letter).noun}. That is the house of this reading: the role this name starts in. ${p.essence}`;
+  const primaryStatement = `The first letter of ${possessive(displayName)} username is ${primary.letter} — the ${houseOf(primary.letter).noun}. That is the role this name starts in, before the rest of the spelling argues or helps. ${p.essence} Read it as an entrance, not as a cage.`;
 
   const giftBits = [g1, g2, g3].filter(Boolean).map((t) => `${t!.letter} (${t!.name.toLowerCase()})`);
   const giftsStatement = g2
@@ -216,11 +216,11 @@ export function buildHoroscope(rawName: string, now = new Date()): Horoscope | n
       : s1.challenge;
 
   const innerNote = vowelLead
-    ? `The vowels lean toward ${vowelLead.name.toLowerCase()}: ${vowelLead.inner}`
-    : "This name has almost no vowels — a very outward signature.";
+    ? `The vowels lean toward ${vowelLead.name.toLowerCase()} in the private life: ${vowelLead.inner} That is the inward weather — what you keep when the room is empty.`
+    : "This name has almost no vowels. The private life is thin on the page; the work is almost all public, almost all collision.";
   const outerNote = consLead
-    ? `The consonants speak of ${consLead.name.toLowerCase()} in the outer life: ${consLead.outer}`
-    : "This name is almost all vowels — a very inward signature.";
+    ? `The consonants speak of ${consLead.name.toLowerCase()} in the outer life: ${consLead.outer} That is the face other people get — the work, the rooms, the contact.`
+    : "This name is almost all vowels. The public work is thin on the page; the inner life is loud, and the room still needs a face.";
 
   const triad = pickTriad(inventory, signature);
   const archetype = archetypeOf(triad);
@@ -228,7 +228,7 @@ export function buildHoroscope(rawName: string, now = new Date()): Horoscope | n
   const mannerTheme = themeOf(triad[1]);
   const fieldTheme = themeOf(triad[2]);
 
-  const methodStatement = `The first letter of the username sits the house (${signature}, ${houseOf(signature).noun}) — the role this name starts in. The next two letters by weight set the manner (${triad[1]}, ${mannerTheme.name.toLowerCase()}: how you work) and the field (${triad[2]}, ${fieldTheme.name.toLowerCase()}: where you work).`;
+  const methodStatement = `The first letter of the username is the role (${signature}, ${houseOf(signature).noun}). The next two letters by weight — how often they return, with first and last letters counting extra — are how you work (${triad[1]}, ${mannerTheme.name.toLowerCase()}) and where you work (${triad[2]}, ${fieldTheme.name.toLowerCase()}). Weight is not order. A letter that comes back is a decision the name keeps making.`;
 
   const wheelStatement = [
     circle.kinPresent.length
@@ -240,6 +240,7 @@ export function buildHoroscope(rawName: string, now = new Date()): Horoscope | n
     circle.kinAbsent.length
       ? `Allies not in the name: ${listHouses(circle.kinAbsent)}.`
       : `Every allied house already appears in the letters.`,
+    "Allies complete a job this role cannot finish alone. Enemies are the work you will not look at — a blind spot, not a villain.",
   ].join(" ");
 
   const synthesis = [
@@ -247,7 +248,7 @@ export function buildHoroscope(rawName: string, now = new Date()): Horoscope | n
     tension
       ? `The main tension is ${tension.title.toLowerCase()}.`
       : p.invitation,
-    `Watch where ${p.name.toLowerCase()} already shows up in ordinary days. This is a portrait, not a prediction.`,
+    `Watch where ${p.name.toLowerCase()} already shows up in ordinary days — in the work you start, the rooms you keep, the argument you avoid. This is a portrait, not a prediction. Use it to notice. Do not spend it as an excuse.`,
   ].join(" ");
 
   const lettersInName = inventory.map((item) => item.letter);
@@ -255,10 +256,10 @@ export function buildHoroscope(rawName: string, now = new Date()): Horoscope | n
   const periodHouse = houseOf(period);
   const dailyStatement = almanac.fortnight.hinge
     ? `Today is a leftover day between one year-walk and the next. The date still wears ${daily} (${dailyTheme.name}). ${dailyTheme.invitation}`
-    : `Today's date letter is ${daily} — ${dailyTheme.name}${dailyInName ? ", which already lives in this name" : ", which does not appear in this name"}. ${dailyTheme.invitation}`;
+    : `Today's date letter is ${daily} — ${dailyTheme.name}${dailyInName ? ", which already lives in this name, so the day is using material you already carry" : ", which does not appear in this name, so the day is a guest, not a verdict"}. ${dailyTheme.invitation}`;
   const periodStatement = almanac.fortnight.hinge
     ? `The year is between circles. These leftover days belong to the Fool before the Seeker opens the walk again.`
-    : `For these fourteen days the sun sits in ${period} — the ${periodHouse.house}, day ${almanac.fortnight.dayInSeat} of 14. ${periodTheme.invitation}`;
+    : `For these fourteen days the two-week stretch is ${period} — the ${periodHouse.house}, day ${almanac.fortnight.dayInSeat} of 14. That is how the season is working, not who you are. ${periodTheme.invitation}`;
 
   return {
     displayName,
@@ -301,7 +302,7 @@ export function buildHoroscope(rawName: string, now = new Date()): Horoscope | n
 
 export function readingAsText(h: Horoscope): string {
   const lines = [
-    `Letterological Horoscope — ${h.displayName}`,
+    `Reading — ${h.displayName}`,
     `Normalized: ${h.normalized}`,
     "",
     `Signature letter: ${h.signature}`,

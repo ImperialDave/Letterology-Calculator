@@ -22,10 +22,10 @@ export function axisOf(letters: Stoich[]): Axis | null {
 }
 
 export function axisCopy(axis: Axis): string {
-  const enter = axis.entersAsBreath ? "enters as breath" : "enters as a collision";
-  const leave = axis.finishesAsBlow ? "finishes as a blow" : "finishes as breath";
+  const enter = axis.entersAsBreath ? "starts on a vowel" : "starts on a consonant";
+  const leave = axis.finishesAsBlow ? "ends on a consonant" : "ends on a vowel";
   if (axis.closed) {
-    return `A closed rite: ${axis.proodos} at both doors. The name ${enter} and returns to the same mark.`;
+    return `First and last are the same letter, ${axis.proodos}. The name ${enter} and returns to that mark. A closed road is a rite: finish what you start, or you will walk the same hour again.`;
   }
-  return `Proodos ${axis.proodos}, epistrophe ${axis.epistrophe}. The name ${enter} and ${leave}.`;
+  return `First letter ${axis.proodos}, last letter ${axis.epistrophe}. The name ${enter} and ${leave}. That pair is the voyage — how you arrive, how you leave the room.`;
 }

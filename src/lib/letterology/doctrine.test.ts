@@ -21,5 +21,5 @@ test("the doctrine names the refusals the site actually keeps", () => {
   assert.match(body, /Fool/);
   assert.match(body, /not a prediction/i);
   assert.match(body, /twenty-six/i);
-  assert.match(body, /Count|numbers are unacceptable/i);
+  assert.match(body, /Count|write amounts as letters/i);
 });

@@ -251,17 +251,17 @@ export function walkFortnights(walkYear: number): FortnightSeat[] {
 
 export function yearDoctrine(letter: Letter): string {
   const house = houseOf(letter);
-  return `The civil year sits in the ${house.house}. ${house.myth} This colors the year. It does not sit today's house.`;
+  return `The calendar year is the ${house.house}. ${house.myth} This colors the year. It does not rename today.`;
 }
 
 export function fortnightDoctrine(seat: FortnightSeat): string {
   if (seat.hinge) {
-    return "These are the unnumbered days between one walk and the next — the Fool's gate, when the year has finished the circle and has not yet begun again.";
+    return "These are the leftover days between one year and the next — when the circle has finished and has not yet begun again.";
   }
   const house = houseOf(seat.letter);
-  return `For fourteen days the sun sits in the ${house.house}. ${house.myth}`;
+  return `For fourteen days the two-week stretch is the ${house.house}. ${house.myth}`;
 }
 
 export function calendarMethod(): string {
-  return "The year is a walk around the Circle of Houses. Twenty-six fortnights, beginning at the Station of the Seeker on 21 March, return the sun to A a year later. The leftover day or two before the next threshold are the Fool's hinge. The civil year and the month each have their own house — background climate, not the day's work. A day is read from its own letters: the date sits the house, the fortnight sets the manner, and the weekday is the field. Year and month keep their courts; they do not rename the day.";
+  return "The year is twenty-six two-week stretches, one per letter, starting 21 March at A. The leftover day or two before the next 21 March belong to the Fool. The calendar year and the month each have their own role — background, not the day's work. A day is read from its own letters: the date names the role, the two-week stretch says how the season is working, and the weekday says what today's work is about. Year and month do not rename the day.";
 }

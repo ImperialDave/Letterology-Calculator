@@ -5,12 +5,14 @@ import type { ReactNode } from "react";
 
 const LINKS = [
   { to: "/stoicheia", label: "Name" },
-  { to: "/stoicheia/hymn", label: "Hymn" },
-  { to: "/stoicheia/horae", label: "Horae" },
-  { to: "/stoicheia/isopsephy", label: "Isopsephy" },
-  { to: "/stoicheia/xenia", label: "Xenia" },
-  { to: "/stoicheia/calendar", label: "Calendar" },
-  { to: "/stoicheia/doctrine", label: "Doctrine" },
+  { to: "/stoicheia/hymn", label: "Vowels" },
+  { to: "/stoicheia/horae", label: "Hours" },
+  { to: "/stoicheia/isopsephy", label: "Totals" },
+  { to: "/stoicheia/canon", label: "Canon" },
+  { to: "/stoicheia/xenia", label: "Two names" },
+  { to: "/stoicheia/agon", label: "Contest" },
+  { to: "/stoicheia/calendar", label: "Day" },
+  { to: "/stoicheia/doctrine", label: "Why" },
 ] as const;
 
 export function StoicheiaFrame({

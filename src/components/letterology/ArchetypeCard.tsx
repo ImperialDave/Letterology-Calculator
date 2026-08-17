@@ -72,8 +72,8 @@ export function ArchetypeCard({
       </div>
       <p className="mt-5 max-w-3xl text-sm leading-relaxed text-muted">{archetype.invitation}</p>
       <p className="mt-5 text-sm text-muted">
-        {themeOf(first).name} names the house (the role); {themeOf(second).name.toLowerCase()} is the
-        manner (how); {themeOf(third).name.toLowerCase()} is the field (where).
+        {themeOf(first).name} names the role; {themeOf(second).name.toLowerCase()} is how you work;{" "}
+        {themeOf(third).name.toLowerCase()} is where.
       </p>
       <Link
         to="/archetypes"

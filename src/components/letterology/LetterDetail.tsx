@@ -57,13 +57,19 @@ export function LetterDetail({ letter }: { letter: Letter }) {
       </div>
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <div className="border-t border-ink/10 pt-4">
-          <Explain title="Allies">The three houses that complete this one’s work.</Explain>
+          <Explain title="Allies">
+            The three houses that complete this one’s work. If the letter is already in a
+            username, that help is in the name. If not, it comes from other people.
+          </Explain>
           <p className="mt-2 font-display text-lg tracking-[0.12em] text-ink">
             {allies.map((item) => item.other).join(" · ")}
           </p>
         </div>
         <div className="border-t border-ink/10 pt-4">
-          <Explain title="Enemies">The three houses that work against it — a blind spot, not a villain.</Explain>
+          <Explain title="Enemies">
+            The three houses that work against it — a blind spot, not a villain. Look here
+            for the job this role keeps refusing.
+          </Explain>
           <p className="mt-2 font-display text-lg tracking-[0.12em] text-ink">
             {enemies.map((item) => item.other).join(" · ")}
           </p>

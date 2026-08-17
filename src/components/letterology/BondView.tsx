@@ -37,7 +37,7 @@ const AXIS_ORDER: { key: keyof BondAxes; label: string }[] = [
   { key: "overlap", label: "Letters" },
   { key: "exchange", label: "Gifts" },
   { key: "temper", label: "Temper" },
-  { key: "court", label: "Court" },
+  { key: "court", label: "Helpers" },
   { key: "spark", label: "Spark" },
 ];
 
@@ -102,7 +102,7 @@ export function BondView({ bond }: { bond: BondReading }) {
   return (
     <div className="stagger-in space-y-8">
       <header className="flex flex-col items-center text-center">
-        <p className="font-display text-xs tracking-[0.22em] text-muted uppercase">Certificate of Bond</p>
+        <p className="font-display text-xs tracking-[0.22em] text-muted uppercase">How these two usernames fit</p>
         <p className="mt-2 max-w-md text-sm text-muted">
           Eight measures, then a name for the pair. The number is a fit — not a forecast.
         </p>
@@ -130,17 +130,18 @@ export function BondView({ bond }: { bond: BondReading }) {
         <p className="mt-2 font-display text-sm tracking-[0.14em] text-muted uppercase">
           {bond.sigil} · {bond.headline}
         </p>
-        <p className="mt-4 max-w-2xl leading-relaxed text-ink/90">{bond.verdict}</p>
+        <p className="mt-4 max-w-2xl leading-relaxed text-ink/90">{bond.plainly}</p>
         <p className="mt-3 font-display text-ink">{bond.invitation}</p>
-        <p className="mt-4 max-w-2xl text-sm leading-relaxed text-ink/80">{bond.plainly}</p>
+        <p className="mt-4 max-w-2xl text-sm leading-relaxed text-ink/70">{bond.verdict}</p>
       </header>
 
       <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
         <Explain title="The eight measures">
-          Each bar is its own question. Role is the first letters. Method is how they work. Place is
-          where. Letters are shared spelling, by weight. Gifts are missing allies the other already
-          carries. Temper is inward versus outward. Court is how often each name sits in the other’s
-          allies. Spark is honest argument.
+          Each bar is its own question, not a hidden average. Role is the first letters. Method is
+          how they work. Place is where. Letters are shared spelling, by weight. Gifts are missing
+          allies the other already carries — help already in the name. Temper is inward versus
+          outward. Helpers is how often each name appears in the other’s allies. Spark is honest
+          argument. Read the bars. Do not flatten them into one mood.
         </Explain>
         <div className="mt-6 grid gap-5 sm:grid-cols-2">
           {AXIS_ORDER.map((axis) => (
@@ -156,9 +157,10 @@ export function BondView({ bond }: { bond: BondReading }) {
 
       <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
         <Explain title="Path on the graph">
-          The twenty-six houses are a 3-regular graph — each has three allies. Distance is hops
-          along those allies, not the alphabet’s order. Resonance blends that walk with the
-          graph’s spectrum. A 1 is an official ally. A 4 is a long walk.
+          Each house has three official allies. Distance is how many of those steps it takes to
+          walk from one role to the other — not how far they sit in the alphabet. One hop is an
+          official ally. Four hops is a long walk. Resonance says whether that walk still feels
+          close even when it is long.
         </Explain>
         <div className="mt-6 grid gap-4 sm:grid-cols-3">
           <PathCard
@@ -169,14 +171,14 @@ export function BondView({ bond }: { bond: BondReading }) {
             b={bond.seats[0].bNoun}
           />
           <PathCard
-            label="Manner"
+            label="How"
             hops={bond.geometry.hops.manner}
             resonance={bond.geometry.resonance.manner}
             a={bond.seats[1].aNoun}
             b={bond.seats[1].bNoun}
           />
           <PathCard
-            label="Field"
+            label="Where"
             hops={bond.geometry.hops.field}
             resonance={bond.geometry.resonance.field}
             a={bond.seats[2].aNoun}

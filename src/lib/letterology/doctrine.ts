@@ -9,7 +9,8 @@ export type DoctrineSection = {
  * Written backward from the mechanics so every rule looks like a consequence.
  */
 export const DOCTRINE_PREFACE = [
-  "Letterology is not a forecast. It is a discipline of attention. It takes the marks a person already chose to live under — a handle, a date, a count — and reads them with the same seriousness other arts reserve for the sky. The sky is not ours. The alphabet is.",
+  "We read usernames, not birth names. The first letter is the role. The next two by weight are how you work and where. We do not predict. We do not turn letters into one digit.",
+  "Letterology is not a forecast. It is a way of looking. It takes the marks a person already chose to live under — a username, a date, a count — and reads them with the same seriousness other arts reserve for the sky. The sky is not ours. The alphabet is.",
   "What follows is not a manual. The Key is the manual. This is the reason the machine is shaped the way it is. Every rule on the site was chosen. This page says why those choices, and not others, are the ones that can be kept.",
 ];
 
@@ -25,20 +26,20 @@ export const DOCTRINE: DoctrineSection[] = [
   },
   {
     kicker: "The material",
-    title: "The handle is the destiny",
+    title: "We read the username you chose",
     paragraphs: [
       "A legal name is an inheritance. It was spoken over you before you could refuse it. A username is a vow. You chose it in public, or you accepted the one the room gave you and then lived inside it long enough that it became a second skin. Either way, it is the name that does work.",
-      "That is why the door does not ask for your name. It asks for the handle you live under. @ is optional because the at-sign is furniture. Only A through Z are read, because those are the twenty-six seats. Diacritics fold so a mark from another tongue can still sit a house without being punished for its origin.",
+      "That is why the door does not ask for your legal name. It asks for the username you use. @ is optional because the at-sign is furniture. Only A through Z are read, because those are the twenty-six roles. Accents fold so a mark from another tongue can still name a role without being punished for its origin.",
       "If you sit the house with X, the screen name arrives as the handle and is not offered back for editing. Destiny you already posted under is not a preference. If you come by Google, you claim. Claiming is not branding. It is taking responsibility for a spelling.",
     ],
   },
   {
     kicker: "The first mark",
-    title: "Why the first letter sits the house",
+    title: "Why the first letter is the role",
     paragraphs: [
       "A house is a role, not a personality. The first letter of the first token is the first mark the handle makes on the world. Before repetition, before weight, before the clever middle, there is the threshold. That threshold is the house.",
       "We could have let the most common letter sit the house. That would have made the role a popularity contest. We could have let the last letter sit it. That would have made the role an ending. A role is how you enter. So the first letter enters.",
-      "L sits the Lover. A sits the Seeker. The rest of the name may argue, complete, or betray that entrance. It does not get to pretend the entrance did not happen.",
+      "L is the Lover. A is the Seeker. The rest of the name may argue, complete, or betray that entrance. It does not get to pretend the entrance did not happen.",
     ],
   },
   {
@@ -78,11 +79,11 @@ export const DOCTRINE: DoctrineSection[] = [
   },
   {
     kicker: "One clock",
-    title: "Why a day sits the same wheel",
+    title: "Why a day uses the same wheel",
     paragraphs: [
-      "If time used another alphabet we would have two religions in one house. So a day is read as a name is read. The date sits the house — the thirteenth wears M, as a handle beginning with M wears M. The fortnight sets the manner: fourteen days, one letter, the sun walking A to Z from the twenty-first of March, the Station of the Seeker. The weekday is the field, drawn from that fortnight’s own court: the house, then its three allies, then its three enemies.",
-      "The civil year and the month have houses too. They are climate. They color the air. They do not get to rename Tuesday. A system that lets the year sit the day has already decided that the large always owns the small. We do not grant that.",
-      "The leftover day or two before the next twenty-first of March have no numbered house. They belong to the Fool. The year has finished the circle and has not begun again. Travel light. That is the hinge, and it is the same Fool who sits zero when a count has nothing to wear.",
+      "If time used another alphabet we would have two religions in one house. So a day is read as a name is read. The date names the role — the thirteenth is M, as a username beginning with M is M. The two-week stretch sets how the season works: fourteen days, one letter, A to Z from the twenty-first of March. The weekday is what today is about, drawn from that stretch’s own helpers and pushbacks: the role, then its three allies, then its three enemies.",
+      "The civil year and the month have roles too. They are background. They color the air. They do not get to rename Tuesday. A system that lets the year rename the day has already decided that the large always owns the small. We do not grant that.",
+      "The leftover day or two before the next twenty-first of March have no numbered role. They belong to the Fool. The year has finished the circle and has not begun again. Travel light. That leftover is the same Fool as the blank when a count has nothing to write.",
     ],
   },
   {
@@ -96,12 +97,12 @@ export const DOCTRINE: DoctrineSection[] = [
   },
   {
     kicker: "The inverse",
-    title: "Numbers are unacceptable",
+    title: "We write amounts as letters",
     paragraphs: [
       "A number arrives claiming neutrality. It is not neutral. It is a compression: of rank, of year, of money, of a phone that can reach a body. Numerology accepted that compression and then compressed further, folding the leftover into a single digit so the hand could close.",
-      "We refuse the fold. A count must sit as letters or it is not read. The glyphs become occupants. The columns become places — ones in the Seeker, tens in the Caregiver, tenths walking backward from Z, the far side of the unit. The quantity as a whole sits one house, the same walk a date sits, so 2026 and the year 2026 cannot disagree. If the quantity walked the twenty-six more than once, those walks are letters too. Nested, not reduced.",
-      "Zero is the Fool as absence. Six is the Fool as the sixth house. Same figure, two doors. There is no 0th of the month, so zero cannot sit a date-house; it sits the unnumbered card, which the calendar already knew. J is not 1. J is the tenth house. To wrap J back to A is to say the walk never happened.",
-      "The figure may be typed so we can translate it. The reading will not speak it back. Arabic is a courier. It is not a citizen of this house.",
+      "We refuse the fold. An amount is written as letters or it is not read. A is one. Z is twenty-six. AA is twenty-seven. The whole amount also has a role — the same letter a date or a year already uses — so a year and that year’s amount cannot disagree. If the amount walked the twenty-six more than once, those walks are letters too. Nested, not reduced.",
+      "Zero is the Fool as absence: you write nothing. Six is the Fool as the sixth role, only when an old digit arrives. Same figure, two doors. There is no 0th of the month, so zero cannot name a date-role; it is the blank, which the calendar already knew. J is not 1. J is the tenth role. To wrap J back to A is to say the walk never happened.",
+      "The old number may be typed so we can translate it. The reading will not say it back.",
     ],
   },
   {
@@ -118,7 +119,7 @@ export const DOCTRINE: DoctrineSection[] = [
     title: "CC33",
     paragraphs: [
       "Letterology is the reading. CC33 is whose house it is. The club did not rent a personality system. It took the alphabet — the one tool every member already used to appear in public — and asked it to tell the truth about the marks it was already making.",
-      "Sit a handle. Compare two. Render a count. Walk the year. The metaphors stay strange because the work is strange. The translations sit beside them because a house that cannot welcome a guest is only a vault.",
+      "Read a username. Compare two. Write an amount as letters. Walk the year. The names stay — Seeker, Fool, Letter Path — because they are the product. The rest is English, because a house that cannot welcome a guest is only a vault.",
       "You do not have to believe any of this. You only have to admit that you chose some letters, or some letters were chosen for the day, and that those letters can be looked at without being worshipped. That looking is the practice.",
     ],
   },

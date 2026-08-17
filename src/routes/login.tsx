@@ -19,9 +19,9 @@ function Login() {
       <main className="mx-auto grid min-h-[70dvh] w-full max-w-md place-items-center px-4 py-12">
         <div className="w-full rounded-xl bg-raised p-6 shadow-[var(--shadow-border)] sm:p-8">
           <p className="font-display text-xs tracking-[0.22em] text-muted uppercase">CC33</p>
-          <h1 className="mt-2 font-display text-3xl text-ink">Sit your house</h1>
+          <h1 className="mt-2 font-display text-3xl text-ink">Sign in</h1>
           <p className="mt-2 text-sm leading-relaxed text-muted">
-            X brings the handle. Google lets you claim one. The letters are the only material.
+            X brings the username. Google lets you claim one. We only read the letters.
           </p>
           {!house.configured ? (
             <p className="mt-6 text-sm leading-relaxed text-primary">
@@ -48,7 +48,7 @@ function Login() {
             to="/"
             className="mt-6 inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-muted uppercase hover:text-ink"
           >
-            Read without sitting
+            Read without signing in
           </Link>
         </div>
       </main>

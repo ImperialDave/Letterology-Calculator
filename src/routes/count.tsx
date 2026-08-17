@@ -1,57 +1,72 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { FormEvent, useState } from "react";
-import { CountTables, CountView } from "@/components/letterology/CountView";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { FormEvent, useEffect, useState } from "react";
+import { CountAbacus } from "@/components/letterology/CountAbacus";
 import { PageShare } from "@/components/letterology/PageShare";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useHouseHoroscope } from "@/lib/firebase/house-provider";
-import { houseOf } from "@/lib/letterology/archetypes";
-import { countFileOf, countReadingOf } from "@/lib/letterology/count";
-import { countPath, pageCardMeta, tweetCount } from "@/lib/letterology/share";
-
-type Search = { n?: string };
+import {
+  countReadingOf,
+  parseWalk,
+  walkOf,
+  walkSlug,
+  type CountWalk,
+} from "@/lib/letterology/count";
+import { pageCardMeta } from "@/lib/letterology/share";
+import { VOICE } from "@/lib/letterology/voice";
 
 export const Route = createFileRoute("/count")({
-  validateSearch: (search: Record<string, unknown>): Search => ({
-    n: typeof search.n === "string" ? search.n : undefined,
-  }),
   loader: ({ location }) => {
     const n = new URL(location.href, "https://www.letterology.club").searchParams.get("n") ?? undefined;
     return { n };
   },
-  head: ({ loaderData }) => {
-    const reading = countReadingOf(loaderData?.n ?? "");
-    if (!reading) {
-      return pageCardMeta({
-        title: "The Count",
-        description: "Numbers are unacceptable. A count sits letters — a seat, a court, a Letter Path.",
-        path: "/count",
-        imagePath: "/og.jpg",
-      });
-    }
-    const house = houseOf(reading.seat);
-    return pageCardMeta({
-      title: `${reading.seat} · ${reading.display}`,
-      description: `${house.house}. Spelled ${reading.spelling.join(" · ")}. Places ${reading.placePath.join(" · ")}.`,
-      path: countPath(reading.digits),
-      imagePath: `/og/${countFileOf(reading)}`,
-    });
-  },
+  head: () =>
+    pageCardMeta({
+      title: "The Count",
+      description: VOICE.countLede,
+      path: "/count",
+      imagePath: "/og.jpg",
+    }),
   component: CountPage,
 });
 
+function openWalk(slug: string) {
+  window.location.assign(`/count/${slug}`);
+}
+
 function CountPage() {
-  const { n } = Route.useSearch();
-  const navigate = useNavigate({ from: "/count" });
-  const [value, setValue] = useState(n ?? "");
-  const reading = countReadingOf(n ?? "");
-  const sitting = useHouseHoroscope();
+  const [value, setValue] = useState("");
+  const [walk, setWalk] = useState<CountWalk>(walkOf(0n));
+  const { n } = Route.useLoaderData();
+  const confessed = n ? countReadingOf(n) : null;
+
+  useEffect(() => {
+    if (!confessed) return;
+    openWalk(confessed.slug);
+  }, [n]);
+
+  function go(next: CountWalk) {
+    const slug = walkSlug(next);
+    if (slug === "fool") {
+      setWalk(next);
+      return;
+    }
+    openWalk(slug);
+  }
 
   function onSubmit(event: FormEvent) {
     event.preventDefault();
-    navigate({ search: { n: value.trim() || undefined } });
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    const asLetters = parseWalk(trimmed);
+    if (asLetters && !/\d/.test(trimmed)) {
+      go(asLetters);
+      return;
+    }
+    const reading = countReadingOf(trimmed);
+    if (!reading) return;
+    openWalk(reading.slug);
   }
 
   return (
@@ -59,55 +74,44 @@ function CountPage() {
       <SiteHeader current="count" />
       <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
         <header className="max-w-2xl">
-          <p className="font-display text-xs tracking-[0.22em] text-muted uppercase">CC33 · The inverse</p>
+          <p className="font-display text-xs tracking-[0.22em] text-muted uppercase">{VOICE.countKicker}</p>
           <h1 className="mt-2 font-display text-4xl text-ink sm:text-5xl">The Count</h1>
-          <p className="mt-3 max-w-xl leading-relaxed text-ink/85">
-            Numbers are unacceptable. They must sit as letters. A count has a court of
-            occupants and places, a seat on the wheel, the walks that got it there, and
-            two Letter Paths — one from the spelling, one from the places. Zero is the
-            Fool. We do not fold.
-          </p>
+          <p className="mt-3 max-w-xl leading-relaxed text-ink/85">{VOICE.countLede}</p>
           <PageShare
-            path={reading ? countPath(n ?? reading.digits) : "/count"}
-            caption={
-              reading
-                ? tweetCount(reading.seat, houseOf(reading.seat).house, reading.display)
-                : "The Count\nA number sits letters."
-            }
-            imagePath={reading ? `/og/${countFileOf(reading)}` : "/og.jpg"}
+            path="/count"
+            caption={"The Count\nWe write amounts as letters."}
+            imagePath="/og.jpg"
           />
         </header>
 
+        <div className="mt-8">
+          <CountAbacus walk={walk} onChange={go} />
+        </div>
+
         <form onSubmit={onSubmit} className="mt-8 max-w-xl">
-          <Label htmlFor="count-n">Bring a count</Label>
+          <Label htmlFor="count-n">{VOICE.countConfessLabel}</Label>
           <div className="mt-2 flex flex-col gap-2 sm:flex-row">
             <Input
               id="count-n"
               value={value}
               onChange={(event) => setValue(event.target.value)}
-              placeholder="the untranslated figure"
-              inputMode="decimal"
+              placeholder="only so we can translate it"
               autoComplete="off"
               spellCheck={false}
             />
             <Button type="submit" className="h-12 shrink-0">
-              Render as letters
+              {VOICE.countConfessButton}
             </Button>
           </div>
           <p className="mt-2 text-sm text-muted">
-            Type the figure only so we can translate it. The reading will not speak it back.
+            Type the old number once. Or type letters — Z, AA, BYX. The reading will not say a
+            digit back.
           </p>
         </form>
 
-        {n && !reading ? <p className="mt-8 text-sm text-primary">That has no digits to sit.</p> : null}
-
-        {reading ? (
-          <div className="mt-10">
-            <CountView reading={reading} signature={sitting?.signature} />
-          </div>
-        ) : (
-          <CountTables />
-        )}
+        {n && !countReadingOf(n) ? (
+          <p className="mt-8 text-sm text-primary">{VOICE.countEmpty}</p>
+        ) : null}
 
         <p className="mt-10 text-center">
           <Link

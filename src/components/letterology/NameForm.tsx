@@ -39,12 +39,11 @@ export function NameForm({
           aria-describedby="username-hint"
         />
         <Button type="submit" className="h-12 shrink-0 px-6">
-          Read the letters
+          Read this username
         </Button>
       </div>
       <p id="username-hint" className="mt-2 text-sm text-muted">
-        The handle you live under — your username. @ is optional. Accents fold away; only A–Z are
-        read.
+        @ is optional. Accents fold away. Only A–Z are read.
       </p>
       {!compact ? (
         <div className="mt-5 flex flex-wrap gap-2">

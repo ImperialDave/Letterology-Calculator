@@ -15,7 +15,7 @@ export const Route = createFileRoute("/house")({
   head: () =>
     pageCardMeta({
       title: "Your house",
-      description: "The handle you live under. Today, the Letter Path, and the bonds you keep.",
+      description: "Your username. Today, the Letter Path, and the comparisons you keep.",
       path: "/house",
       imagePath: "/og.jpg",
     }),
@@ -54,12 +54,13 @@ function HousePage() {
                   {house.profile.displayHandle}
                 </h1>
                 <p className="mt-2 text-sm text-muted">
-                  The handle is the destiny. Share the public portrait, or sit today here.
+                  We read the username you chose. Share the public portrait, or read today here.
                 </p>
               </div>
               <Link
                 to="/p/$slug"
                 params={{ slug: house.profile.handle }}
+                search={{ date: undefined }}
                 className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
               >
                 Open the public portrait
@@ -72,7 +73,7 @@ function HousePage() {
 
             <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
               <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">Compare me</p>
-              <h2 className="mt-2 font-display text-2xl text-ink">Certificate of Bond</h2>
+              <h2 className="mt-2 font-display text-2xl text-ink">How two usernames fit</h2>
               <div className="mt-5">
                 <BondForm
                   initialA={house.profile.displayHandle}
@@ -111,6 +112,7 @@ function HousePage() {
                       key={item}
                       to="/p/$slug"
                       params={{ slug: item.replace(/^@+/, "").toLowerCase() }}
+                      search={{ date: undefined }}
                       className="inline-flex h-9 items-center rounded-full bg-raised px-3.5 font-display text-xs text-ink shadow-[var(--shadow-border)]"
                     >
                       {item}

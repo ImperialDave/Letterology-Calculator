@@ -108,7 +108,7 @@ function AlmanacPage() {
           </p>
           <PageShare
             path={`/almanac?date=${selected.iso}`}
-            caption={`${selected.iso} sits the ${houseOf(selected.dateLetter).house}`}
+            caption={`${selected.iso} is the ${houseOf(selected.dateLetter).house}`}
             imagePath={`/og/day-${selected.iso}.jpg`}
           />
         </header>
@@ -247,7 +247,7 @@ function AlmanacPage() {
             which is the field: what today's work is about.
           </p>
           <p className="mt-3 text-sm text-muted">
-            Year {selected.civil.year} ({selected.yearLetter} {houseOf(selected.yearLetter).noun}) and{" "}
+            The year is {selected.yearLetter} ({houseOf(selected.yearLetter).noun}).{" "}
             {monthName(selected.civil.month)} ({selected.monthLetter} {houseOf(selected.monthLetter).noun}){" "}
             are climate around this day — background color, not today's job. They do not sit the house.
           </p>

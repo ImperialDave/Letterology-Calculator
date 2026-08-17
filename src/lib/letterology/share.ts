@@ -115,7 +115,7 @@ export function composeXPost(
 
 export function tweetText(h: Horoscope): string {
   const [house, manner, field] = h.triad;
-  return `${h.displayName} sits the ${h.archetype.house}\n${house} · ${manner} · ${field}`;
+  return `${h.displayName} is the ${h.archetype.house}\n${house} · ${manner} · ${field}`;
 }
 
 /** Short enough to paste into a free X compose and still look like a reading. */
@@ -137,12 +137,13 @@ export function tweetBond(input: {
   return `${input.a} & ${input.b}\n${input.title}\nAffinity ${input.affinity}`;
 }
 
-export function countPath(digits: string): string {
-  return `/count?n=${encodeURIComponent(digits)}`;
+export function countPath(slug: string): string {
+  return `/count/${encodeURIComponent(slug)}`;
 }
 
-export function tweetCount(seat: string, house: string, spelling: string): string {
-  return `${seat} sits the ${house}\n${spelling.split("").join(" · ")}`;
+export function tweetCount(seat: string, house: string, walk: string): string {
+  const letters = walk.includes("·") ? walk : walk.split("").join(" · ");
+  return `${seat} is the ${house}\n${letters || "the blank"}`;
 }
 
 export function bondTitle(a: string, b: string, title: string): string {
@@ -165,7 +166,7 @@ export function readingWithUrl(reading: string, url: string): string {
 export function portraitDescription(h: Horoscope): string {
   const [house, manner, field] = h.triad;
   return clip(
-    `${house} sits the house, ${manner} the manner, ${field} the field. ${h.archetype.myth}`,
+    `${house} is the role, ${manner} is how you work, ${field} is where. ${h.archetype.myth}`,
     X_DESC_MAX,
   );
 }

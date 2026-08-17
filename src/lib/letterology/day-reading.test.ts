@@ -59,7 +59,7 @@ test("headline and dayJob do not make the year-house the subject", () => {
   assert.ok(reading);
   const yearHouse = houseOf(reading.climate.year).house;
   assert.doesNotMatch(reading.headline, new RegExp(`^${yearHouse}`));
-  assert.match(reading.climateNote, /Climate only/);
+  assert.match(reading.climateNote, /Background only/);
 });
 
 test("scoreWeather maps homecoming when the date is the signature and carried", () => {

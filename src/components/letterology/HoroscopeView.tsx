@@ -120,7 +120,8 @@ export function HoroscopeView({
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <Explain title="On the wheel">
             Each house has three allies that complete its work, and three enemies that keep
-            it honest. Gold is an ally. Dark is an enemy.
+            it honest. Gold is an ally already in the name. Dark is an enemy. An enemy is
+            a blind spot, not a villain.
           </Explain>
           <Link
             to="/circle"
@@ -213,13 +214,15 @@ export function HoroscopeView({
       <section className="grid gap-4 md:grid-cols-2">
         <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)]">
           <Explain title="Vowels">
-            Vowels describe the private life — how this name feels from the inside.
+            Vowels describe the private life — how this name feels from the inside, when
+            the room is empty. A name with few vowels is almost all public work.
           </Explain>
           <p className="mt-3 text-sm leading-relaxed">{horoscope.statements.vowelNote}</p>
         </article>
         <article className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)]">
           <Explain title="Consonants">
-            Consonants describe how this name shows up in a room.
+            Consonants describe how this name shows up in a room — the work, the contact,
+            the face other people get. A name of almost all vowels still needs that face.
           </Explain>
           <p className="mt-3 text-sm leading-relaxed">{horoscope.statements.consonantNote}</p>
         </article>

@@ -3,7 +3,7 @@ import { letterAt } from "./calendar";
 import { relationTo } from "./circle";
 import { buildHoroscope } from "./engine";
 import { hopDistance, hopPhrase } from "./geometry";
-import type { Horoscope, Letter } from "./types";
+import { ALPHABET, type Horoscope, type Letter } from "./types";
 
 /** The ten glyphs. 0 is the Fool as absence. 6 is the Fool as the sixth house. */
 export const DIGIT_LETTER: Record<string, Letter> = {
@@ -52,6 +52,7 @@ export type CountReading = {
   fractionColumns: CountColumn[];
   placePath: Letter[];
   walk: CountWalk;
+  slug: string;
   horoscope: Horoscope;
   placeHoroscope: Horoscope | null;
   seatHoroscope: Horoscope | null;
@@ -104,7 +105,7 @@ export function columnsOf(digits: string, fromPower: number): CountColumn[] {
  */
 export function walkOf(quantity: bigint): CountWalk {
   if (quantity === 0n) {
-    return { remainder: "F", circles: [], chain: ["F"] };
+    return emptyWalk();
   }
   const abs = quantity < 0n ? -quantity : quantity;
   const remainder = seatOf(abs);
@@ -116,6 +117,94 @@ export function walkOf(quantity: bigint): CountWalk {
     circlesLeft = (circlesLeft - 1n) / 26n;
   }
   return { remainder, circles, chain: [...circles].reverse().concat(remainder) };
+}
+
+function letterValue(letter: Letter): bigint {
+  const index = ALPHABET.indexOf(letter.toUpperCase());
+  return index < 0 ? 0n : BigInt(index + 1);
+}
+
+function emptyWalk(): CountWalk {
+  return { remainder: "F", circles: [], chain: [] };
+}
+
+/** Inverse of walkOf. Empty chain is nothing — the Fool, not the letter F. */
+export function quantityOf(walk: CountWalk | Letter[]): bigint {
+  const chain = Array.isArray(walk) ? walk : walk.chain;
+  let value = 0n;
+  for (const letter of chain) {
+    value = value * 26n + letterValue(letter);
+  }
+  return value;
+}
+
+export function formatWalk(walk: CountWalk | Letter[]): string {
+  const chain = Array.isArray(walk) ? walk : walk.chain;
+  if (chain.length === 0) return "";
+  return chain.join("·");
+}
+
+export function walkSlug(walk: CountWalk | Letter[], inverted = false): string {
+  const chain = Array.isArray(walk) ? walk : walk.chain;
+  const body = chain.length === 0 ? "fool" : chain.join("").toLowerCase();
+  return inverted ? `w-${body}` : body;
+}
+
+export function parseWalk(raw: string): CountWalk | null {
+  const compact = raw.trim().replace(/[·.\s\-_]/g, "").toUpperCase();
+  if (!compact || compact === "FOOL") return emptyWalk();
+  if (!/^[A-Z]+$/.test(compact)) return null;
+  return walkOf(quantityOf([...compact]));
+}
+
+export function parseWalkSlug(raw: string): { walk: CountWalk; inverted: boolean } | null {
+  const trimmed = raw.trim().toLowerCase();
+  const inverted = /^w-/.test(trimmed);
+  const body = inverted ? trimmed.slice(2) : trimmed;
+  if (!body) return null;
+  if (body === "fool") return { walk: emptyWalk(), inverted };
+  if (!/^[a-z]+$/.test(body)) return null;
+  const walk = parseWalk(body);
+  if (!walk) return null;
+  return { walk, inverted };
+}
+
+export function nextWalk(walk: CountWalk): CountWalk {
+  return walkOf(quantityOf(walk) + 1n);
+}
+
+export function prevWalk(walk: CountWalk): CountWalk {
+  const quantity = quantityOf(walk);
+  if (quantity <= 0n) return emptyWalk();
+  return walkOf(quantity - 1n);
+}
+
+export function joinWalks(a: CountWalk, b: CountWalk): CountWalk {
+  return walkOf(quantityOf(a) + quantityOf(b));
+}
+
+export function partWalks(a: CountWalk, b: CountWalk): { walk: CountWalk; inverted: boolean } {
+  const left = quantityOf(a);
+  const right = quantityOf(b);
+  if (left >= right) return { walk: walkOf(left - right), inverted: false };
+  return { walk: walkOf(right - left), inverted: true };
+}
+
+export function compareWalks(a: CountWalk, b: CountWalk): number {
+  const left = quantityOf(a);
+  const right = quantityOf(b);
+  if (left === right) return 0;
+  return left < right ? -1 : 1;
+}
+
+export function addLetter(walk: CountWalk, letter: Letter): CountWalk {
+  return walkOf(quantityOf(walk) + letterValue(letter));
+}
+
+export function addPlace(walk: CountWalk, power: number): CountWalk {
+  let place = 1n;
+  for (let i = 0; i < power; i += 1) place *= 26n;
+  return walkOf(quantityOf(walk) + place);
 }
 
 function splitNumber(raw: string): {
@@ -175,6 +264,7 @@ export function countReadingOf(raw: string): CountReading | null {
     fractionColumns,
     placePath,
     walk: walkOf(quantity),
+    slug: walkSlug(walkOf(quantity), parts.inverted),
     horoscope,
     placeHoroscope,
     seatHoroscope,
@@ -183,17 +273,46 @@ export function countReadingOf(raw: string): CountReading | null {
 
 export function countMeeting(seat: Letter, signature: Letter): string {
   if (seat === signature) {
-    return `This count sits your own house — ${houseOf(seat).house}.`;
+    return `This amount’s role is your own — ${houseOf(seat).house}. The number and the username meet on home ground. Use that; do not hide in it.`;
   }
   const kind = relationTo(signature, seat);
   const hops = hopDistance(signature, seat);
   if (kind === "ally") {
-    return `This count sits ${houseOf(seat).noun}, an ally of your ${houseOf(signature).noun}.`;
+    return `This amount’s role is ${houseOf(seat).noun}, an ally of your ${houseOf(signature).noun}.`;
   }
   if (kind === "enemy") {
-    return `This count sits ${houseOf(seat).noun}, a counterweight to your ${houseOf(signature).noun}.`;
+    return `This amount’s role is ${houseOf(seat).noun}, a counterweight to your ${houseOf(signature).noun}.`;
   }
-  return `This count sits ${houseOf(seat).noun}. From your ${houseOf(signature).noun} that is ${hopPhrase(hops)}.`;
+  return `This amount’s role is ${houseOf(seat).noun}. From your ${houseOf(signature).noun} that is ${hopPhrase(hops)}.`;
+}
+
+export function readingFromSlug(slug: string): CountReading | null {
+  const parsed = parseWalkSlug(slug);
+  if (!parsed) return null;
+  const { walk, inverted } = parsed;
+  const seat = walk.remainder;
+  const letters = walk.chain.join("") || "F";
+  const horoscope = buildHoroscope(letters);
+  if (!horoscope) return null;
+  return {
+    raw: "",
+    digits: "",
+    integerDigits: "",
+    fractionDigits: "",
+    inverted,
+    quantity: 0n,
+    seat,
+    spelling: walk.chain.length ? [...walk.chain] : ["F"],
+    display: formatWalk(walk),
+    columns: [],
+    fractionColumns: [],
+    placePath: [],
+    walk,
+    slug: walkSlug(walk, inverted),
+    horoscope,
+    placeHoroscope: null,
+    seatHoroscope: buildHoroscope(seat),
+  };
 }
 
 export function countFile(digits: string): string {
@@ -202,8 +321,7 @@ export function countFile(digits: string): string {
 }
 
 export function countFileOf(reading: CountReading): string {
-  if (reading.fractionDigits) return `count-${reading.integerDigits}d${reading.fractionDigits}.jpg`;
-  return `count-${reading.integerDigits}.jpg`;
+  return `count-${reading.slug}.jpg`;
 }
 
 export function speakChain(chain: Letter[]): string {

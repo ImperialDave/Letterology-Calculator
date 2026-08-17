@@ -52,11 +52,12 @@ export function CountView({
 
   return (
     <div className="space-y-8">
+      {reading.columns.length > 0 ? (
       <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
-        <Explain title="The court">
-          Every figure is a court. The occupant is the digit’s letter. The place is the
-          house of that column — ones sit the Seeker, tens the Caregiver, tenths walk back
-          from Z. Arabic is only how the count arrived.
+        <Explain title="How the old digits were written">
+          Each old digit becomes a letter so we can undress the figure. The column is how
+          large that place was in the old ten-system — ones are the Seeker, tens the
+          Caregiver. This is a translation, not the count. After this, speak the walk.
         </Explain>
         <div className="mt-5 flex flex-wrap gap-2">
           {reading.columns.map((col, index) => (
@@ -76,12 +77,14 @@ export function CountView({
           </>
         ) : null}
       </section>
+      ) : null}
 
       <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
-        <Explain title="The seat">
-          The whole quantity sits one house — the same walk a date or a year sits. We do
-          not fold it into a single digit. If the count walked the circle more than once,
-          those walks are letters too.
+        <Explain title="This amount’s role">
+          The whole amount has one role — the same letter a date or a year uses, so a year
+          and that year’s amount cannot disagree. We do not fold it into a single digit.
+          If the amount walked the twenty-six more than once, those walks are letters too.
+          That string is the count you can add with.
         </Explain>
         <div className="mt-4 flex items-end gap-4">
           <LetterMark letter={reading.seat} />
@@ -111,11 +114,14 @@ export function CountView({
       </section>
 
       <section>
-        <Explain title="Letter Path of the spelling">
-          Occupants, in order, become a handle. First letter sits the house. The next two
-          by weight set manner and field. The count is now a person of letters.
+        <Explain title="Letter Path of this amount">
+          The letter-count, in order, can be read like a username. First letter is the role.
+          The next two by weight are how and where. This is a portrait of the amount as
+          letters — earned, because the walk is the name now.
         </Explain>
-        <p className="mt-3 font-display text-xl tracking-[0.2em] text-ink">{reading.spelling.join(" · ")}</p>
+        <p className="mt-3 font-display text-xl tracking-[0.2em] text-ink">
+          {(reading.walk.chain.length ? reading.walk.chain : ["F"]).join(" · ")}
+        </p>
         <div className="mt-6">
           <ArchetypeCard archetype={reading.horoscope.archetype} />
         </div>
@@ -123,8 +129,8 @@ export function CountView({
 
       {reading.placeHoroscope ? (
         <section>
-          <Explain title="Letter Path of the places">
-            The columns themselves spell a second path — which magnitudes this count occupies.
+          <Explain title="Letter Path of the old columns">
+            The columns themselves spell a second path — which old magnitudes this figure used.
           </Explain>
           <p className="mt-3 font-display text-xl tracking-[0.2em] text-ink">{reading.placePath.join(" · ")}</p>
           <div className="mt-6">
@@ -135,9 +141,9 @@ export function CountView({
 
       {reading.seatHoroscope ? (
         <section>
-          <Explain title="Letter Path of the seat">
-            The quantity, named as a single letter, still has a path — a house sitting in its
-            own manner.
+          <Explain title="Letter Path of the role">
+            The amount, named as a single letter, still has a path — a role working in its
+            own way.
           </Explain>
           <div className="mt-6">
             <ArchetypeCard archetype={reading.seatHoroscope.archetype} />

@@ -17,6 +17,7 @@ import { buildHoroscope } from "@/lib/letterology/engine";
 import { themeOf } from "@/lib/letterology/lexicon";
 import { loadRecent, saveRecent } from "@/lib/letterology/recent";
 import { pageCardMeta } from "@/lib/letterology/share";
+import { VOICE } from "@/lib/letterology/voice";
 
 type Search = { name?: string };
 
@@ -79,7 +80,7 @@ function Home() {
                 {sittingUser.displayHandle}
               </h1>
               <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
-                Today first. Then the Letter Path. Compare when you want another handle in the room.
+                Today first. Then the Letter Path. Compare when you want another username in the room.
               </p>
             </header>
             <DayCard horoscope={sitting} />
@@ -117,10 +118,7 @@ function Home() {
                 Letterology
               </h1>
               <p className="mt-4 text-base leading-relaxed text-ink/85">
-                Type a username. The first letter names a role — Seeker, Lover, Rebel,
-                and the rest. The two letters that show up most after that say how that
-                role works, and where. Allies complete the job. Enemies are the blind
-                spot, not the villain. This is a portrait of the handle, not a prediction.
+                {VOICE.homeHero}
               </p>
               <PageShare
                 path="/"
@@ -135,10 +133,7 @@ function Home() {
                   Two usernames
                 </p>
                 <h2 className="mt-2 font-display text-3xl">Are you compatible?</h2>
-                <p className="mt-2 text-sm leading-relaxed text-primary-fg/85">
-                  Compare two handles. Eight measures — role, method, place, letters, gifts,
-                  temper, court, spark — then a certificate only this pair can wear.
-                </p>
+                <p className="mt-2 text-sm leading-relaxed text-primary-fg/85">{VOICE.homeBondLede}</p>
                 <div className="mt-6 rounded-lg bg-raised p-4 text-ink sm:p-5">
                   <BondForm onSubmit={readBond} />
                 </div>
@@ -148,11 +143,8 @@ function Home() {
                 <p className="font-display text-xs tracking-[0.2em] text-muted uppercase">
                   One username
                 </p>
-                <h2 className="mt-2 font-display text-3xl text-ink">Read a handle</h2>
-                <p className="mt-2 text-sm leading-relaxed text-muted">
-                  First letter sits the house. The next two set how you work and where
-                  you work.
-                </p>
+                <h2 className="mt-2 font-display text-3xl text-ink">{VOICE.homeReadTitle}</h2>
+                <p className="mt-2 text-sm leading-relaxed text-muted">{VOICE.homeReadLede}</p>
                 <div className="mt-6">
                   <NameForm initial={name ?? ""} onSubmit={readName} />
                 </div>
@@ -182,15 +174,31 @@ function Home() {
               <p className="font-display text-xs tracking-[0.2em] text-muted uppercase">The inverse</p>
               <h2 className="mt-2 font-display text-3xl text-ink">The Count</h2>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-                Numbers are unacceptable. A count must sit as letters — a court, a seat,
-                a Letter Path. Zero is the Fool. We do not fold.
+                {VOICE.homeCountLede}
               </p>
               <p className="mt-4">
                 <Link
                   to="/count"
                   className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
                 >
-                  Sit a number
+                  {VOICE.homeCountCta}
+                </Link>
+              </p>
+            </article>
+
+            <article className="mt-4 rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
+              <p className="font-display text-xs tracking-[0.2em] text-muted uppercase">The other tongue</p>
+              <h2 className="mt-2 font-display text-3xl text-ink">Stoicheia</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+                A second reading, from the Greek alphabet. Twenty-four letters. First and last,
+                the vowels in order, the consonants as public work, and the ancient number-as-letter.
+              </p>
+              <p className="mt-4">
+                <Link
+                  to="/stoicheia"
+                  className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+                >
+                  Open the Greek reading
                 </Link>
               </p>
             </article>
@@ -205,20 +213,20 @@ function Home() {
                   {almanac.dateLetter} — {daily.name}
                 </p>
                 <p className="mt-1 text-sm text-muted">
-                  {almanac.civil.day} {monthName(almanac.civil.month)} · year letter{" "}
+                  {almanac.civil.day} {monthName(almanac.civil.month)} · the year is{" "}
                   {almanac.yearLetter}
                 </p>
                 <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">
                   {almanac.fortnight.hinge
-                    ? "These leftover days sit between one year-walk and the next. The Fool holds the gate — there is no numbered house."
-                    : `The sun is in the ${fortnightHouse.house} for two weeks (day ${almanac.fortnight.dayInSeat} of 14).`}{" "}
+                    ? "These leftover days fall between one year and the next. There is no numbered role."
+                    : `The two-week stretch is the ${fortnightHouse.house} (day ${almanac.fortnight.dayInSeat} of 14).`}{" "}
                   {daily.invitation}
                 </p>
               </div>
               <div className="mx-auto mt-6 grid max-w-3xl gap-4 sm:grid-cols-3">
                 <HomeCourt
                   label="Today"
-                  note="The date’s letter — the role this day sits."
+                  note="The date’s letter — the role today names."
                   letter={almanac.dateLetter}
                 />
                 <HomeCourt

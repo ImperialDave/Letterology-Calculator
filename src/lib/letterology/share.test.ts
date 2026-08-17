@@ -16,7 +16,7 @@ import {
 
 test("composeXPost keeps the www URL on its own line and fits 280", () => {
   const url = "https://www.letterology.club/p/ada-lovelace";
-  const post = composeXPost("Ada Lovelace sits the House of the Seeker\nA · L · E", url);
+  const post = composeXPost("Ada Lovelace is the House of the Seeker\nA · L · E", url);
   assert.ok(post.text.endsWith(url));
   assert.match(post.text, /\n\nhttps:\/\/www\.letterology\.club\//);
   const counted = post.text.slice(0, post.text.lastIndexOf("\n\n")).length + 2 + 23;
@@ -38,7 +38,7 @@ test("portrait tweet is two short lines", () => {
   const h = buildHoroscope("Ada Lovelace");
   assert.ok(h);
   const text = tweetText(h);
-  assert.match(text, /Ada Lovelace sits the /);
+  assert.match(text, /Ada Lovelace is the /);
   assert.match(text, /A · L · /);
   assert.ok(text.length < 120);
 });
@@ -92,6 +92,7 @@ test("card files parse as portraits, glyphs, and days", () => {
   assert.deepEqual(parseCardFile("circle-b.jpg"), { kind: "circle", letter: "B" });
   assert.deepEqual(parseCardFile("day-2026-08-13.jpg"), { kind: "day", date: "2026-08-13" });
   assert.deepEqual(parseCardFile("count-2026.jpg"), { kind: "count", digits: "2026" });
+  assert.deepEqual(parseCardFile("count-byx.jpg"), { kind: "count", slug: "byx" });
   assert.deepEqual(parseCardFile("bond-lovelace_octavia.jpg"), {
     kind: "bond",
     a: "lovelace",

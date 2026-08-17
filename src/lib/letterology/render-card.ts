@@ -4,7 +4,11 @@ import { houseOf } from "./archetypes";
 import { almanacOf, parseIso } from "./calendar";
 import { alliesOf, enemiesOf } from "./circle";
 import { compareNames } from "./compatibility";
-import { countReadingOf } from "./count";
+import { countReadingOf, formatWalk, readingFromSlug } from "./count";
+import { readStoicheion } from "../stoicheia/engine";
+import { horaOf } from "../stoicheia/horae";
+import { letterFromMark } from "../stoicheia/letters";
+import { readXenia } from "../stoicheia/xenia";
 import { dayReadingOf } from "./day-reading";
 import { bondSvg, glyphSvg, portraitSvg } from "./share-card";
 import { portraitOf, slugToName } from "./share";
@@ -43,7 +47,10 @@ export type CardSpec =
   | { kind: "letter"; letter: string }
   | { kind: "day"; date: string }
   | { kind: "bond"; a: string; b: string }
-  | { kind: "count"; digits: string };
+  | { kind: "count"; digits?: string; slug?: string }
+  | { kind: "stoicheia"; name: string }
+  | { kind: "stoicheia-hora"; mark: string }
+  | { kind: "stoicheia-xenia"; a: string; b: string };
 
 export function parseCardFile(file: string): CardSpec | null {
   const trimmed = file.trim().toLowerCase();
@@ -56,8 +63,16 @@ export function parseCardFile(file: string): CardSpec | null {
     if (!ALPHABET.includes(letter)) return null;
     return { kind: glyph[1] as "house" | "circle" | "letter", letter: letter };
   }
-  const count = jpg.match(/^count-(\d+(?:d\d+)?)$/);
-  if (count) return { kind: "count", digits: count[1] };
+  const countDigits = jpg.match(/^count-(\d+(?:d\d+)?)$/);
+  if (countDigits) return { kind: "count", digits: countDigits[1] };
+  const stoicheia = jpg.match(/^stoicheia-name-(.+)$/);
+  if (stoicheia) return { kind: "stoicheia", name: stoicheia[1].replace(/-/g, " ") };
+  const horaCard = jpg.match(/^stoicheia-hora-([a-z]+)$/);
+  if (horaCard) return { kind: "stoicheia-hora", mark: horaCard[1] };
+  const xeniaCard = jpg.match(/^stoicheia-xenia-(.+)-(.+)$/);
+  if (xeniaCard) return { kind: "stoicheia-xenia", a: xeniaCard[1].replace(/-/g, " "), b: xeniaCard[2].replace(/-/g, " ") };
+  const countWalk = jpg.match(/^count-((?:w-)?[a-z]+)$/);
+  if (countWalk) return { kind: "count", slug: countWalk[1] };
   const bond = jpg.match(/^bond-([^_]+)_([^_]+)$/);
   if (bond) return { kind: "bond", a: bond[1], b: bond[2] };
   const dated = jpg.match(/^([a-z0-9''’-]+)-(\d{4}-\d{2}-\d{2})$/);
@@ -73,15 +88,46 @@ export async function renderPortraitJpeg(file: string): Promise<Uint8Array | nul
   if (cached) return cached;
 
   let svg: string | null = null;
-  if (parsed.kind === "count") {
-    const reading = countReadingOf(parsed.digits.replace("d", "."));
+  if (parsed.kind === "stoicheia-hora") {
+    const letter = letterFromMark(parsed.mark);
+    if (!letter) return null;
+    const hora = horaOf(letter);
+    svg = glyphSvg({
+      letter: hora.letter,
+      kicker: "ΣΤΟΙΧΕΙΑ · HOUR",
+      title: hora.noun,
+      line: hora.myth,
+    });
+  } else if (parsed.kind === "stoicheia-xenia") {
+    const pair = readXenia(parsed.a, parsed.b);
+    if (!pair) return null;
+    svg = glyphSvg({
+      letter: pair.a.axis.proodos,
+      kicker: "ΣΤΟΙΧΕΙΑ · TWO NAMES",
+      title: pair.title,
+      line: pair.copy,
+    });
+  } else if (parsed.kind === "stoicheia") {
+    const reading = readStoicheion(parsed.name);
+    if (!reading) return null;
+    svg = glyphSvg({
+      letter: reading.axis.proodos,
+      kicker: "ΣΤΟΙΧΕΙΑ",
+      title: reading.road.title,
+      line: reading.synthesis,
+    });
+  } else if (parsed.kind === "count") {
+    const reading = parsed.slug
+      ? readingFromSlug(parsed.slug)
+      : countReadingOf((parsed.digits ?? "").replace("d", "."));
     if (!reading) return null;
     const house = houseOf(reading.seat);
+    const walk = formatWalk(reading.walk) || "the blank";
     svg = glyphSvg({
       letter: reading.seat,
       kicker: "THE COUNT",
       title: house.house,
-      line: `${reading.spelling.join(" · ")}. ${house.myth}`,
+      line: `${walk}. ${house.myth}`,
     });
   } else if (parsed.kind === "bond") {
     const bond = compareNames(slugToName(parsed.a), slugToName(parsed.b));
