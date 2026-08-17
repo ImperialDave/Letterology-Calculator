@@ -26,7 +26,7 @@ export const VOICE = {
   loginTitle: "Sign in",
   loginLede:
     "Continue with Google, then pick the username you actually use. We only read A through Z. Your legal name stays off the page.",
-  loginXSoon: "X needs its own app. Google works now.",
+  loginXSoon: "X needs its own app.",
   loginGuest: "Read without signing in",
   claimTitle: "Claim this username",
   claimLede:

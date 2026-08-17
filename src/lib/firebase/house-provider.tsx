@@ -11,6 +11,7 @@ import {
   type AuthProviderId,
   type SignedInIdentity,
 } from "./auth";
+import { probeAuthDoor, type AuthDoorStatus } from "./preflight";
 import { claimHandle, loadProfile, touchProfile } from "./profile";
 import type { HouseProfile } from "./types";
 
@@ -20,6 +21,8 @@ export type HouseSession = {
   identity: SignedInIdentity | null;
   profile: HouseProfile | null;
   needsClaim: boolean;
+  googleReady: boolean;
+  doorMessage: string | null;
   error: string | null;
   signIn: (id: AuthProviderId) => Promise<void>;
   claim: (raw: string) => Promise<void>;
@@ -34,6 +37,7 @@ export function HouseProvider({ children }: { children: ReactNode }) {
   const [identity, setIdentity] = useState<SignedInIdentity | null>(null);
   const [profile, setProfile] = useState<HouseProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [door, setDoor] = useState<AuthDoorStatus | null>(null);
 
   async function hydrate(next: SignedInIdentity | null, autoClaim = false) {
     if (!next) {
@@ -69,6 +73,9 @@ export function HouseProvider({ children }: { children: ReactNode }) {
       setError(explainAuthError(err));
       setPending(false);
     });
+    if (typeof window !== "undefined") {
+      void probeAuthDoor(window.location.origin).then(setDoor);
+    }
     return stop;
   }, []);
 
@@ -79,6 +86,8 @@ export function HouseProvider({ children }: { children: ReactNode }) {
       identity,
       profile,
       needsClaim: Boolean(identity && !profile),
+      googleReady: door?.ok === true,
+      doorMessage: door && !door.ok ? door.message : null,
       error,
       async signIn(id) {
         setError(null);
@@ -109,7 +118,7 @@ export function HouseProvider({ children }: { children: ReactNode }) {
         setProfile(sitting);
       },
     }),
-    [error, identity, isPending, profile],
+    [door, error, identity, isPending, profile],
   );
 
   return <HouseContext.Provider value={value}>{children}</HouseContext.Provider>;
@@ -124,6 +133,8 @@ export function useHouse(): HouseSession {
       identity: null,
       profile: null,
       needsClaim: false,
+      googleReady: false,
+      doorMessage: null,
       error: null,
       async signIn() {},
       async claim() {},

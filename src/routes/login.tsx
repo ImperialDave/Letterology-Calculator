@@ -29,7 +29,11 @@ function Login() {
             </p>
           ) : (
             <div className="mt-6 space-y-2">
-              <Button className="w-full" disabled={house.isPending} onClick={() => void house.signIn("google")}>
+              <Button
+                className="w-full"
+                disabled={house.isPending || !house.googleReady}
+                onClick={() => void house.signIn("google")}
+              >
                 Continue with Google
               </Button>
               <Button
@@ -45,6 +49,7 @@ function Login() {
               ) : null}
             </div>
           )}
+          {house.doorMessage ? <p className="mt-4 text-sm text-primary">{house.doorMessage}</p> : null}
           {house.error ? <p className="mt-4 text-sm text-primary">{house.error}</p> : null}
           <Link
             to="/"
