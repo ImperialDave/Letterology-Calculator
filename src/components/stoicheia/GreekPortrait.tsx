@@ -4,6 +4,7 @@ import { LetterBookView } from "@/components/stoicheia/LetterBook";
 import { NightWheel } from "@/components/stoicheia/NightWheel";
 import { PageShare } from "@/components/letterology/PageShare";
 import { Sheet } from "@/components/ui/sheet";
+import { VOICE } from "@/lib/letterology/voice";
 import { stoicheiaCardFile, stoicheiaNamePath, tweetStoicheion } from "@/lib/stoicheia/copy";
 import { dayOfStoicheion } from "@/lib/stoicheia/day";
 import type { Stoicheion } from "@/lib/stoicheia/engine";
@@ -24,7 +25,8 @@ export function GreekPortrait({ reading }: { reading: Stoicheion }) {
         <h1 className="mt-3 font-display text-3xl text-ink sm:text-4xl">{reading.epithet}</h1>
         <p className="mt-2 text-lg text-ink/80">{reading.road.title}</p>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-muted">
-          {reading.motion.line} Daimon: {reading.omphalosHora.noun}.
+          Starts as {reading.road.first.noun}, ends as {reading.road.last.noun}. {reading.motion.line} The
+          total lands on {reading.omphalosHora.noun} — an hour, not a lucky number.
         </p>
         <p className="mt-3 text-sm text-muted">{today.headline}</p>
         <div className="mt-6 flex justify-center">
@@ -63,14 +65,14 @@ export function GreekPortrait({ reading }: { reading: Stoicheion }) {
           onClick={() => setRest(true)}
           className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-muted uppercase hover:text-ink"
         >
-          The rest
+          {VOICE.moreLetters}
         </button>
         <Link
           to="/two"
           search={{ a: reading.raw, b: undefined, tongue: "el", mode: undefined }}
           className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
         >
-          Another username
+          {VOICE.anotherUsername}
         </Link>
       </div>
 

@@ -25,8 +25,8 @@ export const GLOSSARY: GlossEntry[] = [
   {
     id: "house",
     term: "House",
-    metaphor: "The letters you chose sit a house — Seeker, Caregiver, Rebel, Hermit.",
-    plain: "The role a letter names. A username sits a house by its first letter.",
+    metaphor: "The first letter names a house — Seeker, Caregiver, Rebel, Hermit.",
+    plain: "The role a letter names. A username gets that role from its first letter.",
     opacity: "high",
     surfaces: ["home", "reading", "houses", "circle", "atlas", "year"],
   },
@@ -74,7 +74,7 @@ export const GLOSSARY: GlossEntry[] = [
     id: "letter-path",
     term: "Letter Path",
     metaphor: "Your Letter Path is three letters: house, manner, field.",
-    plain: "The three-letter figure a username sits. First letter is the role; the next two are how and where you work.",
+    plain: "The three-letter figure of a username. First letter is the role; the next two are how and where you work.",
     opacity: "high",
     surfaces: ["reading", "houses", "circle", "atlas"],
   },
@@ -178,7 +178,7 @@ export const GLOSSARY: GlossEntry[] = [
     id: "hinge",
     term: "Hinge",
     metaphor: "The leftover day or two are the Fool's hinge.",
-    plain: "The leftover day or two between one year-walk and the next, around mid-March. No numbered house to sit.",
+    plain: "The leftover day or two between one year-walk and the next, around mid-March. No numbered two-week house.",
     opacity: "high",
     surfaces: ["home", "year", "reading"],
   },
@@ -217,7 +217,7 @@ export const GLOSSARY: GlossEntry[] = [
   {
     id: "wear",
     term: "Wear",
-    metaphor: "The 13th wears that house.",
+    metaphor: "The 13th is M, the Magician.",
     plain: "The date's number names a letter (1 is A, 13 is M). That letter is today's house.",
     opacity: "high",
     surfaces: ["year"],
@@ -289,7 +289,7 @@ export const GLOSSARY: GlossEntry[] = [
   {
     id: "kindred",
     term: "Kindred",
-    metaphor: "Same manner and field, sitting in an allied house.",
+    metaphor: "Same how and where, lived by a role that helps yours.",
     plain: "The same how and where, lived by a role that helps yours.",
     opacity: "medium",
     surfaces: ["reading"],
@@ -337,7 +337,7 @@ export const GLOSSARY: GlossEntry[] = [
   {
     id: "bond",
     term: "Bond",
-    metaphor: "Two handles sit a bond.",
+    metaphor: "Two usernames, one card.",
     plain: "A reading of two usernames together — how their roles, methods, and letters meet.",
     opacity: "high",
     surfaces: ["bond", "home", "reading"],
@@ -346,7 +346,7 @@ export const GLOSSARY: GlossEntry[] = [
     id: "affinity",
     term: "Affinity",
     metaphor: "Affinity 78.",
-    plain: "A 0–100 fit of the two names: houses, how they work, shared letters, and missing allies the other already carries.",
+    plain: "A 0–100 fit of the two spellings: roles, how they work, shared letters, and help one already has that the other is missing. Not a forecast.",
     opacity: "high",
     surfaces: ["bond", "certificate"],
   },
@@ -394,7 +394,7 @@ export const GLOSSARY: GlossEntry[] = [
     id: "zero",
     term: "Zero",
     metaphor: "Zero is the Fool.",
-    plain: "There is no 0th of the month. 0 sits F, Tarot’s unnumbered card. 6 also sits F, as the sixth house. Same figure, two doors.",
+    plain: "There is no 0th of the month. 0 is F, the Fool — Tarot’s unnumbered card. 6 is also F, as the sixth house. Same figure, two doors.",
     opacity: "high",
     surfaces: ["count", "key"],
   },
@@ -487,11 +487,11 @@ export const WEATHER_COPY: Record<
 };
 
 export const METHOD_PLAIN =
-  "We read the letters of a username. The first letter names a role — how you enter. The two letters that show up most after that describe how you tend to work, and what kind of place that work wants. Some roles help this one finish a job it cannot finish alone. Some roles push back so it does not fool itself. The name is the material. Nothing here predicts the future. Use the portrait to notice. Do not obey it.";
+  "We read the letters of a username. The first letter names a role — how you enter. The two letters that show up most after that describe how you tend to work, and what kind of place that work wants. Some roles help this one finish a job it cannot finish alone. Some roles push back so it does not fool itself. The name is what we read. Nothing here predicts the future. Use the portrait to notice. Do not obey it.";
 
 export const CALENDAR_PLAIN =
   "The year is split into twenty-six two-week seats, one per letter, starting 21 March. Today's date names a role — the job of the day. The current two-week seat says how the season is working. The weekday says what today's work is about: same role, ally, or counterweight. The calendar year and the month only color the background — they do not rename the day. Leftover days before the next 21 March have no numbered role. Travel light.";
 
 export const BOND_PLAIN =
-  "Type two usernames. We compare the role each first letter names, then how each tends to work, then where. Allies complete a job. Enemies keep it honest. Shared letters are common ground. If one name already carries an ally the other is missing, that is a gift — help already in the spelling. The number is a fit, not a forecast. A high fit can be a trap. A hard weather can be a life’s work.";
+  "Type two usernames. We compare the role each first letter names, then how each tends to work, then where. Allies complete a job. Enemies keep it honest. Shared letters are common ground. If one name already carries an ally the other is missing, that is a gift — help already in the spelling. The number is a fit, not a forecast. A high fit can still be a trap. A hard weather can still be a life’s work.";
 

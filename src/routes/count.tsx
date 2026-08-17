@@ -81,9 +81,7 @@ function CountPage() {
           <h1 className="font-display text-4xl text-ink sm:text-5xl">The Count</h1>
           <p className="mt-3 max-w-xl leading-relaxed text-ink/85">{VOICE.countLede}</p>
           {tongue === "el" ? (
-            <p className="mt-3 max-w-xl text-sm text-muted">
-              The Count is the Latin walk. Night is only the room — A still means one.
-            </p>
+            <p className="mt-3 max-w-xl text-sm text-muted">{VOICE.countNightNote}</p>
           ) : null}
           <PageShare
             path="/count"

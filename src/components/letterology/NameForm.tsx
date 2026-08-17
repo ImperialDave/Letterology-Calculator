@@ -43,7 +43,7 @@ export function NameForm({
         </Button>
       </div>
       <p id="username-hint" className="mt-2 text-sm text-muted">
-        @ is optional. Accents fold away. Only A–Z are read.
+        @ is optional. Accents fall away. Only A–Z count.
       </p>
       {!compact ? (
         <div className="mt-5 flex flex-wrap gap-2">

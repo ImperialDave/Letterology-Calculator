@@ -6,7 +6,7 @@ export const HOW_TO = [
     term: "First letter / last letter",
     greek: "proodos / epistrophe",
     plain:
-      "How the name starts and how it finishes. The road is the first hour-face toward the last — Hekate toward Aphrodite, not a three-letter personality. A closed road starts and ends on the same hour: finish what you start.",
+      "How the name starts and how it finishes. First letter toward last letter — Hekate toward Aphrodite, not a three-letter personality. A closed road starts and ends on the same hour, so finish what you start.",
   },
   {
     term: "The vowels, in order",
@@ -30,7 +30,7 @@ export const HOW_TO = [
     term: "The name’s total",
     greek: "isopsephy",
     plain:
-      "Greeks already wrote numbers as letters. The sum sits one of the twenty-four hours — the daimon of the total, not a lucky digit. We do not fold 888 into 6. If an old word weighs the same, that is a sign, not a soul.",
+      "Greeks already wrote numbers as letters. Add them and the sum lands on one of the twenty-four hours — the hour of the total, not a lucky digit. We do not fold 888 into 6. If an old word weighs the same, that is a sign, not a soul.",
   },
   {
     term: "Two names",
@@ -42,7 +42,7 @@ export const HOW_TO = [
     term: "The day",
     greek: "Attic time",
     plain:
-      "The civic day begins at sunset. Months are lunar and have festivals — the dead at the table, the city’s gift to Athena. New-moon and last-day leftovers sit with Hekate. The moon math is a mean month: good enough to sit a reading, not to launch a ship.",
+      "The civic day begins at sunset. Months are lunar and have festivals — the dead at the table, the city’s gift to Athena. New-moon and last-day leftovers belong with Hekate. The moon math is a mean month: good enough for a reading, not to launch a ship.",
   },
   {
     term: "Related / strife",

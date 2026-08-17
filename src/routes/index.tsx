@@ -124,6 +124,7 @@ function Home() {
                 Read
               </Button>
             </div>
+            <p className="mt-2 text-sm text-muted">{VOICE.nameFormHint}</p>
           </form>
         </section>
       ) : (

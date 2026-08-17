@@ -273,15 +273,15 @@ export function countReadingOf(raw: string): CountReading | null {
 
 export function countMeeting(seat: Letter, signature: Letter): string {
   if (seat === signature) {
-    return `This amount’s role is your own — ${houseOf(seat).house}. The number and the username meet on home ground. Use that; do not hide in it.`;
+    return `This amount uses the same role as your username — ${houseOf(seat).house} — so the letters and the walk meet on home ground. Use that. Do not hide in it.`;
   }
   const kind = relationTo(signature, seat);
   const hops = hopDistance(signature, seat);
   if (kind === "ally") {
-    return `This amount’s role is ${houseOf(seat).noun}, an ally of your ${houseOf(signature).noun}.`;
+    return `This amount’s role is ${houseOf(seat).noun}, which helps your ${houseOf(signature).noun}, so the walk and the username can finish a job together.`;
   }
   if (kind === "enemy") {
-    return `This amount’s role is ${houseOf(seat).noun}, a counterweight to your ${houseOf(signature).noun}.`;
+    return `This amount’s role is ${houseOf(seat).noun}, which pushes against your ${houseOf(signature).noun}, so treat the walk as a counterweight, not an insult.`;
   }
   return `This amount’s role is ${houseOf(seat).noun}. From your ${houseOf(signature).noun} that is ${hopPhrase(hops)}.`;
 }

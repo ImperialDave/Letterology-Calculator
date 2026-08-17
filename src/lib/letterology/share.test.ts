@@ -109,7 +109,7 @@ test("bond tweets stay a caption with both names", () => {
     affinity: 78,
   });
   assert.match(text, /Ada Lovelace & Octavia/);
-  assert.match(text, /Affinity 78/);
+  assert.match(text, /Fit 78/);
   const post = composeXPost(text, "https://www.letterology.club/bond?a=Ada%20Lovelace&b=Octavia");
   assert.ok(post.caption.length < 260);
 });

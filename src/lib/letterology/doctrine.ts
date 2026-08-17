@@ -9,7 +9,7 @@ export type DoctrineSection = {
  * Written backward from the mechanics so every rule looks like a consequence.
  */
 export const DOCTRINE_PREFACE = [
-  "We read usernames, not birth names. The first letter is the role. The next two by weight are how you work and where. We do not predict. We do not turn letters into one digit.",
+  "We read usernames, not birth names. The first letter is the role. The next two, by how often they return, are how you work and where. We do not predict. We do not turn letters into one digit.",
   "Letterology is not a forecast. It is a way of looking. It takes the marks a person already chose to live under — a username, a date, a count — and reads them with the same seriousness other arts reserve for the sky. The sky is not ours. The alphabet is.",
   "What follows is not a manual. The Key is the manual. This is the reason the machine is shaped the way it is. Every rule on the site was chosen. This page says why those choices, and not others, are the ones that can be kept.",
 ];

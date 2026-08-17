@@ -74,23 +74,23 @@ export type Stoicheion = {
 
 function hymnLine(hymn: ReturnType<typeof hymnFaces>): string {
   if (hymn.length === 0) {
-    return "This name has no vowels. There is nothing to sing. The work is all consonants — public, colliding, and without a private weather on the page.";
+    return "This name has no vowels, so there is nothing to sing. The work is all consonants — public, colliding, and without a private weather on the page.";
   }
   const faces = hymn.map((item) => `${item.face}`).join(", then ");
-  return `The vowels, in order: ${hymn.map((item) => item.letter).join(" · ")}. That is ${faces}. Sung forward — not weighed. A hymn is a path through the planets, not a pile of points.`;
+  return `The vowels, in order: ${hymn.map((item) => item.letter).join(" · ")}. That is ${faces}, so the song goes that way — a path through the planets, not a pile of points.`;
 }
 
 function somaCopy(office: Stoich | null, place: Stoich | null): string {
   if (!office) {
-    return "This name is almost all vowels. The public work is thin. The consonants will have to come from elsewhere — other people, other rooms, a city that lends the name a body.";
+    return "This name is almost all vowels, so the public work is thin. The consonants will have to come from other people, other rooms, a city that lends the name a body.";
   }
   const officeHora = horaOf(office);
   const kind = familyEnglish(office);
   if (!place) {
-    return `The heaviest consonant is ${office} — ${kind}. That public work is ${officeHora.noun}: ${officeHora.myth} One letter is doing all the civic labor.`;
+    return `The heaviest consonant is ${office} — ${kind} — so the public work is ${officeHora.noun}: ${officeHora.myth} One letter is doing all the public work.`;
   }
   const placeHora = horaOf(place);
-  return `The heaviest consonant is ${office} — ${kind} — ${officeHora.noun}. That is the office: ${officeHora.invitation} The next is the place of work: ${placeHora.realm} (${placeHora.noun}). Do the office in that place. Do not swap them.`;
+  return `The heaviest consonant is ${office} — ${kind} — so the office is ${officeHora.noun}. ${officeHora.invitation} The next is the place of work: ${placeHora.realm} (${placeHora.noun}). Do the office in that place. Do not swap them.`;
 }
 
 export function roadOf(axis: Axis): Road {
@@ -128,13 +128,13 @@ function synthesize(input: {
       ? "There is no vowel sequence to sing."
       : `The vowels go ${input.hymn.map((item) => item.face).join(", then ")}.`;
   const work = input.officeHora
-    ? `The public work sits with ${input.officeHora.noun}.`
+    ? `The public work belongs with ${input.officeHora.noun}.`
     : "The public work is thin.";
   const mouth =
     input.mix.tied.length > 1
-      ? `The mouth is split between ${input.mix.tied.join(" and ")}.`
-      : `The mouth is mostly ${input.mix.lead}.`;
-  return `${input.raw.trim()} is the road of ${input.road.title}. The name ${start} and ${end}. ${hymn} ${work} ${mouth} The total is ${input.sumSpell}, which sits ${input.omphalosHora.noun} — the daimon of this sum, not a lucky digit. Read the road as a voyage: how you enter, how you finish, what you sing in between, what the city meets.`;
+      ? `The letters split between ${input.mix.tied.join(" and ")}.`
+      : `Most of the letters are ${input.mix.lead}, so the name is mostly that.`;
+  return `${input.raw.trim()} is the road of ${input.road.title}. The name ${start} and ${end}. ${hymn} ${work} ${mouth} The total is ${input.sumSpell}, which lands on ${input.omphalosHora.noun} — that hour of the sum, not a lucky digit. Read the road as a voyage: how you enter, how you finish, what you sing in between, what other people meet.`;
 }
 
 export function readStoicheion(raw: string, when: Date = new Date()): Stoicheion | null {
@@ -169,7 +169,7 @@ export function readStoicheion(raw: string, when: Date = new Date()): Stoicheion
     motion: motion.motion,
   });
   const friends = friendsOfSum(sum);
-  const daimonLine = `The total sits ${omphalosHora.noun}. The daimon of this name — the hour-face of the total, not a soulmate — ${omphalosHora.gift.charAt(0).toLowerCase()}${omphalosHora.gift.slice(1)} When it fails: ${omphalosHora.shadow} ${omphalosHora.invitation}`;
+  const daimonLine = `Add the letter-values and the sum lands on ${omphalosHora.noun}. That is the hour of the total, not a soulmate. ${omphalosHora.gift} When it fails: ${omphalosHora.shadow} ${omphalosHora.invitation}`;
   const letterWalk = walkLetters(letters);
   const elementMix = elementMixOf(letters);
   const diphthongs = diphthongsIn(letters);

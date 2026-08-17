@@ -794,7 +794,7 @@ export function elementMixOf(letters: Stoich[]): ElementMix {
   mix.line =
     count === 0
       ? "No letters, no mouth."
-      : `Of ${count} letter${count === 1 ? "" : "s"}, the mouth is mostly ${leadPhrase}. Fire ${mix.fire}, air ${mix.air}, water ${mix.water}, earth ${mix.earth} — counted, not folded.`;
+      : `Of ${count} letter${count === 1 ? "" : "s"}, most are ${leadPhrase}, so that is the weather of the mouth. Fire ${mix.fire}, air ${mix.air}, water ${mix.water}, earth ${mix.earth} — counted, not folded.`;
   return mix;
 }
 

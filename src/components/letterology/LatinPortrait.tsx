@@ -4,10 +4,13 @@ import { HouseCircle } from "@/components/letterology/HouseCircle";
 import { LetterDetail } from "@/components/letterology/LetterDetail";
 import { PageShare } from "@/components/letterology/PageShare";
 import { Sheet } from "@/components/ui/sheet";
+import { houseOf } from "@/lib/letterology/archetypes";
 import { dayReadingOf } from "@/lib/letterology/day-reading";
+import { themeOf } from "@/lib/letterology/lexicon";
 import { pigmentOf } from "@/lib/letterology/pigment";
 import { nameToSlug, portraitPath, tweetReading } from "@/lib/letterology/share";
 import type { Horoscope, Letter } from "@/lib/letterology/types";
+import { VOICE } from "@/lib/letterology/voice";
 
 export function LatinPortrait({ horoscope }: { horoscope: Horoscope }) {
   const [letter, setLetter] = useState<Letter>(horoscope.signature);
@@ -29,6 +32,10 @@ export function LatinPortrait({ horoscope }: { horoscope: Horoscope }) {
         </p>
         <h1 className="mt-4 font-display text-4xl text-ink sm:text-5xl">{horoscope.displayName}</h1>
         <p className="mt-2 font-display text-xl text-ink/85">{horoscope.archetype.title}</p>
+        <p className="mx-auto mt-2 max-w-md text-sm text-ink/75">
+          {houseOf(horoscope.triad[0]).noun} · how: {themeOf(horoscope.triad[1]).name.toLowerCase()} ·
+          where: {themeOf(horoscope.triad[2]).name.toLowerCase()}. {VOICE.pathCaption}
+        </p>
         <button
           type="button"
           onClick={() => setOpen("day")}
@@ -60,7 +67,7 @@ export function LatinPortrait({ horoscope }: { horoscope: Horoscope }) {
           search={{ a: horoscope.displayName, b: undefined, tongue: undefined, mode: undefined }}
           className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
         >
-          Another username
+          {VOICE.anotherUsername}
         </Link>
       </p>
 

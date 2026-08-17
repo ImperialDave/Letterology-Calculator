@@ -8,6 +8,7 @@ import { LetterBookView } from "@/components/stoicheia/LetterBook";
 import { NightWheel } from "@/components/stoicheia/NightWheel";
 import { pageCardMeta } from "@/lib/letterology/share";
 import { parseTongue } from "@/lib/letterology/tongue";
+import { VOICE } from "@/lib/letterology/voice";
 import type { Letter } from "@/lib/letterology/types";
 import { markOf } from "@/lib/stoicheia/letters";
 import { portraitOf } from "@/lib/stoicheia/portrait";
@@ -40,7 +41,9 @@ function LettersPage() {
     <AppShell current="letters" wide>
       <header className="text-center">
         <h1 className="font-display text-4xl text-ink sm:text-5xl">{tongue === "el" ? "Hours" : "Letters"}</h1>
-        <p className="mt-2 text-sm text-muted">Tap a seat. The other tongue keeps your place.</p>
+        <p className="mt-2 text-sm text-muted">
+          {tongue === "el" ? VOICE.lettersGreekLede : VOICE.lettersLatinLede}
+        </p>
       </header>
       <div className="mt-8">
         <TongueStage

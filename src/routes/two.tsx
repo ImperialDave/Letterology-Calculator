@@ -16,6 +16,7 @@ import {
   pageCardMeta,
 } from "@/lib/letterology/share";
 import { notePair, parseTongue } from "@/lib/letterology/tongue";
+import { VOICE } from "@/lib/letterology/voice";
 import { readAgon } from "@/lib/stoicheia/agon";
 import { stoicheiaCardFile, stoicheiaXeniaPath, tweetXenia } from "@/lib/stoicheia/copy";
 import { readXenia } from "@/lib/stoicheia/xenia";
@@ -106,9 +107,9 @@ function TwoPage() {
         <p className="mx-auto mt-2 max-w-md text-sm text-muted">
           {tongue === "el"
             ? mode === "agon"
-              ? "The stadium. Six prizes from the letters."
-              : "Guest and host. A duty, not a score."
-            : "One certificate for this pair."}
+              ? VOICE.twoStadiumLede
+              : VOICE.twoTableLede
+            : VOICE.twoLatinLede}
         </p>
         {tongue === "el" ? (
           <div className="mt-4 inline-flex rounded-full bg-raised p-1 shadow-[var(--shadow-border)]">
@@ -127,6 +128,9 @@ function TwoPage() {
               Stadium
             </button>
           </div>
+        ) : null}
+        {tongue === "el" ? (
+          <p className="mt-2 text-xs text-muted">Table is guest and host. Stadium is a contest.</p>
         ) : null}
       </header>
 

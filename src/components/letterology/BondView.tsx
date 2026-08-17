@@ -104,7 +104,8 @@ export function BondView({ bond }: { bond: BondReading }) {
       <header className="flex flex-col items-center text-center">
         <p className="font-display text-xs tracking-[0.22em] text-muted uppercase">How these two usernames fit</p>
         <p className="mt-2 max-w-md text-sm text-muted">
-          Eight measures, then a name for the pair. The number is a fit — not a forecast.
+          Eight questions, then a name for the pair. The number is a fit — how well these two
+          spellings work together, not a forecast.
         </p>
         <div className="mt-6 flex w-full max-w-xl items-end justify-between gap-3">
           <PersonMark
@@ -138,8 +139,8 @@ export function BondView({ bond }: { bond: BondReading }) {
       <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
         <Explain title="The eight measures">
           Each bar is its own question, not a hidden average. Role is the first letters. Method is
-          how they work. Place is where. Letters are shared spelling, by weight. Gifts are missing
-          allies the other already carries — help already in the name. Temper is inward versus
+          how they work. Place is where. Letters are shared spelling — repeats count more. Gifts
+          are help one name already has that the other is missing. Temper is inward versus
           outward. Helpers is how often each name appears in the other’s allies. Spark is honest
           argument. Read the bars. Do not flatten them into one mood.
         </Explain>

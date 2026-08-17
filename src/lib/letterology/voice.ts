@@ -1,50 +1,82 @@
 /**
- * English is the voice of the product.
- * Proper nouns stay (Seeker, Letter Path, The Count, Stoicheia, CC33).
- * Process jargon dies. If a word needs a glossary to click a button, the button is wrong.
+ * Voice law — every public line obeys this.
+ *
+ * 1. Name the move first. We looked at the letters of this username.
+ * 2. Say what it means in ordinary life. So this name starts as a Seeker.
+ * 3. Then the metaphor may decorate. Never instead of 1 and 2.
+ * 4. Because / so / that means. If a tired person cannot repeat the rule, rewrite.
+ * 5. One idea per sentence.
+ * 6. Proper nouns stay (CC33, Letter Path, Seeker, The Count, Stoicheia). Translate next.
+ * 7. No house-verb in UI. Ban list is FORBIDDEN_UI.
+ * 8. Buttons are verbs a guest already knows.
+ * 9. Share lines stay short.
+ * 10. Portraits get one caption. Essays live in sheets and Why.
  */
 export const VOICE = {
-  homeHero: "Type a username. The letters you already live under become a portrait.",
+  homeHero:
+    "Type a username. We read its letters — not your birthday, not your legal name — and show the role those letters name.",
   homeReadTitle: "Read a username",
   homeReadLede:
-    "The first letter is the role you enter as. The next two, by how often they return, say how you tend to work and what kind of place that work wants. Together they are a Letter Path — a likeness, not a verdict.",
+    "The first letter is the role. The next two, by how often they come back, are how you tend to work and where that work wants to happen. Together they are a Letter Path. A likeness, not a verdict.",
   homeBondLede:
-    "Compare two usernames. We look at the role each first letter names, how each tends to work, where, which letters they share, and which allies one already carries that the other is missing. The card is only for this pair. The number is a fit, not a forecast.",
+    "Type two usernames. We compare their roles, how each works, where, which letters they share, and which help one already has that the other is missing. The number is a fit, not a forecast.",
   homeCountLede:
-    "We write amounts as letters so we can count without digits. A is one. Z is a full walk of twenty-six. AA is one more than a full walk. The Fool is the blank page — nothing, not a digit. You can add and step forward without ever saying a number.",
+    "We write amounts as letters so we can count without digits. A is one. Z is twenty-six. AA is twenty-seven. The Fool is a blank — nothing, not a digit.",
   homeCountCta: "Write a number as letters",
   loginTitle: "Sign in",
   loginLede:
-    "X brings the username you already post under. Google lets you claim one. We only read A through Z. The legal name stays off the page.",
+    "X brings the username you already post under. Google lets you pick one. We only read A through Z. Your legal name stays off the page.",
   loginGuest: "Read without signing in",
   claimTitle: "Claim this username",
-  claimLede: "Type the username you use. The Letter Path updates as you type. Those letters are the only material.",
-  claimHint: "@ is optional. Accents fold away. Only A–Z are read.",
-  nameFormHint: "@ is optional. Accents fold away. Only A–Z are read.",
-  countKicker: "CC33 · Letter-count",
+  claimLede:
+    "Type the username you actually use. The Letter Path updates as you type, because those letters are what we read.",
+  claimHint: "@ is optional. Accents fall away. Only A–Z count.",
+  nameFormHint: "@ is optional. Accents fall away. Only A–Z count.",
+  countKicker: "CC33 · The Count",
   countLede:
-    "We write amounts as letters so we can count without digits. A is one. Z is twenty-six. AA is twenty-seven. The Fool is the blank — nothing, not a letter. Type an old number only so we can translate it. The reading will not say it back.",
-  countConfessLabel: "I still have an old number",
+    "We write amounts as letters on purpose, so the page never has to say a digit. A is one. Z is twenty-six. AA is twenty-seven. The Fool is a blank — nothing, not a letter. You can type a regular number once. We will translate it and not say it back.",
+  countConfessLabel: "Or type a regular number",
   countConfessButton: "Show the letters",
-  countEmpty: "That has no digits to turn into letters.",
+  countEmpty: "That has no digits we can write as letters. Try 2026, or type letters like BYX.",
   stoicheiaLede:
-    "A second reading, from the Greek alphabet. Twenty-four letters, night first. The first letter is how the name enters; the last is how it finishes. Vowels are sung in the order they appear — a ladder of planets, not a pile. Consonants are the public work. The total was already a spelling. This is not Letterology in other clothes.",
+    "A second reading, from the Greek alphabet. Twenty-four letters. The first letter is how the name arrives. The last is how it leaves. Vowels are a song in the order they appear. Consonants are the public work. The total is an old way of writing a number as letters. This is not Letterology in other clothes.",
   stoicheiaButton: "Read this name",
   stoicheiaHint:
-    "Greek or Latin both work. C becomes Κ, TH becomes Θ, PH becomes Φ, J becomes Ι. Accents fold away. What cannot become one of the twenty-four is dropped.",
-  stoicheiaEmpty: "That name has no Greek letters we can fold. Try the Latin letters, or a Greek spelling.",
+    "Greek or Latin both work. C becomes Κ, TH becomes Θ, PH becomes Φ, J becomes Ι. Accents fall away. Anything that cannot become one of the twenty-four is dropped.",
+  stoicheiaEmpty:
+    "We could not turn that into Greek letters. Try a Latin username, or type it in Greek.",
   doctrineAbstract:
-    "We read usernames, not birth names. The first letter is the role. The next two by weight are how you work and where. We do not predict. We do not turn twenty-six letters into one digit. The portrait can be used. It cannot be obeyed.",
+    "We read usernames, not birth names. First letter is the role. The next two by how often they return are how you work and where. We do not predict. We do not crush twenty-six letters into one digit. Use the portrait. Do not obey it.",
+  footerLine:
+    "A portrait of a username, not a prediction — we describe the letters you already use. We do not tell the future.",
+  moreLetters: "More about these letters",
+  anotherUsername: "Another username",
+  countNightNote:
+    "The Count is still the Latin walk. Night is only the room. A still means one.",
+  twoLatinLede: "Two usernames. One card that is only about this pair.",
+  twoTableLede: "Guest and host. A duty, not a score.",
+  twoStadiumLede: "A contest. Six prizes from the letters, not a fate.",
+  lettersLatinLede: "Twenty-six houses. Tap a letter to read it.",
+  lettersGreekLede: "Twenty-four hours, night first. Tap a letter to read it.",
+  pathCaption: "Role, then how you work, then where — from the letters we counted.",
 } as const;
 
-/** Phrases that must not appear in product-door copy. Doctrine may still argue; UI may not. */
+/** Phrases that must not appear in product-door or generated UI copy. Why may still argue. */
 export const FORBIDDEN_UI = [
   /sits the house/i,
   /sit your house/i,
   /sit a handle/i,
   /sit a number/i,
+  /sit a house/i,
+  /sits a house/i,
+  /sits a bond/i,
+  /wears that house/i,
   /render as letters/i,
   /numbers are unacceptable/i,
   /\bchiton\b/i,
   /handle is the destiny/i,
+  /omphalos/i,
+  /letterological horoscope/i,
+  /old number/i,
+  /civic labor/i,
 ];

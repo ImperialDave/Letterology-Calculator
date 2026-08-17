@@ -134,7 +134,7 @@ export function tweetBond(input: {
   title: string;
   affinity: number;
 }): string {
-  return `${input.a} & ${input.b}\n${input.title}\nAffinity ${input.affinity}`;
+  return `${input.a} & ${input.b}\n${input.title}\nFit ${input.affinity}`;
 }
 
 export function countPath(slug: string): string {

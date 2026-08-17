@@ -54,10 +54,9 @@ export function CountView({
     <div className="space-y-8">
       {reading.columns.length > 0 ? (
       <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
-        <Explain title="How the old digits were written">
-          Each old digit becomes a letter so we can undress the figure. The column is how
-          large that place was in the old ten-system — ones are the Seeker, tens the
-          Caregiver. This is a translation, not the count. After this, speak the walk.
+        <Explain title="How we wrote the old digits">
+          Each old digit becomes a letter so we can take the figure apart. Ones are A, tens
+          are B. This is a translation, not the count. After this, speak the walk.
         </Explain>
         <div className="mt-5 flex flex-wrap gap-2">
           {reading.columns.map((col, index) => (
@@ -81,8 +80,8 @@ export function CountView({
 
       <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
         <Explain title="This amount’s role">
-          The whole amount has one role — the same letter a date or a year uses, so a year
-          and that year’s amount cannot disagree. We do not fold it into a single digit.
+          The whole amount has one role — the same rule a date or a year uses, so a year
+          and that year’s amount cannot disagree. We do not crush it into one digit.
           If the amount walked the twenty-six more than once, those walks are letters too.
           That string is the count you can add with.
         </Explain>
@@ -116,8 +115,8 @@ export function CountView({
       <section>
         <Explain title="Letter Path of this amount">
           The letter-count, in order, can be read like a username. First letter is the role.
-          The next two by weight are how and where. This is a portrait of the amount as
-          letters — earned, because the walk is the name now.
+          The next two by how often they return are how and where. This is a portrait of
+          the amount as letters, because the walk is the name now.
         </Explain>
         <p className="mt-3 font-display text-xl tracking-[0.2em] text-ink">
           {(reading.walk.chain.length ? reading.walk.chain : ["F"]).join(" · ")}

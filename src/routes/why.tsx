@@ -37,6 +37,12 @@ function WhyPage() {
       <header>
         <h1 className="font-display text-4xl text-ink sm:text-5xl">Why</h1>
         <p className="mt-3 max-w-xl leading-relaxed text-ink/85">{VOICE.doctrineAbstract}</p>
+        <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted">
+          Latin: first letter is the role; the next two by how often they return are how and where.
+          Greek: first and last are the road; vowels are a song in order; consonants are public
+          work; the total is an old number written as letters. The Count writes amounts as A–Z.
+          Nothing here tells the future.
+        </p>
       </header>
 
       <section id="latin" className="mt-10 space-y-4 scroll-mt-24">

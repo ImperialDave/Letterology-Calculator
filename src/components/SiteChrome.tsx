@@ -1,6 +1,7 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useLayoutEffect, type ReactNode } from "react";
 import { CLUB_NAME } from "@/lib/letterology/brand";
+import { VOICE } from "@/lib/letterology/voice";
 import { SignedIn, SignedOut, UserButton } from "@/lib/auth/gates";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import {
@@ -31,7 +32,7 @@ function AuthSlot() {
         to="/login"
         className="inline-flex h-11 items-center px-2 font-display text-xs tracking-[0.14em] text-muted uppercase hover:text-ink"
       >
-        You
+        Sign in
       </Link>
     </SignedOut>
   );
@@ -252,7 +253,7 @@ export function AppShell({
 
       <footer className="border-t border-ink/10 pb-20 sm:pb-0">
         <div className="mx-auto flex max-w-5xl flex-col items-center gap-2 px-4 py-8 text-center text-sm text-muted sm:px-6">
-          <p>A portrait of a username, not a prediction.</p>
+          <p>{VOICE.footerLine}</p>
           <Link
             to="/why"
             search={{ tongue: tongue === "el" ? "el" : undefined }}

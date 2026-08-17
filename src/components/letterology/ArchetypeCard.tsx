@@ -22,8 +22,8 @@ export function ArchetypeCard({
         {featured ? `Your ${LETTER_PATH}` : LETTER_PATH}
       </p>
       <p className="mt-1 text-sm text-muted">
-        Three letters: the role, how you work, and where the work happens. Their pigments mix
-        into one color.
+        Three letters we counted: the role, how you work, and where the work happens. Their
+        colors mix into one.
       </p>
       <div className="mt-4 flex flex-wrap items-end gap-3">
         {[first, second, third].map((letter, index) => (

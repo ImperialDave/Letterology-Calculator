@@ -3,6 +3,7 @@ import { FormEvent, useMemo, useState } from "react";
 import { ArchetypeCard } from "@/components/letterology/ArchetypeCard";
 import { DayCard } from "@/components/letterology/DayCard";
 import { AppShell } from "@/components/SiteChrome";
+import { VOICE } from "@/lib/letterology/voice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,10 +44,7 @@ function ClaimPage() {
         <header className="mx-auto max-w-xl">
           <p className="font-display text-xs tracking-[0.22em] text-muted uppercase">CC33</p>
           <h1 className="mt-2 font-display text-4xl text-ink sm:text-5xl">Claim this username</h1>
-          <p className="mt-3 leading-relaxed text-ink/85">
-            Type the username you use. The Letter Path updates as you type. Those letters are
-            the only material.
-          </p>
+          <p className="mt-3 leading-relaxed text-ink/85">{VOICE.claimLede}</p>
           <form onSubmit={onSubmit} className="mt-8">
             <Label htmlFor="claim-handle">Your username</Label>
             <div className="mt-2 flex flex-col gap-2 sm:flex-row">

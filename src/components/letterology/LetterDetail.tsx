@@ -24,8 +24,8 @@ export function LetterDetail({ letter }: { letter: Letter }) {
           <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">{kind}</p>
           <p className="mt-1 text-sm text-muted">
             {isInner
-              ? "A vowel: the private life — how this letter feels from the inside."
-              : "A consonant: how this letter shows up in a room."}
+              ? "A vowel, so this is the private life — how the letter feels from the inside."
+              : "A consonant, so this is how the letter shows up in a room."}
           </p>
           <h3 className="mt-1 font-display text-2xl text-ink">{theme.name}</h3>
           <p className="mt-1 text-sm text-muted">{pigmentOf(letter).name} on the wheel</p>
