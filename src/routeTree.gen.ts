@@ -20,10 +20,14 @@ import { Route as CountRouteImport } from './routes/count'
 import { Route as DoctrineRouteImport } from './routes/doctrine'
 import { Route as HouseRouteImport } from './routes/house'
 import { Route as KeyRouteImport } from './routes/key'
+import { Route as LettersRouteImport } from './routes/letters'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as StoicheiaRouteImport } from './routes/stoicheia'
+import { Route as TwoRouteImport } from './routes/two'
+import { Route as WhyRouteImport } from './routes/why'
 import { Route as ApiCardRouteImport } from './routes/api/card'
 import { Route as CountWalkRouteImport } from './routes/count_.$walk'
+import { Route as LettersMarkRouteImport } from './routes/letters_.$mark'
 import { Route as OgFileRouteImport } from './routes/og.$file'
 import { Route as PSlugRouteImport } from './routes/p.$slug'
 import { Route as StoicheiaIndexRouteImport } from './routes/stoicheia.index'
@@ -93,6 +97,11 @@ const KeyRoute = KeyRouteImport.update({
   path: '/key',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LettersRoute = LettersRouteImport.update({
+  id: '/letters',
+  path: '/letters',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -103,6 +112,16 @@ const StoicheiaRoute = StoicheiaRouteImport.update({
   path: '/stoicheia',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TwoRoute = TwoRouteImport.update({
+  id: '/two',
+  path: '/two',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WhyRoute = WhyRouteImport.update({
+  id: '/why',
+  path: '/why',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiCardRoute = ApiCardRouteImport.update({
   id: '/api/card',
   path: '/api/card',
@@ -111,6 +130,11 @@ const ApiCardRoute = ApiCardRouteImport.update({
 const CountWalkRoute = CountWalkRouteImport.update({
   id: '/count_/$walk',
   path: '/count/$walk',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LettersMarkRoute = LettersMarkRouteImport.update({
+  id: '/letters_/$mark',
+  path: '/letters/$mark',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OgFileRoute = OgFileRouteImport.update({
@@ -191,10 +215,14 @@ export interface FileRoutesByFullPath {
   '/doctrine': typeof DoctrineRoute
   '/house': typeof HouseRoute
   '/key': typeof KeyRoute
+  '/letters': typeof LettersRoute
   '/login': typeof LoginRoute
   '/stoicheia': typeof StoicheiaRouteWithChildren
+  '/two': typeof TwoRoute
+  '/why': typeof WhyRoute
   '/api/card': typeof ApiCardRoute
   '/count/$walk': typeof CountWalkRoute
+  '/letters/$mark': typeof LettersMarkRoute
   '/og/$file': typeof OgFileRoute
   '/p/$slug': typeof PSlugRoute
   '/stoicheia/agon': typeof StoicheiaAgonRoute
@@ -221,9 +249,13 @@ export interface FileRoutesByTo {
   '/doctrine': typeof DoctrineRoute
   '/house': typeof HouseRoute
   '/key': typeof KeyRoute
+  '/letters': typeof LettersRoute
   '/login': typeof LoginRoute
+  '/two': typeof TwoRoute
+  '/why': typeof WhyRoute
   '/api/card': typeof ApiCardRoute
   '/count/$walk': typeof CountWalkRoute
+  '/letters/$mark': typeof LettersMarkRoute
   '/og/$file': typeof OgFileRoute
   '/p/$slug': typeof PSlugRoute
   '/stoicheia/agon': typeof StoicheiaAgonRoute
@@ -251,10 +283,14 @@ export interface FileRoutesById {
   '/doctrine': typeof DoctrineRoute
   '/house': typeof HouseRoute
   '/key': typeof KeyRoute
+  '/letters': typeof LettersRoute
   '/login': typeof LoginRoute
   '/stoicheia': typeof StoicheiaRouteWithChildren
+  '/two': typeof TwoRoute
+  '/why': typeof WhyRoute
   '/api/card': typeof ApiCardRoute
   '/count_/$walk': typeof CountWalkRoute
+  '/letters_/$mark': typeof LettersMarkRoute
   '/og/$file': typeof OgFileRoute
   '/p/$slug': typeof PSlugRoute
   '/stoicheia/agon': typeof StoicheiaAgonRoute
@@ -283,10 +319,14 @@ export interface FileRouteTypes {
     | '/doctrine'
     | '/house'
     | '/key'
+    | '/letters'
     | '/login'
     | '/stoicheia'
+    | '/two'
+    | '/why'
     | '/api/card'
     | '/count/$walk'
+    | '/letters/$mark'
     | '/og/$file'
     | '/p/$slug'
     | '/stoicheia/agon'
@@ -313,9 +353,13 @@ export interface FileRouteTypes {
     | '/doctrine'
     | '/house'
     | '/key'
+    | '/letters'
     | '/login'
+    | '/two'
+    | '/why'
     | '/api/card'
     | '/count/$walk'
+    | '/letters/$mark'
     | '/og/$file'
     | '/p/$slug'
     | '/stoicheia/agon'
@@ -342,10 +386,14 @@ export interface FileRouteTypes {
     | '/doctrine'
     | '/house'
     | '/key'
+    | '/letters'
     | '/login'
     | '/stoicheia'
+    | '/two'
+    | '/why'
     | '/api/card'
     | '/count_/$walk'
+    | '/letters_/$mark'
     | '/og/$file'
     | '/p/$slug'
     | '/stoicheia/agon'
@@ -373,10 +421,14 @@ export interface RootRouteChildren {
   DoctrineRoute: typeof DoctrineRoute
   HouseRoute: typeof HouseRoute
   KeyRoute: typeof KeyRoute
+  LettersRoute: typeof LettersRoute
   LoginRoute: typeof LoginRoute
   StoicheiaRoute: typeof StoicheiaRouteWithChildren
+  TwoRoute: typeof TwoRoute
+  WhyRoute: typeof WhyRoute
   ApiCardRoute: typeof ApiCardRoute
   CountWalkRoute: typeof CountWalkRoute
+  LettersMarkRoute: typeof LettersMarkRoute
   OgFileRoute: typeof OgFileRoute
   PSlugRoute: typeof PSlugRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
@@ -461,6 +513,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KeyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/letters': {
+      id: '/letters'
+      path: '/letters'
+      fullPath: '/letters'
+      preLoaderRoute: typeof LettersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -475,6 +534,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoicheiaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/two': {
+      id: '/two'
+      path: '/two'
+      fullPath: '/two'
+      preLoaderRoute: typeof TwoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/why': {
+      id: '/why'
+      path: '/why'
+      fullPath: '/why'
+      preLoaderRoute: typeof WhyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/card': {
       id: '/api/card'
       path: '/api/card'
@@ -487,6 +560,13 @@ declare module '@tanstack/react-router' {
       path: '/count/$walk'
       fullPath: '/count/$walk'
       preLoaderRoute: typeof CountWalkRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/letters_/$mark': {
+      id: '/letters_/$mark'
+      path: '/letters/$mark'
+      fullPath: '/letters/$mark'
+      preLoaderRoute: typeof LettersMarkRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/og/$file': {
@@ -625,10 +705,14 @@ const rootRouteChildren: RootRouteChildren = {
   DoctrineRoute: DoctrineRoute,
   HouseRoute: HouseRoute,
   KeyRoute: KeyRoute,
+  LettersRoute: LettersRoute,
   LoginRoute: LoginRoute,
   StoicheiaRoute: StoicheiaRouteWithChildren,
+  TwoRoute: TwoRoute,
+  WhyRoute: WhyRoute,
   ApiCardRoute: ApiCardRoute,
   CountWalkRoute: CountWalkRoute,
+  LettersMarkRoute: LettersMarkRoute,
   OgFileRoute: OgFileRoute,
   PSlugRoute: PSlugRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,

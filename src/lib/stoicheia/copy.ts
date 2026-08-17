@@ -61,11 +61,11 @@ export function tweetXenia(pair: XeniaReading): string {
 }
 
 export function stoicheiaNamePath(name: string): string {
-  return `/stoicheia?n=${encodeURIComponent(name.trim())}`;
+  return `/?n=${encodeURIComponent(name.trim())}&tongue=el`;
 }
 
 export function stoicheiaXeniaPath(a: string, b: string): string {
-  return `/stoicheia/xenia?a=${encodeURIComponent(a.trim())}&b=${encodeURIComponent(b.trim())}`;
+  return `/two?a=${encodeURIComponent(a.trim())}&b=${encodeURIComponent(b.trim())}&tongue=el`;
 }
 
 export function stoicheiaCardFile(kind: "name" | "xenia" | "total", key: string): string {

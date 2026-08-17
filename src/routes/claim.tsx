@@ -2,7 +2,7 @@ import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { FormEvent, useMemo, useState } from "react";
 import { ArchetypeCard } from "@/components/letterology/ArchetypeCard";
 import { DayCard } from "@/components/letterology/DayCard";
-import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
+import { AppShell } from "@/components/SiteChrome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,7 +23,7 @@ function ClaimPage() {
   const horoscope = useMemo(() => (parsed ? buildHoroscope(parsed.displayHandle) : null), [parsed]);
 
   if (!isPending && !user) return <Navigate to="/login" />;
-  if (!isPending && user?.handle) return <Navigate to="/house" />;
+  if (!isPending && user?.handle) return <Navigate to="/" />;
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -39,9 +39,7 @@ function ClaimPage() {
   }
 
   return (
-    <div className="min-h-dvh">
-      <SiteHeader current="login" />
-      <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
+    <AppShell current="login">
         <header className="mx-auto max-w-xl">
           <p className="font-display text-xs tracking-[0.22em] text-muted uppercase">CC33</p>
           <h1 className="mt-2 font-display text-4xl text-ink sm:text-5xl">Claim this username</h1>
@@ -87,8 +85,6 @@ function ClaimPage() {
             Read without sitting
           </Link>
         </p>
-      </main>
-      <SiteFooter />
-    </div>
+    </AppShell>
   );
 }

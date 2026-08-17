@@ -3,7 +3,7 @@ import { useState } from "react";
 import { CountAbacus } from "@/components/letterology/CountAbacus";
 import { CountView } from "@/components/letterology/CountView";
 import { PageShare } from "@/components/letterology/PageShare";
-import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
+import { AppShell } from "@/components/SiteChrome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -73,9 +73,7 @@ function CountWalkPage() {
   }
 
   return (
-    <div className="min-h-dvh">
-      <SiteHeader current="count" />
-      <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
+    <AppShell current="count" wide>
         {!reading ? (
           <header className="max-w-xl">
             <h1 className="font-display text-4xl text-ink">That is not a letter-count</h1>
@@ -143,8 +141,6 @@ function CountWalkPage() {
             </div>
           </>
         )}
-      </main>
-      <SiteFooter />
-    </div>
+    </AppShell>
   );
 }

@@ -4,8 +4,7 @@
  * Process jargon dies. If a word needs a glossary to click a button, the button is wrong.
  */
 export const VOICE = {
-  homeHero:
-    "Type a username. The first letter names a role — Seeker, Lover, Rebel, and the rest. The two letters that show up most after that say how that role works, and where the work happens. Allies complete a job this role cannot finish alone. Enemies are the blind spot, not the villain — the work you will not look at. Use the portrait to notice what you already carry. Do not obey it. Nothing here predicts the future.",
+  homeHero: "Type a username. The letters you already live under become a portrait.",
   homeReadTitle: "Read a username",
   homeReadLede:
     "The first letter is the role you enter as. The next two, by how often they return, say how you tend to work and what kind of place that work wants. Together they are a Letter Path — a likeness, not a verdict.",

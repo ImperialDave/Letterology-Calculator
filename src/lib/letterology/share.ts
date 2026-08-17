@@ -61,7 +61,7 @@ export function portraitUrl(name: string, origin = publicSiteOrigin()): string {
 }
 
 export function bondPath(a: string, b: string): string {
-  return `/bond?a=${encodeURIComponent(a.trim())}&b=${encodeURIComponent(b.trim())}`;
+  return `/two?a=${encodeURIComponent(a.trim())}&b=${encodeURIComponent(b.trim())}`;
 }
 
 export function bondUrl(a: string, b: string, origin = publicSiteOrigin()): string {

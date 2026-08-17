@@ -1,17 +1,18 @@
 import { HORAE } from "@/lib/stoicheia/horae";
-import { markOf, type Stoich } from "@/lib/stoicheia/letters";
-import { Link } from "@tanstack/react-router";
+import { type Stoich } from "@/lib/stoicheia/letters";
 
 export function NightWheel({
   first,
   last,
   daimon,
   hour,
+  onSelect,
 }: {
   first?: Stoich;
   last?: Stoich;
   daimon?: Stoich;
   hour?: Stoich;
+  onSelect?: (letter: Stoich) => void;
 }) {
   const size = 280;
   const cx = size / 2;
@@ -39,7 +40,11 @@ export function NightWheel({
           const stroke = pin ? "#7a3328" : "#c4b496";
           const text = hora.watch === "night" ? "#f6f0e4" : "#1c1712";
           return (
-            <g key={hora.letter}>
+            <g
+              key={hora.letter}
+              className={onSelect ? "cursor-pointer" : undefined}
+              onClick={onSelect ? () => onSelect(hora.letter) : undefined}
+            >
               <circle cx={x} cy={y} r={pin ? 12 : 8} fill={fill} stroke={stroke} strokeWidth={pin ? 2 : 1} />
               <text x={x} y={y + 3} textAnchor="middle" fontSize="8" fill={text} fontFamily="Fraunces, serif">
                 {hora.letter}
@@ -47,21 +52,13 @@ export function NightWheel({
             </g>
           );
         })}
-        <text x={cx} y={24} textAnchor="middle" fontSize="9" fill="#6b6256" fontFamily="Fraunces, serif">
+        <text x={cx} y={24} textAnchor="middle" fontSize="9" fill="currentColor" className="text-muted" fontFamily="Fraunces, serif">
           sunset
         </text>
       </svg>
       <p className="mt-2 text-center text-xs text-muted">
         Night is dark. Day is light. Sunset at the top.
-        {first ? (
-          <>
-            {" "}
-            First{" "}
-            <Link to="/stoicheia/horae/$mark" params={{ mark: markOf(first) }} className="text-primary">
-              {first}
-            </Link>
-          </>
-        ) : null}
+        {first ? ` First ${first}` : ""}
         {last ? ` · last ${last}` : ""}
         {daimon ? ` · daimon ${daimon}` : ""}
         {hour ? ` · this hour ${hour}` : ""}

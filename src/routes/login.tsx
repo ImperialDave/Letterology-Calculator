@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
-import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
+import { AppShell } from "@/components/SiteChrome";
 import { Button } from "@/components/ui/button";
 import { useHouse } from "@/lib/firebase/house-provider";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
@@ -11,12 +11,11 @@ function Login() {
   const { user, isPending } = useCurrentUserState();
 
   if (!isPending && user?.needsClaim) return <Navigate to="/claim" />;
-  if (!isPending && user?.handle) return <Navigate to="/house" />;
+  if (!isPending && user?.handle) return <Navigate to="/" />;
 
   return (
-    <div className="min-h-dvh">
-      <SiteHeader current="login" />
-      <main className="mx-auto grid min-h-[70dvh] w-full max-w-md place-items-center px-4 py-12">
+    <AppShell current="login">
+      <div className="grid min-h-[60dvh] place-items-center">
         <div className="w-full rounded-xl bg-raised p-6 shadow-[var(--shadow-border)] sm:p-8">
           <p className="font-display text-xs tracking-[0.22em] text-muted uppercase">CC33</p>
           <h1 className="mt-2 font-display text-3xl text-ink">Sign in</h1>
@@ -51,8 +50,7 @@ function Login() {
             Read without signing in
           </Link>
         </div>
-      </main>
-      <SiteFooter />
-    </div>
+      </div>
+    </AppShell>
   );
 }

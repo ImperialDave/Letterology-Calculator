@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { FormEvent, useEffect, useState } from "react";
 import { CountAbacus } from "@/components/letterology/CountAbacus";
 import { PageShare } from "@/components/letterology/PageShare";
-import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
+import { AppShell } from "@/components/SiteChrome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -70,12 +70,9 @@ function CountPage() {
   }
 
   return (
-    <div className="min-h-dvh">
-      <SiteHeader current="count" />
-      <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
+    <AppShell current="count" wide>
         <header className="max-w-2xl">
-          <p className="font-display text-xs tracking-[0.22em] text-muted uppercase">{VOICE.countKicker}</p>
-          <h1 className="mt-2 font-display text-4xl text-ink sm:text-5xl">The Count</h1>
+          <h1 className="font-display text-4xl text-ink sm:text-5xl">The Count</h1>
           <p className="mt-3 max-w-xl leading-relaxed text-ink/85">{VOICE.countLede}</p>
           <PageShare
             path="/count"
@@ -115,14 +112,13 @@ function CountPage() {
 
         <p className="mt-10 text-center">
           <Link
-            to="/key"
+            to="/why"
+            search={{ tongue: undefined }}
             className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
           >
-            Open the Key
+            Why
           </Link>
         </p>
-      </main>
-      <SiteFooter />
-    </div>
+    </AppShell>
   );
 }

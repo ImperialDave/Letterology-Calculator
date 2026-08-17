@@ -37,6 +37,26 @@
   --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* Greek night — same tokens, other atmosphere. Never a settings toggle. */
+[data-tongue="el"] {
+  --color-bg: #16110e;
+  --color-surface: #1f1814;
+  --color-raised: #241c17;
+  --color-ink: #f3ead8;
+  --color-fg: #f3ead8;
+  --color-muted: #b7aa96;
+  --color-subtle: #8f8373;
+  --color-primary: #c45a48;
+  --color-primary-fg: #16110e;
+  --color-border: #3a2f26;
+  --color-rule: #4a3c30;
+  --color-ring: #c45a48;
+  --shadow-border:
+    0 0 0 1px rgba(243, 234, 216, 0.08);
+  --shadow-border-hover:
+    0 0 0 1px rgba(243, 234, 216, 0.14);
+}
+
 @layer base {
   html {
     -webkit-font-smoothing: antialiased;
@@ -86,6 +106,12 @@
     url("/paper.jpg");
   background-size: auto, 640px;
   background-blend-mode: normal, multiply;
+}
+
+[data-tongue="el"].paper-field,
+[data-tongue="el"] .paper-field {
+  background-image: radial-gradient(ellipse at 18% 0%, color-mix(in oklab, var(--color-raised) 80%, transparent), transparent 50%);
+  background-blend-mode: normal;
 }
 
 .hairline {

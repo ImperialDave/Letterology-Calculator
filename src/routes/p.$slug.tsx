@@ -1,7 +1,6 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
-import { HoroscopeView } from "@/components/letterology/HoroscopeView";
-import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
-import { parseIso } from "@/lib/letterology/calendar";
+import { LatinPortrait } from "@/components/letterology/LatinPortrait";
+import { AppShell } from "@/components/SiteChrome";
 import {
   cardImageUrl,
   nameToSlug,
@@ -69,16 +68,13 @@ export const Route = createFileRoute("/p/$slug")({
 });
 
 function PortraitPage() {
-  const { name, horoscope, date } = Route.useLoaderData();
-  const civil = parseIso(date);
+  const { name, horoscope } = Route.useLoaderData();
 
   if (!horoscope) {
     return (
-      <div className="min-h-dvh">
-        <SiteHeader current="read" />
-        <main className="mx-auto max-w-xl px-4 py-24 text-center">
-          <p className="font-display text-xs tracking-[0.2em] text-muted uppercase">No letters</p>
-          <h1 className="mt-3 font-display text-4xl text-ink">That username has nothing to read.</h1>
+      <AppShell current="read">
+        <div className="py-16 text-center">
+          <h1 className="font-display text-4xl text-ink">That username has nothing to read.</h1>
           <p className="mt-3 text-muted">{name || "Give the portrait a username with A–Z in it."}</p>
           <Link
             to="/"
@@ -86,23 +82,14 @@ function PortraitPage() {
           >
             Read a username
           </Link>
-        </main>
-        <SiteFooter />
-      </div>
+        </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="min-h-dvh">
-      <SiteHeader current="read" />
-      <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
-        <HoroscopeView
-          key={`${horoscope.normalized}:${date ?? "today"}`}
-          horoscope={horoscope}
-          date={civil ?? undefined}
-        />
-      </main>
-      <SiteFooter />
-    </div>
+    <AppShell current="read">
+      <LatinPortrait key={horoscope.normalized} horoscope={horoscope} />
+    </AppShell>
   );
 }
