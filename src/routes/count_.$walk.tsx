@@ -18,11 +18,12 @@ import {
   readingFromSlug,
   walkSlug,
 } from "@/lib/letterology/count";
+import { useTongue } from "@/components/letterology/TongueProvider";
 import { countPath, pageCardMeta, tweetCount } from "@/lib/letterology/share";
 
 export const Route = createFileRoute("/count_/$walk")({
   validateSearch: (search: Record<string, unknown>) => ({
-    tongue: search.tongue === "el" ? "el" : undefined,
+    tongue: search.tongue === "el" ? "el" : search.tongue === "la" ? "la" : undefined,
   }),
   loader: ({ params }) => ({
     reading: readingFromSlug(params.walk),
@@ -51,7 +52,8 @@ export const Route = createFileRoute("/count_/$walk")({
 
 function CountWalkPage() {
   const { reading } = Route.useLoaderData();
-  const { tongue } = Route.useSearch();
+  const { tongue: urlTongue } = Route.useSearch();
+  const tongue = useTongue(urlTongue);
   const sitting = useHouseHoroscope();
   const [other, setOther] = useState("");
 

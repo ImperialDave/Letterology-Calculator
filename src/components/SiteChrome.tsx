@@ -1,14 +1,16 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useLayoutEffect, type ReactNode } from "react";
+import { useLayoutEffect, useState, type ReactNode } from "react";
+import { TongueProvider } from "@/components/letterology/TongueProvider";
 import { CLUB_NAME } from "@/lib/letterology/brand";
 import { VOICE } from "@/lib/letterology/voice";
 import { SignedIn, SignedOut, UserButton } from "@/lib/auth/gates";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import {
-  applyAtmosphere,
   carryForVerb,
   flipTongue,
+  getLiveTongue,
   parseTongue,
+  setLiveTongue,
   type Tongue,
   type Verb,
 } from "@/lib/letterology/tongue";
@@ -78,16 +80,21 @@ function TongueSwitch({ tongue, onChange }: { tongue: Tongue; onChange: (next: T
   );
 }
 
+function writtenTongue(raw: unknown): "la" | "el" {
+  return raw === "el" ? "el" : "la";
+}
+
 function goFlip(
   navigate: ReturnType<typeof useNavigate>,
   flip: ReturnType<typeof flipTongue>,
 ) {
   const search = flip.search;
+  const tongue = writtenTongue(search.tongue);
   if (flip.to === "/letters/$mark" && flip.params?.mark) {
     void navigate({
       to: "/letters/$mark",
       params: { mark: flip.params.mark },
-      search: { tongue: search.tongue === "el" ? "el" : undefined },
+      search: (prev) => ({ ...prev, tongue }),
       replace: true,
       resetScroll: false,
     });
@@ -97,7 +104,7 @@ function goFlip(
     void navigate({
       to: "/count/$walk",
       params: { walk: flip.params.walk },
-      search: { tongue: search.tongue === "el" ? "el" : undefined },
+      search: (prev) => ({ ...prev, tongue }),
       replace: true,
       resetScroll: false,
     });
@@ -106,12 +113,13 @@ function goFlip(
   if (flip.to === "/two") {
     void navigate({
       to: "/two",
-      search: {
-        a: search.a,
-        b: search.b,
-        tongue: search.tongue === "el" ? "el" : undefined,
+      search: (prev) => ({
+        ...prev,
+        a: search.a ?? prev.a,
+        b: search.b ?? prev.b,
+        tongue,
         mode: search.mode === "agon" ? "agon" : undefined,
-      },
+      }),
       replace: true,
       resetScroll: false,
     });
@@ -120,7 +128,12 @@ function goFlip(
   if (flip.to === "/") {
     void navigate({
       to: "/",
-      search: { n: search.n, name: undefined, tongue: search.tongue === "el" ? "el" : undefined },
+      search: (prev) => ({
+        ...prev,
+        n: search.n ?? prev.n,
+        name: undefined,
+        tongue,
+      }),
       replace: true,
       resetScroll: false,
     });
@@ -129,7 +142,7 @@ function goFlip(
   if (flip.to === "/letters") {
     void navigate({
       to: "/letters",
-      search: { tongue: search.tongue === "el" ? "el" : undefined },
+      search: (prev) => ({ ...prev, tongue }),
       replace: true,
       resetScroll: false,
     });
@@ -138,7 +151,7 @@ function goFlip(
   if (flip.to === "/why") {
     void navigate({
       to: "/why",
-      search: { tongue: search.tongue === "el" ? "el" : undefined },
+      search: (prev) => ({ ...prev, tongue }),
       hash: flip.hash,
       replace: true,
       resetScroll: false,
@@ -148,7 +161,7 @@ function goFlip(
   if (flip.to === "/count") {
     void navigate({
       to: "/count",
-      search: { n: undefined, tongue: search.tongue === "el" ? "el" : undefined },
+      search: (prev) => ({ ...prev, n: prev.n, tongue }),
       replace: true,
       resetScroll: false,
     });
@@ -169,16 +182,21 @@ export function AppShell({
   const navigate = useNavigate();
   const location = useRouterState({ select: (state) => state.location });
   const search = (location.search ?? {}) as Record<string, unknown>;
-  const tongue = parseTongue(search.tongue);
+  const urlTongue = parseTongue(search.tongue);
+  const [tongue, setTongueState] = useState<Tongue>(() => getLiveTongue() ?? urlTongue);
   const verb = verbOf(current);
 
   useLayoutEffect(() => {
-    applyAtmosphere(tongue);
-  }, [tongue]);
+    if (getLiveTongue() === urlTongue) return;
+    setTongueState(urlTongue);
+    setLiveTongue(urlTongue);
+  }, [urlTongue]);
 
   function setTongue(next: Tongue) {
-    if (next === tongue) return;
-    applyAtmosphere(next);
+    const already = getLiveTongue() ?? tongue;
+    if (next === already && next === urlTongue) return;
+    setTongueState(next);
+    setLiveTongue(next);
     goFlip(
       navigate,
       flipTongue({
@@ -200,12 +218,13 @@ export function AppShell({
   const twoSearch = carryForVerb("two", search, tongue);
 
   return (
+    <TongueProvider tongue={tongue}>
     <div data-tongue={tongue} className="paper-field min-h-dvh text-fg">
       <header className="border-b border-ink/10">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-3 px-4 sm:px-6">
           <Link
             to="/"
-            search={{ n: undefined, name: undefined, tongue: tongue === "el" ? "el" : undefined }}
+            search={{ n: undefined, name: undefined, tongue: tongue === "el" ? "el" : "la" }}
             className="flex min-w-0 items-center gap-3"
           >
             <img
@@ -226,10 +245,10 @@ export function AppShell({
                   to={item.to}
                   search={
                     item.verb === "read"
-                      ? { n: readSearch.n, name: undefined, tongue: readSearch.tongue === "el" ? "el" : undefined }
+                      ? { n: readSearch.n, name: undefined, tongue: tongue === "el" ? "el" : "la" }
                       : item.verb === "two"
-                        ? { a: twoSearch.a, b: twoSearch.b, tongue: twoSearch.tongue === "el" ? "el" : undefined, mode: undefined }
-                        : { tongue: tongue === "el" ? "el" : undefined }
+                        ? { a: twoSearch.a, b: twoSearch.b, tongue: tongue === "el" ? "el" : "la", mode: undefined }
+                        : { n: undefined, tongue: tongue === "el" ? "el" : "la" }
                   }
                   className={cn(
                     "inline-flex h-11 items-center px-3 font-display text-xs tracking-[0.14em] uppercase",
@@ -256,7 +275,7 @@ export function AppShell({
           <p>{VOICE.footerLine}</p>
           <Link
             to="/why"
-            search={{ tongue: tongue === "el" ? "el" : undefined }}
+            search={{ tongue: tongue === "el" ? "el" : "la" }}
             hash={tongue === "el" ? "greek" : "latin"}
             className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
           >
@@ -273,10 +292,10 @@ export function AppShell({
               to={item.to}
               search={
                 item.verb === "read"
-                  ? { n: readSearch.n, name: undefined, tongue: readSearch.tongue === "el" ? "el" : undefined }
+                  ? { n: readSearch.n, name: undefined, tongue: tongue === "el" ? "el" : "la" }
                   : item.verb === "two"
-                    ? { a: twoSearch.a, b: twoSearch.b, tongue: twoSearch.tongue === "el" ? "el" : undefined, mode: undefined }
-                    : { tongue: tongue === "el" ? "el" : undefined }
+                    ? { a: twoSearch.a, b: twoSearch.b, tongue: tongue === "el" ? "el" : "la", mode: undefined }
+                    : { n: undefined, tongue: tongue === "el" ? "el" : "la" }
               }
               className={cn(
                 "inline-flex h-11 min-w-14 items-center justify-center font-display text-xs tracking-[0.14em] uppercase",
@@ -290,6 +309,7 @@ export function AppShell({
         </div>
       </nav>
     </div>
+    </TongueProvider>
   );
 }
 

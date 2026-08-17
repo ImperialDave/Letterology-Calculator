@@ -21,7 +21,8 @@ export function GreekPortrait({ reading }: { reading: Stoicheion }) {
   return (
     <div className="space-y-10">
       <header className="text-center">
-        <p className="font-display text-4xl tracking-[0.12em] text-ink sm:text-6xl">{reading.spelled}</p>
+        <p className="font-display text-xs tracking-[0.2em] text-muted uppercase">Greek reading</p>
+        <p className="mt-3 font-display text-4xl tracking-[0.12em] text-ink sm:text-6xl">{reading.spelled}</p>
         <h1 className="mt-3 font-display text-3xl text-ink sm:text-4xl">{reading.epithet}</h1>
         <p className="mt-2 text-lg text-ink/80">{reading.road.title}</p>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-muted">

@@ -7,18 +7,18 @@ import { AppShell } from "@/components/SiteChrome";
 import { LetterBookView } from "@/components/stoicheia/LetterBook";
 import { NightWheel } from "@/components/stoicheia/NightWheel";
 import { pageCardMeta } from "@/lib/letterology/share";
-import { parseTongue } from "@/lib/letterology/tongue";
+import { useTongue } from "@/components/letterology/TongueProvider";
 import { VOICE } from "@/lib/letterology/voice";
 import type { Letter } from "@/lib/letterology/types";
 import { markOf } from "@/lib/stoicheia/letters";
 import { portraitOf } from "@/lib/stoicheia/portrait";
 import type { Stoich } from "@/lib/stoicheia/letters";
 
-type Search = { tongue?: "el" };
+type Search = { tongue?: "la" | "el" };
 
 export const Route = createFileRoute("/letters")({
   validateSearch: (search: Record<string, unknown>): Search => ({
-    tongue: search.tongue === "el" ? "el" : undefined,
+    tongue: search.tongue === "el" ? "el" : search.tongue === "la" ? "la" : undefined,
   }),
   head: () =>
     pageCardMeta({
@@ -32,7 +32,7 @@ export const Route = createFileRoute("/letters")({
 
 function LettersPage() {
   const { tongue: raw } = Route.useSearch();
-  const tongue = parseTongue(raw);
+  const tongue = useTongue(raw);
   const [latin, setLatin] = useState<Letter>("A");
   const [greek, setGreek] = useState<Stoich>("Α");
   const book = portraitOf(greek);

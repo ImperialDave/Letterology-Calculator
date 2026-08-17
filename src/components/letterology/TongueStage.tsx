@@ -1,7 +1,10 @@
 import type { ReactNode } from "react";
 import type { Tongue } from "@/lib/letterology/tongue";
-import { cn } from "@/lib/utils";
 
+/**
+ * One tongue at a time. Stacking both with opacity left the Latin
+ * reading sitting on top of the Greek one — dark room, old words.
+ */
 export function TongueStage({
   tongue,
   latin,
@@ -12,13 +15,16 @@ export function TongueStage({
   greek: ReactNode;
 }) {
   return (
-    <div className="tongue-stage">
-      <div className={cn("tongue-pane", tongue === "la" ? "is-on" : "is-off")} inert={tongue !== "la"}>
-        {latin}
-      </div>
-      <div className={cn("tongue-pane", tongue === "el" ? "is-on" : "is-off")} inert={tongue !== "el"}>
-        {greek}
-      </div>
+    <div className="tongue-stage" data-view={tongue}>
+      {tongue === "el" ? (
+        <div key="el" className="tongue-pane is-on">
+          {greek}
+        </div>
+      ) : (
+        <div key="la" className="tongue-pane is-on">
+          {latin}
+        </div>
+      )}
     </div>
   );
 }

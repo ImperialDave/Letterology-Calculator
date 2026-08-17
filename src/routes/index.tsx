@@ -11,24 +11,25 @@ import { useCurrentUser } from "@/lib/auth/use-current-user";
 import { useHouseHoroscope } from "@/lib/firebase/house-provider";
 import { buildHoroscope } from "@/lib/letterology/engine";
 import { pageCardMeta } from "@/lib/letterology/share";
-import { noteHandle, parseTongue } from "@/lib/letterology/tongue";
+import { useTongue } from "@/components/letterology/TongueProvider";
+import { noteHandle } from "@/lib/letterology/tongue";
 import { VOICE } from "@/lib/letterology/voice";
 import { stoicheiaCardFile, stoicheiaNamePath } from "@/lib/stoicheia/copy";
 import { readStoicheion } from "@/lib/stoicheia/engine";
 
-type Search = { n?: string; name?: string; tongue?: "el" };
+type Search = { n?: string; name?: string; tongue?: "la" | "el" };
 
 export const Route = createFileRoute("/")({
   validateSearch: (search: Record<string, unknown>): Search => ({
     n: typeof search.n === "string" ? search.n : typeof search.name === "string" ? search.name : undefined,
     name: typeof search.name === "string" ? search.name : undefined,
-    tongue: search.tongue === "el" ? "el" : undefined,
+    tongue: search.tongue === "el" ? "el" : search.tongue === "la" ? "la" : undefined,
   }),
   loader: ({ location }) => {
     const params = new URL(location.href, "https://www.letterology.club").searchParams;
     return {
       n: params.get("n") ?? params.get("name") ?? undefined,
-      tongue: params.get("tongue") === "el" ? ("el" as const) : undefined,
+      tongue: params.get("tongue") === "el" ? ("el" as const) : params.get("tongue") === "la" ? ("la" as const) : undefined,
     };
   },
   head: ({ loaderData }) => {
@@ -69,7 +70,7 @@ function Home() {
   const sittingUser = useCurrentUser();
   const sitting = useHouseHoroscope();
   const handle = loaded.n ?? search.n ?? sittingUser?.displayHandle ?? "";
-  const tongue = parseTongue(loaded.tongue ?? search.tongue);
+  const tongue = useTongue(search.tongue ?? loaded.tongue);
   const [value, setValue] = useState(handle);
   const latin = useMemo(() => (handle ? buildHoroscope(handle) : null), [handle]);
   const greek = useMemo(() => (handle ? readStoicheion(handle) : null), [handle]);
@@ -90,7 +91,7 @@ function Home() {
       search: {
         n: value.trim() || undefined,
         name: undefined,
-        tongue: tongue === "el" ? "el" : undefined,
+        tongue: tongue === "el" ? "el" : "la",
       },
     });
   }
@@ -107,7 +108,9 @@ function Home() {
             className="mx-auto size-20 rounded-full object-cover outline outline-1 -outline-offset-1 outline-ink/10"
           />
           <h1 className="mt-6 font-display text-5xl text-ink sm:text-7xl">CC33</h1>
-          <p className="mt-3 text-base leading-relaxed text-ink/80">{VOICE.homeHero}</p>
+          <p className="mt-3 text-base leading-relaxed text-ink/80">
+            {tongue === "el" ? VOICE.stoicheiaLede : VOICE.homeHero}
+          </p>
           <form onSubmit={onSubmit} className="mt-8 text-left">
             <Label htmlFor="username">Your username</Label>
             <div className="mt-2 flex flex-col gap-2 sm:flex-row">

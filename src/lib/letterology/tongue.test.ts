@@ -3,11 +3,13 @@ import test from "node:test";
 import {
   carryForVerb,
   flipTongue,
+  getLiveTongue,
   lettersPath,
   noteHandle,
   notePair,
   parseTongue,
   readPath,
+  setLiveTongue,
   twoPath,
 } from "./tongue";
 
@@ -22,6 +24,15 @@ test("read and two paths carry the handle and the tongue", () => {
   assert.equal(readPath("Apollo", "el"), "/?n=Apollo&tongue=el");
   assert.match(twoPath("Ada", "Octavia", "el"), /tongue=el/);
   assert.equal(lettersPath("th", "el"), "/letters/th?tongue=el");
+});
+
+test("leaving Greek writes tongue=la, not a blank", () => {
+  const next = flipTongue({
+    pathname: "/",
+    search: { n: "Apollo", tongue: "el" },
+    next: "la",
+  });
+  assert.equal(next.search.tongue, "la");
 });
 
 test("flip keeps the handle on the door", () => {
@@ -87,6 +98,13 @@ test("flip Why lands on the matching warrant", () => {
   const next = flipTongue({ pathname: "/why", search: {}, next: "el" });
   assert.equal(next.to, "/why");
   assert.equal(next.hash, "greek");
+});
+
+test("live tongue updates before the URL does", () => {
+  setLiveTongue("el");
+  assert.equal(getLiveTongue(), "el");
+  setLiveTongue("la");
+  assert.equal(getLiveTongue(), "la");
 });
 
 test("drafts ride along when the URL is empty", () => {

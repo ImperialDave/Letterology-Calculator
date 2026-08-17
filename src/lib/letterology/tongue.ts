@@ -15,8 +15,15 @@ export function parseTongue(raw: unknown): Tongue {
   return "la";
 }
 
-export function tongueParam(tongue: Tongue): "el" | undefined {
-  return tongue === "el" ? "el" : undefined;
+/** Always write la or el. Undefined is how the first Latin click used to no-op. */
+export function tongueParam(tongue: Tongue): "la" | "el" {
+  return tongue === "el" ? "el" : "la";
+}
+
+export function tongueFromUnknown(search: Record<string, unknown>): "la" | "el" | undefined {
+  if (search.tongue === "el") return "el";
+  if (search.tongue === "la") return "la";
+  return undefined;
 }
 
 export function rememberTongue(tongue: Tongue): void {
@@ -43,6 +50,27 @@ export function applyAtmosphere(tongue: Tongue): void {
   const theme = document.querySelector('meta[name="theme-color"]');
   if (theme) theme.setAttribute("content", tongue === "el" ? "#16110e" : "#efe6d6");
   rememberTongue(tongue);
+}
+
+type TongueListener = () => void;
+const tongueListeners = new Set<TongueListener>();
+let liveTongue: Tongue | null = null;
+
+export function setLiveTongue(tongue: Tongue): void {
+  liveTongue = tongue;
+  applyAtmosphere(tongue);
+  for (const listener of tongueListeners) listener();
+}
+
+export function getLiveTongue(): Tongue | null {
+  return liveTongue;
+}
+
+export function subscribeTongue(listener: TongueListener): () => void {
+  tongueListeners.add(listener);
+  return () => {
+    tongueListeners.delete(listener);
+  };
 }
 
 export function noteHandle(handle: string): void {
@@ -82,7 +110,7 @@ function nameFromSlug(slug: string): string {
 export type FlipTarget = {
   to: "/" | "/two" | "/letters" | "/letters/$mark" | "/why" | "/count" | "/count/$walk" | "/login" | "/claim";
   params?: { mark?: string; walk?: string };
-  search: Record<string, string | undefined>;
+  search: Record<string, string | undefined> & { tongue?: "la" | "el" };
   hash?: string;
 };
 

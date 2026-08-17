@@ -27,7 +27,8 @@ export function LatinPortrait({ horoscope }: { horoscope: Horoscope }) {
           background: `color-mix(in oklab, ${pigment.css} 22%, var(--color-raised))`,
         }}
       >
-        <p className="font-display text-8xl leading-none sm:text-9xl" style={{ color: pigment.css }}>
+        <p className="font-display text-xs tracking-[0.2em] text-muted uppercase">Latin reading</p>
+        <p className="mt-3 font-display text-8xl leading-none sm:text-9xl" style={{ color: pigment.css }}>
           {horoscope.signature}
         </p>
         <h1 className="mt-4 font-display text-4xl text-ink sm:text-5xl">{horoscope.displayName}</h1>
@@ -64,7 +65,7 @@ export function LatinPortrait({ horoscope }: { horoscope: Horoscope }) {
       <p className="text-center">
         <Link
           to="/two"
-          search={{ a: horoscope.displayName, b: undefined, tongue: undefined, mode: undefined }}
+          search={{ a: horoscope.displayName, b: undefined, tongue: "la", mode: undefined }}
           className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
         >
           {VOICE.anotherUsername}

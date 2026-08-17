@@ -14,12 +14,13 @@ import {
   type CountWalk,
 } from "@/lib/letterology/count";
 import { pageCardMeta } from "@/lib/letterology/share";
+import { useTongue } from "@/components/letterology/TongueProvider";
 import { VOICE } from "@/lib/letterology/voice";
 
 export const Route = createFileRoute("/count")({
   validateSearch: (search: Record<string, unknown>) => ({
     n: typeof search.n === "string" ? search.n : undefined,
-    tongue: search.tongue === "el" ? "el" : undefined,
+    tongue: search.tongue === "el" ? "el" : search.tongue === "la" ? "la" : undefined,
   }),
   loader: ({ location }) => {
     const n = new URL(location.href, "https://www.letterology.club").searchParams.get("n") ?? undefined;
@@ -39,7 +40,8 @@ function CountPage() {
   const [value, setValue] = useState("");
   const [walk, setWalk] = useState<CountWalk>(walkOf(0n));
   const { n } = Route.useLoaderData();
-  const { tongue } = Route.useSearch();
+  const { tongue: urlTongue } = Route.useSearch();
+  const tongue = useTongue(urlTongue);
   const confessed = n ? countReadingOf(n) : null;
 
   function openWalk(slug: string) {

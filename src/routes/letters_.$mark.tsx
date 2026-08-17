@@ -6,14 +6,14 @@ import { LetterBookView } from "@/components/stoicheia/LetterBook";
 import { letterFromMark } from "@/lib/stoicheia/letters";
 import { portraitOf } from "@/lib/stoicheia/portrait";
 import { pageCardMeta } from "@/lib/letterology/share";
-import { parseTongue } from "@/lib/letterology/tongue";
+import { useTongue } from "@/components/letterology/TongueProvider";
 import { ALPHABET } from "@/lib/letterology/types";
 
-type Search = { tongue?: "el" };
+type Search = { tongue?: "la" | "el" };
 
 export const Route = createFileRoute("/letters_/$mark")({
   validateSearch: (search: Record<string, unknown>): Search => ({
-    tongue: search.tongue === "el" ? "el" : undefined,
+    tongue: search.tongue === "el" ? "el" : search.tongue === "la" ? "la" : undefined,
   }),
   loader: ({ params }) => {
     const greek = letterFromMark(params.mark);
@@ -42,7 +42,7 @@ export const Route = createFileRoute("/letters_/$mark")({
 
 function LetterPage() {
   const { greek, latin, mark } = Route.useLoaderData();
-  const tongue = parseTongue(Route.useSearch().tongue);
+  const tongue = useTongue(Route.useSearch().tongue);
   const book = greek ? portraitOf(greek) : null;
 
   return (
@@ -50,7 +50,7 @@ function LetterPage() {
       <p>
         <Link
           to="/letters"
-          search={{ tongue: tongue === "el" ? "el" : undefined }}
+          search={{ tongue: tongue === "el" ? "el" : "la" }}
           className="font-display text-xs tracking-[0.14em] text-muted uppercase"
         >
           {tongue === "el" ? "All hours" : "All letters"}

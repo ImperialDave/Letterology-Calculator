@@ -3,15 +3,15 @@ import { useEffect } from "react";
 import { AppShell } from "@/components/SiteChrome";
 import { DOCTRINE, DOCTRINE_PREFACE } from "@/lib/letterology/doctrine";
 import { pageCardMeta } from "@/lib/letterology/share";
-import { parseTongue } from "@/lib/letterology/tongue";
+import { useTongue } from "@/components/letterology/TongueProvider";
 import { VOICE } from "@/lib/letterology/voice";
 import { STOICHEIA_DOCTRINE } from "@/lib/stoicheia/doctrine";
 
-type Search = { tongue?: "el" };
+type Search = { tongue?: "la" | "el" };
 
 export const Route = createFileRoute("/why")({
   validateSearch: (search: Record<string, unknown>): Search => ({
-    tongue: search.tongue === "el" ? "el" : undefined,
+    tongue: search.tongue === "el" ? "el" : search.tongue === "la" ? "la" : undefined,
   }),
   head: () =>
     pageCardMeta({
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/why")({
 });
 
 function WhyPage() {
-  const tongue = parseTongue(Route.useSearch().tongue);
+  const tongue = useTongue(Route.useSearch().tongue);
 
   useEffect(() => {
     const id = tongue === "el" ? "greek" : "latin";

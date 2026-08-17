@@ -15,19 +15,20 @@ import {
   bondTitle,
   pageCardMeta,
 } from "@/lib/letterology/share";
-import { notePair, parseTongue } from "@/lib/letterology/tongue";
+import { useTongue } from "@/components/letterology/TongueProvider";
+import { notePair } from "@/lib/letterology/tongue";
 import { VOICE } from "@/lib/letterology/voice";
 import { readAgon } from "@/lib/stoicheia/agon";
 import { stoicheiaCardFile, stoicheiaXeniaPath, tweetXenia } from "@/lib/stoicheia/copy";
 import { readXenia } from "@/lib/stoicheia/xenia";
 
-type Search = { a?: string; b?: string; tongue?: "el"; mode?: "agon" };
+type Search = { a?: string; b?: string; tongue?: "la" | "el"; mode?: "agon" };
 
 export const Route = createFileRoute("/two")({
   validateSearch: (search: Record<string, unknown>): Search => ({
     a: typeof search.a === "string" ? search.a : undefined,
     b: typeof search.b === "string" ? search.b : undefined,
-    tongue: search.tongue === "el" ? "el" : undefined,
+    tongue: search.tongue === "el" ? "el" : search.tongue === "la" ? "la" : undefined,
     mode: search.mode === "agon" ? "agon" : undefined,
   }),
   loader: ({ location }) => {
@@ -35,7 +36,7 @@ export const Route = createFileRoute("/two")({
     return {
       a: params.get("a") ?? undefined,
       b: params.get("b") ?? undefined,
-      tongue: params.get("tongue") === "el" ? ("el" as const) : undefined,
+      tongue: params.get("tongue") === "el" ? ("el" as const) : params.get("tongue") === "la" ? ("la" as const) : undefined,
       mode: params.get("mode") === "agon" ? ("agon" as const) : undefined,
     };
   },
@@ -69,7 +70,7 @@ function TwoPage() {
   const navigate = useNavigate({ from: "/two" });
   const a = loaded.a ?? search.a;
   const b = loaded.b ?? search.b;
-  const tongue = parseTongue(loaded.tongue ?? search.tongue);
+  const tongue = useTongue(search.tongue ?? loaded.tongue);
   const mode = loaded.mode ?? search.mode;
   const [left, setLeft] = useState(a ?? "");
   const [right, setRight] = useState(b ?? "");
@@ -92,7 +93,7 @@ function TwoPage() {
       search: {
         a: nextA.trim() || undefined,
         b: nextB.trim() || undefined,
-        tongue: tongue === "el" ? "el" : undefined,
+        tongue: tongue === "el" ? "el" : "la",
         mode: tongue === "el" ? nextMode ?? mode : undefined,
       },
     });
