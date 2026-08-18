@@ -92,11 +92,6 @@ export function clip(value: string, max: number): string {
   return `${clean.slice(0, Math.max(0, max - 1)).trimEnd()}…`;
 }
 
-/**
- * Caption + blank line + www URL for the clipboard.
- * Intent uses `text` + `url` separately so X does not double the link.
- * Budget is a free 280-character post after one t.co wrapper.
- */
 export function composeXPost(
   caption: string,
   url: string,
@@ -118,7 +113,6 @@ export function tweetText(h: Horoscope): string {
   return `${h.displayName} is the ${h.archetype.house}\n${house} · ${manner} · ${field}`;
 }
 
-/** Short enough to paste into a free X compose and still look like a reading. */
 export function tweetReading(h: Horoscope): string {
   const first = h.statements.synthesis.split(/(?<=\.)\s/)[0]?.trim() || h.archetype.myth;
   return `${tweetText(h)}\n${first}`;
@@ -132,10 +126,18 @@ export function tweetBond(input: {
   a: string;
   b: string;
   title: string;
-  grade: string;
-  gradeLabel: string;
+  grade?: string;
+  gradeLabel?: string;
+  /** @deprecated use grade */
+  affinity?: number;
 }): string {
-  return `${input.a} & ${input.b}\n${input.title}\nGrade ${input.grade} · ${input.gradeLabel}`;
+  const mark =
+    input.grade != null
+      ? `Grade ${input.grade}${input.gradeLabel ? ` · ${input.gradeLabel}` : ""}`
+      : input.affinity != null
+        ? `Fit ${input.affinity}`
+        : "Bond";
+  return `${input.a} & ${input.b}\n${input.title}\n${mark}`;
 }
 
 export function countPath(slug: string): string {
