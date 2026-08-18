@@ -74,15 +74,15 @@ export type Stoicheion = {
 
 function hymnLine(hymn: ReturnType<typeof hymnFaces>): string {
   if (hymn.length === 0) {
-    return "This name has no vowels, so there is nothing to sing. The work is all consonants — public, colliding, and without a private weather on the page.";
+    return "This name has no vowels, so there is nothing to sing. The work is all consonants — public and colliding. Do one public act before sunset. Do not invent an inner weather the letters did not write.";
   }
   const faces = hymn.map((item) => `${item.face}`).join(", then ");
-  return `The vowels, in order: ${hymn.map((item) => item.letter).join(" · ")}. That is ${faces}, so the song goes that way — a path through the planets, not a pile of points.`;
+  return `The vowels, in order: ${hymn.map((item) => item.letter).join(" · ")}. That is ${faces}. Sing in this order only — do not weigh the vowels as points. When a day asks for one of these faces, that step is on duty; the others wait.`;
 }
 
 function somaCopy(office: Stoich | null, place: Stoich | null): string {
   if (!office) {
-    return "This name is almost all vowels, so the public work is thin. The consonants will have to come from other people, other rooms, a city that lends the name a body.";
+    return "This name is almost all vowels, so the public work is thin. Borrow one public act from a collaborator or a room that already has body. Do not fake a heavy consonant you do not carry.";
   }
   const officeHora = horaOf(office);
   const kind = familyEnglish(office);
@@ -117,9 +117,11 @@ function synthesize(input: {
   axis: Axis;
   hymn: ReturnType<typeof hymnFaces>;
   officeHora: Hora | null;
+  placeHora: Hora | null;
   omphalosHora: Hora;
   sumSpell: string;
   mix: ElementMix;
+  motionLine: string;
 }): string {
   const start = input.axis.entersAsBreath ? "starts on a vowel" : "starts on a consonant";
   const end = input.axis.finishesAsBlow ? "ends on a consonant" : "ends on a vowel";
@@ -128,13 +130,37 @@ function synthesize(input: {
       ? "There is no vowel sequence to sing."
       : `The vowels go ${input.hymn.map((item) => item.face).join(", then ")}.`;
   const work = input.officeHora
-    ? `The public work belongs with ${input.officeHora.noun}.`
-    : "The public work is thin.";
+    ? input.placeHora
+      ? `Public work: ${input.officeHora.noun} in the place of ${input.placeHora.noun}.`
+      : `Public work belongs with ${input.officeHora.noun}.`
+    : "Public work is thin — borrow one civic act.";
   const mouth =
     input.mix.tied.length > 1
       ? `The letters split between ${input.mix.tied.join(" and ")}.`
-      : `Most of the letters are ${input.mix.lead}, so the name is mostly that.`;
-  return `${input.raw.trim()} is the road of ${input.road.title}. The name ${start} and ${end}. ${hymn} ${work} ${mouth} The total is ${input.sumSpell}, which lands on ${input.omphalosHora.noun} — that hour of the sum, not a lucky digit. Read the road as a voyage: how you enter, how you finish, what you sing in between, what other people meet.`;
+      : `Most of the letters are ${input.mix.lead}.`;
+  const finish = input.road.closed
+    ? "Finish what you start before you open a second door."
+    : `Enter as ${input.road.first.noun}; leave as ${input.road.last.noun}.`;
+  return `${input.raw.trim()} is the road of ${input.road.title}. The name ${start} and ${end}. ${hymn} ${work} ${mouth} The total is ${input.sumSpell}, which lands on ${input.omphalosHora.noun} — the hour of the sum, not a lucky digit. ${finish} ${input.motionLine}`;
+}
+
+function composeInvitation(input: {
+  road: Road;
+  officeHora: Hora | null;
+  placeHora: Hora | null;
+  motion: string;
+  omphalosHora: Hora;
+}): string {
+  const enter = input.road.first.invitation;
+  const work = input.officeHora
+    ? input.placeHora
+      ? `Do the office of ${input.officeHora.noun} in the place of ${input.placeHora.noun} — do not swap them.`
+      : input.officeHora.invitation
+    : "Borrow one public act; the name is light on consonants.";
+  const finish = input.road.closed
+    ? "The road returns to the same hour — finish what you start before sunset."
+    : `Leave as ${input.road.last.noun}: ${input.road.last.invitation}`;
+  return `${enter} ${work} ${finish}`;
 }
 
 export function readStoicheion(raw: string, when: Date = new Date()): Stoicheion | null {
@@ -169,7 +195,7 @@ export function readStoicheion(raw: string, when: Date = new Date()): Stoicheion
     motion: motion.motion,
   });
   const friends = friendsOfSum(sum);
-  const daimonLine = `Add the letter-values and the sum lands on ${omphalosHora.noun}. That is the hour of the total, not a soulmate. ${omphalosHora.gift} When it fails: ${omphalosHora.shadow} ${omphalosHora.invitation}`;
+  const daimonLine = `Add the letter-values and the sum lands on ${omphalosHora.noun}. That is the hour of the total, not a soulmate. ${omphalosHora.gift} When it fails: ${omphalosHora.shadow} Do this: ${omphalosHora.invitation}`;
   const letterWalk = walkLetters(letters);
   const elementMix = elementMixOf(letters);
   const diphthongs = diphthongsIn(letters);
@@ -211,13 +237,19 @@ export function readStoicheion(raw: string, when: Date = new Date()): Stoicheion
       axis,
       hymn,
       officeHora,
+      placeHora,
       omphalosHora,
       sumSpell: spellQuantity(sum),
       mix: elementMix,
+      motionLine: motion.line,
     }),
-    invitation: road.closed
-      ? `${road.first.invitation} The road returns to the same hour — finish what you start.`
-      : road.first.invitation,
+    invitation: composeInvitation({
+      road,
+      officeHora,
+      placeHora,
+      motion: motion.line,
+      omphalosHora,
+    }),
     epithet,
     likeness,
     motion,
