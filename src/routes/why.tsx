@@ -39,9 +39,9 @@ function WhyPage() {
         <p className="mt-3 max-w-xl leading-relaxed text-ink/85">{VOICE.doctrineAbstract}</p>
         <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted">
           Latin: first letter is the role; the next two by how often they return are how and where.
-          Greek: first and last are the road; vowels are a song in order; consonants are public
-          work; the total is an old number written as letters. The Count writes amounts as A–Z.
-          Luck is the day's willingness. Letterize an act to time it.
+          Greek: first and last are the road (proodos / epistrophe); vowels are a hymn sung in
+          order; consonants are the civic body; the total is isopsephy — an hour of the sum. The
+          Count writes amounts as A–Z. Luck is the day's willingness. Letterize an act to time it.
         </p>
       </header>
 
