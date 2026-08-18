@@ -6,7 +6,7 @@ import { PageShare } from "@/components/letterology/PageShare";
 import { Sheet } from "@/components/ui/sheet";
 import { VOICE } from "@/lib/letterology/voice";
 import { stoicheiaCardFile, stoicheiaNamePath, tweetStoicheion } from "@/lib/stoicheia/copy";
-import { dayOfStoicheion } from "@/lib/stoicheia/day";
+import { dayOfStoicheion, weatherLine } from "@/lib/stoicheia/day";
 import type { Stoicheion } from "@/lib/stoicheia/engine";
 import { markOf } from "@/lib/stoicheia/letters";
 import { portraitOf } from "@/lib/stoicheia/portrait";
@@ -38,6 +38,41 @@ export function GreekPortrait({ reading }: { reading: Stoicheion }) {
           />
         </div>
       </header>
+
+      <section className="space-y-4 rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
+        <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">The analysis</p>
+        <AnalysisBlock kicker="Axis · proodos / epistrophe" body={reading.axisCopy} />
+        <AnalysisBlock kicker="Hymn · motion of the vowels" body={reading.hymnLine} />
+        <AnalysisBlock kicker="Motion" body={reading.motion.line} />
+        <AnalysisBlock kicker="Civic body · consonants" body={reading.somaCopy} />
+        <AnalysisBlock kicker="Letter walk · mouth and elements" body={reading.letterLine} />
+        <AnalysisBlock kicker="Likeness · Cratylus made small" body={reading.likeness.line} />
+        <AnalysisBlock kicker="Tightness" body={reading.tightness.line} />
+        <AnalysisBlock kicker="Daimon of the total" body={reading.daimonLine} />
+        {reading.friends.length > 0 ? (
+          <AnalysisBlock
+            kicker="Same weight in the canon"
+            body={`This total is also ${reading.friends.map((item) => `${item.greek} (${item.english})`).join(", ")}. A sign in the commons of letters, not a claim that two lives are one.`}
+          />
+        ) : null}
+      </section>
+
+      <section className="space-y-3 rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
+        <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">
+          Today · Attic hour · {today.weather}
+        </p>
+        <p className="font-display text-2xl text-ink">{today.headline}</p>
+        <p className="leading-relaxed text-ink/90">{weatherLine(today.weather)}</p>
+        <p className="leading-relaxed text-ink/90">{today.meeting}</p>
+        <p className="text-sm text-muted">{today.festivalLine}</p>
+        <p className="font-display text-sm text-ink">{today.invitation}</p>
+      </section>
+
+      <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
+        <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">Synthesis</p>
+        <p className="mt-2 leading-relaxed text-ink/90">{reading.synthesis}</p>
+        <p className="mt-4 font-display text-ink">{reading.invitation}</p>
+      </section>
 
       <NightWheel
         first={reading.axis.proodos}
@@ -86,6 +121,16 @@ export function GreekPortrait({ reading }: { reading: Stoicheion }) {
         <p className="mt-4 leading-relaxed text-ink/90">{reading.likeness.line}</p>
         <p className="mt-4 leading-relaxed text-ink/90">{reading.tightness.line}</p>
         <p className="mt-4 leading-relaxed text-ink/90">{reading.daimonLine}</p>
+        {reading.kinInName.length > 0 ? (
+          <p className="mt-4 text-sm text-ink/80">
+            Kin living in this name: {reading.kinInName.join(" · ")}.
+          </p>
+        ) : null}
+        {reading.erisInName.length > 0 ? (
+          <p className="mt-2 text-sm text-ink/80">
+            Strife living in this name: {reading.erisInName.join(" · ")}.
+          </p>
+        ) : null}
         {reading.friends.length > 0 ? (
           <p className="mt-4 text-sm text-ink/80">
             This total is also {reading.friends.map((item) => `${item.greek} (${item.english})`).join(", ")}.
@@ -93,6 +138,15 @@ export function GreekPortrait({ reading }: { reading: Stoicheion }) {
         ) : null}
         <p className="mt-4 text-sm text-muted">{today.festivalLine}</p>
       </Sheet>
+    </div>
+  );
+}
+
+function AnalysisBlock({ kicker, body }: { kicker: string; body: string }) {
+  return (
+    <div>
+      <p className="font-display text-xs tracking-[0.14em] text-primary uppercase">{kicker}</p>
+      <p className="mt-1 leading-relaxed text-ink/90">{body}</p>
     </div>
   );
 }
