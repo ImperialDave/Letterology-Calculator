@@ -27,5 +27,5 @@ export function axisCopy(axis: Axis): string {
   if (axis.closed) {
     return `First and last are the same letter, ${axis.proodos}, so the name ${enter} and returns to that mark. Proodos and epistrophe coincide: a closed road. Finish what you start, or you will walk the same hour again.`;
   }
-  return `First letter ${axis.proodos}, last letter ${axis.epistrophe}. The name ${enter} and ${leave}. That pair is the voyage — procession out, return home — how you arrive, how you leave the room.`;
+  return `First letter ${axis.proodos}, last letter ${axis.epistrophe}. The name ${enter} and ${leave}. Enter in the manner of the first hour; leave in the manner of the last. Do not use the entrance gesture at the exit.`;
 }

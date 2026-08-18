@@ -23,7 +23,7 @@ export function motionOf(planets: Planet[]): MotionReading {
     return {
       motion: "silent",
       ranks: [],
-      line: "There is no vowel sequence. The ladder is unclimbed. The work of this name is all consonants — public, colliding, and without a sung weather.",
+      line: "There is no vowel sequence. All guidance is civic — the consonants. Do one public act before sunset. Do not invent an inner weather the letters did not write.",
     };
   }
   const ranks = planets.map((planet) => PLANET_RANK[planet]);
@@ -32,7 +32,7 @@ export function motionOf(planets: Planet[]): MotionReading {
     return {
       motion: "unison",
       ranks,
-      line: "The vowels stay on one planet. A single note. That can be devotion, or a refusal to move. Ask which.",
+      line: "The vowels stay on one planet — a single note. Hold that weather for this week. Refuse a second mood until the job under that note is finished.",
     };
   }
   let up = true;
@@ -47,20 +47,20 @@ export function motionOf(planets: Planet[]): MotionReading {
       motion: "ascent",
       ranks,
       line: hardened
-        ? "The vowels climb and then stay in force. The last note is a decision, not a rest."
-        : "The vowels climb the spheres, Moon toward Saturn. Proodos of the hymn: each step is farther from the first dark.",
+        ? "The vowels climb and then stay in force. Take the next harder step before you rest. The last note is a decision — do not soft-land into a smaller errand."
+        : "The vowels climb the spheres, Moon toward Saturn. Take the next harder step before you rest. Do not start a softer errand mid-climb.",
     };
   }
   if (down) {
     return {
       motion: "descent",
       ranks,
-      line: "The vowels fall inward, toward the first dark — epistrophe of the hymn. This is not failure. It is a return to night-mind.",
+      line: "The vowels fall inward, toward the first dark. Return one matter to private judgment today. Do not perform it in the public room.",
     };
   }
   return {
     motion: "periodos",
     ranks,
-    line: "The vowels climb and fall — a circuit, not a march. What leaves comes back. Do not treat the loop as a stall.",
+    line: "The vowels climb and fall — a circuit. Schedule a return: name the thing you leave this week, and name when you will re-enter it. Do not treat the loop as a stall.",
   };
 }

@@ -48,10 +48,10 @@ export function tightnessOf(input: {
   const reasons = state === "bound" ? boundMarks : state === "loosed" ? looseMarks : [];
   const line =
     state === "bound"
-      ? `This name is bound: ${reasons.join("; ")}.`
+      ? `This name is bound: ${reasons.join("; ")}. Do not open a second front. Finish the closed circuit or the insistent consonant before you start anything new.`
       : state === "loosed"
-        ? `This name is loosed: ${reasons.join("; ")}.`
-        : "This name is held — ordinary tension, not a knot and not a flight.";
+        ? `This name is loosed: ${reasons.join("; ")}. Choose one binding before sunset — a place, a person, or a deadline. The name will not bind itself.`
+        : "This name is held — ordinary tension, not a knot and not a flight. Do one small public act and one small private act. No drama of destiny.";
 
   return { state, reasons, line };
 }
