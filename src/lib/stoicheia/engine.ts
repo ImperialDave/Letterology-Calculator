@@ -24,6 +24,7 @@ import { isopsephy, sitSum, spellQuantity } from "./milesian";
 import { motionOf, type MotionReading } from "./motion";
 import { somaOffices, weighSoma } from "./soma";
 import { tightnessOf, type TightReading } from "./tightness";
+import { withElementAct } from "./element-act";
 
 export type Road = {
   title: string;
@@ -203,14 +204,17 @@ export function readStoicheion(raw: string, when: Date = new Date()): Stoicheion
   const rough = roughBreath(raw);
   const iotaUnder = iotaSubscript(raw);
   const finalSigma = hasFinalSigma(raw);
-  const letterLine = letterLineOf({
-    mix: elementMix,
-    diphthongs,
-    geminates,
-    rough,
-    iotaUnder,
-    finalSigma,
-  });
+  const letterLine = withElementAct(
+    letterLineOf({
+      mix: elementMix,
+      diphthongs,
+      geminates,
+      rough,
+      iotaUnder,
+      finalSigma,
+    }),
+    elementMix,
+  );
   return {
     raw: raw.trim(),
     letters,
