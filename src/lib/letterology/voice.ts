@@ -40,7 +40,7 @@ export const VOICE = {
   countConfessButton: "Show the letters",
   countEmpty: "That has no digits we can write as letters. Try 2026, or type letters like BYX.",
   stoicheiaLede:
-    "A second reading, from the Greek alphabet. Twenty-four letters. The first letter is how the name arrives. The last is how it leaves. Vowels are a song in the order they appear. Consonants are the public work. The total is an old way of writing a number as letters. This is not Letterology in other clothes.",
+    "A second instrument, from the Greek alphabet. Twenty-four letters, night first. First and last are the road — proodos and epistrophe. Vowels are a hymn sung in order. Consonants are the civic body. The total is isopsephy: an hour of the sum, not a lucky digit. This is not Letterology in other clothes.",
   stoicheiaButton: "Read this name",
   stoicheiaHint:
     "Greek or Latin both work. C becomes Κ, TH becomes Θ, PH becomes Φ, J becomes Ι. Accents fall away. Anything that cannot become one of the twenty-four is dropped.",
