@@ -60,7 +60,7 @@ export const HOW_TO = [
     term: "Tightness",
     greek: "the living strain",
     plain:
-      "Whether road, hymn, and consonants pull together or strain. A closed road with a climbing hymn is not the same life as a closed road that sings one note. Use the strain as a map, not as a law.",
+      "Whether road, hymn, and consonants pull together or strain. Bound: finish the circuit before a second front. Loosed: choose one binding before sunset. Held: one small public act and one small private act. Use the strain as a map, not as a law.",
   },
 ] as const;
 
