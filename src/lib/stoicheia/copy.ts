@@ -6,13 +6,13 @@ export const HOW_TO = [
     term: "First letter / last letter",
     greek: "proodos / epistrophe",
     plain:
-      "How the name starts and how it finishes. First letter toward last letter — Hekate toward Aphrodite, not a three-letter personality. A closed road starts and ends on the same hour, so finish what you start.",
+      "How the name starts and how it finishes. First letter toward last letter — procession and return, not a three-letter personality. A closed road starts and ends on the same hour, so finish what you start. Entrance and exit are the Greek axis.",
   },
   {
     term: "The vowels, in order",
     greek: "the hymn",
     plain:
-      "Seven vowels, seven planets, Moon to Saturn. Sung forward, in the order they appear. We do not weigh a song. Watch whether the vowels climb, fall, circuit, or stay on one note.",
+      "Seven vowels, seven planets, Moon to Saturn. Sung forward, in the order they appear. We do not weigh a song. Watch whether the vowels climb (ascent), fall (descent), circuit (periodos), hold one note (unison), or stay silent.",
   },
   {
     term: "Each letter",
@@ -24,31 +24,43 @@ export const HOW_TO = [
     term: "The consonants",
     greek: "the civic body",
     plain:
-      "The public work — what other people actually meet. The heaviest consonant is the office; the next is the place of work. Hard stops collide. Liquids bind. Doubles hit twice.",
+      "The public work — what other people actually meet. The heaviest consonant is the office; the next is the place of work. Hard stops collide. Liquids bind. Doubles hit twice. Element mix (fire, air, water, earth) names the body’s weather.",
   },
   {
     term: "The name’s total",
     greek: "isopsephy",
     plain:
-      "Greeks already wrote numbers as letters. Add them and the sum lands on one of the twenty-four hours — the hour of the total, not a lucky digit. We do not fold 888 into 6. If an old word weighs the same, that is a sign, not a soul.",
+      "Greeks already wrote numbers as letters. Add them and the sum lands on one of the twenty-four hours — the hour of the total, the daimon of the sum, not a lucky digit. We do not fold 888 into 6. If an old word weighs the same, that is a sign, not a soul.",
   },
   {
-    term: "Two names",
-    greek: "xenia",
+    term: "Likeness",
+    greek: "Cratylus, made small",
     plain:
-      "Guest and host. We ask if the vowels share a planet, if the totals match, if one first letter is the other’s last. Guest-friendship is a duty, not a score. Contest is the other door — prizes, not a table.",
-  },
-  {
-    term: "The day",
-    greek: "Attic time",
-    plain:
-      "The civic day begins at sunset. Months are lunar and have festivals — the dead at the table, the city’s gift to Athena. New-moon and last-day leftovers belong with Hekate. The moon math is a mean month: good enough for a reading, not to launch a ship.",
+      "Do the heaviest consonants agree with the hour the road finishes in? A name can be like itself, or already arguing with its own sounds. That is analysis of the mouth against the last door — not a verdict on the soul.",
   },
   {
     term: "Related / strife",
     greek: "kin / eris",
     plain:
-      "Related letters share a sound-family (Π with Β and Φ) or a cult pair. A strife-pair is a blind spot, not a villain — the work that keeps the hour honest.",
+      "Related letters share a sound-family (Π with Β and Φ) or a cult pair. A strife-pair is a blind spot, not a villain — the work that keeps the hour honest. When both live in one name, the handle is a small city.",
+  },
+  {
+    term: "Two names",
+    greek: "xenia",
+    plain:
+      "Guest and host. We ask if the vowels share a planet, if the totals match, if one first letter is the other’s last. Guest-friendship is a duty, not a score: arrival, table, leaving. Contest is the other door — prizes, not a table.",
+  },
+  {
+    term: "The day",
+    greek: "Attic time",
+    plain:
+      "The civic day begins at sunset. Months are lunar and have festivals — the dead at the table, the city’s gift to Athena. New-moon and last-day leftovers belong with Hekate. Weather is hearth, road, contest, mystery, exile, symposium, or omen — how today’s hour meets this road.",
+  },
+  {
+    term: "Tightness",
+    greek: "the living strain",
+    plain:
+      "Whether road, hymn, and consonants pull together or strain. A closed road with a climbing hymn is not the same life as a closed road that sings one note. Use the strain as a map, not as a law.",
   },
 ] as const;
 
