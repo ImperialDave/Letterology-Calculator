@@ -48,14 +48,14 @@ export function motionOf(planets: Planet[]): MotionReading {
       ranks,
       line: hardened
         ? "The vowels climb and then stay in force. The last note is a decision, not a rest."
-        : "The vowels climb the spheres, Moon toward Saturn. Each step is farther from the first dark.",
+        : "The vowels climb the spheres, Moon toward Saturn. Proodos of the hymn: each step is farther from the first dark.",
     };
   }
   if (down) {
     return {
       motion: "descent",
       ranks,
-      line: "The vowels fall inward, toward the first dark. This is not failure. It is a return to night-mind.",
+      line: "The vowels fall inward, toward the first dark — epistrophe of the hymn. This is not failure. It is a return to night-mind.",
     };
   }
   return {
