@@ -99,8 +99,8 @@ export function likenessOf(weights: SomaWeight[], last: Hora): Likeness {
     score,
     like,
     line: like
-      ? `This name is like itself. The heaviest sound ${does}, and ${last.noun} can use that. The mouth and the hour agree — a rare honesty. Keep it.`
-      : `This name works against its own sounds. The heaviest sound ${does}, but the road finishes at ${last.noun}. That is not a defect. It is the argument the name is already having. Listen to it; do not pick a winner on day one.`,
+      ? `This name is like itself. The heaviest sound ${does}, and ${last.noun} can use that. The mouth and the hour agree. Keep them on the same job this week.`
+      : `This name works against its own sounds. The heaviest sound ${does}, but the road finishes at ${last.noun}. Split the day: do the consonant's public work in the morning; meet the last hour's demand at the threshold — exit, deadline, or goodbye. Do not force them into one gesture.`,
   };
 }
 
