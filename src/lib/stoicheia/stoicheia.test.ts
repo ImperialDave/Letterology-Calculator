@@ -234,7 +234,9 @@ test("a Stoicheion carries the letter walk", () => {
   assert.equal(reading.elementMix.lead, "air");
   assert.equal(reading.geminates.length, 1);
   assert.match(reading.letterLine, /air/i);
-  assert.match(reading.synthesis, /mostly/);
+  assert.match(reading.synthesis, /Most of the letters are air|Public work/);
+  assert.match(reading.invitation, /Do the office|Leave as|finish what you start/i);
+  assert.match(reading.letterLine, /Lead with/i);
 });
 
 test("likeness is deterministic", () => {
