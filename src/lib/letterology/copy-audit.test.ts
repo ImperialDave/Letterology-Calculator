@@ -21,7 +21,7 @@ test("door copy follows the voice law", () => {
   }
   assert.match(VOICE.homeHero, /username/i);
   assert.match(VOICE.homeHero, /letter/i);
-  assert.match(VOICE.footerLine, /do not tell the future/i);
+  assert.match(VOICE.footerLine, /luck is willingness|decision is yours/i);
   assert.match(VOICE.countConfessLabel, /regular number/i);
 });
 

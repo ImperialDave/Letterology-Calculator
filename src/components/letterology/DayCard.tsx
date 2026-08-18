@@ -2,10 +2,12 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Check, Copy } from "lucide-react";
 import { CourtLines } from "@/components/letterology/CourtLines";
+import { LuckPanel } from "@/components/letterology/LuckPanel";
 import { Explain } from "@/components/letterology/Gloss";
 import { Button } from "@/components/ui/button";
 import { houseOf } from "@/lib/letterology/archetypes";
 import { dayReadingOf } from "@/lib/letterology/day-reading";
+import { luckOf } from "@/lib/letterology/luck";
 import { copyToClipboard } from "@/lib/letterology/clipboard";
 import { WEATHER_COPY } from "@/lib/letterology/glossary";
 import { themeOf } from "@/lib/letterology/lexicon";
@@ -22,6 +24,7 @@ export function DayCard({
 }) {
   const [copied, setCopied] = useState(false);
   const reading = dayReadingOf(horoscope, date);
+  const luck = luckOf(horoscope, date);
   if (!reading) return null;
   const todayHouse = houseOf(reading.day.date);
   const weather = WEATHER_COPY[reading.weather] ?? {
@@ -59,6 +62,10 @@ export function DayCard({
       <p className="mt-4 max-w-3xl leading-relaxed text-ink/90">{reading.dayJob}</p>
       <p className="mt-3 max-w-3xl leading-relaxed text-ink/90">{reading.meeting}</p>
       <p className="mt-3 max-w-3xl text-sm leading-relaxed text-ink/80">{reading.manner}</p>
+
+      <div className="mt-6 border-t border-ink/10 pt-6">
+        <LuckPanel luck={luck} />
+      </div>
 
       <p className="mt-5 font-display text-sm text-ink">{reading.invitation}</p>
 

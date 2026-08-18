@@ -37,14 +37,29 @@ export function foldCharacters(raw: string): string {
   return out.normalize("NFD").replace(/\p{M}/gu, "");
 }
 
+const DIGIT_AS_LETTER: Record<string, string> = {
+  "0": "F",
+  "1": "A",
+  "2": "B",
+  "3": "C",
+  "4": "D",
+  "5": "E",
+  "6": "F",
+  "7": "G",
+  "8": "H",
+  "9": "I",
+};
+
 export function parseName(raw: string): { displayName: string; parts: NamePart[] } {
-  const displayName = raw.trim().replace(/\s+/g, " ");
+  const displayName = raw.trim().replace(/^@+/, "").replace(/\s+/g, " ");
   const folded = foldCharacters(displayName);
-  const tokens = folded.split(/[^A-Za-z]+/).filter(Boolean);
+  const tokens = folded.split(/[^A-Za-z0-9]+/).filter(Boolean);
   const parts: NamePart[] = tokens
     .map((token) => ({
       original: token,
-      letters: token.toUpperCase().replace(/[^A-Z]/g, ""),
+      letters: [...token.toUpperCase()]
+        .map((ch) => (/[A-Z]/.test(ch) ? ch : DIGIT_AS_LETTER[ch] ?? ""))
+        .join(""),
     }))
     .filter((p) => p.letters.length > 0);
   return { displayName, parts };

@@ -14,10 +14,10 @@
  */
 export const VOICE = {
   homeHero:
-    "Type a username. We read its letters — not your birthday, not your legal name — and show the role those letters name.",
+    "Type a username. We read its letters — not your birthday, not your legal name — then tell you today’s luck and whether an act will travel.",
   homeReadTitle: "Read a username",
   homeReadLede:
-    "The first letter is the role. The next two, by how often they come back, are how you tend to work and where that work wants to happen. Together they are a Letter Path. A likeness, not a verdict.",
+    "The first letter is the role. The next two, by how often they come back, are how you tend to work and where that work wants to happen. Together they are a Letter Path. Today’s court says whether that Path runs warm.",
   homeBondLede:
     "Type two usernames. We compare their roles, how each works, where, which letters they share, and which help one already has that the other is missing. The number is a fit, not a forecast.",
   homeCountLede:
@@ -47,9 +47,9 @@ export const VOICE = {
   stoicheiaEmpty:
     "We could not turn that into Greek letters. Try a Latin username, or type it in Greek.",
   doctrineAbstract:
-    "We read usernames, not birth names. First letter is the role. The next two by how often they return are how you work and where. We do not predict. We do not crush twenty-six letters into one digit. Use the portrait. Do not obey it.",
+    "We read usernames, not birth names. First letter is the role. The next two by how often they return are how you work and where. Luck is the day’s willingness. Letterize an act to time it. Use the reading. Do not spend it.",
   footerLine:
-    "A portrait of a username, not a prediction — we describe the letters you already use. We do not tell the future.",
+    "Official instrument. Usernames, not birth names. Luck is willingness. The decision is yours.",
   moreLetters: "More about these letters",
   anotherUsername: "Another username",
   countNightNote:

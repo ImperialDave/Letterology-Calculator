@@ -2,10 +2,13 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { HouseCircle } from "@/components/letterology/HouseCircle";
 import { LetterDetail } from "@/components/letterology/LetterDetail";
+import { DecisionCaster } from "@/components/letterology/DecisionCaster";
+import { LuckPanel } from "@/components/letterology/LuckPanel";
 import { PageShare } from "@/components/letterology/PageShare";
 import { Sheet } from "@/components/ui/sheet";
 import { houseOf } from "@/lib/letterology/archetypes";
 import { dayReadingOf } from "@/lib/letterology/day-reading";
+import { luckOf } from "@/lib/letterology/luck";
 import { themeOf } from "@/lib/letterology/lexicon";
 import { pigmentOf } from "@/lib/letterology/pigment";
 import { nameToSlug, portraitPath, tweetReading } from "@/lib/letterology/share";
@@ -16,6 +19,7 @@ export function LatinPortrait({ horoscope }: { horoscope: Horoscope }) {
   const [letter, setLetter] = useState<Letter>(horoscope.signature);
   const [open, setOpen] = useState<"letter" | "day" | null>(null);
   const day = dayReadingOf(horoscope);
+  const luck = luckOf(horoscope);
   const pigment = pigmentOf(horoscope.signature);
   const todayLine = day?.headline ?? "";
 
@@ -37,10 +41,13 @@ export function LatinPortrait({ horoscope }: { horoscope: Horoscope }) {
           {houseOf(horoscope.triad[0]).noun} · how: {themeOf(horoscope.triad[1]).name.toLowerCase()} ·
           where: {themeOf(horoscope.triad[2]).name.toLowerCase()}. {VOICE.pathCaption}
         </p>
+        <p className="mt-4 font-display text-sm text-ink">
+          Today's luck {luck.score} · {luck.verdict}
+        </p>
         <button
           type="button"
           onClick={() => setOpen("day")}
-          className="mt-4 text-sm text-muted hover:text-ink"
+          className="mt-2 text-sm text-muted hover:text-ink"
         >
           {todayLine}
         </button>
@@ -52,6 +59,10 @@ export function LatinPortrait({ horoscope }: { horoscope: Horoscope }) {
           />
         </div>
       </header>
+
+      <LuckPanel luck={luck} />
+
+      <DecisionCaster horoscope={horoscope} />
 
       <HouseCircle
         selected={letter}

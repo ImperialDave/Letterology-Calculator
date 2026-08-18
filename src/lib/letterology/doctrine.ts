@@ -9,8 +9,8 @@ export type DoctrineSection = {
  * Written backward from the mechanics so every rule looks like a consequence.
  */
 export const DOCTRINE_PREFACE = [
-  "We read usernames, not birth names. The first letter is the role. The next two, by how often they return, are how you work and where. We do not predict. We do not turn letters into one digit.",
-  "Letterology is not a forecast. It is a way of looking. It takes the marks a person already chose to live under — a username, a date, a count — and reads them with the same seriousness other arts reserve for the sky. The sky is not ours. The alphabet is.",
+  "We read usernames, not birth names. The first letter is the role. The next two, by how often they return, are how you work and where. We do not turn letters into one digit. We do tell you whether today's court is willing — that is luck — and whether an act will travel.",
+  "A letter does not change its nature. It changes its willingness. Favorable glyphs run warm. Contrary glyphs withdraw. You do not obey the current. You use it to time a decision.",
   "What follows is not a manual. The Key is the manual. This is the reason the machine is shaped the way it is. Every rule on the site was chosen. This page says why those choices, and not others, are the ones that can be kept.",
 ];
 
@@ -19,9 +19,9 @@ export const DOCTRINE: DoctrineSection[] = [
     kicker: "The refusal",
     title: "What we will not do",
     paragraphs: [
-      "A system that tells the future has already decided the person is finished. We do not do that. A system that reads a birth name as fate has already decided the person is property of a record office. We do not do that. A system that folds twenty-six letters into nine digits has already decided that difference is an inconvenience. We do not do that.",
+      "A system that reads a birth name as fate has already decided the person is property of a record office. We do not do that. A system that folds twenty-six letters into nine digits has already decided that difference is an inconvenience. We do not do that. Luck is not fate. Luck is willingness: which letters run warm today, and which withdraw.",
       "Numerology asks a name to become a number so a life can be held in one hand. Astrology asks a birth hour to become a weather report. Both are serious in their own houses. This house is different. We ask only: what letters did you put into the world, and what work do those letters already know how to do?",
-      "The sentence on every portrait is not decoration. This is a portrait, not a prediction. A portrait can be wrong about a soul and still be true about a face. We claim the face.",
+      "The sentence on every portrait is not decoration. This is a portrait you can act on. A portrait can be wrong about a soul and still be true about a face. We claim the face, then we tell you if the day will have the move.",
     ],
   },
   {
@@ -106,10 +106,20 @@ export const DOCTRINE: DoctrineSection[] = [
     ],
   },
   {
+    kicker: "Luck",
+    title: "Willingness, not fate",
+    paragraphs: [
+      "The old magi were right about one thing and wrong about another. Right: the letters make findings. Wrong: that a finding is a sentence you serve. A finding is a weather report for a name. You still walk out the door.",
+      "Each day the date names a house, the way the thirteenth is M. That house keeps a court: three allies, three enemies. Allies run warm — favorable currents. Enemies withdraw — contrary currents. The letters do not change their nature. Only their willingness.",
+      "Your luck today is the meeting of your Path with that court. If your house is in the warm seats, doors ajar. If your manner withdraws, do not force the method you usually trust. If the day's letter is already in your handle, the day is using something you already carry — home-field, not destiny.",
+      "A decision is also a name. Letterize the act. Ask two questions only: is this my kind of move, and is this house willing today? That is how you predict your own luck — not by asking a priest, but by reading the materials you already put into the world against the court the calendar already named.",
+    ],
+  },
+  {
     kicker: "The ethic",
     title: "A portrait can be used. It cannot be obeyed.",
     paragraphs: [
-      "If this system made you safer by being true, it would still be a portrait. If it made you interesting by being false, it would still be a portrait. Use it as you use a good likeness: to notice what you already carry, to see the ally you keep refusing, to name the day’s grain without confusing it for a verdict.",
+      "A coherent reading is one you can act on before noon. It names the Path, the day's willingness, one move to lean into, one move to wait on, and who to ask. If it cannot do that, it is incense.",
       "Do not spend the reading. Do not let a Letter Path become an excuse. The Seeker who never crosses is not fulfilling a house. They are hiding in one. The enemy house is not your villain. It is the work you will not look at.",
       "No sentence here is generated by a model that forgets tomorrow. The copy is composed from tables you can open. If the system cannot show its work, it has become a priest.",
     ],
@@ -126,4 +136,4 @@ export const DOCTRINE: DoctrineSection[] = [
 ];
 
 export const DOCTRINE_CLOSE =
-  "This is a portrait, not a prediction. The letters you already carry are the material.";
+  "The letters you already carry are the material. The day is the current. The decision is yours.";

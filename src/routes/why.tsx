@@ -41,7 +41,7 @@ function WhyPage() {
           Latin: first letter is the role; the next two by how often they return are how and where.
           Greek: first and last are the road; vowels are a song in order; consonants are public
           work; the total is an old number written as letters. The Count writes amounts as A–Z.
-          Nothing here tells the future.
+          Luck is the day's willingness. Letterize an act to time it.
         </p>
       </header>
 

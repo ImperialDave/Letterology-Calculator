@@ -12,14 +12,14 @@ test("the doctrine is an argument, not a stub", () => {
       assert.ok(paragraph.length > 80, section.title);
     }
   }
-  assert.match(DOCTRINE_CLOSE, /portrait, not a prediction/i);
+  assert.match(DOCTRINE_CLOSE, /decision is yours|letters you already carry/i);
 });
 
 test("the doctrine names the refusals the site actually keeps", () => {
   const body = [...DOCTRINE_PREFACE, ...DOCTRINE.flatMap((section) => section.paragraphs)].join("\n");
   assert.match(body, /handle/i);
   assert.match(body, /Fool/);
-  assert.match(body, /not a prediction/i);
+  assert.match(body, /willingness|luck/i);
   assert.match(body, /twenty-six/i);
   assert.match(body, /Count|write amounts as letters/i);
 });
