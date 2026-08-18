@@ -19,19 +19,41 @@ export type StoicheiaDay = {
 };
 
 const WEATHER_LINE: Record<DayWeather, string> = {
-  hearth: "Today’s hour is already on this name’s road. Set a table. Feed the work you already know.",
-  road: "Today meets the name on the road. Guest-friendship is the work: offer a true word and a way onward.",
-  contest: "Today pushes back. Keep the strife useful. Do not turn a hard hour into a new identity.",
-  mystery: "The hour’s planet is already in the vowels, and the road crosses the day. Go slowly. Do not spend a mystery.",
+  hearth: "Today’s hour is already on this name’s road. Feed one piece of work you already know. Do not open a new project before that plate is clean.",
+  road: "Today meets the name on the road. Speak one true sentence to someone on the way, then name one practical next step for them — or for yourself.",
+  contest: "Today pushes back. Keep the strife useful: name the real opponent, fight only that, and put the rest down. Do not turn a hard hour into a new identity.",
+  mystery: "The hour’s planet is already in the vowels. Do one slow act. Make no announcement. Offer no second interpretation today.",
   exile: "Today’s hour is not kin to this name. Do the hour’s work anyway. You do not have to become it.",
-  symposium: "Shared breath and kinship. Pour for the guest first. Leave one cup unclaimed.",
-  omen: "The day’s total sits a letter this name already carries. Treat it as a sign, not a verdict.",
+  symposium: "Shared breath and kinship. Pour for the guest first — one real offer of help. Leave one claim of your own unsaid.",
+  omen: "The day’s total sits a letter this name already carries. Treat it as a sign: take one small step that letter already names. It is not a verdict.",
 };
 
 function leftoverLine(attic: AtticDay): string | null {
   if (attic.noumenia) return "New-moon day. Hekate keeps the leftovers. Travel light.";
   if (attic.heneKaiNea) return "Last day of the month — the old and the new. Hekate again.";
   return null;
+}
+
+function composeDayInvitation(input: {
+  weather: DayWeather;
+  hourNoun: string;
+  firstNoun: string;
+  officeNoun: string | null;
+  hourInvitation: string;
+}): string {
+  const office = input.officeNoun
+    ? `If you work publicly today, stay in the office of ${input.officeNoun}.`
+    : "";
+  const byWeather: Record<DayWeather, string> = {
+    hearth: `Keep ${input.firstNoun} and ${input.hourNoun} on the same plate.`,
+    road: `Walk as guest under ${input.hourNoun}; do not force a homecoming.`,
+    contest: `Let ${input.hourNoun} sharpen one edge only.`,
+    mystery: `Let ${input.hourNoun} stay quiet in the vowels.`,
+    exile: `Serve ${input.hourNoun} without renaming yourself.`,
+    symposium: `Share the table of ${input.hourNoun} without spending the whole name.`,
+    omen: `Let the omen under ${input.hourNoun} choose one small step.`,
+  };
+  return [input.hourInvitation, byWeather[input.weather], office].filter(Boolean).join(" ");
 }
 
 export function dayOfStoicheion(reading: Stoicheion, when: Date = new Date()): StoicheiaDay {
@@ -89,7 +111,13 @@ export function dayOfStoicheion(reading: Stoicheion, when: Date = new Date()): S
     festivalLine,
     invitation: leftover
       ? "Do one small thing. Leave the rest for the next month."
-      : horaOf(hour).invitation,
+      : composeDayInvitation({
+          weather,
+          hourNoun: attic.hora.noun,
+          firstNoun: horaOf(first).noun,
+          officeNoun: reading.officeHora?.noun ?? null,
+          hourInvitation: horaOf(hour).invitation,
+        }),
   };
 }
 
