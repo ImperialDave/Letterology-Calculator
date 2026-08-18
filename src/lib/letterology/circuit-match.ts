@@ -202,8 +202,6 @@ export function compareNames(rawA: string, rawB: string): BondReading | null {
     b,
     weather,
     affinity,
-    grade,
-    circuit,
     axes,
     seats,
     shared,
@@ -217,6 +215,8 @@ export function compareNames(rawA: string, rawB: string): BondReading | null {
     seed,
   });
 
+  const gradeHeadline = `Grade ${grade} · ${GRADE_LABEL[grade]} · ${story.headline}`;
+
   return {
     a,
     b,
@@ -228,7 +228,7 @@ export function compareNames(rawA: string, rawB: string): BondReading | null {
     gradeCounsel: GRADE_COUNSEL[grade],
     weather,
     title: story.title,
-    headline: story.headline,
+    headline: gradeHeadline,
     epithet: story.epithet,
     sigil: `${a.archetype.code}×${b.archetype.code}`,
     verdict: story.verdict,
