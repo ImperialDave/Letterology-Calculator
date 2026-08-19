@@ -119,3 +119,13 @@ test("drafts ride along when the URL is empty", () => {
   assert.equal(carried.a, "Ada");
   assert.equal(carried.tongue, "el");
 });
+
+test("flip keeps the cheat sheet", () => {
+  const next = flipTongue({
+    pathname: "/sheet",
+    search: { tongue: "la" },
+    next: "el",
+  });
+  assert.equal(next.to, "/sheet");
+  assert.equal(next.search.tongue, "el");
+});

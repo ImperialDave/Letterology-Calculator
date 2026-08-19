@@ -22,6 +22,7 @@ import { Route as HouseRouteImport } from './routes/house'
 import { Route as KeyRouteImport } from './routes/key'
 import { Route as LettersRouteImport } from './routes/letters'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as SheetRouteImport } from './routes/sheet'
 import { Route as StoicheiaRouteImport } from './routes/stoicheia'
 import { Route as TwoRouteImport } from './routes/two'
 import { Route as WhyRouteImport } from './routes/why'
@@ -105,6 +106,11 @@ const LettersRoute = LettersRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SheetRoute = SheetRouteImport.update({
+  id: '/sheet',
+  path: '/sheet',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StoicheiaRoute = StoicheiaRouteImport.update({
@@ -217,6 +223,7 @@ export interface FileRoutesByFullPath {
   '/key': typeof KeyRoute
   '/letters': typeof LettersRoute
   '/login': typeof LoginRoute
+  '/sheet': typeof SheetRoute
   '/stoicheia': typeof StoicheiaRouteWithChildren
   '/two': typeof TwoRoute
   '/why': typeof WhyRoute
@@ -251,6 +258,7 @@ export interface FileRoutesByTo {
   '/key': typeof KeyRoute
   '/letters': typeof LettersRoute
   '/login': typeof LoginRoute
+  '/sheet': typeof SheetRoute
   '/two': typeof TwoRoute
   '/why': typeof WhyRoute
   '/api/card': typeof ApiCardRoute
@@ -285,6 +293,7 @@ export interface FileRoutesById {
   '/key': typeof KeyRoute
   '/letters': typeof LettersRoute
   '/login': typeof LoginRoute
+  '/sheet': typeof SheetRoute
   '/stoicheia': typeof StoicheiaRouteWithChildren
   '/two': typeof TwoRoute
   '/why': typeof WhyRoute
@@ -321,6 +330,7 @@ export interface FileRouteTypes {
     | '/key'
     | '/letters'
     | '/login'
+    | '/sheet'
     | '/stoicheia'
     | '/two'
     | '/why'
@@ -355,6 +365,7 @@ export interface FileRouteTypes {
     | '/key'
     | '/letters'
     | '/login'
+    | '/sheet'
     | '/two'
     | '/why'
     | '/api/card'
@@ -388,6 +399,7 @@ export interface FileRouteTypes {
     | '/key'
     | '/letters'
     | '/login'
+    | '/sheet'
     | '/stoicheia'
     | '/two'
     | '/why'
@@ -423,6 +435,7 @@ export interface RootRouteChildren {
   KeyRoute: typeof KeyRoute
   LettersRoute: typeof LettersRoute
   LoginRoute: typeof LoginRoute
+  SheetRoute: typeof SheetRoute
   StoicheiaRoute: typeof StoicheiaRouteWithChildren
   TwoRoute: typeof TwoRoute
   WhyRoute: typeof WhyRoute
@@ -525,6 +538,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sheet': {
+      id: '/sheet'
+      path: '/sheet'
+      fullPath: '/sheet'
+      preLoaderRoute: typeof SheetRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/stoicheia': {
@@ -707,6 +727,7 @@ const rootRouteChildren: RootRouteChildren = {
   KeyRoute: KeyRoute,
   LettersRoute: LettersRoute,
   LoginRoute: LoginRoute,
+  SheetRoute: SheetRoute,
   StoicheiaRoute: StoicheiaRouteWithChildren,
   TwoRoute: TwoRoute,
   WhyRoute: WhyRoute,

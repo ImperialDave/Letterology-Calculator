@@ -241,3 +241,25 @@
     color-mix(in oklab, var(--color-ink) 12%, transparent) 0
   );
 }
+
+@media print {
+  header,
+  footer,
+  .print\\:hidden,
+  nav.fixed {
+    display: none !important;
+  }
+
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+
+  .sheet-page {
+    font-size: 11pt;
+  }
+
+  .sheet-page section {
+    break-inside: avoid;
+  }
+}

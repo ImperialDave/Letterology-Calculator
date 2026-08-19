@@ -60,6 +60,9 @@ export const VOICE = {
   lettersLatinLede: "Twenty-six houses. Tap a letter to read it.",
   lettersGreekLede: "Twenty-four hours, night first. Tap a letter to read it.",
   pathCaption: "Role, then how you work, then where — from the letters we counted.",
+  sheetTitle: "Cheat sheet",
+  sheetLede:
+    "Condensed instrument. Read the letters in the room. One role, one charge.",
 } as const;
 
 /** Phrases that must not appear in product-door or generated UI copy. Why may still argue. */

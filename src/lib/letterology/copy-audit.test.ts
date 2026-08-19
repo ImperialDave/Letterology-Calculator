@@ -6,6 +6,7 @@ import { buildHoroscope } from "./engine";
 import { tweetReading } from "./share";
 import { countMeeting, countReadingOf } from "./count";
 import { HOW_TO } from "../stoicheia/copy";
+import { sheetPlainText } from "./sheet";
 import { readStoicheion } from "../stoicheia/engine";
 
 function scan(label: string, body: string) {
@@ -16,6 +17,8 @@ function scan(label: string, body: string) {
 
 test("door copy follows the voice law", () => {
   scan("VOICE", Object.values(VOICE).join("\n"));
+  scan("sheet la", sheetPlainText("la"));
+  scan("sheet el", sheetPlainText("el"));
   for (const [key, value] of Object.entries(VOICE)) {
     assert.ok(value.trim().length >= 6, key);
   }

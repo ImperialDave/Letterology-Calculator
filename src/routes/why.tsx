@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { AppShell } from "@/components/SiteChrome";
 import { DOCTRINE, DOCTRINE_PREFACE } from "@/lib/letterology/doctrine";
@@ -43,6 +43,13 @@ function WhyPage() {
           order; consonants are the civic body; the total is isopsephy — an hour of the sum. The
           Count writes amounts as A–Z. Luck is the day's willingness. Letterize an act to time it.
         </p>
+        <Link
+          to="/sheet"
+          search={{ tongue: tongue === "el" ? "el" : "la" }}
+          className="mt-5 inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+        >
+          Open the cheat sheet
+        </Link>
       </header>
 
       <section id="latin" className="mt-10 space-y-4 scroll-mt-24">

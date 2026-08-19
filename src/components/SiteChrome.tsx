@@ -46,13 +46,13 @@ const VERBS: { to: "/" | "/two" | "/count"; label: string; verb: "read" | "two" 
   { to: "/count", label: "Count", verb: "count" },
 ];
 
-export type HeaderCurrent = Verb | "login" | "key" | "stoicheia" | "bond" | "atlas" | "houses" | "circle" | "almanac";
+export type HeaderCurrent = Verb | "login" | "key" | "stoicheia" | "bond" | "atlas" | "houses" | "circle" | "almanac" | "sheet";
 
 function verbOf(current?: HeaderCurrent): Verb | "login" {
   if (current === "bond") return "two";
   if (current === "stoicheia") return "read";
   if (current === "atlas" || current === "houses" || current === "circle") return "letters";
-  if (current === "key" || current === "almanac") return "why";
+  if (current === "key" || current === "almanac" || current === "sheet") return "why";
   if (current === "login") return "login";
   if (current === "read" || current === "two" || current === "count" || current === "letters" || current === "why") {
     return current;
@@ -153,6 +153,15 @@ function goFlip(
       to: "/why",
       search: (prev) => ({ ...prev, tongue }),
       hash: flip.hash,
+      replace: true,
+      resetScroll: false,
+    });
+    return;
+  }
+  if (flip.to === "/sheet") {
+    void navigate({
+      to: "/sheet",
+      search: (prev) => ({ ...prev, tongue }),
       replace: true,
       resetScroll: false,
     });
@@ -273,6 +282,14 @@ export function AppShell({
       <footer className="border-t border-ink/10 pb-20 sm:pb-0">
         <div className="mx-auto flex max-w-5xl flex-col items-center gap-2 px-4 py-8 text-center text-sm text-muted sm:px-6">
           <p>{VOICE.footerLine}</p>
+          <div className="flex flex-wrap items-center justify-center gap-4">
+          <Link
+            to="/sheet"
+            search={{ tongue: tongue === "el" ? "el" : "la" }}
+            className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+          >
+            Cheat sheet
+          </Link>
           <Link
             to="/why"
             search={{ tongue: tongue === "el" ? "el" : "la" }}
@@ -281,6 +298,7 @@ export function AppShell({
           >
             Why
           </Link>
+          </div>
         </div>
       </footer>
 

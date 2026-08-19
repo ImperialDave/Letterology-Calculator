@@ -108,7 +108,7 @@ function nameFromSlug(slug: string): string {
 }
 
 export type FlipTarget = {
-  to: "/" | "/two" | "/letters" | "/letters/$mark" | "/why" | "/count" | "/count/$walk" | "/login" | "/claim";
+  to: "/" | "/two" | "/letters" | "/letters/$mark" | "/why" | "/count" | "/count/$walk" | "/login" | "/claim" | "/sheet";
   params?: { mark?: string; walk?: string };
   search: Record<string, string | undefined> & { tongue?: "la" | "el" };
   hash?: string;
@@ -160,6 +160,9 @@ export function flipTongue(input: {
   if (path === "/why" || path === "/key" || path === "/doctrine" || path.endsWith("/doctrine")) {
     return { to: "/why", search: { tongue }, hash: input.next === "el" ? "greek" : "latin" };
   }
+  if (path === "/sheet") {
+    return { to: "/sheet", search: { tongue } };
+  }
   if (path === "/login") return { to: "/login", search: { tongue } };
   if (path === "/claim") return { to: "/claim", search: { tongue } };
 
@@ -205,6 +208,10 @@ export function lettersPath(mark?: string, tongue: Tongue = "la"): string {
 
 export function whyPath(tongue: Tongue = "la"): string {
   return tongue === "el" ? "/why?tongue=el#greek" : "/why#latin";
+}
+
+export function sheetPath(tongue: Tongue = "la"): string {
+  return tongue === "el" ? "/sheet?tongue=el" : "/sheet";
 }
 
 export function tongueFromSearch(search: Record<string, unknown> | string): Tongue {
