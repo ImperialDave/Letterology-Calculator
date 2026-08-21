@@ -502,6 +502,9 @@ export class Game {
         self.input.touch.moveX = x;
         self.input.touch.moveY = y;
       },
+      setDrill: (on: boolean) => {
+        self.input.touch.drill = on;
+      },
       start: () => {
         if (self.phase === "title") self.descend(true);
       },

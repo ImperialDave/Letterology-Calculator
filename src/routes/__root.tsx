@@ -10,9 +10,11 @@ export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { name: "apple-mobile-web-app-title", content: APP_NAME },
       { name: "theme-color", content: "#efe6d6" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [

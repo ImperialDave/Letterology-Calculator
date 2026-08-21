@@ -615,6 +615,10 @@ export class Sim {
     if (Math.abs(actions.moveX) >= Math.abs(actions.moveY) && actions.moveX !== 0) p.drillDir = actions.moveX > 0 ? 1 : 3;
     else if (actions.moveY > 0) p.drillDir = 2;
     else if (actions.moveY < 0) p.drillDir = 0;
+    else if (actions.drill && !this.atSurface()) p.drillDir = 2;
+
+    const idleDrill = actions.drill && actions.moveX === 0 && actions.moveY === 0 && !this.atSurface();
+    if (idleDrill) p.moveIntentY = 1;
 
     const onPad = this.atSurface();
     const fuelOk = p.fuel > 0;
@@ -632,7 +636,7 @@ export class Sim {
       p.fuel = Math.max(0, p.fuel - dt * 0.38 * (1 - lift));
     } else {
       p.vy += grav * dt;
-      if (actions.moveY > 0.2) p.vy += 240 * dt;
+      if (actions.moveY > 0.2 || idleDrill) p.vy += 240 * dt;
     }
 
     const hell = hellLevel(this.depth());
@@ -646,6 +650,15 @@ export class Sim {
 
     this.collideAxis(dt, "x");
     this.collideAxis(dt, "y");
+
+    if (actions.drill) {
+      const dir = p.drillDir;
+      const ox = dir === 1 ? 1 : dir === 3 ? -1 : 0;
+      const oy = dir === 2 ? 1 : dir === 0 ? -1 : 0;
+      const tx = this.tileX() + ox;
+      const ty = this.tileY() + oy;
+      if (this.world.get(tx, ty) !== T.PAD) this.tryDig(tx, ty, dt);
+    }
 
     // stay in world
     p.x = Math.max(TILE + 12, Math.min((WORLD_W - 1) * TILE - 12, p.x));

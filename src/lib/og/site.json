@@ -1,6 +1,8 @@
 {
-  "title": "CC33",
-  "type": "website",
+  "title": "Cinderwell",
+  "type": "x:game",
   "card": "custom",
-  "color": "efe6d6"
+  "color": "1a1410",
+  "description": "The well under CC33. Drill the crust, haul ore, sell it, go deeper.",
+  "image": "/og.jpg"
 }

@@ -12,6 +12,9 @@ import {
   tweetDay,
   tweetReading,
   tweetText,
+  wellShareUrl,
+  wellTweet,
+  wellXPost,
 } from "./share";
 
 test("composeXPost keeps the www URL on its own line and fits 280", () => {
@@ -119,4 +122,14 @@ test("bond tweets stay a caption with both names", () => {
 test("bond card files keep both slugs", () => {
   assert.equal(bondCardFile("Ada Lovelace", "Octavia"), "bond-ada-lovelace_octavia.jpg");
   assert.equal(nameToSlug("Ada Lovelace"), "ada-lovelace");
+});
+
+test("well share points at the playable surface and fits an X caption", () => {
+  assert.equal(wellShareUrl("https://cinderwell.grok.me"), "https://cinderwell.grok.me/");
+  assert.equal(wellShareUrl("https://www.letterology.club"), "https://www.letterology.club/play");
+  const post = wellXPost("https://www.letterology.club");
+  assert.match(post.href, /x\.com\/intent\/post/);
+  assert.match(post.caption, /Cinderwell/);
+  assert.ok(!post.caption.includes("http"));
+  assert.ok(wellTweet().length < 120);
 });

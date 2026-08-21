@@ -9,7 +9,11 @@ export type Actions = {
   teleporter: boolean;
   coolant: boolean;
   pause: boolean;
+  drill: boolean;
 };
+
+/** 0 up, 1 right, 2 down, 3 left — same as player.drillDir */
+export type Cardinal = 0 | 1 | 2 | 3;
 
 const GAME_KEYS = new Set([
   "KeyW",
@@ -31,11 +35,54 @@ const GAME_KEYS = new Set([
   "KeyP",
 ]);
 
+/**
+ * Tile miners hate analog diagonals: they chatter between two walls.
+ * Snap a stick vector to one cardinal, with hysteresis so 45° corners
+ * do not flip every frame. Once past the deadzone, output is full ±1
+ * so dig thresholds never flicker.
+ */
+export function snapCardinal(
+  x: number,
+  y: number,
+  locked: Cardinal | null,
+  dead = 0.2,
+): { x: number; y: number; lock: Cardinal | null } {
+  const mag = Math.hypot(x, y);
+  if (mag < dead) return { x: 0, y: 0, lock: null };
+  const nx = x / mag;
+  const ny = y / mag;
+  const score = (dir: Cardinal) => {
+    if (dir === 1) return nx;
+    if (dir === 3) return -nx;
+    if (dir === 2) return ny;
+    return -ny;
+  };
+  let pick: Cardinal = 2;
+  if (locked != null && score(locked) >= 0.38) {
+    pick = locked;
+  } else {
+    let best = -2;
+    for (const dir of [0, 1, 2, 3] as const) {
+      const s = score(dir);
+      if (s > best) {
+        best = s;
+        pick = dir;
+      }
+    }
+  }
+  return {
+    x: pick === 1 ? 1 : pick === 3 ? -1 : 0,
+    y: pick === 2 ? 1 : pick === 0 ? -1 : 0,
+    lock: pick,
+  };
+}
+
 export class Input {
   keys = new Set<string>();
   edges = new Set<string>();
   qaKeys: Set<string> | null = null;
   prev = new Set<string>();
+  touchLock: Cardinal | null = null;
   touch = {
     moveX: 0,
     moveY: 0,
@@ -46,6 +93,7 @@ export class Input {
     nanobots: false,
     teleporter: false,
     coolant: false,
+    drill: false,
   };
   private unbind: Array<() => void> = [];
 
@@ -58,7 +106,13 @@ export class Input {
     const up = (e: KeyboardEvent) => {
       this.keys.delete(e.code);
     };
-    const clear = () => this.keys.clear();
+    const clear = () => {
+      this.keys.clear();
+      this.touch.moveX = 0;
+      this.touch.moveY = 0;
+      this.touch.drill = false;
+      this.touchLock = null;
+    };
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
     window.addEventListener("blur", clear);
@@ -102,8 +156,10 @@ export class Input {
   }
 
   poll(): Actions {
-    let moveX = this.touch.moveX;
-    let moveY = this.touch.moveY;
+    const snapped = snapCardinal(this.touch.moveX, this.touch.moveY, this.touchLock);
+    this.touchLock = snapped.lock;
+    let moveX = snapped.x;
+    let moveY = snapped.y;
     if (this.held("KeyA") || this.held("ArrowLeft")) moveX -= 1;
     if (this.held("KeyD") || this.held("ArrowRight")) moveX += 1;
     if (this.held("KeyW") || this.held("ArrowUp")) moveY -= 1;
@@ -124,9 +180,10 @@ export class Input {
       const mag = Math.hypot(ax, ay);
       const dz = 0.18;
       if (mag > dz) {
-        const scale = ((mag - dz) / (1 - dz)) / mag;
-        moveX = Math.max(-1, Math.min(1, moveX + ax * scale));
-        moveY = Math.max(-1, Math.min(1, moveY + ay * scale));
+        const padSnap = snapCardinal(ax, ay, this.touchLock, dz);
+        moveX = Math.max(-1, Math.min(1, moveX + padSnap.x));
+        moveY = Math.max(-1, Math.min(1, moveY + padSnap.y));
+        if (padSnap.lock != null) this.touchLock = padSnap.lock;
       }
       if (pad.buttons[14]?.pressed) moveX -= 1;
       if (pad.buttons[15]?.pressed) moveX += 1;
@@ -145,6 +202,7 @@ export class Input {
       teleporter: just("KeyT") || this.touch.teleporter,
       coolant: just("KeyC") || this.touch.coolant,
       pause: just("Escape") || just("KeyP"),
+      drill: this.touch.drill || (pads.some((pad) => pad?.mapping === "standard" && pad.buttons[0]?.pressed) ?? false),
     };
 
     this.touch.interact = false;

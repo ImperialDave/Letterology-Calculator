@@ -178,6 +178,30 @@ export function portraitTitle(h: Horoscope): string {
   return clip(`${h.displayName} · ${h.archetype.title}`, X_TITLE_MAX);
 }
 
+export function wellShareUrl(origin?: string): string {
+  if (typeof window !== "undefined") {
+    const host = window.location.host.toLowerCase();
+    const base = window.location.origin;
+    if (host.endsWith(".grok.me")) return `${base}/`;
+    return `${base}/play`;
+  }
+  const base = (origin ?? publicSiteOrigin()).replace(/\/$/, "");
+  try {
+    if (new URL(base).host.toLowerCase().endsWith(".grok.me")) return `${base}/`;
+  } catch {
+    /* fall through */
+  }
+  return `${base}/play`;
+}
+
+export function wellTweet(): string {
+  return "Cinderwell — the well under CC33. Drill the crust, haul ore, go deeper.";
+}
+
+export function wellXPost(origin?: string): { caption: string; text: string; href: string } {
+  return composeXPost(wellTweet(), wellShareUrl(origin));
+}
+
 export function pageCardMeta(input: {
   title: string;
   description: string;

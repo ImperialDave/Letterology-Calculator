@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { Cinderwell } from "@/components/cinderwell";
 import { LatinPortrait } from "@/components/letterology/LatinPortrait";
 import { TongueStage } from "@/components/letterology/TongueStage";
 import { AppShell } from "@/components/SiteChrome";
@@ -11,28 +12,54 @@ import { useCurrentUser } from "@/lib/auth/use-current-user";
 import { useHouseHoroscope } from "@/lib/firebase/house-provider";
 import { buildHoroscope } from "@/lib/letterology/engine";
 import { pageCardMeta } from "@/lib/letterology/share";
+import { isGameFirstLocation, resolvePlayHost } from "@/lib/play-host";
 import { useTongue } from "@/components/letterology/TongueProvider";
 import { noteHandle } from "@/lib/letterology/tongue";
 import { VOICE } from "@/lib/letterology/voice";
 import { stoicheiaCardFile, stoicheiaNamePath } from "@/lib/stoicheia/copy";
 import { readStoicheion } from "@/lib/stoicheia/engine";
 
-type Search = { n?: string; name?: string; tongue?: "la" | "el" };
+type Search = { n?: string; name?: string; tongue?: "la" | "el"; club?: boolean; play?: boolean };
+
+function wellCard() {
+  return pageCardMeta({
+    title: "Cinderwell",
+    description: VOICE.wellLede,
+    path: "/",
+    imagePath: "/og.jpg",
+  });
+}
 
 export const Route = createFileRoute("/")({
   validateSearch: (search: Record<string, unknown>): Search => ({
     n: typeof search.n === "string" ? search.n : typeof search.name === "string" ? search.name : undefined,
     name: typeof search.name === "string" ? search.name : undefined,
     tongue: search.tongue === "el" ? "el" : search.tongue === "la" ? "la" : undefined,
+    club: search.club === true || search.club === "1" || search.club === 1 ? true : undefined,
+    play: search.play === true || search.play === "1" || search.play === 1 ? true : undefined,
   }),
-  loader: ({ location }) => {
+  loader: async ({ location }) => {
     const params = new URL(location.href, "https://www.letterology.club").searchParams;
+    const n = params.get("n") ?? params.get("name") ?? undefined;
+    const club = params.get("club") === "1" || params.get("club") === "true";
+    const play = params.get("play") === "1" || params.get("play") === "true";
+    let host = resolvePlayHost(location.href);
+    if (!host && import.meta.env.SSR) {
+      try {
+        const start = await import("@tanstack/react-start/server");
+        host = start.getRequestHost({ xForwardedHost: true });
+      } catch {
+        /* preview / static */
+      }
+    }
     return {
-      n: params.get("n") ?? params.get("name") ?? undefined,
+      n,
       tongue: params.get("tongue") === "el" ? ("el" as const) : params.get("tongue") === "la" ? ("la" as const) : undefined,
+      gameFirst: isGameFirstLocation(host, { n, club, play }),
     };
   },
   head: ({ loaderData }) => {
+    if (loaderData?.gameFirst) return wellCard();
     const handle = loaderData?.n ?? "";
     const tongue = loaderData?.tongue === "el" ? "el" : "la";
     if (!handle) {
@@ -65,6 +92,12 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   const loaded = Route.useLoaderData();
+  if (loaded.gameFirst) return <Cinderwell />;
+  return <ClubHome />;
+}
+
+function ClubHome() {
+  const loaded = Route.useLoaderData();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/" });
   const sittingUser = useCurrentUser();
@@ -76,6 +109,13 @@ function Home() {
   const greek = useMemo(() => (handle ? readStoicheion(handle) : null), [handle]);
   const empty = Boolean(handle) && !latin && !greek;
   const door = !handle && !sitting;
+
+  useEffect(() => {
+    if (!isGameFirstLocation(window.location.host, { n: handle || undefined, club: search.club, play: search.play })) {
+      return;
+    }
+    void navigate({ to: "/play", replace: true });
+  }, [handle, navigate, search.club, search.play]);
 
   useEffect(() => {
     if (handle) setValue(handle);
