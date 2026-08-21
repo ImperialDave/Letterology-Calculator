@@ -15,7 +15,7 @@ import {
   Bomb,
 } from "lucide-react";
 import { Game, getGame, setGame } from "@/game/engine";
-import { snapCardinal, type Cardinal } from "@/game/input";
+import { type Cardinal } from "@/game/input";
 import {
   BASE_SLOTS,
   CONSUMABLES,
@@ -92,6 +92,7 @@ export function Cinderwell() {
         className="absolute inset-0 h-full w-full touch-none"
         aria-label="Cinderwell mine"
       />
+      <SteerField />
       <Hud finger={finger} />
       <TitleScreen />
       <HelpScreen />
@@ -348,6 +349,9 @@ function TitleScreen() {
           </button>
           <ShareWell className="flex h-12 items-center justify-center rounded-xl border border-border bg-transparent px-6 font-medium text-muted" />
         </div>
+        <p className="mt-3 max-w-md text-sm text-subtle short:hidden">
+          Hold anywhere on the earth — the rig cuts toward your pointer. WASD still works.
+        </p>
         <Link
           to="/"
           search={{ club: true }}
@@ -379,9 +383,9 @@ function HelpScreen() {
           <strong className="font-medium">WASD / arrows</strong> — move, thrust, and drill into earth.
         </li>
         <li>
-          <strong className="font-medium">Phone</strong> — left pad is four-way, not analog. Slide
-          to drive and cut a wall. Hold <strong>Drill</strong> to bore the way you point, or
-          straight down if the pad is still. Charge sits under the right thumb.
+          <strong className="font-medium">Pointer / finger</strong> — hold anywhere on the
+          earth. The rig drives and cuts toward that point (four-way, not analog). Hold on
+          the rig itself to bore straight down. Charge sits under the right thumb on a phone.
         </li>
         <li>
           <strong className="font-medium">E</strong> — open a surface shop (Exchange, Rigworks, Depot).
@@ -1079,7 +1083,6 @@ function TouchPad({ finger }: { finger: boolean }) {
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20">
-      <Stick />
       <div className="pointer-events-auto absolute right-[max(0.6rem,env(safe-area-inset-right))] bottom-[max(0.55rem,env(safe-area-inset-bottom))] flex flex-col items-end gap-1.5 short:flex-row short:items-end">
         <div className="flex max-w-[11rem] flex-wrap justify-end gap-1.5 short:max-w-none short:flex-col">
           <IconAct icon={<Fuel className="size-4" />} n={items.fuelCan} label="Spare can" onFire={() => fire("fuelCan")} />
@@ -1094,7 +1097,6 @@ function TouchPad({ finger }: { finger: boolean }) {
         </div>
         <div className="flex flex-col items-end gap-1.5">
           {nearby ? <ActionBtn label="Shop" onClick={() => fire("interact")} /> : null}
-          <DrillBtn />
           <ActionBtn label={`Charge ${items.dynamite}`} onClick={() => fire("dynamite")} />
         </div>
       </div>
@@ -1115,77 +1117,76 @@ function setDrillHeld(on: boolean): void {
   g.input.touch.drill = on;
 }
 
-function Stick() {
-  const zoneRef = useRef<HTMLDivElement>(null);
-  const wellRef = useRef<HTMLDivElement>(null);
+function SteerField() {
+  const phase = useGameUI((s) => s.phase);
+  const ringRef = useRef<HTMLDivElement>(null);
   const pid = useRef<number | null>(null);
-  const originRef = useRef<{ x: number; y: number } | null>(null);
   const lockRef = useRef<Cardinal | null>(null);
-  const [knob, setKnob] = useState({ x: 0, y: 0 });
   const [lock, setLock] = useState<Cardinal | null>(null);
-  const [origin, setOrigin] = useState<{ x: number; y: number } | null>(null);
+  const [held, setHeld] = useState(false);
 
   useEffect(() => {
-    return () => {
-      setTouchAxis(0, 0);
+    if (phase !== "playing") return;
+    let raf = 0;
+    const tick = () => {
+      const el = ringRef.current;
+      const g = getGame();
+      if (el && g) {
+        const p = g.rigClientPos();
+        el.style.left = `${p.x}px`;
+        el.style.top = `${p.y}px`;
+      }
+      raf = requestAnimationFrame(tick);
     };
-  }, []);
+    raf = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(raf);
+      setTouchAxis(0, 0);
+      setDrillHeld(false);
+    };
+  }, [phase]);
 
-  const apply = (clientX: number, clientY: number, cx: number, cy: number, size: number) => {
-    const reach = size * 0.42;
-    let dx = (clientX - cx) / reach;
-    let dy = (clientY - cy) / reach;
-    const mag = Math.hypot(dx, dy);
-    if (mag > 1) {
-      dx /= mag;
-      dy /= mag;
-    }
-    const snapped = snapCardinal(dx, dy, lockRef.current);
-    lockRef.current = snapped.lock;
-    setLock(snapped.lock);
-    setKnob({ x: snapped.x, y: snapped.y });
-    setTouchAxis(snapped.x, snapped.y);
+  if (phase !== "playing") return null;
+
+  const apply = (clientX: number, clientY: number) => {
+    const g = getGame();
+    if (!g) return;
+    const dir = g.steerToClient(clientX, clientY, lockRef.current);
+    lockRef.current = dir.lock;
+    g.input.touchLock = dir.lock;
+    setLock(dir.lock);
+    setTouchAxis(dir.x, dir.y);
+    setDrillHeld(true);
   };
 
   const release = (id: number) => {
     if (pid.current !== id) return;
     pid.current = null;
-    originRef.current = null;
     lockRef.current = null;
-    setKnob({ x: 0, y: 0 });
     setLock(null);
-    setOrigin(null);
+    setHeld(false);
     setTouchAxis(0, 0);
-  };
-
-  const startAt = (e: ReactPointerEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const zone = zoneRef.current;
-    if (!zone) return;
-    const zr = zone.getBoundingClientRect();
-    const size = Math.min(176, Math.max(112, Math.min(zr.width, zr.height) * 0.72));
-    const half = size / 2;
-    const cx = Math.max(zr.left + half, Math.min(e.clientX, zr.right - half));
-    const cy = Math.max(zr.top + half, Math.min(e.clientY, zr.bottom - half));
-    pid.current = e.pointerId;
-    originRef.current = { x: cx, y: cy };
-    e.currentTarget.setPointerCapture(e.pointerId);
-    setOrigin({ x: cx, y: cy });
-    apply(e.clientX, e.clientY, cx, cy, size);
+    setDrillHeld(false);
+    const g = getGame();
+    if (g) g.input.touchLock = null;
   };
 
   return (
     <div
-      ref={zoneRef}
-      className="pointer-events-auto absolute bottom-0 left-0 h-[min(52%,22rem)] w-[min(52%,20rem)] touch-none short:h-[min(78%,16rem)] short:w-[min(42%,16rem)]"
-      onPointerDown={startAt}
+      className="absolute inset-0 z-[5] touch-none"
+      aria-label="Steer the drill"
+      role="application"
+      onPointerDown={(e) => {
+        if (e.button !== 0 && e.pointerType === "mouse") return;
+        e.preventDefault();
+        pid.current = e.pointerId;
+        e.currentTarget.setPointerCapture(e.pointerId);
+        setHeld(true);
+        apply(e.clientX, e.clientY);
+      }}
       onPointerMove={(e) => {
         if (pid.current !== e.pointerId) return;
-        const o = originRef.current;
-        if (!o) return;
-        const size = wellRef.current?.getBoundingClientRect().width ?? 160;
-        apply(e.clientX, e.clientY, o.x, o.y, size);
+        apply(e.clientX, e.clientY);
       }}
       onPointerUp={(e) => release(e.pointerId)}
       onPointerCancel={(e) => release(e.pointerId)}
@@ -1193,36 +1194,17 @@ function Stick() {
       onContextMenu={(e) => e.preventDefault()}
     >
       <div
-        ref={wellRef}
-        aria-label="Move stick"
-        role="application"
-        className="absolute size-[10.5rem] rounded-full border-2 border-fg/25 bg-surface/80 shadow-panel short:size-[7.25rem]"
-        style={
-          origin
-            ? {
-                left: origin.x,
-                top: origin.y,
-                transform: "translate(-50%, -50%)",
-                position: "fixed",
-              }
-            : {
-                left: "max(0.85rem, env(safe-area-inset-left))",
-                bottom: "max(0.7rem, env(safe-area-inset-bottom))",
-              }
-        }
+        ref={ringRef}
+        aria-hidden="true"
+        className={`pointer-events-none fixed size-[6.5rem] -translate-x-1/2 -translate-y-1/2 rounded-full border transition-opacity duration-150 short:size-[5.25rem] ${
+          held ? "border-accent/55 bg-accent/10 opacity-100" : "border-fg/20 bg-transparent opacity-70"
+        }`}
+        style={{ left: "-999px", top: "-999px" }}
       >
         <Chevron dir={0} on={lock === 0} />
         <Chevron dir={1} on={lock === 1} />
         <Chevron dir={2} on={lock === 2} />
         <Chevron dir={3} on={lock === 3} />
-        <div
-          className="absolute size-16 rounded-full border-2 border-fg/40 bg-elevated shadow-panel short:size-11"
-          style={{
-            left: `${50 + knob.x * 26}%`,
-            top: `${50 + knob.y * 26}%`,
-            transform: "translate(-50%, -50%)",
-          }}
-        />
       </div>
     </div>
   );
@@ -1231,61 +1213,19 @@ function Stick() {
 function Chevron({ dir, on }: { dir: Cardinal; on: boolean }) {
   const pos =
     dir === 0
-      ? "top-2 left-1/2 -translate-x-1/2"
+      ? "top-1.5 left-1/2 -translate-x-1/2"
       : dir === 2
-        ? "bottom-2 left-1/2 -translate-x-1/2 rotate-180"
+        ? "bottom-1.5 left-1/2 -translate-x-1/2 rotate-180"
         : dir === 3
-          ? "left-2 top-1/2 -translate-y-1/2 -rotate-90"
-          : "right-2 top-1/2 -translate-y-1/2 rotate-90";
+          ? "left-1.5 top-1/2 -translate-y-1/2 -rotate-90"
+          : "right-1.5 top-1/2 -translate-y-1/2 rotate-90";
   return (
     <span
       aria-hidden="true"
-      className={`pointer-events-none absolute h-0 w-0 border-x-[7px] border-b-[10px] border-x-transparent ${
-        on ? "border-b-accent" : "border-b-fg/30"
+      className={`pointer-events-none absolute h-0 w-0 border-x-[7px] border-b-[11px] border-x-transparent ${
+        on ? "border-b-accent" : "border-b-fg/35"
       } ${pos}`}
     />
-  );
-}
-
-function DrillBtn() {
-  const [pressed, setPressed] = useState(false);
-  useEffect(() => {
-    return () => setDrillHeld(false);
-  }, []);
-
-  const down = (e: ReactPointerEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    e.currentTarget.setPointerCapture(e.pointerId);
-    setPressed(true);
-    setDrillHeld(true);
-    try {
-      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) navigator.vibrate?.(10);
-    } catch {
-      /* haptics optional */
-    }
-  };
-  const up = () => {
-    setPressed(false);
-    setDrillHeld(false);
-  };
-
-  return (
-    <button
-      type="button"
-      aria-label="Drill"
-      aria-pressed={pressed}
-      onPointerDown={down}
-      onPointerUp={up}
-      onPointerCancel={up}
-      onLostPointerCapture={up}
-      onContextMenu={(e) => e.preventDefault()}
-      className={`flex size-[5.35rem] items-center justify-center rounded-full border-2 border-accent/50 bg-accent text-base font-semibold tracking-wide text-accent-fg shadow-panel short:size-[4.25rem] short:text-sm ${
-        pressed ? "brightness-125" : ""
-      }`}
-    >
-      Drill
-    </button>
   );
 }
 

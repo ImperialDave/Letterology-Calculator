@@ -17,7 +17,7 @@ import {
   type Slot,
 } from "./data";
 import { AudioBus } from "./audio";
-import { Input } from "./input";
+import { Input, aimFromDelta, type Cardinal } from "./input";
 import { Renderer } from "./render";
 import {
   bestSavedDepth,
@@ -108,6 +108,21 @@ export class Game {
     cancelAnimationFrame(this.raf);
     this.input.detach();
     this.save();
+  }
+
+  rigClientPos(): { x: number; y: number } {
+    const rect = this.canvas.getBoundingClientRect();
+    const sx = rect.width / Math.max(1, this.canvas.width);
+    const sy = rect.height / Math.max(1, this.canvas.height);
+    return {
+      x: rect.left + (this.sim.player.x - this.renderer.camX) * sx,
+      y: rect.top + (this.sim.player.y - this.renderer.camY) * sy,
+    };
+  }
+
+  steerToClient(clientX: number, clientY: number, locked: Cardinal | null) {
+    const rig = this.rigClientPos();
+    return aimFromDelta(clientX - rig.x, clientY - rig.y, locked);
   }
 
   private tick(dt: number): void {
@@ -505,6 +520,16 @@ export class Game {
       setDrill: (on: boolean) => {
         self.input.touch.drill = on;
       },
+      rigClientPos: () => self.rigClientPos(),
+      aim: (clientX: number, clientY: number) => {
+        const dir = self.steerToClient(clientX, clientY, self.input.touchLock);
+        self.input.touchLock = dir.lock;
+        self.input.touch.moveX = dir.x;
+        self.input.touch.moveY = dir.y;
+        self.input.touch.drill = true;
+        return dir;
+      },
+      getDrillDir: () => self.sim.player.drillDir,
       start: () => {
         if (self.phase === "title") self.descend(true);
       },

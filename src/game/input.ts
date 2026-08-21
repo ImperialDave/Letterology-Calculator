@@ -77,6 +77,20 @@ export function snapCardinal(
   };
 }
 
+/**
+ * Pointer minus rig, in CSS pixels (+x right, +y down). Click the dirt
+ * you want to cut — not a corner stick.
+ */
+export function aimFromDelta(
+  dx: number,
+  dy: number,
+  locked: Cardinal | null,
+  deadPx = 32,
+): { x: number; y: number; lock: Cardinal | null } {
+  if (Math.hypot(dx, dy) < deadPx) return { x: 0, y: 0, lock: null };
+  return snapCardinal(dx, dy, locked, 0.05);
+}
+
 export class Input {
   keys = new Set<string>();
   edges = new Set<string>();
