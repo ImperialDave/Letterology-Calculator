@@ -63,6 +63,11 @@ export const VOICE = {
   sheetTitle: "Cheat sheet",
   sheetLede:
     "Condensed instrument. Read the letters in the room. One role, one charge.",
+  askTitle: "Ask the letters",
+  askLede:
+    "Type the username you use and a question. We letterize both, meet them with today’s court, and answer. Luck is willingness. The decision is yours.",
+  askHint:
+    "Ask in ordinary words. Should, will, how, when, who — or two options split by or. We read the letters of the matter, not the mood word.",
 } as const;
 
 /** Phrases that must not appear in product-door or generated UI copy. Why may still argue. */

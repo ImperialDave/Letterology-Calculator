@@ -40,8 +40,9 @@ function AuthSlot() {
   );
 }
 
-const VERBS: { to: "/" | "/two" | "/count"; label: string; verb: "read" | "two" | "count" }[] = [
+const VERBS: { to: "/" | "/two" | "/count" | "/ask"; label: string; verb: "read" | "two" | "count" | "ask" }[] = [
   { to: "/", label: "Read", verb: "read" },
+  { to: "/ask", label: "Ask", verb: "ask" },
   { to: "/two", label: "Two", verb: "two" },
   { to: "/count", label: "Count", verb: "count" },
 ];
@@ -54,7 +55,14 @@ function verbOf(current?: HeaderCurrent): Verb | "login" {
   if (current === "atlas" || current === "houses" || current === "circle") return "letters";
   if (current === "key" || current === "almanac" || current === "sheet") return "why";
   if (current === "login") return "login";
-  if (current === "read" || current === "two" || current === "count" || current === "letters" || current === "why") {
+  if (
+    current === "read" ||
+    current === "two" ||
+    current === "count" ||
+    current === "letters" ||
+    current === "why" ||
+    current === "ask"
+  ) {
     return current;
   }
   return "read";
@@ -167,6 +175,20 @@ function goFlip(
     });
     return;
   }
+  if (flip.to === "/ask") {
+    void navigate({
+      to: "/ask",
+      search: (prev) => ({
+        ...prev,
+        n: search.n ?? prev.n,
+        q: search.q ?? prev.q,
+        tongue,
+      }),
+      replace: true,
+      resetScroll: false,
+    });
+    return;
+  }
   if (flip.to === "/count") {
     void navigate({
       to: "/count",
@@ -225,6 +247,7 @@ export function AppShell({
 
   const readSearch = carryForVerb("read", search, tongue);
   const twoSearch = carryForVerb("two", search, tongue);
+  const askSearch = carryForVerb("ask", search, tongue);
 
   return (
     <TongueProvider tongue={tongue}>
@@ -257,7 +280,9 @@ export function AppShell({
                       ? { n: readSearch.n, name: undefined, tongue: tongue === "el" ? "el" : "la" }
                       : item.verb === "two"
                         ? { a: twoSearch.a, b: twoSearch.b, tongue: tongue === "el" ? "el" : "la", mode: undefined }
-                        : { n: undefined, tongue: tongue === "el" ? "el" : "la" }
+                        : item.verb === "ask"
+                          ? { n: askSearch.n, q: askSearch.q, tongue: tongue === "el" ? "el" : "la" }
+                          : { n: undefined, tongue: tongue === "el" ? "el" : "la" }
                   }
                   className={cn(
                     "inline-flex h-11 items-center px-3 font-display text-xs tracking-[0.14em] uppercase",
@@ -313,7 +338,9 @@ export function AppShell({
                   ? { n: readSearch.n, name: undefined, tongue: tongue === "el" ? "el" : "la" }
                   : item.verb === "two"
                     ? { a: twoSearch.a, b: twoSearch.b, tongue: tongue === "el" ? "el" : "la", mode: undefined }
-                    : { n: undefined, tongue: tongue === "el" ? "el" : "la" }
+                    : item.verb === "ask"
+                      ? { n: askSearch.n, q: askSearch.q, tongue: tongue === "el" ? "el" : "la" }
+                      : { n: undefined, tongue: tongue === "el" ? "el" : "la" }
               }
               className={cn(
                 "inline-flex h-11 min-w-14 items-center justify-center font-display text-xs tracking-[0.14em] uppercase",

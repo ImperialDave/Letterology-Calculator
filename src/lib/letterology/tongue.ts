@@ -1,6 +1,6 @@
 export type Tongue = "la" | "el";
 
-export type Verb = "read" | "two" | "count" | "letters" | "why" | "login";
+export type Verb = "read" | "two" | "count" | "letters" | "why" | "login" | "ask";
 
 const STORAGE = "cc33-tongue";
 
@@ -8,6 +8,7 @@ const session = {
   handle: "",
   a: "",
   b: "",
+  q: "",
 };
 
 export function parseTongue(raw: unknown): Tongue {
@@ -82,6 +83,10 @@ export function notePair(a: string, b: string): void {
   session.b = b.trim();
 }
 
+export function noteQuestion(question: string): void {
+  session.q = question.trim();
+}
+
 export function draftHandle(): string {
   return session.handle;
 }
@@ -108,7 +113,7 @@ function nameFromSlug(slug: string): string {
 }
 
 export type FlipTarget = {
-  to: "/" | "/two" | "/letters" | "/letters/$mark" | "/why" | "/count" | "/count/$walk" | "/login" | "/claim" | "/sheet";
+  to: "/" | "/two" | "/letters" | "/letters/$mark" | "/why" | "/count" | "/count/$walk" | "/login" | "/claim" | "/sheet" | "/ask";
   params?: { mark?: string; walk?: string };
   search: Record<string, string | undefined> & { tongue?: "la" | "el" };
   hash?: string;
@@ -123,6 +128,7 @@ export function flipTongue(input: {
   const handle = text(session.handle, input.search.n, input.search.name);
   const a = text(session.a, input.search.a, handle);
   const b = text(session.b, input.search.b);
+  const q = text(session.q, input.search.q);
   const tongue = tongueParam(input.next);
   const path = input.pathname;
   const mark = input.params?.mark ?? path.match(/\/(?:letters|horae)\/([^/?#]+)/)?.[1];
@@ -163,6 +169,9 @@ export function flipTongue(input: {
   if (path === "/sheet") {
     return { to: "/sheet", search: { tongue } };
   }
+  if (path === "/ask") {
+    return { to: "/ask", search: { n: handle, q, tongue } };
+  }
   if (path === "/login") return { to: "/login", search: { tongue } };
   if (path === "/claim") return { to: "/claim", search: { tongue } };
 
@@ -170,16 +179,18 @@ export function flipTongue(input: {
 }
 
 export function carryForVerb(
-  verb: "read" | "two" | "count",
+  verb: "read" | "two" | "count" | "ask",
   search: Record<string, unknown>,
   tongue: Tongue,
 ): Record<string, string | undefined> {
   const handle = text(session.handle, search.n, search.name, search.a);
   const a = text(session.a, search.a, handle);
   const b = text(session.b, search.b);
+  const q = text(session.q, search.q);
   const flag = tongueParam(tongue);
   if (verb === "read") return { n: handle, tongue: flag };
   if (verb === "two") return { a, b, tongue: flag };
+  if (verb === "ask") return { n: handle, q, tongue: flag };
   return { tongue: flag };
 }
 

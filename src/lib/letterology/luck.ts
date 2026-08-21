@@ -301,3 +301,9 @@ export function decide(
     next,
   };
 }
+
+export { meetOf as letterMeet, currentOf as letterCurrent };
+
+export function actCounselOf(letter: Letter): { lean: string; wait: string } {
+  return ACT_COUNSEL[letter] ?? ACT_COUNSEL.X!;
+}

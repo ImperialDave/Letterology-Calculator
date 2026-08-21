@@ -129,3 +129,16 @@ test("flip keeps the cheat sheet", () => {
   assert.equal(next.to, "/sheet");
   assert.equal(next.search.tongue, "el");
 });
+
+test("flip keeps an ask", () => {
+  noteHandle("Ada");
+  const next = flipTongue({
+    pathname: "/ask",
+    search: { n: "Ada", q: "Should I ship" },
+    next: "el",
+  });
+  assert.equal(next.to, "/ask");
+  assert.equal(next.search.n, "Ada");
+  assert.equal(next.search.q, "Should I ship");
+  assert.equal(next.search.tongue, "el");
+});

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { HouseCircle } from "@/components/letterology/HouseCircle";
 import { LetterDetail } from "@/components/letterology/LetterDetail";
-import { DecisionCaster } from "@/components/letterology/DecisionCaster";
+import { AskView } from "@/components/letterology/AskView";
 import { LuckPanel } from "@/components/letterology/LuckPanel";
 import { PageShare } from "@/components/letterology/PageShare";
 import { Sheet } from "@/components/ui/sheet";
@@ -62,7 +62,7 @@ export function LatinPortrait({ horoscope }: { horoscope: Horoscope }) {
 
       <LuckPanel luck={luck} />
 
-      <DecisionCaster horoscope={horoscope} />
+      <AskView initialHandle={horoscope.displayName} lockHandle />
 
       <HouseCircle
         selected={letter}

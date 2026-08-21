@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AlmanacRouteImport } from './routes/almanac'
 import { Route as ArchetypesRouteImport } from './routes/archetypes'
+import { Route as AskRouteImport } from './routes/ask'
 import { Route as AtlasRouteImport } from './routes/atlas'
 import { Route as BondRouteImport } from './routes/bond'
 import { Route as CircleRouteImport } from './routes/circle'
@@ -56,6 +57,11 @@ const AlmanacRoute = AlmanacRouteImport.update({
 const ArchetypesRoute = ArchetypesRouteImport.update({
   id: '/archetypes',
   path: '/archetypes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AskRoute = AskRouteImport.update({
+  id: '/ask',
+  path: '/ask',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AtlasRoute = AtlasRouteImport.update({
@@ -213,6 +219,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/almanac': typeof AlmanacRoute
   '/archetypes': typeof ArchetypesRoute
+  '/ask': typeof AskRoute
   '/atlas': typeof AtlasRoute
   '/bond': typeof BondRoute
   '/circle': typeof CircleRoute
@@ -248,6 +255,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/almanac': typeof AlmanacRoute
   '/archetypes': typeof ArchetypesRoute
+  '/ask': typeof AskRoute
   '/atlas': typeof AtlasRoute
   '/bond': typeof BondRoute
   '/circle': typeof CircleRoute
@@ -283,6 +291,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/almanac': typeof AlmanacRoute
   '/archetypes': typeof ArchetypesRoute
+  '/ask': typeof AskRoute
   '/atlas': typeof AtlasRoute
   '/bond': typeof BondRoute
   '/circle': typeof CircleRoute
@@ -320,6 +329,7 @@ export interface FileRouteTypes {
     | '/'
     | '/almanac'
     | '/archetypes'
+    | '/ask'
     | '/atlas'
     | '/bond'
     | '/circle'
@@ -355,6 +365,7 @@ export interface FileRouteTypes {
     | '/'
     | '/almanac'
     | '/archetypes'
+    | '/ask'
     | '/atlas'
     | '/bond'
     | '/circle'
@@ -389,6 +400,7 @@ export interface FileRouteTypes {
     | '/'
     | '/almanac'
     | '/archetypes'
+    | '/ask'
     | '/atlas'
     | '/bond'
     | '/circle'
@@ -425,6 +437,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AlmanacRoute: typeof AlmanacRoute
   ArchetypesRoute: typeof ArchetypesRoute
+  AskRoute: typeof AskRoute
   AtlasRoute: typeof AtlasRoute
   BondRoute: typeof BondRoute
   CircleRoute: typeof CircleRoute
@@ -468,6 +481,13 @@ declare module '@tanstack/react-router' {
       path: '/archetypes'
       fullPath: '/archetypes'
       preLoaderRoute: typeof ArchetypesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ask': {
+      id: '/ask'
+      path: '/ask'
+      fullPath: '/ask'
+      preLoaderRoute: typeof AskRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/atlas': {
@@ -717,6 +737,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AlmanacRoute: AlmanacRoute,
   ArchetypesRoute: ArchetypesRoute,
+  AskRoute: AskRoute,
   AtlasRoute: AtlasRoute,
   BondRoute: BondRoute,
   CircleRoute: CircleRoute,
