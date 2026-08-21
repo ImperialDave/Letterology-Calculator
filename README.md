@@ -13,6 +13,7 @@ A letter does not change its nature — only its willingness. That is luck.
 3. Take the three moves: **do this / wait on / ask**.
 4. Letterize an act (`quit`, `ask them`, `ship the launch`) to see if the day will have it.
 5. Compare two handles. Write an amount as letters. Flip to Greek if you want the second tongue.
+6. Descend the well (`/play`) — Cinderwell, a club game. Drill, haul ore, sell, go deeper. Three claims stay in this browser.
 
 ## Doctrine, short
 
@@ -21,6 +22,10 @@ A letter does not change its nature — only its willingness. That is luck.
 - Digits in a handle are the Count (1 is A, 0 is the Fool).
 - Favorable currents = today's date-house plus its allies. Contrary currents = its enemies.
 - Luck is willingness, not fate. The decision is yours.
+
+## The Well
+
+Cinderwell lives at `/play`. It is a descent, not a reading. The club chrome steps aside so the mine can fill the screen; **Back to the club** returns you to CC33. Saves are local to the browser.
 
 ## Develop
 

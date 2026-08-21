@@ -23,6 +23,7 @@ import { Route as HouseRouteImport } from './routes/house'
 import { Route as KeyRouteImport } from './routes/key'
 import { Route as LettersRouteImport } from './routes/letters'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as PlayRouteImport } from './routes/play'
 import { Route as SheetRouteImport } from './routes/sheet'
 import { Route as StoicheiaRouteImport } from './routes/stoicheia'
 import { Route as TwoRouteImport } from './routes/two'
@@ -112,6 +113,11 @@ const LettersRoute = LettersRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlayRoute = PlayRouteImport.update({
+  id: '/play',
+  path: '/play',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SheetRoute = SheetRouteImport.update({
@@ -230,6 +236,7 @@ export interface FileRoutesByFullPath {
   '/key': typeof KeyRoute
   '/letters': typeof LettersRoute
   '/login': typeof LoginRoute
+  '/play': typeof PlayRoute
   '/sheet': typeof SheetRoute
   '/stoicheia': typeof StoicheiaRouteWithChildren
   '/two': typeof TwoRoute
@@ -266,6 +273,7 @@ export interface FileRoutesByTo {
   '/key': typeof KeyRoute
   '/letters': typeof LettersRoute
   '/login': typeof LoginRoute
+  '/play': typeof PlayRoute
   '/sheet': typeof SheetRoute
   '/two': typeof TwoRoute
   '/why': typeof WhyRoute
@@ -302,6 +310,7 @@ export interface FileRoutesById {
   '/key': typeof KeyRoute
   '/letters': typeof LettersRoute
   '/login': typeof LoginRoute
+  '/play': typeof PlayRoute
   '/sheet': typeof SheetRoute
   '/stoicheia': typeof StoicheiaRouteWithChildren
   '/two': typeof TwoRoute
@@ -340,6 +349,7 @@ export interface FileRouteTypes {
     | '/key'
     | '/letters'
     | '/login'
+    | '/play'
     | '/sheet'
     | '/stoicheia'
     | '/two'
@@ -376,6 +386,7 @@ export interface FileRouteTypes {
     | '/key'
     | '/letters'
     | '/login'
+    | '/play'
     | '/sheet'
     | '/two'
     | '/why'
@@ -411,6 +422,7 @@ export interface FileRouteTypes {
     | '/key'
     | '/letters'
     | '/login'
+    | '/play'
     | '/sheet'
     | '/stoicheia'
     | '/two'
@@ -448,6 +460,7 @@ export interface RootRouteChildren {
   KeyRoute: typeof KeyRoute
   LettersRoute: typeof LettersRoute
   LoginRoute: typeof LoginRoute
+  PlayRoute: typeof PlayRoute
   SheetRoute: typeof SheetRoute
   StoicheiaRoute: typeof StoicheiaRouteWithChildren
   TwoRoute: typeof TwoRoute
@@ -558,6 +571,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/play': {
+      id: '/play'
+      path: '/play'
+      fullPath: '/play'
+      preLoaderRoute: typeof PlayRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sheet': {
@@ -748,6 +768,7 @@ const rootRouteChildren: RootRouteChildren = {
   KeyRoute: KeyRoute,
   LettersRoute: LettersRoute,
   LoginRoute: LoginRoute,
+  PlayRoute: PlayRoute,
   SheetRoute: SheetRoute,
   StoicheiaRoute: StoicheiaRouteWithChildren,
   TwoRoute: TwoRoute,

@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { LatinPortrait } from "@/components/letterology/LatinPortrait";
 import { TongueStage } from "@/components/letterology/TongueStage";
@@ -129,6 +129,13 @@ function Home() {
             </div>
             <p className="mt-2 text-sm text-muted">{VOICE.nameFormHint}</p>
           </form>
+          <p className="mt-16 text-sm text-muted">{VOICE.wellHome}</p>
+          <Link
+            to="/play"
+            className="mt-2 inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+          >
+            The Well
+          </Link>
         </section>
       ) : (
         <div className="space-y-8">

@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+@custom-variant desk (@media (hover: hover) and (pointer: fine));
+@custom-variant short (@media (max-height: 520px));
+
 @theme {
   --color-bg: #efe6d6;
   --color-surface: #e7dcc8;
@@ -13,6 +16,16 @@
   --color-border: #d2c4ad;
   --color-rule: #c4b496;
   --color-ring: #7a3328;
+
+  --color-elevated: #efe0cc;
+  --color-copper: #7a3328;
+  --color-fuel: #3f6b5c;
+  --color-hull: #7a3328;
+  --color-cargo: #8a6a3a;
+  --color-danger: #9a2f24;
+  --color-accent: #7a3328;
+  --color-accent-fg: #f6f0e4;
+  --shadow-panel: 0 12px 40px rgba(28, 23, 18, 0.12);
 
   --font-display: "Fraunces", "Iowan Old Style", "Palatino Linotype", Palatino, serif;
   --font-serif: "Source Serif 4", "Iowan Old Style", Georgia, serif;
@@ -262,4 +275,30 @@
   .sheet-page section {
     break-inside: avoid;
   }
+}
+
+/* Cinderwell — night room. Tokens only apply inside the well. */
+[data-cinderwell] {
+  --color-bg: #100e0c;
+  --color-surface: #1a1714;
+  --color-elevated: #241f1b;
+  --color-raised: #241f1b;
+  --color-ink: #efe8dc;
+  --color-fg: #efe8dc;
+  --color-muted: #9c9184;
+  --color-subtle: #6e655c;
+  --color-primary: #c45c48;
+  --color-primary-fg: #14110f;
+  --color-border: #3a342e;
+  --color-rule: #4a3c30;
+  --color-accent: #e8e0d4;
+  --color-accent-fg: #14110f;
+  --color-copper: #c45c3a;
+  --color-fuel: #4a9b82;
+  --color-hull: #c45c48;
+  --color-cargo: #c4a574;
+  --color-danger: #c44536;
+  --shadow-panel: 0 12px 40px rgba(0, 0, 0, 0.45);
+  color: var(--color-fg);
+  background: var(--color-bg);
 }
