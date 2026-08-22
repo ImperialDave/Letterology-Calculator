@@ -4,7 +4,7 @@ import { defaultItems, defaultUpgrades } from "./data";
 import type { SlotMeta } from "./save";
 import { defaultSettings, type CabSettings } from "./settings";
 
-export type Phase = "title" | "playing" | "shop" | "paused" | "dead" | "help" | "settings" | "codes";
+export type Phase = "title" | "playing" | "shop" | "paused" | "dead" | "help" | "settings" | "codes" | "won";
 export type SaveMenu = "load" | "save" | "new" | null;
 
 export interface HudSnap {
@@ -42,6 +42,9 @@ export interface HudSnap {
   settings: CabSettings;
   fullscreen: boolean;
   kilnFed: boolean;
+  won: boolean;
+  carryingSeal: boolean;
+  hookLeft: number;
 }
 
 const empty: HudSnap = {
@@ -79,6 +82,9 @@ const empty: HudSnap = {
   settings: defaultSettings(),
   fullscreen: false,
   kilnFed: false,
+  won: false,
+  carryingSeal: false,
+  hookLeft: 0,
 };
 
 interface Store extends HudSnap {

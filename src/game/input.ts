@@ -12,6 +12,7 @@ export type Actions = {
   plantNail: boolean;
   chorus: boolean;
   veinBell: boolean;
+  hook: boolean;
   pause: boolean;
   drill: boolean;
 };
@@ -39,6 +40,7 @@ const GAME_KEYS = new Set([
   "KeyN",
   "KeyG",
   "KeyQ",
+  "KeyH",
   "Escape",
   "KeyP",
 ]);
@@ -163,6 +165,7 @@ export class Input {
     plantNail: false,
     chorus: false,
     veinBell: false,
+    hook: false,
     drill: false,
   };
   cheatBuf = "";
@@ -300,6 +303,7 @@ export class Input {
       plantNail: just("KeyN") || this.touch.plantNail,
       chorus: just("KeyQ") || this.touch.chorus,
       veinBell: just("KeyG") || this.touch.veinBell,
+      hook: just("KeyH") || this.touch.hook,
       pause: just("Escape") || just("KeyP"),
       drill: this.touch.drill || (pads.some((pad) => pad?.mapping === "standard" && pad.buttons[0]?.pressed) ?? false),
     };
@@ -315,6 +319,7 @@ export class Input {
     this.touch.plantNail = false;
     this.touch.chorus = false;
     this.touch.veinBell = false;
+    this.touch.hook = false;
     this.edges.clear();
     this.prev = this.qaKeys ? new Set(this.qaKeys) : new Set(this.keys);
     return actions;

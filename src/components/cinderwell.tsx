@@ -27,6 +27,7 @@ import {
   KILN_BASE_MAX,
   KILN_MODULE_SLOTS,
   LATTICE_SLOTS,
+  APEX_SLOTS,
   ORES,
   RIGWORKS_MAX,
   SLOT_BLURB,
@@ -36,6 +37,7 @@ import {
   UPGRADES,
   cargoValue,
   visibleBuildings,
+  WIN_BOUNTY,
   type ConsumableId,
   type ShopId,
   type Slot,
@@ -107,6 +109,7 @@ export function Cinderwell() {
       <ClaimsScreen />
       <ShopScreen />
       <DeadScreen />
+      <WinScreen />
       <TouchPad finger={finger} />
     </div>
   );
@@ -128,8 +131,9 @@ function Hud({ finger }: { finger: boolean }) {
   const muted = useGameUI((s) => s.muted);
   const hellUnlocked = useGameUI((s) => s.hellUnlocked);
   const coolantT = useGameUI((s) => s.coolantT);
+  const carryingSeal = useGameUI((s) => s.carryingSeal);
 
-  if (phase === "title" || phase === "help" || phase === "codes") return null;
+  if (phase === "title" || phase === "help" || phase === "codes" || phase === "won") return null;
 
   const hellish =
     stratum === "Emberward" || stratum === "Brimdeep" || stratum === "Heartfire";
@@ -160,6 +164,11 @@ function Hud({ finger }: { finger: boolean }) {
             tone="cargo"
             discrete
           />
+          {carryingSeal ? (
+            <p className="rounded-lg border border-accent bg-accent/15 px-2 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-accent">
+              Seal in hold
+            </p>
+          ) : null}
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1.5 short:flex-row-reverse short:items-start">
           <div className="flex gap-1.5">
@@ -310,6 +319,7 @@ function TitleScreen() {
   const hasSave = useGameUI((s) => s.hasSave);
   const bestDepth = useGameUI((s) => s.bestDepth);
   const kilnFed = useGameUI((s) => s.kilnFed);
+  const won = useGameUI((s) => s.won);
   if (phase !== "title") return null;
   return (
     <div className="absolute inset-0 z-20 flex flex-col justify-end overflow-y-auto overscroll-contain bg-gradient-to-t from-bg via-bg/80 to-transparent px-5 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))] sm:px-6">
@@ -373,7 +383,9 @@ function TitleScreen() {
         </div>
         <KilnSpeak className="mt-4" />
         <p className="mt-3 max-w-md text-sm text-subtle short:hidden">
-          {kilnFed
+          {won
+            ? "The well is sealed. Afteriron waits in the Lattice."
+            : kilnFed
             ? "Kiln 33 took the offering. Descend in a finished rig — Heartbit, Molten Aegis, the whole rack."
             : "Press and drag — the rig follows your finger. WASD still works."}
         </p>
@@ -422,8 +434,10 @@ function HelpScreen() {
         </li>
         <li>
           <strong className="font-medium">Lattice</strong> — unseals after Heartfire, east of the
-          Depot. Club iron: phase bit, welltap, resonator, anchor, letterlock. V nullcharge, N
-          plant a nail, G vein bell, Q Chorus sell from below. On a phone, pause and open Codes.
+          Depot. Club iron: phase, welltap, resonator, anchor, letterlock. Heartfire hides a Well
+          Seal — haul it to the Lattice to seal the well. Afteriron (Corebiter, Wake, Press, Skyhook)
+          unseals after that. V nullcharge, N nail, G bell, Q Chorus, H skyhook. On a phone, pause
+          and open Codes.
         </li>
         <li>
           <strong className="font-medium">Esc</strong> — pause. Sell often. Finish Rigworks, then push the
@@ -1028,6 +1042,50 @@ function DeadScreen() {
   );
 }
 
+function WinScreen() {
+  const phase = useGameUI((s) => s.phase);
+  const money = useGameUI((s) => s.money);
+  const depth = useGameUI((s) => s.bestDepth);
+  const won = useGameUI((s) => s.won);
+  if (phase !== "won" || !won) return null;
+  return (
+    <Modal>
+      <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-accent">CC33 · The claim</p>
+      <h2 className="font-display mt-2 text-4xl font-semibold tracking-wide short:text-3xl">The well is sealed</h2>
+      <p className="mt-3 text-pretty text-sm leading-relaxed text-muted">
+        You brought the Seal home. The Lattice files it. Afteriron unseals — Corebiter, Aegis Wake,
+        Letterpress, Skyhook. The well is still there if you want another cut.
+      </p>
+      <dl className="mt-5 grid grid-cols-2 gap-3 text-sm">
+        <div className="rounded-lg border border-border bg-elevated px-3 py-2">
+          <dt className="text-[10px] uppercase tracking-wider text-muted">Best depth</dt>
+          <dd className="font-display mt-1 text-xl tabular-nums">{depth} m</dd>
+        </div>
+        <div className="rounded-lg border border-border bg-elevated px-3 py-2">
+          <dt className="text-[10px] uppercase tracking-wider text-muted">Ledger</dt>
+          <dd className="font-display mt-1 text-xl tabular-nums">${Math.floor(money).toLocaleString()}</dd>
+        </div>
+      </dl>
+      <div className="mt-6 flex flex-col gap-2">
+        <button
+          type="button"
+          className="h-12 w-full rounded-xl bg-accent font-medium text-accent-fg"
+          onClick={() => getGame()?.keepCutting()}
+        >
+          Keep cutting
+        </button>
+        <button
+          type="button"
+          className="h-12 w-full rounded-xl border border-border bg-elevated font-medium text-fg"
+          onClick={() => getGame()?.setPhase("title")}
+        >
+          Back to the title
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
 function ShopScreen() {
   const phase = useGameUI((s) => s.phase);
   const shop = useGameUI((s) => s.shop);
@@ -1331,6 +1389,8 @@ function LatticePanel() {
   const upgrades = useGameUI((s) => s.upgrades);
   const money = useGameUI((s) => s.money);
   const items = useGameUI((s) => s.items);
+  const won = useGameUI((s) => s.won);
+  const carryingSeal = useGameUI((s) => s.carryingSeal);
   const latticeItems = (Object.keys(CONSUMABLES) as ConsumableId[]).filter(
     (id) => CONSUMABLES[id].shop === "lattice",
   );
@@ -1339,10 +1399,19 @@ function LatticePanel() {
     <div>
       <h2 className="font-display text-2xl font-semibold tracking-wide">The Lattice</h2>
       <p className="mt-1 text-sm text-muted">
-        Club iron. Not hell iron. The booth unseals after Heartfire. These modules change a
-        descent — they do not just make the bit louder.
+        Club iron. Not hell iron. Bring a Well Seal home to file the claim — Afteriron unseals
+        after that.
       </p>
       <p className="mt-2 text-sm tabular-nums text-fg">${Math.floor(money).toLocaleString()} on hand</p>
+      {carryingSeal ? (
+        <button
+          type="button"
+          className="mt-4 h-12 w-full rounded-xl bg-accent font-medium text-accent-fg"
+          onClick={() => getGame()?.presentSeal()}
+        >
+          Seal the well · +${WIN_BOUNTY.toLocaleString()}
+        </button>
+      ) : null}
       {hullReady ? (
         <>
           <h3 className="mt-6 text-[11px] font-medium uppercase tracking-[0.16em] text-muted">Aegis</h3>
@@ -1359,6 +1428,18 @@ function LatticePanel() {
           <FitRow key={slot} slot={slot} />
         ))}
       </ul>
+      <h3 className="mt-6 text-[11px] font-medium uppercase tracking-[0.16em] text-muted">Afteriron</h3>
+      {won ? (
+        <ul className="mt-2 space-y-2">
+          {APEX_SLOTS.map((slot) => (
+            <FitRow key={slot} slot={slot} />
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-2 text-sm text-muted">
+          Afteriron stays dark until a Well Seal comes home. Heartfire hides one in every claim.
+        </p>
+      )}
       <h3 className="mt-6 text-[11px] font-medium uppercase tracking-[0.16em] text-muted">Stores</h3>
       <ul className="mt-2 space-y-2">
         {latticeItems.map((id) => {
@@ -1519,6 +1600,7 @@ function TouchPad({ finger }: { finger: boolean }) {
   const upgrades = useGameUI((s) => s.upgrades);
   const cargo = useGameUI((s) => s.cargo);
   const atSurface = useGameUI((s) => s.atSurface);
+  const hookLeft = useGameUI((s) => s.hookLeft);
   if (!finger || phase !== "playing") return null;
 
   const fire = (
@@ -1533,7 +1615,8 @@ function TouchPad({ finger }: { finger: boolean }) {
       | "nullcharge"
       | "plantNail"
       | "chorus"
-      | "veinBell",
+      | "veinBell"
+      | "hook",
   ) => {
     const g = getGame();
     if (g) g.input.touch[key] = true;
@@ -1554,6 +1637,9 @@ function TouchPad({ finger }: { finger: boolean }) {
           ) : null}
           {latticeOpen ? (
             <IconAct icon={<Hexagon className="size-4" />} n={items.nullcharge} label="Nullcharge" onFire={() => fire("nullcharge")} />
+          ) : null}
+          {upgrades.hook >= 1 ? (
+            <IconAct icon={<Radio className="size-4" />} n={hookLeft} label="Skyhook" onFire={() => fire("hook")} />
           ) : null}
           {upgrades.anchor >= 1 ? (
             <IconAct icon={<Anchor className="size-4" />} n={1} label="Plant nail" onFire={() => fire("plantNail")} />

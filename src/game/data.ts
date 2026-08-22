@@ -5,7 +5,7 @@ export const SURFACE_Y = 12;
 export const FIXED_DT = 1 / 60;
 export const SAVE_KEY = "cinderwell.save.v1";
 export const SLOTS_KEY = "cinderwell.slots.v1";
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 export const SLOT_COUNT = 3;
 export const CLAIM_NAMES = ["Claim I", "Claim II", "Claim III"] as const;
 
@@ -122,11 +122,14 @@ export const ARTIFACTS: { id: ArtifactId; name: string; value: number; minDepth:
 export type BaseSlot = "drill" | "hull" | "engine" | "tank" | "cargo" | "radiator";
 export type KilnSlot = "scanner" | "lift" | "veil";
 export type LatticeSlot = "phase" | "siphon" | "resonator" | "anchor" | "cipher";
-export type Slot = BaseSlot | KilnSlot | LatticeSlot;
+export type ApexSlot = "corebit" | "wake" | "press" | "hook";
+export type Slot = BaseSlot | KilnSlot | LatticeSlot | ApexSlot;
 
 export const BASE_SLOTS: BaseSlot[] = ["drill", "hull", "engine", "tank", "cargo", "radiator"];
 export const KILN_MODULE_SLOTS: KilnSlot[] = ["scanner", "lift", "veil"];
 export const LATTICE_SLOTS: LatticeSlot[] = ["phase", "siphon", "resonator", "anchor", "cipher"];
+export const APEX_SLOTS: ApexSlot[] = ["corebit", "wake", "press", "hook"];
+export const WIN_BOUNTY = 2_000_000;
 /** Last upgrade index sold at Rigworks (0-based). Tiers after this are Kiln-only. */
 export const RIGWORKS_MAX = 5;
 /** Last base-slot index the Kiln will sell (Heartbit / Molten Aegis). */
@@ -248,6 +251,26 @@ export const UPGRADES: Record<Slot, UpgradeTier[]> = {
     { name: "CC33 Cipher", cost: 4500000, value: 2 },
     { name: "Well Index", cost: 15000000, value: 3 },
   ],
+  corebit: [
+    { name: "Stopped Short", cost: 0, value: 0 },
+    { name: "Corebiter", cost: 2400000, value: 1 },
+    { name: "Wellsplitter", cost: 9000000, value: 2 },
+  ],
+  wake: [
+    { name: "Bare Recall", cost: 0, value: 0 },
+    { name: "Aegis Wake", cost: 1800000, value: 1 },
+    { name: "Second Skin", cost: 6500000, value: 2 },
+  ],
+  press: [
+    { name: "Open Assay", cost: 0, value: 0 },
+    { name: "Letterpress", cost: 3200000, value: 1 },
+    { name: "CC33 Press", cost: 10000000, value: 2 },
+  ],
+  hook: [
+    { name: "No Line", cost: 0, value: 0 },
+    { name: "Skyhook", cost: 2100000, value: 1 },
+    { name: "Twin Hook", cost: 7500000, value: 2 },
+  ],
 };
 
 export const SLOT_LABEL: Record<Slot, string> = {
@@ -265,6 +288,10 @@ export const SLOT_LABEL: Record<Slot, string> = {
   resonator: "Resonator",
   anchor: "Anchor",
   cipher: "Letterlock",
+  corebit: "Corebit",
+  wake: "Aegis Wake",
+  press: "Letterpress",
+  hook: "Skyhook",
 };
 
 export const SLOT_BLURB: Record<Slot, string> = {
@@ -282,6 +309,10 @@ export const SLOT_BLURB: Record<Slot, string> = {
   resonator: "Hears veins through rock. The Chorus sells from below.",
   anchor: "Nails a recall in the well so the pad is not the only home.",
   cipher: "CC33's lamp. Finds what the well is hiding.",
+  corebit: "Afteriron. The bit that eats bedrock and the well's floor.",
+  wake: "Recall leaves a skin of invuln. Second Skin holds twice.",
+  press: "CC33's assay. Wellheart and Seal — then all Heartfire — pay extra.",
+  hook: "A free snap home, no beacon. Twin Hook twice a descent.",
 };
 
 export const CONSUMABLES = {
@@ -319,8 +350,10 @@ export function isSolid(t: number): boolean {
   return t !== T.EMPTY;
 }
 
-export function isDiggable(t: number): boolean {
-  return t !== T.EMPTY && t !== T.CORE && t !== T.BEDROCK;
+export function isDiggable(t: number, corebit = 0): boolean {
+  if (t === T.EMPTY || t === T.PAD) return false;
+  if (t === T.CORE || t === T.BEDROCK) return corebit >= 1;
+  return true;
 }
 
 export function isOre(t: number): t is OreId {
@@ -396,6 +429,8 @@ export function hardness(t: number, depth: number): number {
       return 9.2;
     case T.HELLGATE:
       return 11.5;
+    case T.CORE:
+      return 99;
     case T.BEDROCK:
       return 99;
     default:
@@ -470,6 +505,10 @@ export function defaultUpgrades(): UpgradesState {
     resonator: 0,
     anchor: 0,
     cipher: 0,
+    corebit: 0,
+    wake: 0,
+    press: 0,
+    hook: 0,
   };
 }
 
@@ -478,9 +517,10 @@ export function defaultItems(): Record<ConsumableId, number> {
 }
 
 export interface CargoItem {
-  id: OreId;
+  id: number;
   name: string;
   value: number;
+  relic?: boolean;
 }
 
 export function cargoValue(cargo: CargoItem[]): number {
@@ -503,6 +543,16 @@ export function nailCap(anchor: number): number {
   if (anchor >= 2) return 2;
   if (anchor >= 1) return 1;
   return 0;
+}
+
+export function hookCharges(hook: number): number {
+  if (hook >= 2) return 2;
+  if (hook >= 1) return 1;
+  return 0;
+}
+
+export function isRelic(item: CargoItem): boolean {
+  return Boolean(item.relic) || item.id === T.ART_WELL;
 }
 
 export type Nail = { x: number; y: number };

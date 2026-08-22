@@ -1,4 +1,5 @@
 import {
+  APEX_SLOTS,
   BASE_SLOTS,
   BUILDINGS,
   CONSUMABLES,
@@ -18,6 +19,7 @@ import {
   T,
   TILE,
   UPGRADES,
+  WIN_BOUNTY,
   WORLD_H,
   WORLD_W,
   artifactById,
@@ -27,10 +29,12 @@ import {
   defaultUpgrades,
   hardness,
   hellLevel,
+  hookCharges,
   isArtifact,
   isDiggable,
   isLava,
   isOre,
+  isRelic,
   isSolid,
   latticeUnlocked,
   nailCap,
@@ -149,6 +153,10 @@ export class Sim {
   indexUsed = false;
   indexMark: { x: number; y: number } | null = null;
   sealsFound = 0;
+  won = false;
+  wonCount = 0;
+  hookLeft = 0;
+  latticeHolds = 0;
 
   constructor(world: World, player: Player, bestDepth = 0, hellUnlocked = false) {
     this.world = world;
@@ -156,6 +164,27 @@ export class Sim {
     this.bestDepth = bestDepth;
     this.hellUnlocked = hellUnlocked || bestDepth >= HELL_1;
     if (this.hellUnlocked) this.hellSeen = hellLevel(bestDepth) || 1;
+    this.resetDescentToys();
+  }
+
+  resetDescentToys(): void {
+    this.hookLeft = hookCharges(this.player.upgrades.hook);
+    this.latticeHolds = 0;
+    this.chorusUsed = false;
+    this.indexUsed = false;
+    this.indexMark = null;
+  }
+
+  carryingSeal(): boolean {
+    return this.player.cargo.some((c) => isRelic(c));
+  }
+
+  pressMult(id: number): number {
+    const press = this.player.upgrades.press;
+    if (press <= 0) return 1;
+    if (id === T.ORE_16 || id === T.ART_WELL) return 1.33;
+    if (press >= 2 && hellLevel(this.depth()) >= 3) return 1.33;
+    return 1;
   }
 
   maxFuel(): number {
@@ -264,15 +293,18 @@ export class Sim {
 
   kill(reason: string): void {
     if (this.dead) return;
-    if (this.player.upgrades.hull >= 8 && !this.latticeHeld) {
-      this.latticeHeld = true;
-      this.player.hull = 1;
-      this.player.invuln = 2;
-      this.player.flash = 0.4;
-      this.toastNow("The lattice held.");
-      this.toastT = 3.2;
-      this.emit.push("warn");
-      return;
+    if (this.player.upgrades.hull >= 8) {
+      const maxHolds = this.player.upgrades.wake >= 2 ? 2 : 1;
+      if (this.latticeHolds < maxHolds) {
+        this.latticeHolds += 1;
+        this.player.hull = 1;
+        this.player.invuln = 2;
+        this.player.flash = 0.4;
+        this.toastNow(this.latticeHolds > 1 ? "Second skin held." : "The lattice held.");
+        this.toastT = 3.2;
+        this.emit.push("warn");
+        return;
+      }
     }
     this.dead = true;
     this.explodeT = 0;
@@ -304,6 +336,7 @@ export class Sim {
     this.indexMark = null;
     this.sealsFound = seals;
     this.nails = nails;
+    this.resetDescentToys();
     if (nails.length) {
       const n = nails[nails.length - 1]!;
       this.player.x = n.x;
@@ -342,7 +375,7 @@ export class Sim {
         this.world.set(tx, ty, t);
         return;
       }
-      const val = oreValueAtDepth(def, this.depth());
+      const val = Math.round(oreValueAtDepth(def, this.depth()) * this.pressMult(def.id));
       this.player.cargo.push({ id: def.id, name: def.name, value: val });
       this.float(cx, cy - 10, `$${val.toLocaleString()}`, def.glow);
       this.burst(cx, cy, 10, def.glow, 90);
@@ -350,11 +383,26 @@ export class Sim {
     } else if (isArtifact(t)) {
       const a = artifactById(t);
       if (!a) return;
+      if (t === T.ART_WELL) {
+        if (this.player.cargo.length >= this.cargoMax()) {
+          this.toastNow("Cargo full — the Seal stays in the wall.");
+          this.world.set(tx, ty, t);
+          return;
+        }
+        const val = Math.round(a.value * this.pressMult(t));
+        this.player.cargo.push({ id: a.id, name: a.name, value: val, relic: true });
+        this.sealsFound += 1;
+        this.float(cx, cy - 10, "WELL SEAL", a.color);
+        this.burst(cx, cy, 18, a.color, 140);
+        this.emit.push("collect");
+        this.toastNow("The Seal is in the hopper. Bring it to the Lattice.");
+        this.toastT = 4.2;
+        return;
+      }
       this.player.money += a.value;
       this.float(cx, cy - 10, `+$${a.value.toLocaleString()}`, a.color);
       this.burst(cx, cy, 14, a.color, 110);
       this.emit.push("collect");
-      if (t === T.ART_WELL) this.sealsFound += 1;
     } else if (t === T.GAS) {
       this.hurt(7, "gas");
       this.burst(cx, cy, 16, "#9cbf4a", 100);
@@ -373,14 +421,17 @@ export class Sim {
     if (!this.world.inBounds(tx, ty)) return false;
     const t = this.world.get(tx, ty);
     if (!isSolid(t)) return false;
-    if (t === T.CORE) return true;
-    if (t === T.BEDROCK) {
+    const bit = this.player.upgrades.corebit;
+    if (t === T.CORE && bit < 1) return true;
+    if (t === T.BEDROCK && bit < 1) {
       this.toastNow("Bedrock — needs a charge.");
       return true;
     }
-    if (!isDiggable(t)) return true;
+    if (!isDiggable(t, bit)) return true;
 
     let h = hardness(t, this.depth());
+    if (t === T.CORE) h = bit >= 2 ? 3.2 : 8.5;
+    else if (t === T.BEDROCK) h = bit >= 2 ? 4.2 : 7.2;
     if (this.player.upgrades.phase >= 1) {
       if (this.phaseSoftT <= 0 && this.phaseSoftCd <= 0 && h > this.drillPower() * 1.5) {
         this.phaseSoftT = 1.2;
@@ -429,7 +480,7 @@ export class Sim {
         const bx = tx + ox;
         const by = ty + oy;
         const behind = this.world.get(bx, by);
-        if (isDiggable(behind) && behind !== T.PAD) this.breakTile(bx, by);
+        if (isDiggable(behind, this.player.upgrades.corebit) && behind !== T.PAD) this.breakTile(bx, by);
       }
       this.player.digging = null;
       this.trauma = Math.min(1, this.trauma + 0.08);
@@ -463,7 +514,11 @@ export class Sim {
           }
         } else if (isArtifact(t)) {
           const a = artifactById(t);
-          if (a) {
+          if (a && t === T.ART_WELL && this.player.cargo.length < this.cargoMax()) {
+            this.player.cargo.push({ id: a.id, name: a.name, value: Math.round(a.value * this.pressMult(t)), relic: true });
+            this.sealsFound += 1;
+            this.toastNow("The Seal is in the hopper. Bring it to the Lattice.");
+          } else if (a) {
             this.player.money += a.value;
             if (t === T.ART_WELL) this.sealsFound += 1;
           }
@@ -501,14 +556,26 @@ export class Sim {
     this.toastNow("Hull patched.");
   }
 
-  teleport(): void {
-    if (this.player.items.teleporter <= 0) {
+  teleport(fromHook = false): void {
+    const pad = { x: (SPAWN_TX + 0.5) * TILE, y: (SURFACE_Y - 0.55) * TILE };
+    const dests = [pad, ...this.nails];
+    let usedHook = false;
+    if (fromHook) {
+      if (this.hookLeft <= 0) {
+        this.toastNow("No skyhook left this descent.");
+        return;
+      }
+      this.hookLeft -= 1;
+      usedHook = true;
+    } else if (this.player.items.teleporter > 0) {
+      this.player.items.teleporter -= 1;
+    } else if (this.hookLeft > 0) {
+      this.hookLeft -= 1;
+      usedHook = true;
+    } else {
       this.toastNow("No recall beacon.");
       return;
     }
-    this.player.items.teleporter -= 1;
-    const pad = { x: (SPAWN_TX + 0.5) * TILE, y: (SURFACE_Y - 0.55) * TILE };
-    const dests = [pad, ...this.nails];
     const i = this.recallAt % dests.length;
     this.recallAt = i + 1;
     const to = dests[i]!;
@@ -516,8 +583,10 @@ export class Sim {
     this.player.y = to.y;
     this.player.vx = 0;
     this.player.vy = 0;
-    this.burst(this.player.x, this.player.y, 20, "#7ec8c4", 100);
-    this.toastNow(i === 0 ? "Snapped to the pad." : `Snapped to nail ${i}.`);
+    if (this.player.upgrades.wake >= 1) this.player.invuln = Math.max(this.player.invuln, this.player.upgrades.wake >= 2 ? 2.5 : 1.5);
+    this.burst(this.player.x, this.player.y, 20, usedHook ? "#c8d0dc" : "#7ec8c4", 100);
+    const where = i === 0 ? "the pad" : `nail ${i}`;
+    this.toastNow(usedHook ? `Skyhook to ${where}.` : `Snapped to ${where}.`);
   }
 
   plantNail(): void {
@@ -596,18 +665,40 @@ export class Sim {
       this.toastNow("On the pad, use the Exchange.");
       return 0;
     }
-    const v = cargoValue(this.player.cargo);
+    const v = cargoValue(this.player.cargo.filter((c) => !isRelic(c)));
     if (v <= 0) {
-      this.toastNow("Hold is empty.");
+      this.toastNow(this.carryingSeal() ? "The Chorus will not sing the Seal." : "Hold is empty.");
       return 0;
     }
     const paid = Math.round(v * 0.85);
     this.player.money += paid;
-    this.player.cargo = [];
+    this.player.cargo = this.player.cargo.filter((c) => isRelic(c));
     this.chorusUsed = true;
     this.toastNow(`Chorus sold the haul for $${paid.toLocaleString()} (85%).`);
     this.toastT = 3.4;
     return paid;
+  }
+
+  presentSeal(): boolean {
+    if (!this.atSurface()) {
+      this.toastNow("The Lattice is on the pad.");
+      return false;
+    }
+    const i = this.player.cargo.findIndex((c) => isRelic(c));
+    if (i < 0) {
+      this.toastNow("No Seal in the hopper.");
+      return false;
+    }
+    this.player.cargo.splice(i, 1);
+    this.player.money += WIN_BOUNTY;
+    this.won = true;
+    this.wonCount += 1;
+    this.burst(this.player.x, this.player.y, 48, "#ffe8a8", 200);
+    this.burst(this.player.x, this.player.y, 28, "#9aa4b2", 140);
+    this.trauma = Math.min(1, this.trauma + 0.4);
+    this.toastNow("The well is sealed. CC33 files the claim.");
+    this.toastT = 5;
+    return true;
   }
 
   forgeKilnOffering(): void {
@@ -634,12 +725,17 @@ export class Sim {
   }
 
   sellAll(rate = 1): number {
-    const v = cargoValue(this.player.cargo);
-    if (v <= 0) return 0;
+    const keep = this.player.cargo.filter((c) => isRelic(c));
+    const sell = this.player.cargo.filter((c) => !isRelic(c));
+    const v = cargoValue(sell);
+    if (v <= 0) {
+      if (keep.length) this.toastNow("The Seal is not for sale. Take it to the Lattice.");
+      return 0;
+    }
     const assayed = this.player.upgrades.resonator >= 2 && rate >= 1 ? 1.15 : 1;
     const paid = Math.round(v * rate * assayed);
     this.player.money += paid;
-    this.player.cargo = [];
+    this.player.cargo = keep;
     return paid;
   }
 
@@ -667,8 +763,14 @@ export class Sim {
       if (!isBase && !(KILN_MODULE_SLOTS as readonly string[]).includes(slot)) return false;
     } else if (shop === "lattice") {
       if (!latticeUnlocked(this.hellSeen)) return false;
+      const isApex = (APEX_SLOTS as readonly string[]).includes(slot);
       if (slot === "hull") {
         if (i !== KILN_BASE_MAX) return false;
+      } else if (isApex) {
+        if (!this.won) {
+          this.toastNow("Afteriron waits on a sealed well.");
+          return false;
+        }
       } else if (!isLattice) return false;
       if (slot === "cipher" && i === 2 && this.sealsFound < 1) {
         this.toastNow("The Index wants a Well Seal's memory. Find one in Heartfire first.");
@@ -682,6 +784,7 @@ export class Sim {
     this.player.upgrades[slot] = i + 1;
     if (slot === "tank") this.player.fuel = this.maxFuel();
     if (slot === "hull") this.player.hull = this.maxHull();
+    if (slot === "hook") this.hookLeft = hookCharges(this.player.upgrades.hook);
     return true;
   }
 
@@ -829,7 +932,8 @@ export class Sim {
     if (actions.nullcharge) this.blast(3);
     if (actions.fuelCan) this.useFuelCan();
     if (actions.nanobots) this.useNanobots();
-    if (actions.teleporter) this.teleport();
+    if (actions.teleporter) this.teleport(false);
+    if (actions.hook) this.teleport(true);
     if (actions.coolant) this.useCoolant();
     if (actions.plantNail) this.plantNail();
     if (actions.chorus) this.chorusSell();

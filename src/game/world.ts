@@ -144,6 +144,8 @@ export class World {
       }
     }
 
+    this.placeWellSeal(rand);
+
     // Gas pockets (crust)
     const gasN = 55;
     for (let i = 0; i < gasN; i++) {
@@ -195,6 +197,23 @@ export class World {
         if ((x - cx) ** 2 + (y - cy) ** 2 <= r * r) this.set(x, y, tile);
       }
     }
+  }
+
+  private placeWellSeal(rand: () => number): void {
+    for (let i = 0; i < this.grid.length; i++) {
+      if (this.grid[i] === T.ART_WELL) return;
+    }
+    const y0 = SURFACE_Y + HELL_3 + 24;
+    const y1 = WORLD_H - 6;
+    for (let n = 0; n < 80; n++) {
+      const x = 2 + Math.floor(rand() * (WORLD_W - 4));
+      const y = y0 + Math.floor(rand() * Math.max(1, y1 - y0));
+      const cur = this.get(x, y);
+      if (cur === T.PAD || cur === T.CORE || cur === T.EMPTY || cur === T.HELLGATE) continue;
+      this.set(x, y, T.ART_WELL);
+      return;
+    }
+    this.set(Math.floor(WORLD_W / 2), Math.min(WORLD_H - 6, y0 + 8), T.ART_WELL);
   }
 
   encode(): string {

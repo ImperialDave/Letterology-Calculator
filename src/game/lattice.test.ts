@@ -71,3 +71,33 @@ test("chorus pays 85 and assay premium is exchange-only", () => {
   const pad = sim.sellAll();
   assert.equal(pad, 1150);
 });
+
+test("a Well Seal is not for sale and sealing wins", () => {
+  const sim = rig();
+  sim.player.y = (12 - 0.55) * 32;
+  sim.player.grounded = true;
+  sim.player.cargo.push({ id: 36, name: "Well Seal", value: 800000, relic: true });
+  assert.equal(sim.sellAll(), 0);
+  assert.equal(sim.carryingSeal(), true);
+  assert.equal(sim.presentSeal(), true);
+  assert.equal(sim.won, true);
+  assert.equal(sim.carryingSeal(), false);
+  assert.ok(sim.player.money >= 2_000_000);
+});
+
+test("afteriron stays locked until the well is sealed", () => {
+  const sim = rig();
+  assert.equal(sim.buyUpgrade("corebit", "lattice"), false);
+  sim.won = true;
+  assert.equal(sim.buyUpgrade("corebit", "lattice"), true);
+  assert.equal(sim.player.upgrades.corebit, 1);
+});
+
+test("kiln33 still skips afteriron", () => {
+  const sim = rig(0);
+  sim.forgeKilnOffering();
+  assert.equal(sim.player.upgrades.corebit, 0);
+  assert.equal(sim.player.upgrades.hook, 0);
+  assert.equal(sim.won, false);
+});
+

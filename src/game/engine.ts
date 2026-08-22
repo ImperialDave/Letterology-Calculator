@@ -233,6 +233,12 @@ export class Game {
       return;
     }
 
+    if (this.phase === "won") {
+      this.sim.tickFx(dt);
+      this.renderer.draw(this.sim, dt);
+      return;
+    }
+
     if (useGameUI.getState().saveMenu) {
       if (actions.pause) this.closeSaveMenu();
       this.renderer.draw(this.sim, dt);
@@ -269,6 +275,7 @@ export class Game {
         actions.plantNail = false;
         actions.chorus = false;
         actions.veinBell = false;
+        actions.hook = false;
       }
       for (const e of this.sim.emit) {
         if (e === "collect") this.audio.collect();
@@ -387,6 +394,9 @@ export class Game {
     this.sim.coolantT = saved.coolantT;
     this.sim.nails = saved.nails ?? [];
     this.sim.sealsFound = saved.sealsFound ?? 0;
+    this.sim.won = Boolean(saved.won);
+    this.sim.wonCount = saved.wonCount ?? (saved.won ? 1 : 0);
+    this.sim.resetDescentToys();
     const tx = Math.floor(player.x / TILE);
     const ty = Math.floor(player.y / TILE);
     if (isSolid(world.get(tx, ty))) {
@@ -471,6 +481,8 @@ export class Game {
       savedAt: Date.now(),
       nails: this.sim.nails,
       sealsFound: this.sim.sealsFound,
+      won: this.sim.won,
+      wonCount: this.sim.wonCount,
     };
   }
 
@@ -586,15 +598,42 @@ export class Game {
     return ok;
   }
 
+  presentSeal(): void {
+    if (!this.sim.presentSeal()) {
+      this.pushHud(true);
+      return;
+    }
+    this.audio.buy();
+    this.audio.boom();
+    this.shop = null;
+    this.setPhase("won");
+    this.save();
+    this.pushHud(true);
+  }
+
+  keepCutting(): void {
+    this.shop = null;
+    this.setPhase("playing");
+    this.sim.toastNow("Afteriron waits in the Lattice.");
+    this.save();
+    this.pushHud(true);
+  }
+
   newWorld(): void {
     const money = this.sim.player.money;
     const up = this.sim.player.upgrades;
     const items = this.sim.player.items;
     const best = this.sim.bestDepth;
     const seed = (Math.random() * 1e9) | 0;
+    const won = this.sim.won;
+    const wonCount = this.sim.wonCount;
+    const hellSeen = this.sim.hellSeen;
     const world = new World(seed);
     const player = spawnPlayer(up, items, money);
     this.sim = new Sim(world, player, best, this.sim.hellUnlocked);
+    this.sim.won = won;
+    this.sim.wonCount = wonCount;
+    this.sim.hellSeen = hellSeen;
     this.applyCab();
     this.sim.toastNow("New claim staked. Same rig.");
     this.phase = "playing";
@@ -608,8 +647,10 @@ export class Game {
     const n = this.sim.nearbyShop();
     if (n) {
       const b = BUILDINGS.find((x) => x.id === n);
+      if (n === "lattice" && this.sim.carryingSeal()) return "The Seal is home. E — seal the well.";
       return `${b?.name ?? n} — E to open`;
     }
+    if (this.sim.carryingSeal() && this.sim.atSurface()) return "The Seal is in the hopper. Take it to the Lattice.";
     return this.sim.toast;
   }
 
@@ -651,6 +692,9 @@ export class Game {
       settings: this.settings,
       fullscreen: typeof document !== "undefined" && Boolean(document.fullscreenElement),
       kilnFed: this.kilnFed,
+      won: this.sim.won,
+      carryingSeal: this.sim.carryingSeal(),
+      hookLeft: this.sim.hookLeft,
     });
   }
 
@@ -719,6 +763,12 @@ export class Game {
       feedKiln: () => self.feedKiln(),
       speakOffering: (raw: string) => self.speakOffering(raw),
       openCodes: () => self.openCodes(),
+      presentSeal: () => self.presentSeal(),
+      keepCutting: () => self.keepCutting(),
+      giveSeal: () => {
+        self.sim.player.cargo.push({ id: 36, name: "Well Seal", value: 800000, relic: true });
+        self.pushHud(true);
+      },
       getUpgrades: () => ({ ...self.sim.player.upgrades }),
       getMoney: () => self.sim.player.money,
       getHellUnlocked: () => self.sim.hellUnlocked,

@@ -42,6 +42,8 @@ export interface SaveBlob {
   savedAt: number;
   nails?: Nail[];
   sealsFound?: number;
+  won?: boolean;
+  wonCount?: number;
 }
 
 export interface SlotMeta {
@@ -81,6 +83,8 @@ const defaults = (): Omit<SaveBlob, "seed" | "grid" | "x" | "y"> => ({
   savedAt: 0,
   nails: [],
   sealsFound: 0,
+  won: false,
+  wonCount: 0,
 });
 
 function slotKey(i: number): string {
@@ -120,6 +124,8 @@ export function hydrateSave(parsed: Partial<SaveBlob>): SaveBlob | null {
       ? parsed.nails.filter((n) => n && typeof n.x === "number" && typeof n.y === "number")
       : [],
     sealsFound: typeof parsed.sealsFound === "number" ? parsed.sealsFound : 0,
+    won: Boolean(parsed.won),
+    wonCount: typeof parsed.wonCount === "number" ? parsed.wonCount : parsed.won ? 1 : 0,
   };
 }
 
