@@ -102,6 +102,7 @@ export function Cinderwell() {
       <TitleScreen />
       <HelpScreen />
       <SettingsScreen />
+      <CodesScreen />
       <PauseScreen />
       <ClaimsScreen />
       <ShopScreen />
@@ -128,7 +129,7 @@ function Hud({ finger }: { finger: boolean }) {
   const hellUnlocked = useGameUI((s) => s.hellUnlocked);
   const coolantT = useGameUI((s) => s.coolantT);
 
-  if (phase === "title" || phase === "help") return null;
+  if (phase === "title" || phase === "help" || phase === "codes") return null;
 
   const hellish =
     stratum === "Emberward" || stratum === "Brimdeep" || stratum === "Heartfire";
@@ -361,6 +362,13 @@ function TitleScreen() {
           >
             Settings
           </button>
+          <button
+            type="button"
+            className="h-12 rounded-xl border border-border bg-transparent px-6 font-medium text-muted"
+            onClick={() => getGame()?.openCodes()}
+          >
+            Codes
+          </button>
           <ShareWell className="flex h-12 items-center justify-center rounded-xl border border-border bg-transparent px-6 font-medium text-muted" />
         </div>
         <KilnSpeak className="mt-4" />
@@ -415,8 +423,7 @@ function HelpScreen() {
         <li>
           <strong className="font-medium">Lattice</strong> — unseals after Heartfire, east of the
           Depot. Club iron: phase bit, welltap, resonator, anchor, letterlock. V nullcharge, N
-          plant a nail, G vein bell, Q Chorus sell from below. On a phone, pause or Rig setup
-          and speak to the Kiln.
+          plant a nail, G vein bell, Q Chorus sell from below. On a phone, pause and open Codes.
         </li>
         <li>
           <strong className="font-medium">Esc</strong> — pause. Sell often. Finish Rigworks, then push the
@@ -746,6 +753,29 @@ function Toggle({
   );
 }
 
+function CodesScreen() {
+  const phase = useGameUI((s) => s.phase);
+  if (phase !== "codes") return null;
+  return (
+    <Modal onClose={() => getGame()?.closeCodes()}>
+      <h2 className="font-display pr-12 text-3xl font-semibold tracking-wide short:text-2xl">Codes</h2>
+      <p className="mt-2 text-pretty text-sm leading-relaxed text-muted">
+        Speak an offering. The Kiln hears this field the same as a desk keyboard.
+      </p>
+      <div className="mt-5">
+        <KilnSpeak />
+      </div>
+      <button
+        type="button"
+        className="mt-6 h-12 w-full rounded-xl bg-accent font-medium text-accent-fg"
+        onClick={() => getGame()?.closeCodes()}
+      >
+        Back
+      </button>
+    </Modal>
+  );
+}
+
 function PauseScreen() {
   const phase = useGameUI((s) => s.phase);
   const muted = useGameUI((s) => s.muted);
@@ -758,6 +788,7 @@ function PauseScreen() {
       <h2 className="font-display pr-12 text-3xl font-semibold tracking-wide short:text-2xl">Paused</h2>
       <div className="mt-6 flex flex-col gap-2 short:mt-3 short:gap-1.5">
         <MenuBtn onClick={() => getGame()?.setPhase("playing")}>Resume</MenuBtn>
+        <MenuBtn onClick={() => getGame()?.openCodes()}>Codes</MenuBtn>
         {atSurface ? (
           <>
             <MenuBtn onClick={() => getGame()?.openShop("exchange")}>Exchange</MenuBtn>
@@ -775,7 +806,6 @@ function PauseScreen() {
         )}
         <MenuBtn onClick={() => getGame()?.setMuted(!muted)}>{muted ? "Unmute" : "Mute"}</MenuBtn>
         <MenuBtn onClick={() => getGame()?.openSettings()}>Settings</MenuBtn>
-        <KilnSpeak />
         <MenuBtn onClick={() => getGame()?.saveNow()}>Save claim</MenuBtn>
         <MenuBtn onClick={() => getGame()?.openSaveMenu("save")}>Claims</MenuBtn>
         <MenuBtn onClick={() => getGame()?.setPhase("title")}>Abandon shift</MenuBtn>

@@ -4,7 +4,7 @@ import { defaultItems, defaultUpgrades } from "./data";
 import type { SlotMeta } from "./save";
 import { defaultSettings, type CabSettings } from "./settings";
 
-export type Phase = "title" | "playing" | "shop" | "paused" | "dead" | "help" | "settings";
+export type Phase = "title" | "playing" | "shop" | "paused" | "dead" | "help" | "settings" | "codes";
 export type SaveMenu = "load" | "save" | "new" | null;
 
 export interface HudSnap {

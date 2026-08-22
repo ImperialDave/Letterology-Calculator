@@ -62,6 +62,7 @@ export class Game {
   activeSlot: number | null = null;
   settings: CabSettings = loadSettings();
   settingsReturn: Phase = "title";
+  codesReturn: Phase = "title";
   kilnFed = false;
 
   constructor(canvas: HTMLCanvasElement) {
@@ -170,6 +171,19 @@ export class Game {
     this.setPhase(back);
   }
 
+  openCodes(): void {
+    this.codesReturn = this.phase === "playing" ? "paused" : this.phase;
+    if (this.codesReturn === "codes") this.codesReturn = "title";
+    this.setPhase("codes");
+    this.audio.ui();
+    this.pushHud(true);
+  }
+
+  closeCodes(): void {
+    const back = this.codesReturn === "codes" ? "title" : this.codesReturn;
+    this.setPhase(back);
+  }
+
   toggleFullscreen(): void {
     const root = document.documentElement;
     if (document.fullscreenElement) {
@@ -187,7 +201,9 @@ export class Game {
     this.audio.boom();
     this.audio.buy();
     this.pushHud(true);
-    if (this.phase !== "title" && this.phase !== "help") this.save();
+    const origin =
+      this.phase === "codes" ? this.codesReturn : this.phase === "settings" ? this.settingsReturn : this.phase;
+    if (origin !== "title" && origin !== "help" && origin !== "settings" && origin !== "codes") this.save();
   }
 
   speakOffering(raw: string): boolean {
@@ -204,7 +220,7 @@ export class Game {
     const actions = this.input.poll();
     if (this.input.takeCheat()) this.feedKiln();
 
-    if (this.phase === "title" || this.phase === "help" || this.phase === "settings") {
+    if (this.phase === "title" || this.phase === "help" || this.phase === "settings" || this.phase === "codes") {
       this.renderer.resize();
       this.renderer.camX = SPAWN_TX * TILE - this.renderer.viewW / 2;
       this.renderer.camY = SURFACE_Y * TILE - this.renderer.viewH * 0.7;
@@ -212,6 +228,7 @@ export class Game {
       this.renderer.draw(this.sim, dt);
       if (actions.pause && useGameUI.getState().saveMenu) this.closeSaveMenu();
       else if (actions.pause && this.phase === "settings") this.closeSettings();
+      else if (actions.pause && this.phase === "codes") this.closeCodes();
       else if (actions.pause && this.phase === "help") this.setPhase("title");
       return;
     }
@@ -701,6 +718,7 @@ export class Game {
       getPhase: () => self.phase,
       feedKiln: () => self.feedKiln(),
       speakOffering: (raw: string) => self.speakOffering(raw),
+      openCodes: () => self.openCodes(),
       getUpgrades: () => ({ ...self.sim.player.upgrades }),
       getMoney: () => self.sim.player.money,
       getHellUnlocked: () => self.sim.hellUnlocked,
