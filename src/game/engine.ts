@@ -28,6 +28,8 @@ import {
   writeSlot,
   clearSlot,
   worldFromSave,
+  encodeClaim,
+  decodeClaim,
   type SlotsIndex,
 } from "./save";
 import { Sim, newRun, spawnPlayer } from "./sim";
@@ -123,11 +125,10 @@ export class Game {
 
   rigClientPos(): { x: number; y: number } {
     const rect = this.canvas.getBoundingClientRect();
-    const sx = rect.width / Math.max(1, this.canvas.width);
-    const sy = rect.height / Math.max(1, this.canvas.height);
+    const z = this.renderer.zoom;
     return {
-      x: rect.left + (this.sim.player.x - this.renderer.camX) * sx,
-      y: rect.top + (this.sim.player.y - this.renderer.camY) * sy,
+      x: rect.left + (this.sim.player.x - this.renderer.camX) * z,
+      y: rect.top + (this.sim.player.y - this.renderer.camY) * z,
     };
   }
 
@@ -145,6 +146,9 @@ export class Game {
     this.audio.setVolume(this.settings.volume);
     this.renderer.reduced = !this.settings.shake;
     this.sim.reducedMotion = !this.settings.grit;
+    const zoomChanged = this.renderer.zoom !== this.settings.zoom;
+    this.renderer.zoom = this.settings.zoom;
+    if (zoomChanged) this.renderer.snapFollow(this.sim);
   }
 
   patchSettings(partial: Partial<CabSettings>): void {
@@ -191,8 +195,8 @@ export class Game {
 
     if (this.phase === "title" || this.phase === "help" || this.phase === "settings") {
       this.renderer.resize();
-      this.renderer.camX = SPAWN_TX * TILE - this.renderer.w / 2;
-      this.renderer.camY = SURFACE_Y * TILE - this.renderer.h * 0.7;
+      this.renderer.camX = SPAWN_TX * TILE - this.renderer.viewW / 2;
+      this.renderer.camY = SURFACE_Y * TILE - this.renderer.viewH * 0.7;
       this.sim.tickFx(dt);
       this.renderer.draw(this.sim, dt);
       if (actions.pause && useGameUI.getState().saveMenu) this.closeSaveMenu();
@@ -403,6 +407,77 @@ export class Game {
     this.pushHud(true);
   }
 
+  captureBlob() {
+    const p = this.sim.player;
+    return {
+      version: 3,
+      seed: this.sim.world.seed,
+      grid: this.sim.world.encode(),
+      x: p.x,
+      y: p.y,
+      vx: p.vx,
+      vy: p.vy,
+      fuel: p.fuel,
+      hull: p.hull,
+      money: p.money,
+      cargo: p.cargo,
+      upgrades: p.upgrades,
+      items: p.items,
+      bestDepth: this.sim.bestDepth,
+      bestMoney: p.money,
+      hellUnlocked: this.sim.hellUnlocked,
+      hellSeen: this.sim.hellSeen,
+      coolantT: this.sim.coolantT,
+      muted: this.audio.muted,
+      shake: this.settings.shake,
+      savedAt: Date.now(),
+    };
+  }
+
+  exportClaim(): void {
+    const live = this.phase !== "title" && this.phase !== "help";
+    const blob = live ? this.captureBlob() : this.activeSlot != null ? loadSlot(this.activeSlot) : null;
+    if (!blob) {
+      this.openSaveMenu("load");
+      this.sim.toastNow("No claim to copy yet. Start a descent first.");
+      return;
+    }
+    try {
+      const file = encodeClaim(blob);
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([file], { type: "application/json" }));
+      a.download = `cinderwell-claim.json`;
+      a.rel = "noopener";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+      this.sim.toastNow("Claim file downloaded. Keep it with you.");
+      this.pushHud(true);
+    } catch {
+      this.sim.toastNow("Could not write a file from this browser.");
+    }
+  }
+
+  importClaimText(text: string): boolean {
+    const blob = decodeClaim(text);
+    if (!blob) {
+      this.sim.toastNow("That file is not a Cinderwell claim.");
+      this.pushHud(true);
+      return false;
+    }
+    const i = this.activeSlot ?? firstEmptySlot() ?? 0;
+    if (!writeSlot(i, blob)) {
+      this.sim.toastNow("Could not save. Storage is blocked or full.");
+      this.pushHud(true);
+      return false;
+    }
+    this.loadFromSlot(i);
+    this.sim.toastNow("Claim loaded from file into this browser.");
+    this.pushHud(true);
+    return true;
+  }
+
   resurface(): void {
     this.sim.recover();
     this.audio.ui();
@@ -463,30 +538,7 @@ export class Game {
   save(): boolean {
     if (this.phase === "title" || this.phase === "help") return false;
     if (this.activeSlot == null) return false;
-    const p = this.sim.player;
-    const ok = writeSlot(this.activeSlot, {
-      version: 3,
-      seed: this.sim.world.seed,
-      grid: this.sim.world.encode(),
-      x: p.x,
-      y: p.y,
-      vx: p.vx,
-      vy: p.vy,
-      fuel: p.fuel,
-      hull: p.hull,
-      money: p.money,
-      cargo: p.cargo,
-      upgrades: p.upgrades,
-      items: p.items,
-      bestDepth: this.sim.bestDepth,
-      bestMoney: p.money,
-      hellUnlocked: this.sim.hellUnlocked,
-      hellSeen: this.sim.hellSeen,
-      coolantT: this.sim.coolantT,
-      muted: this.audio.muted,
-      shake: this.settings.shake,
-      savedAt: Date.now(),
-    });
+    const ok = writeSlot(this.activeSlot, this.captureBlob());
     this.pushSlots();
     return ok;
   }
@@ -625,6 +677,8 @@ export class Game {
       getMoney: () => self.sim.player.money,
       getHellUnlocked: () => self.sim.hellUnlocked,
       getSettings: () => self.settings,
+      getZoom: () => self.renderer.zoom,
+      getViewW: () => self.renderer.viewW,
       patchSettings: (p: Partial<CabSettings>) => self.patchSettings(p),
       warpHell: (layer = 1) => {
         const p = self.sim.player;

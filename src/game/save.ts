@@ -269,6 +269,22 @@ export function writeSave(blob: SaveBlob): boolean {
   return writeSlot(i, blob);
 }
 
+export const CLAIM_KIND = "cinderwell-claim";
+
+export function encodeClaim(blob: SaveBlob): string {
+  return JSON.stringify({ kind: CLAIM_KIND, ...blob, version: SAVE_VERSION, savedAt: Date.now() });
+}
+
+export function decodeClaim(text: string): SaveBlob | null {
+  try {
+    const parsed = JSON.parse(text) as Partial<SaveBlob> & { kind?: string };
+    if (parsed && parsed.kind && parsed.kind !== CLAIM_KIND) return null;
+    return hydrateSave(parsed);
+  } catch {
+    return null;
+  }
+}
+
 export function clearSave(): void {
   for (let i = 0; i < SLOT_COUNT; i++) {
     try {

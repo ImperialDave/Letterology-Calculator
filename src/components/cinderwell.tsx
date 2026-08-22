@@ -432,7 +432,7 @@ function SettingsScreen() {
     <Modal onClose={() => getGame()?.closeSettings()}>
       <h2 className="font-display pr-12 text-3xl font-semibold tracking-wide short:text-2xl">Rig setup</h2>
       <p className="mt-2 text-pretty text-sm leading-relaxed text-muted">
-        Cab noise, comfort, and how the drill takes a point. These stay in this browser.
+        Cab noise, lamp zoom, and claims. These stay in this browser.
       </p>
 
       <Section label="Sound">
@@ -521,12 +521,89 @@ function SettingsScreen() {
       </Section>
 
       <Section label="Display">
+        <Row label="Zoom" hint={`${Math.round(cab.zoom * 100)}%`}>
+          <input
+            type="range"
+            min={80}
+            max={180}
+            step={5}
+            value={Math.round(cab.zoom * 100)}
+            aria-label="Zoom"
+            className="h-11 w-full accent-accent"
+            onChange={(e) => patch({ zoom: Number(e.target.value) / 100 })}
+          />
+        </Row>
+        <div className="grid grid-cols-3 gap-1.5">
+          {(
+            [
+              ["Far", 0.9],
+              ["Default", 1.3],
+              ["Close", 1.65],
+            ] as const
+          ).map(([label, z]) => (
+            <button
+              key={label}
+              type="button"
+              aria-pressed={Math.abs(cab.zoom - z) < 0.03}
+              onClick={() => patch({ zoom: z })}
+              className={`h-11 rounded-lg border text-sm font-medium ${
+                Math.abs(cab.zoom - z) < 0.03
+                  ? "border-accent bg-accent text-accent-fg"
+                  : "border-border bg-elevated text-fg"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         <Toggle
           label="Fill the glass"
           hint="Fullscreen this tab. The browser may ask first."
           on={fullscreen}
           onChange={() => getGame()?.toggleFullscreen()}
         />
+      </Section>
+
+      <Section label="Claims">
+        <p className="text-xs leading-relaxed text-muted">
+          Three ledgers live in this browser. The well writes while you cut. Keep a file copy if
+          you change machines.
+        </p>
+        <button
+          type="button"
+          className="h-11 w-full rounded-xl border border-border bg-elevated px-4 text-left text-sm font-medium text-fg"
+          onClick={() => getGame()?.saveNow()}
+        >
+          Save claim in this browser
+        </button>
+        <button
+          type="button"
+          className="h-11 w-full rounded-xl border border-border bg-elevated px-4 text-left text-sm font-medium text-fg"
+          onClick={() => getGame()?.openSaveMenu("save")}
+        >
+          Open claims
+        </button>
+        <button
+          type="button"
+          className="h-11 w-full rounded-xl border border-border bg-elevated px-4 text-left text-sm font-medium text-fg"
+          onClick={() => getGame()?.exportClaim()}
+        >
+          Download claim file
+        </button>
+        <label className="flex h-11 w-full cursor-pointer items-center rounded-xl border border-border bg-elevated px-4 text-sm font-medium text-fg">
+          Load claim file
+          <input
+            type="file"
+            accept="application/json,.json"
+            className="sr-only"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (!file) return;
+              void file.text().then((t) => getGame()?.importClaimText(t));
+            }}
+          />
+        </label>
       </Section>
 
       <button

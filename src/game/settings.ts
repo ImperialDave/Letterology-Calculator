@@ -11,9 +11,13 @@ export type CabSettings = {
   invertY: boolean;
   deadzone: Deadzone;
   haptics: boolean;
+  zoom: number;
 };
 
 export const SETTINGS_KEY = "cinderwell.cab.v1";
+export const ZOOM_MIN = 0.8;
+export const ZOOM_MAX = 1.8;
+export const ZOOM_DEFAULT = 1.3;
 
 const DEADZONE_PX: Record<Deadzone, number> = {
   tight: 12,
@@ -24,6 +28,11 @@ const DEADZONE_PX: Record<Deadzone, number> = {
 export function prefersQuietMotion(): boolean {
   if (typeof window === "undefined") return false;
   return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+}
+
+export function clampZoom(n: number): number {
+  if (!Number.isFinite(n)) return ZOOM_DEFAULT;
+  return Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Math.round(n * 20) / 20));
 }
 
 export function defaultSettings(): CabSettings {
@@ -39,6 +48,7 @@ export function defaultSettings(): CabSettings {
     invertY: false,
     deadzone: "normal",
     haptics: true,
+    zoom: ZOOM_DEFAULT,
   };
 }
 
@@ -63,6 +73,7 @@ export function hydrateSettings(raw: unknown): CabSettings {
     invertY: Boolean(p.invertY),
     deadzone: dead === "tight" || dead === "wide" || dead === "normal" ? dead : d.deadzone,
     haptics: typeof p.haptics === "boolean" ? p.haptics : d.haptics,
+    zoom: clampZoom(typeof p.zoom === "number" ? p.zoom : d.zoom),
   };
 }
 

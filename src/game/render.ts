@@ -51,6 +51,7 @@ export class Renderer {
   camY = 0;
   time = 0;
   reduced = false;
+  zoom = 1.3;
   tex: Record<string, HTMLImageElement> = {};
 
   constructor(canvas: HTMLCanvasElement) {
@@ -62,7 +63,7 @@ export class Renderer {
   }
 
   resize(): void {
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const dpr = this.bufferScale();
     const rect = this.canvas.getBoundingClientRect();
     const w = Math.max(1, Math.floor(rect.width * dpr));
     const h = Math.max(1, Math.floor(rect.height * dpr));
@@ -74,6 +75,20 @@ export class Renderer {
     this.h = h;
   }
 
+  get viewW(): number {
+    const css = this.canvas.getBoundingClientRect().width;
+    return Math.max(1, (css || this.w / Math.max(1, this.bufferScale())) / this.zoom);
+  }
+
+  get viewH(): number {
+    const css = this.canvas.getBoundingClientRect().height;
+    return Math.max(1, (css || this.h / Math.max(1, this.bufferScale())) / this.zoom);
+  }
+
+  bufferScale(): number {
+    return Math.min(2, window.devicePixelRatio || 1);
+  }
+
   follow(sim: Sim, dt: number): void {
     const p = sim.player;
     const cssH = this.canvas.getBoundingClientRect().height || this.h;
@@ -81,13 +96,33 @@ export class Renderer {
     const phone = cssH < 920;
     const landscape = cssW > cssH && cssH < 520;
     const bias = landscape ? 0.46 : phone ? 0.3 : 0.42;
-    const targetX = p.x - this.w / 2;
-    const targetY = p.y - this.h * bias;
+    const vw = this.viewW;
+    const vh = this.viewH;
+    const targetX = p.x - vw / 2;
+    const targetY = p.y - vh * bias;
     const k = 1 - Math.exp(-6 * dt);
     this.camX += (targetX - this.camX) * k;
     this.camY += (targetY - this.camY) * k;
-    const maxX = WORLD_W * TILE - this.w;
-    const maxY = WORLD_H * TILE - this.h;
+    this.clampCam(vw, vh);
+  }
+
+  snapFollow(sim: Sim): void {
+    this.resize();
+    const cssH = this.canvas.getBoundingClientRect().height || this.h;
+    const cssW = this.canvas.getBoundingClientRect().width || this.w;
+    const phone = cssH < 920;
+    const landscape = cssW > cssH && cssH < 520;
+    const bias = landscape ? 0.46 : phone ? 0.3 : 0.42;
+    const vw = this.viewW;
+    const vh = this.viewH;
+    this.camX = sim.player.x - vw / 2;
+    this.camY = sim.player.y - vh * bias;
+    this.clampCam(vw, vh);
+  }
+
+  private clampCam(vw: number, vh: number): void {
+    const maxX = WORLD_W * TILE - vw;
+    const maxY = WORLD_H * TILE - vh;
     this.camX = Math.max(0, Math.min(Math.max(0, maxX), this.camX));
     this.camY = Math.max(-40, Math.min(Math.max(0, maxY), this.camY));
   }
@@ -110,8 +145,9 @@ export class Renderer {
     ctx.fillStyle = "#0c0a09";
     ctx.fillRect(0, 0, this.w, this.h);
 
+    const z = this.bufferScale() * this.zoom;
     ctx.save();
-    ctx.translate(-Math.round(this.camX) + shakeX, -Math.round(this.camY) + shakeY);
+    ctx.setTransform(z, 0, 0, z, -this.camX * z + shakeX * z, -this.camY * z + shakeY * z);
 
     this.drawSky(sim);
     this.drawBuildings(sim);
@@ -139,7 +175,9 @@ export class Renderer {
   private drawSky(sim: Sim): void {
     const ctx = this.ctx;
     const surfacePy = SURFACE_Y * TILE;
-    const top = Math.min(surfacePy, this.camY + this.h);
+    const vw = this.viewW;
+    const vh = this.viewH;
+    const top = Math.min(surfacePy, this.camY + vh);
     if (this.camY < surfacePy) {
       const g = ctx.createLinearGradient(0, 0, 0, surfacePy);
       g.addColorStop(0, "#1c1410");
@@ -147,7 +185,7 @@ export class Renderer {
       g.addColorStop(0.78, "#6a3a22");
       g.addColorStop(1, "#8a5a38");
       ctx.fillStyle = g;
-      ctx.fillRect(this.camX - 20, Math.min(0, this.camY) - 40, this.w + 40, surfacePy + 60);
+      ctx.fillRect(this.camX - 20, Math.min(0, this.camY) - 40, vw + 40, surfacePy + 60);
 
       // dust sun
       ctx.fillStyle = "rgba(232, 140, 80, 0.22)";
@@ -522,8 +560,8 @@ export class Renderer {
     const ctx = this.ctx;
     const x0 = Math.max(0, Math.floor(this.camX / TILE) - 1);
     const y0 = Math.max(0, Math.floor(this.camY / TILE) - 1);
-    const x1 = Math.min(WORLD_W - 1, Math.ceil((this.camX + this.w) / TILE) + 1);
-    const y1 = Math.min(WORLD_H - 1, Math.ceil((this.camY + this.h) / TILE) + 1);
+    const x1 = Math.min(WORLD_W - 1, Math.ceil((this.camX + this.viewW) / TILE) + 1);
+    const y1 = Math.min(WORLD_H - 1, Math.ceil((this.camY + this.viewH) / TILE) + 1);
     const px = sim.player.x;
     const py = sim.player.y;
     const dir = sim.player.drillDir;
