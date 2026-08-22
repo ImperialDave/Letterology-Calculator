@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import {
+  Anchor,
+  Aperture,
   Box,
   Flame,
   Fuel,
+  Hexagon,
   Pause,
   Radio,
   Shield,
@@ -21,7 +24,9 @@ import {
   CONSUMABLES,
   FUEL_PRICE,
   HULL_PRICE,
+  KILN_BASE_MAX,
   KILN_MODULE_SLOTS,
+  LATTICE_SLOTS,
   ORES,
   RIGWORKS_MAX,
   SLOT_BLURB,
@@ -358,6 +363,7 @@ function TitleScreen() {
           </button>
           <ShareWell className="flex h-12 items-center justify-center rounded-xl border border-border bg-transparent px-6 font-medium text-muted" />
         </div>
+        <KilnSpeak className="mt-4" />
         <p className="mt-3 max-w-md text-sm text-subtle short:hidden">
           {kilnFed
             ? "Kiln 33 took the offering. Descend in a finished rig — Heartbit, Molten Aegis, the whole rack."
@@ -405,6 +411,12 @@ function HelpScreen() {
         <li>
           <strong className="font-medium">Space</strong> — blast a charge. <strong>F / R / T</strong> — spare
           can, patch kit, recall. <strong>X / C</strong> — hellcharge and coolant, sold at the Kiln.
+        </li>
+        <li>
+          <strong className="font-medium">Lattice</strong> — unseals after Heartfire, east of the
+          Depot. Club iron: phase bit, welltap, resonator, anchor, letterlock. V nullcharge, N
+          plant a nail, G vein bell, Q Chorus sell from below. On a phone, pause or Rig setup
+          and speak to the Kiln.
         </li>
         <li>
           <strong className="font-medium">Esc</strong> — pause. Sell often. Finish Rigworks, then push the
@@ -606,6 +618,10 @@ function SettingsScreen() {
         </label>
       </Section>
 
+      <Section label="Kiln">
+        <KilnSpeak />
+      </Section>
+
       <button
         type="button"
         className="mt-5 h-12 w-full rounded-xl bg-accent font-medium text-accent-fg short:mt-3"
@@ -614,6 +630,64 @@ function SettingsScreen() {
         Back
       </button>
     </Modal>
+  );
+}
+
+function KilnSpeak({ className = "" }: { className?: string }) {
+  const fed = useGameUI((s) => s.kilnFed);
+  const [value, setValue] = useState("");
+  const [miss, setMiss] = useState(false);
+  if (fed) {
+    return (
+      <p className={`text-sm leading-relaxed text-muted ${className}`.trim()}>
+        Kiln 33 took the offering. Heartbit is on the rack.
+      </p>
+    );
+  }
+  return (
+    <form
+      className={className}
+      onSubmit={(e) => {
+        e.preventDefault();
+        const ok = getGame()?.speakOffering(value) ?? false;
+        setMiss(!ok);
+        if (ok) setValue("");
+      }}
+    >
+      <label className="block">
+        <span className="text-sm font-medium text-fg">The Kiln listens</span>
+        <span className="mt-0.5 block text-xs leading-relaxed text-muted">
+          Speak an offering. Letters only — no need for a desk keyboard.
+        </span>
+        <span className="mt-2 flex gap-2">
+          <input
+            type="text"
+            name="offering"
+            value={value}
+            autoCapitalize="none"
+            autoCorrect="off"
+            autoComplete="off"
+            spellCheck={false}
+            enterKeyHint="go"
+            inputMode="text"
+            placeholder="Offering"
+            aria-label="Kiln offering"
+            className="h-11 min-w-0 flex-1 rounded-xl border border-border bg-elevated px-3 text-sm text-fg outline-none placeholder:text-subtle focus:border-accent"
+            onChange={(e) => {
+              setValue(e.target.value);
+              setMiss(false);
+            }}
+          />
+          <button
+            type="submit"
+            className="h-11 shrink-0 rounded-xl bg-accent px-4 text-sm font-medium text-accent-fg"
+          >
+            Offer
+          </button>
+        </span>
+      </label>
+      {miss ? <p className="mt-1.5 text-xs text-danger">The Kiln does not know that name.</p> : null}
+    </form>
   );
 }
 
@@ -677,6 +751,7 @@ function PauseScreen() {
   const muted = useGameUI((s) => s.muted);
   const atSurface = useGameUI((s) => s.atSurface);
   const hellUnlocked = useGameUI((s) => s.hellUnlocked);
+  const latticeOpen = useGameUI((s) => s.latticeOpen);
   if (phase !== "paused") return null;
   return (
     <Modal onClose={() => getGame()?.setPhase("playing")}>
@@ -691,12 +766,16 @@ function PauseScreen() {
             {hellUnlocked ? (
               <MenuBtn onClick={() => getGame()?.openShop("kiln")}>Kiln</MenuBtn>
             ) : null}
+            {latticeOpen ? (
+              <MenuBtn onClick={() => getGame()?.openShop("lattice")}>Lattice</MenuBtn>
+            ) : null}
           </>
         ) : (
           <p className="px-1 py-2 text-sm text-muted">Surface shops unlock when you return to the pad.</p>
         )}
         <MenuBtn onClick={() => getGame()?.setMuted(!muted)}>{muted ? "Unmute" : "Mute"}</MenuBtn>
         <MenuBtn onClick={() => getGame()?.openSettings()}>Settings</MenuBtn>
+        <KilnSpeak />
         <MenuBtn onClick={() => getGame()?.saveNow()}>Save claim</MenuBtn>
         <MenuBtn onClick={() => getGame()?.openSaveMenu("save")}>Claims</MenuBtn>
         <MenuBtn onClick={() => getGame()?.setPhase("title")}>Abandon shift</MenuBtn>
@@ -942,6 +1021,7 @@ function ShopScreen() {
           {shop === "rigworks" ? <RigworksPanel /> : null}
           {shop === "depot" ? <DepotPanel /> : null}
           {shop === "kiln" ? <KilnPanel /> : null}
+          {shop === "lattice" ? <LatticePanel /> : null}
         </div>
       </div>
     </div>
@@ -950,9 +1030,10 @@ function ShopScreen() {
 
 function ShopTabs({ current }: { current: ShopId }) {
   const hellUnlocked = useGameUI((s) => s.hellUnlocked);
+  const latticeOpen = useGameUI((s) => s.latticeOpen);
   return (
     <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto">
-      {visibleBuildings(hellUnlocked).map((b) => (
+      {visibleBuildings(hellUnlocked, latticeOpen).map((b) => (
         <button
           key={b.id}
           type="button"
@@ -1036,7 +1117,8 @@ function RigworksPanel() {
           const i = upgrades[slot];
           const cur = UPGRADES[slot][i]!;
           const next = i < RIGWORKS_MAX ? UPGRADES[slot][i + 1] : undefined;
-          const kilnNext = i >= RIGWORKS_MAX ? UPGRADES[slot][i + 1] : undefined;
+          const kilnNext = i >= RIGWORKS_MAX && i < KILN_BASE_MAX ? UPGRADES[slot][i + 1] : undefined;
+          const latticeNext = i >= KILN_BASE_MAX ? UPGRADES[slot][i + 1] : undefined;
           return (
             <li
               key={slot}
@@ -1055,6 +1137,10 @@ function RigworksPanel() {
                 ) : kilnNext ? (
                   <p className="mt-1 text-xs text-muted">
                     Next: {kilnNext.name} — forged at the Kiln.
+                  </p>
+                ) : latticeNext ? (
+                  <p className="mt-1 text-xs text-muted">
+                    Next: {latticeNext.name} — fitted at the Lattice.
                   </p>
                 ) : (
                   <p className="mt-1 text-xs text-muted">Top of the line.</p>
@@ -1146,9 +1232,10 @@ function KilnPanel() {
   const upgrades = useGameUI((s) => s.upgrades);
   const money = useGameUI((s) => s.money);
   const items = useGameUI((s) => s.items);
-  const forged = BASE_SLOTS.filter(
-    (slot) => upgrades[slot] >= RIGWORKS_MAX && UPGRADES[slot][upgrades[slot] + 1],
-  );
+  const forged = BASE_SLOTS.filter((slot) => {
+    const i = upgrades[slot];
+    return i >= RIGWORKS_MAX && i < KILN_BASE_MAX && UPGRADES[slot][i + 1];
+  });
   const kilnItems = (Object.keys(CONSUMABLES) as ConsumableId[]).filter(
     (id) => CONSUMABLES[id].shop === "kiln",
   );
@@ -1201,6 +1288,70 @@ function KilnPanel() {
                 className="h-11 shrink-0 rounded-lg bg-accent px-3 text-sm font-medium text-accent-fg disabled:opacity-40"
               >
                 ${c.cost}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function LatticePanel() {
+  const upgrades = useGameUI((s) => s.upgrades);
+  const money = useGameUI((s) => s.money);
+  const items = useGameUI((s) => s.items);
+  const latticeItems = (Object.keys(CONSUMABLES) as ConsumableId[]).filter(
+    (id) => CONSUMABLES[id].shop === "lattice",
+  );
+  const hullReady = upgrades.hull >= KILN_BASE_MAX;
+  return (
+    <div>
+      <h2 className="font-display text-2xl font-semibold tracking-wide">The Lattice</h2>
+      <p className="mt-1 text-sm text-muted">
+        Club iron. Not hell iron. The booth unseals after Heartfire. These modules change a
+        descent — they do not just make the bit louder.
+      </p>
+      <p className="mt-2 text-sm tabular-nums text-fg">${Math.floor(money).toLocaleString()} on hand</p>
+      {hullReady ? (
+        <>
+          <h3 className="mt-6 text-[11px] font-medium uppercase tracking-[0.16em] text-muted">Aegis</h3>
+          <ul className="mt-2 space-y-2">
+            <FitRow slot="hull" />
+          </ul>
+        </>
+      ) : (
+        <p className="mt-4 text-sm text-muted">Lattice Skin waits on a finished Molten Aegis.</p>
+      )}
+      <h3 className="mt-6 text-[11px] font-medium uppercase tracking-[0.16em] text-muted">Modules</h3>
+      <ul className="mt-2 space-y-2">
+        {LATTICE_SLOTS.map((slot) => (
+          <FitRow key={slot} slot={slot} />
+        ))}
+      </ul>
+      <h3 className="mt-6 text-[11px] font-medium uppercase tracking-[0.16em] text-muted">Stores</h3>
+      <ul className="mt-2 space-y-2">
+        {latticeItems.map((id) => {
+          const c = CONSUMABLES[id];
+          return (
+            <li
+              key={id}
+              className="flex items-center justify-between gap-3 rounded-xl border border-border bg-elevated px-3 py-2.5"
+            >
+              <div>
+                <p className="font-medium">
+                  {c.name}{" "}
+                  <span className="text-xs font-normal text-muted tabular-nums">×{items[id]}</span>
+                </p>
+                <p className="text-xs text-muted">{c.desc}</p>
+              </div>
+              <button
+                type="button"
+                disabled={money < c.cost}
+                onClick={() => getGame()?.buyItem(id)}
+                className="h-11 shrink-0 rounded-lg bg-accent px-3 text-sm font-medium text-accent-fg disabled:opacity-40"
+              >
+                ${c.cost.toLocaleString()}
               </button>
             </li>
           );
@@ -1334,10 +1485,25 @@ function TouchPad({ finger }: { finger: boolean }) {
   const items = useGameUI((s) => s.items);
   const nearby = useGameUI((s) => s.nearby);
   const hellUnlocked = useGameUI((s) => s.hellUnlocked);
+  const latticeOpen = useGameUI((s) => s.latticeOpen);
+  const upgrades = useGameUI((s) => s.upgrades);
+  const cargo = useGameUI((s) => s.cargo);
+  const atSurface = useGameUI((s) => s.atSurface);
   if (!finger || phase !== "playing") return null;
 
   const fire = (
-    key: "interact" | "dynamite" | "hellcharge" | "fuelCan" | "nanobots" | "teleporter" | "coolant",
+    key:
+      | "interact"
+      | "dynamite"
+      | "hellcharge"
+      | "fuelCan"
+      | "nanobots"
+      | "teleporter"
+      | "coolant"
+      | "nullcharge"
+      | "plantNail"
+      | "chorus"
+      | "veinBell",
   ) => {
     const g = getGame();
     if (g) g.input.touch[key] = true;
@@ -1356,9 +1522,21 @@ function TouchPad({ finger }: { finger: boolean }) {
               <IconAct icon={<Snowflake className="size-4" />} n={items.coolant} label="Coolant" onFire={() => fire("coolant")} />
             </>
           ) : null}
+          {latticeOpen ? (
+            <IconAct icon={<Hexagon className="size-4" />} n={items.nullcharge} label="Nullcharge" onFire={() => fire("nullcharge")} />
+          ) : null}
+          {upgrades.anchor >= 1 ? (
+            <IconAct icon={<Anchor className="size-4" />} n={1} label="Plant nail" onFire={() => fire("plantNail")} />
+          ) : null}
+          {upgrades.resonator >= 1 ? (
+            <IconAct icon={<Aperture className="size-4" />} n={1} label="Vein bell" onFire={() => fire("veinBell")} />
+          ) : null}
         </div>
         <div className="flex flex-col items-end gap-1.5">
           {nearby ? <ActionBtn label="Shop" onClick={() => fire("interact")} /> : null}
+          {upgrades.resonator >= 3 && cargo.length > 0 && !atSurface ? (
+            <ActionBtn label="Chorus" onClick={() => fire("chorus")} />
+          ) : null}
           <ActionBtn label={`Charge ${items.dynamite}`} onClick={() => fire("dynamite")} />
         </div>
       </div>

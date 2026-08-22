@@ -21,6 +21,7 @@ export interface HudSnap {
   bestDepth: number;
   stratum: string;
   hellUnlocked: boolean;
+  latticeOpen: boolean;
   coolantT: number;
   upgrades: UpgradesState;
   items: Record<ConsumableId, number>;
@@ -57,6 +58,7 @@ const empty: HudSnap = {
   bestDepth: 0,
   stratum: "Crust",
   hellUnlocked: false,
+  latticeOpen: false,
   coolantT: 0,
   upgrades: defaultUpgrades(),
   items: defaultItems(),

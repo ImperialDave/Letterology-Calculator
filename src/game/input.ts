@@ -8,6 +8,10 @@ export type Actions = {
   nanobots: boolean;
   teleporter: boolean;
   coolant: boolean;
+  nullcharge: boolean;
+  plantNail: boolean;
+  chorus: boolean;
+  veinBell: boolean;
   pause: boolean;
   drill: boolean;
 };
@@ -31,6 +35,10 @@ const GAME_KEYS = new Set([
   "KeyT",
   "KeyX",
   "KeyC",
+  "KeyV",
+  "KeyN",
+  "KeyG",
+  "KeyQ",
   "Escape",
   "KeyP",
 ]);
@@ -53,6 +61,10 @@ export function feedCheat(buf: string, ch: string, now: number, last: number): s
 
 export function kilnOffered(buf: string): boolean {
   return buf.includes(KILN_CODE);
+}
+
+export function spokenKiln(raw: string): boolean {
+  return raw.toLowerCase().replace(/[^a-z0-9]/g, "") === KILN_CODE;
 }
 /**
  * Tile miners hate analog diagonals: they chatter between two walls.
@@ -147,6 +159,10 @@ export class Input {
     nanobots: false,
     teleporter: false,
     coolant: false,
+    nullcharge: false,
+    plantNail: false,
+    chorus: false,
+    veinBell: false,
     drill: false,
   };
   cheatBuf = "";
@@ -162,6 +178,11 @@ export class Input {
 
   attach(el: HTMLElement): void {
     const down = (e: KeyboardEvent) => {
+      const typing =
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        (e.target instanceof HTMLElement && e.target.isContentEditable);
+      if (typing) return;
       if (GAME_KEYS.has(e.code)) e.preventDefault();
       if (!this.keys.has(e.code)) this.edges.add(e.code);
       this.keys.add(e.code);
@@ -275,6 +296,10 @@ export class Input {
       nanobots: just("KeyR") || this.touch.nanobots,
       teleporter: just("KeyT") || this.touch.teleporter,
       coolant: just("KeyC") || this.touch.coolant,
+      nullcharge: just("KeyV") || this.touch.nullcharge,
+      plantNail: just("KeyN") || this.touch.plantNail,
+      chorus: just("KeyQ") || this.touch.chorus,
+      veinBell: just("KeyG") || this.touch.veinBell,
       pause: just("Escape") || just("KeyP"),
       drill: this.touch.drill || (pads.some((pad) => pad?.mapping === "standard" && pad.buttons[0]?.pressed) ?? false),
     };
@@ -286,6 +311,10 @@ export class Input {
     this.touch.nanobots = false;
     this.touch.teleporter = false;
     this.touch.coolant = false;
+    this.touch.nullcharge = false;
+    this.touch.plantNail = false;
+    this.touch.chorus = false;
+    this.touch.veinBell = false;
     this.edges.clear();
     this.prev = this.qaKeys ? new Set(this.qaKeys) : new Set(this.keys);
     return actions;

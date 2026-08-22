@@ -10,6 +10,7 @@ import {
   UPGRADES,
   depthMeters,
   isSolid,
+  latticeUnlocked,
   oreValueAtDepth,
   stratumName,
   type ConsumableId,
@@ -17,7 +18,7 @@ import {
   type Slot,
 } from "./data";
 import { AudioBus } from "./audio";
-import { Input, aimFromDelta, slideOrigin, STICK_THROW, type Cardinal } from "./input";
+import { Input, aimFromDelta, slideOrigin, spokenKiln, STICK_THROW, type Cardinal } from "./input";
 import { Renderer } from "./render";
 import {
   bestSavedDepth,
@@ -186,7 +187,17 @@ export class Game {
     this.audio.boom();
     this.audio.buy();
     this.pushHud(true);
-    if (this.phase !== "title" && this.phase !== "help" && this.phase !== "settings") this.save();
+    if (this.phase !== "title" && this.phase !== "help") this.save();
+  }
+
+  speakOffering(raw: string): boolean {
+    if (!spokenKiln(raw)) {
+      this.sim.toastNow("The Kiln does not know that name.");
+      this.pushHud(true);
+      return false;
+    }
+    this.feedKiln();
+    return true;
   }
 
   private tick(dt: number): void {
@@ -237,6 +248,10 @@ export class Game {
         actions.nanobots = false;
         actions.teleporter = false;
         actions.coolant = false;
+        actions.nullcharge = false;
+        actions.plantNail = false;
+        actions.chorus = false;
+        actions.veinBell = false;
       }
       for (const e of this.sim.emit) {
         if (e === "collect") this.audio.collect();
@@ -298,6 +313,10 @@ export class Game {
       this.sim.toastNow("The Kiln is sealed. Breach the Emberward first.");
       return;
     }
+    if (id === "lattice" && this.sim.hellSeen < 3) {
+      this.sim.toastNow("The Lattice is dark. See Heartfire first.");
+      return;
+    }
     this.shop = id;
     this.phase = "shop";
     this.audio.ui();
@@ -349,6 +368,8 @@ export class Game {
     this.sim = new Sim(world, player, saved.bestDepth, saved.hellUnlocked);
     this.sim.hellSeen = saved.hellSeen;
     this.sim.coolantT = saved.coolantT;
+    this.sim.nails = saved.nails ?? [];
+    this.sim.sealsFound = saved.sealsFound ?? 0;
     const tx = Math.floor(player.x / TILE);
     const ty = Math.floor(player.y / TILE);
     if (isSolid(world.get(tx, ty))) {
@@ -410,7 +431,7 @@ export class Game {
   captureBlob() {
     const p = this.sim.player;
     return {
-      version: 3,
+      version: 4,
       seed: this.sim.world.seed,
       grid: this.sim.world.encode(),
       x: p.x,
@@ -431,6 +452,8 @@ export class Game {
       muted: this.audio.muted,
       shake: this.settings.shake,
       savedAt: Date.now(),
+      nails: this.sim.nails,
+      sealsFound: this.sim.sealsFound,
     };
   }
 
@@ -490,7 +513,10 @@ export class Game {
     const v = this.sim.sellAll();
     if (v > 0) {
       this.audio.sell();
-      this.sim.toastNow(`Sold haul for $${v.toLocaleString()}`);
+      const premium = this.sim.player.upgrades.resonator >= 2;
+      this.sim.toastNow(
+        premium ? `Assay sold the haul for $${v.toLocaleString()}` : `Sold haul for $${v.toLocaleString()}`,
+      );
     }
     this.pushHud(true);
     this.save();
@@ -587,6 +613,7 @@ export class Game {
       bestDepth: depthMeters(this.sim.bestDepth + SURFACE_Y),
       stratum: stratumName(this.sim.depth()),
       hellUnlocked: this.sim.hellUnlocked,
+      latticeOpen: latticeUnlocked(this.sim.hellSeen),
       coolantT: this.sim.coolantT,
       upgrades: p.upgrades,
       items: p.items,
@@ -673,6 +700,7 @@ export class Game {
       },
       getPhase: () => self.phase,
       feedKiln: () => self.feedKiln(),
+      speakOffering: (raw: string) => self.speakOffering(raw),
       getUpgrades: () => ({ ...self.sim.player.upgrades }),
       getMoney: () => self.sim.player.money,
       getHellUnlocked: () => self.sim.hellUnlocked,

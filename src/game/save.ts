@@ -13,6 +13,7 @@ import {
   TILE,
   type CargoItem,
   type ConsumableId,
+  type Nail,
   type UpgradesState,
 } from "./data";
 import { World } from "./world";
@@ -39,6 +40,8 @@ export interface SaveBlob {
   muted: boolean;
   shake: boolean;
   savedAt: number;
+  nails?: Nail[];
+  sealsFound?: number;
 }
 
 export interface SlotMeta {
@@ -76,6 +79,8 @@ const defaults = (): Omit<SaveBlob, "seed" | "grid" | "x" | "y"> => ({
   muted: false,
   shake: true,
   savedAt: 0,
+  nails: [],
+  sealsFound: 0,
 });
 
 function slotKey(i: number): string {
@@ -111,6 +116,10 @@ export function hydrateSave(parsed: Partial<SaveBlob>): SaveBlob | null {
     hellSeen,
     coolantT: typeof parsed.coolantT === "number" ? parsed.coolantT : 0,
     savedAt: typeof parsed.savedAt === "number" ? parsed.savedAt : Date.now(),
+    nails: Array.isArray(parsed.nails)
+      ? parsed.nails.filter((n) => n && typeof n.x === "number" && typeof n.y === "number")
+      : [],
+    sealsFound: typeof parsed.sealsFound === "number" ? parsed.sealsFound : 0,
   };
 }
 

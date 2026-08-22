@@ -5,7 +5,7 @@ export const SURFACE_Y = 12;
 export const FIXED_DT = 1 / 60;
 export const SAVE_KEY = "cinderwell.save.v1";
 export const SLOTS_KEY = "cinderwell.slots.v1";
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 export const SLOT_COUNT = 3;
 export const CLAIM_NAMES = ["Claim I", "Claim II", "Claim III"] as const;
 
@@ -121,12 +121,16 @@ export const ARTIFACTS: { id: ArtifactId; name: string; value: number; minDepth:
 
 export type BaseSlot = "drill" | "hull" | "engine" | "tank" | "cargo" | "radiator";
 export type KilnSlot = "scanner" | "lift" | "veil";
-export type Slot = BaseSlot | KilnSlot;
+export type LatticeSlot = "phase" | "siphon" | "resonator" | "anchor" | "cipher";
+export type Slot = BaseSlot | KilnSlot | LatticeSlot;
 
 export const BASE_SLOTS: BaseSlot[] = ["drill", "hull", "engine", "tank", "cargo", "radiator"];
 export const KILN_MODULE_SLOTS: KilnSlot[] = ["scanner", "lift", "veil"];
+export const LATTICE_SLOTS: LatticeSlot[] = ["phase", "siphon", "resonator", "anchor", "cipher"];
 /** Last upgrade index sold at Rigworks (0-based). Tiers after this are Kiln-only. */
 export const RIGWORKS_MAX = 5;
+/** Last base-slot index the Kiln will sell (Heartbit / Molten Aegis). */
+export const KILN_BASE_MAX = 7;
 
 export interface UpgradeTier {
   name: string;
@@ -154,6 +158,7 @@ export const UPGRADES: Record<Slot, UpgradeTier[]> = {
     { name: "Phase Shield", cost: 68000, value: 200 },
     { name: "Cinderplate", cost: 155000, value: 280 },
     { name: "Molten Aegis", cost: 410000, value: 380 },
+    { name: "Lattice Skin", cost: 1800000, value: 420 },
   ],
   engine: [
     { name: "Single Piston", cost: 0, value: 118 },
@@ -213,6 +218,36 @@ export const UPGRADES: Record<Slot, UpgradeTier[]> = {
     { name: "Ash Shroud", cost: 64000, value: 0.28 },
     { name: "Null Cloak", cost: 190000, value: 0.42 },
   ],
+  phase: [
+    { name: "Steel Face", cost: 0, value: 0 },
+    { name: "Ghostedge", cost: 720000, value: 1 },
+    { name: "Two-stroke", cost: 3400000, value: 2 },
+    { name: "Null Interval", cost: 12000000, value: 3 },
+  ],
+  siphon: [
+    { name: "Sealed Tank", cost: 0, value: 0 },
+    { name: "Magma Tap", cost: 550000, value: 1 },
+    { name: "Brim Siphon", cost: 2800000, value: 2 },
+    { name: "Heartwell", cost: 9500000, value: 3 },
+  ],
+  resonator: [
+    { name: "Deaf Cab", cost: 0, value: 0 },
+    { name: "Vein Bell", cost: 680000, value: 1 },
+    { name: "Assay Pulse", cost: 3100000, value: 2 },
+    { name: "Chorus", cost: 11000000, value: 3 },
+  ],
+  anchor: [
+    { name: "No Spike", cost: 0, value: 0 },
+    { name: "Spike", cost: 500000, value: 1 },
+    { name: "Midwell Nail", cost: 2200000, value: 2 },
+    { name: "Twin Nail", cost: 8000000, value: 3 },
+  ],
+  cipher: [
+    { name: "Plain Lamp", cost: 0, value: 0 },
+    { name: "Pigment Lamp", cost: 900000, value: 1 },
+    { name: "CC33 Cipher", cost: 4500000, value: 2 },
+    { name: "Well Index", cost: 15000000, value: 3 },
+  ],
 };
 
 export const SLOT_LABEL: Record<Slot, string> = {
@@ -225,6 +260,11 @@ export const SLOT_LABEL: Record<Slot, string> = {
   scanner: "Scanner",
   lift: "Lift Coil",
   veil: "Ash Veil",
+  phase: "Phase Bit",
+  siphon: "Welltap",
+  resonator: "Resonator",
+  anchor: "Anchor",
+  cipher: "Letterlock",
 };
 
 export const SLOT_BLURB: Record<Slot, string> = {
@@ -237,6 +277,11 @@ export const SLOT_BLURB: Record<Slot, string> = {
   scanner: "Paints nearby veins through the rock.",
   lift: "Burns less fuel climbing out of the well.",
   veil: "Shrugs off the Emberward's ambient heat.",
+  phase: "Cuts hardness the Kiln cannot. Later, walks the dirt.",
+  siphon: "Turns magma and well-heat into fuel.",
+  resonator: "Hears veins through rock. The Chorus sells from below.",
+  anchor: "Nails a recall in the well so the pad is not the only home.",
+  cipher: "CC33's lamp. Finds what the well is hiding.",
 };
 
 export const CONSUMABLES = {
@@ -246,6 +291,7 @@ export const CONSUMABLES = {
   teleporter: { name: "Recall Beacon", cost: 880, desc: "Snap back to the pad. T.", shop: "depot" as const },
   hellcharge: { name: "Hellcharge", cost: 2400, desc: "Blasts a 5×5 pocket. X.", shop: "kiln" as const },
   coolant: { name: "Coolant Shot", cost: 1100, desc: "12s of heat immunity. C.", shop: "kiln" as const },
+  nullcharge: { name: "Nullcharge", cost: 85000, desc: "Blasts a 7×7 pocket. V.", shop: "lattice" as const },
 } as const;
 
 export type ConsumableId = keyof typeof CONSUMABLES;
@@ -256,10 +302,11 @@ export const SALVAGE_RATE = 0.12;
 export const STIPEND = 90;
 
 export const BUILDINGS = [
-  { id: "exchange" as const, name: "Exchange", x0: 14, x1: 22, blurb: "Sell ore", requiresHell: false },
-  { id: "rigworks" as const, name: "Rigworks", x0: 32, x1: 41, blurb: "Upgrades", requiresHell: false },
-  { id: "depot" as const, name: "Depot", x0: 50, x1: 59, blurb: "Fuel & repair", requiresHell: false },
-  { id: "kiln" as const, name: "Kiln", x0: 2, x1: 9, blurb: "Hell iron", requiresHell: true },
+  { id: "exchange" as const, name: "Exchange", x0: 14, x1: 22, blurb: "Sell ore", requiresHell: false, requiresHeartfire: false },
+  { id: "rigworks" as const, name: "Rigworks", x0: 32, x1: 41, blurb: "Upgrades", requiresHell: false, requiresHeartfire: false },
+  { id: "depot" as const, name: "Depot", x0: 50, x1: 59, blurb: "Fuel & repair", requiresHell: false, requiresHeartfire: false },
+  { id: "kiln" as const, name: "Kiln", x0: 2, x1: 9, blurb: "Hell iron", requiresHell: true, requiresHeartfire: false },
+  { id: "lattice" as const, name: "Lattice", x0: 62, x1: 70, blurb: "Club iron", requiresHell: true, requiresHeartfire: true },
 ];
 
 export type ShopId = (typeof BUILDINGS)[number]["id"];
@@ -408,11 +455,26 @@ export function depthMeters(tileY: number): number {
 export type UpgradesState = Record<Slot, number>;
 
 export function defaultUpgrades(): UpgradesState {
-  return { drill: 0, hull: 0, engine: 0, tank: 0, cargo: 0, radiator: 0, scanner: 0, lift: 0, veil: 0 };
+  return {
+    drill: 0,
+    hull: 0,
+    engine: 0,
+    tank: 0,
+    cargo: 0,
+    radiator: 0,
+    scanner: 0,
+    lift: 0,
+    veil: 0,
+    phase: 0,
+    siphon: 0,
+    resonator: 0,
+    anchor: 0,
+    cipher: 0,
+  };
 }
 
 export function defaultItems(): Record<ConsumableId, number> {
-  return { dynamite: 2, fuelCan: 0, nanobots: 0, teleporter: 0, hellcharge: 0, coolant: 0 };
+  return { dynamite: 2, fuelCan: 0, nanobots: 0, teleporter: 0, hellcharge: 0, coolant: 0, nullcharge: 0 };
 }
 
 export interface CargoItem {
@@ -425,6 +487,22 @@ export function cargoValue(cargo: CargoItem[]): number {
   return cargo.reduce((s, c) => s + c.value, 0);
 }
 
-export function visibleBuildings(hellUnlocked: boolean) {
-  return BUILDINGS.filter((b) => !b.requiresHell || hellUnlocked);
+export function visibleBuildings(hellUnlocked: boolean, heartfire = false) {
+  return BUILDINGS.filter((b) => {
+    if (b.requiresHeartfire && !heartfire) return false;
+    if (b.requiresHell && !hellUnlocked) return false;
+    return true;
+  });
 }
+
+export function latticeUnlocked(hellSeen: number): boolean {
+  return hellSeen >= 3;
+}
+
+export function nailCap(anchor: number): number {
+  if (anchor >= 2) return 2;
+  if (anchor >= 1) return 1;
+  return 0;
+}
+
+export type Nail = { x: number; y: number };

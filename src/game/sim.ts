@@ -7,6 +7,9 @@ import {
   HELL_1,
   HELL_3,
   HULL_PRICE,
+  KILN_BASE_MAX,
+  KILN_MODULE_SLOTS,
+  LATTICE_SLOTS,
   RIGWORKS_MAX,
   SALVAGE_RATE,
   SPAWN_TX,
@@ -26,12 +29,16 @@ import {
   hellLevel,
   isArtifact,
   isDiggable,
+  isLava,
   isOre,
   isSolid,
+  latticeUnlocked,
+  nailCap,
   oreById,
   oreValueAtDepth,
   type CargoItem,
   type ConsumableId,
+  type Nail,
   type ShopId,
   type Slot,
   type UpgradesState,
@@ -82,8 +89,10 @@ export interface Player {
 }
 
 export function spawnPlayer(up: UpgradesState, items: Record<ConsumableId, number>, money: number): Player {
-  const maxFuel = UPGRADES.tank[up.tank]!.value;
-  const maxHull = UPGRADES.hull[up.hull]!.value;
+  const upgrades = { ...defaultUpgrades(), ...up };
+  const kit = { ...defaultItems(), ...items };
+  const maxFuel = UPGRADES.tank[upgrades.tank]!.value;
+  const maxHull = UPGRADES.hull[upgrades.hull]!.value;
   return {
     x: (SPAWN_TX + 0.5) * TILE,
     y: (SURFACE_Y - 0.55) * TILE,
@@ -93,8 +102,8 @@ export function spawnPlayer(up: UpgradesState, items: Record<ConsumableId, numbe
     hull: maxHull,
     money,
     cargo: [],
-    upgrades: { ...up },
-    items: { ...items },
+    upgrades,
+    items: kit,
     facing: 1,
     drillDir: 2,
     digging: null,
@@ -128,6 +137,18 @@ export class Sim {
   hellUnlocked = false;
   hellSeen: 0 | 1 | 2 | 3 = 0;
   coolantT = 0;
+  nails: Nail[] = [];
+  recallAt = 0;
+  phaseSoftT = 0;
+  phaseSoftCd = 0;
+  phaseWalkT = 0;
+  phaseDashCd = 0;
+  resonatorCd = 0;
+  chorusUsed = false;
+  latticeHeld = false;
+  indexUsed = false;
+  indexMark: { x: number; y: number } | null = null;
+  sealsFound = 0;
 
   constructor(world: World, player: Player, bestDepth = 0, hellUnlocked = false) {
     this.world = world;
@@ -188,6 +209,7 @@ export class Sim {
     const tx = this.tileX();
     for (const b of BUILDINGS) {
       if (b.requiresHell && !this.hellUnlocked) continue;
+      if (b.requiresHeartfire && !latticeUnlocked(this.hellSeen)) continue;
       if (tx >= b.x0 && tx <= b.x1) return b.id;
     }
     return null;
@@ -227,6 +249,7 @@ export class Sim {
 
   hurt(amount: number, reason: string): void {
     if (amount <= 0 || this.dead) return;
+    if (this.player.invuln > 0) return;
     const heat = reason === "heat" || reason === "magma" || reason === "gas";
     const resist = reason === "fall" ? 0 : heat ? this.heatResist() : this.resist();
     const dmg = amount * (1 - resist);
@@ -241,6 +264,16 @@ export class Sim {
 
   kill(reason: string): void {
     if (this.dead) return;
+    if (this.player.upgrades.hull >= 8 && !this.latticeHeld) {
+      this.latticeHeld = true;
+      this.player.hull = 1;
+      this.player.invuln = 2;
+      this.player.flash = 0.4;
+      this.toastNow("The lattice held.");
+      this.toastT = 3.2;
+      this.emit.push("warn");
+      return;
+    }
     this.dead = true;
     this.explodeT = 0;
     this.deathReason = reason;
@@ -258,12 +291,27 @@ export class Sim {
     const items = this.player.items;
     let money = this.player.money;
     if (money < 40) money = STIPEND;
+    const nails = up.anchor >= 3 ? this.nails.slice() : [];
+    const seals = this.sealsFound;
     this.player = spawnPlayer(up, items, money);
     this.player.fuel = this.maxFuel() * 0.35;
     this.player.hull = this.maxHull() * 0.55;
     this.dead = false;
     this.explodeT = 0;
-    this.toastNow("Rig recovered at the pad. Fuel's low.");
+    this.chorusUsed = false;
+    this.latticeHeld = false;
+    this.indexUsed = false;
+    this.indexMark = null;
+    this.sealsFound = seals;
+    this.nails = nails;
+    if (nails.length) {
+      const n = nails[nails.length - 1]!;
+      this.player.x = n.x;
+      this.player.y = n.y;
+      this.toastNow("Rig recovered on the last nail. Fuel's low.");
+    } else {
+      this.toastNow("Rig recovered at the pad. Fuel's low.");
+    }
   }
 
   breakTile(tx: number, ty: number): void {
@@ -306,6 +354,7 @@ export class Sim {
       this.float(cx, cy - 10, `+$${a.value.toLocaleString()}`, a.color);
       this.burst(cx, cy, 14, a.color, 110);
       this.emit.push("collect");
+      if (t === T.ART_WELL) this.sealsFound += 1;
     } else if (t === T.GAS) {
       this.hurt(7, "gas");
       this.burst(cx, cy, 16, "#9cbf4a", 100);
@@ -331,7 +380,15 @@ export class Sim {
     }
     if (!isDiggable(t)) return true;
 
-    const h = hardness(t, this.depth());
+    let h = hardness(t, this.depth());
+    if (this.player.upgrades.phase >= 1) {
+      if (this.phaseSoftT <= 0 && this.phaseSoftCd <= 0 && h > this.drillPower() * 1.5) {
+        this.phaseSoftT = 1.2;
+        this.phaseSoftCd = 7;
+        this.toastNow("Ghostedge.");
+      }
+      if (this.phaseSoftT > 0) h = Math.max(0.35, h * 0.25);
+    }
     const rate = this.drillPower() / Math.max(0.35, h);
     const d = this.player.digging;
     if (!d || d.x !== tx || d.y !== ty) {
@@ -365,6 +422,15 @@ export class Sim {
 
     if (dig.t >= 1) {
       this.breakTile(tx, ty);
+      if (this.player.upgrades.phase >= 2) {
+        const dir = this.player.drillDir;
+        const ox = dir === 1 ? 1 : dir === 3 ? -1 : 0;
+        const oy = dir === 2 ? 1 : dir === 0 ? -1 : 0;
+        const bx = tx + ox;
+        const by = ty + oy;
+        const behind = this.world.get(bx, by);
+        if (isDiggable(behind) && behind !== T.PAD) this.breakTile(bx, by);
+      }
       this.player.digging = null;
       this.trauma = Math.min(1, this.trauma + 0.08);
     }
@@ -372,15 +438,15 @@ export class Sim {
   }
 
   blast(radius = 1): void {
-    const item: ConsumableId = radius > 1 ? "hellcharge" : "dynamite";
+    const item: ConsumableId = radius >= 3 ? "nullcharge" : radius > 1 ? "hellcharge" : "dynamite";
     if (this.player.items[item] <= 0) {
-      this.toastNow(radius > 1 ? "No hellcharges." : "No charges left.");
+      this.toastNow(radius >= 3 ? "No nullcharges." : radius > 1 ? "No hellcharges." : "No charges left.");
       return;
     }
     this.player.items[item] -= 1;
     const tx = this.tileX();
     const ty = this.tileY();
-    this.trauma = Math.min(1, this.trauma + (radius > 1 ? 0.9 : 0.7));
+    this.trauma = Math.min(1, this.trauma + (radius >= 3 ? 1 : radius > 1 ? 0.9 : 0.7));
     for (let y = ty - radius; y <= ty + radius; y++) {
       for (let x = tx - radius; x <= tx + radius; x++) {
         if (x === tx && y === ty) continue;
@@ -397,12 +463,21 @@ export class Sim {
           }
         } else if (isArtifact(t)) {
           const a = artifactById(t);
-          if (a) this.player.money += a.value;
+          if (a) {
+            this.player.money += a.value;
+            if (t === T.ART_WELL) this.sealsFound += 1;
+          }
         }
       }
     }
-    this.burst(this.player.x, this.player.y, radius > 1 ? 48 : 36, radius > 1 ? "#ff6a3a" : "#e8c070", 180);
-    this.hurt(radius > 1 ? 5 : 3.5, "blast");
+    this.burst(
+      this.player.x,
+      this.player.y,
+      radius >= 3 ? 56 : radius > 1 ? 48 : 36,
+      radius >= 3 ? "#c8d0dc" : radius > 1 ? "#ff6a3a" : "#e8c070",
+      180,
+    );
+    this.hurt(radius >= 3 ? 6 : radius > 1 ? 5 : 3.5, "blast");
   }
 
   useFuelCan(): void {
@@ -432,23 +507,121 @@ export class Sim {
       return;
     }
     this.player.items.teleporter -= 1;
-    this.player.x = (SPAWN_TX + 0.5) * TILE;
-    this.player.y = (SURFACE_Y - 0.55) * TILE;
+    const pad = { x: (SPAWN_TX + 0.5) * TILE, y: (SURFACE_Y - 0.55) * TILE };
+    const dests = [pad, ...this.nails];
+    const i = this.recallAt % dests.length;
+    this.recallAt = i + 1;
+    const to = dests[i]!;
+    this.player.x = to.x;
+    this.player.y = to.y;
     this.player.vx = 0;
     this.player.vy = 0;
     this.burst(this.player.x, this.player.y, 20, "#7ec8c4", 100);
-    this.toastNow("Snapped to the pad.");
+    this.toastNow(i === 0 ? "Snapped to the pad." : `Snapped to nail ${i}.`);
+  }
+
+  plantNail(): void {
+    const cap = nailCap(this.player.upgrades.anchor);
+    if (cap <= 0) {
+      this.toastNow("No spike fitted.");
+      return;
+    }
+    if (this.atSurface()) {
+      this.toastNow("Nails bite the well, not the pad.");
+      return;
+    }
+    const nail = { x: this.player.x, y: this.player.y };
+    this.nails.push(nail);
+    while (this.nails.length > cap) this.nails.shift();
+    this.toastNow(this.nails.length > 1 ? `Nail ${this.nails.length} driven.` : "Spike driven.");
+  }
+
+  pingVeins(announce = true): void {
+    const r = this.player.upgrades.cipher >= 2 ? 14 : 8;
+    const tx = this.tileX();
+    const ty = this.tileY();
+    let n = 0;
+    for (let y = ty - r; y <= ty + r; y++) {
+      for (let x = tx - r; x <= tx + r; x++) {
+        const t = this.world.get(x, y);
+        if (!isOre(t) && !isArtifact(t)) continue;
+        const o = isOre(t) ? oreById(t) : artifactById(t);
+        if (!o) continue;
+        n += 1;
+        const label = `${o.name} $${o.value.toLocaleString()}`;
+        this.float((x + 0.5) * TILE, (y + 0.5) * TILE - 8, label, o.color);
+      }
+    }
+    if (!announce) return;
+    if (n === 0) this.toastNow("The bell hears only rock.");
+    else this.toastNow(`Vein bell — ${n} ping${n === 1 ? "" : "s"}.`);
+  }
+
+  markIndex(): void {
+    if (this.player.upgrades.cipher < 3 || this.indexUsed) return;
+    this.indexUsed = true;
+    let best: { x: number; y: number; d: number } | null = null;
+    const px = this.tileX();
+    const py = this.tileY();
+    const h = this.world.h;
+    const w = this.world.w;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const t = this.world.get(x, y);
+        if (t !== T.ORE_16 && t !== T.ART_WELL) continue;
+        const d = Math.abs(x - px) + Math.abs(y - py);
+        if (!best || d < best.d) best = { x, y, d };
+      }
+    }
+    if (!best) {
+      this.toastNow("The Index finds nothing. The well is quiet.");
+      return;
+    }
+    this.indexMark = { x: best.x, y: best.y };
+    const t = this.world.get(best.x, best.y);
+    this.toastNow(t === T.ART_WELL ? "Index: a Well Seal." : "Index: a Wellheart.");
+    this.toastT = 4;
+  }
+
+  chorusSell(): number {
+    if (this.player.upgrades.resonator < 3) {
+      this.toastNow("No Chorus fitted.");
+      return 0;
+    }
+    if (this.chorusUsed) {
+      this.toastNow("The Chorus already sang this descent.");
+      return 0;
+    }
+    if (this.atSurface()) {
+      this.toastNow("On the pad, use the Exchange.");
+      return 0;
+    }
+    const v = cargoValue(this.player.cargo);
+    if (v <= 0) {
+      this.toastNow("Hold is empty.");
+      return 0;
+    }
+    const paid = Math.round(v * 0.85);
+    this.player.money += paid;
+    this.player.cargo = [];
+    this.chorusUsed = true;
+    this.toastNow(`Chorus sold the haul for $${paid.toLocaleString()} (85%).`);
+    this.toastT = 3.4;
+    return paid;
   }
 
   forgeKilnOffering(): void {
     const p = this.player;
-    for (const slot of Object.keys(UPGRADES) as Slot[]) {
+    for (const slot of BASE_SLOTS) {
+      p.upgrades[slot] = Math.min(KILN_BASE_MAX, UPGRADES[slot].length - 1);
+    }
+    for (const slot of KILN_MODULE_SLOTS) {
       p.upgrades[slot] = UPGRADES[slot].length - 1;
     }
     p.fuel = this.maxFuel();
     p.hull = this.maxHull();
     p.money = Math.max(p.money, 1_000_000);
-    for (const id of Object.keys(CONSUMABLES) as ConsumableId[]) {
+    for (const id of ["dynamite", "fuelCan", "nanobots", "teleporter", "hellcharge", "coolant"] as ConsumableId[]) {
       p.items[id] = Math.max(p.items[id], 9);
     }
     this.hellUnlocked = true;
@@ -460,12 +633,14 @@ export class Sim {
     this.toastNow("Kiln 33 answers. Heartbit fitted. The well is open.");
   }
 
-  sellAll(): number {
+  sellAll(rate = 1): number {
     const v = cargoValue(this.player.cargo);
     if (v <= 0) return 0;
-    this.player.money += v;
+    const assayed = this.player.upgrades.resonator >= 2 && rate >= 1 ? 1.15 : 1;
+    const paid = Math.round(v * rate * assayed);
+    this.player.money += paid;
     this.player.cargo = [];
-    return v;
+    return paid;
   }
 
   useCoolant(): void {
@@ -482,12 +657,23 @@ export class Sim {
     const i = this.player.upgrades[slot];
     const next = UPGRADES[slot][i + 1];
     if (!next) return false;
-    const isBase = (BASE_SLOTS as readonly Slot[]).includes(slot);
+    const isBase = (BASE_SLOTS as readonly string[]).includes(slot);
+    const isLattice = (LATTICE_SLOTS as readonly string[]).includes(slot);
     if (shop === "rigworks") {
       if (!isBase || i >= RIGWORKS_MAX) return false;
     } else if (shop === "kiln") {
       if (!this.hellUnlocked) return false;
-      if (isBase && i < RIGWORKS_MAX) return false;
+      if (isBase && (i < RIGWORKS_MAX || i >= KILN_BASE_MAX)) return false;
+      if (!isBase && !(KILN_MODULE_SLOTS as readonly string[]).includes(slot)) return false;
+    } else if (shop === "lattice") {
+      if (!latticeUnlocked(this.hellSeen)) return false;
+      if (slot === "hull") {
+        if (i !== KILN_BASE_MAX) return false;
+      } else if (!isLattice) return false;
+      if (slot === "cipher" && i === 2 && this.sealsFound < 1) {
+        this.toastNow("The Index wants a Well Seal's memory. Find one in Heartfire first.");
+        return false;
+      }
     } else {
       return false;
     }
@@ -533,7 +719,18 @@ export class Sim {
   }
 
   solidAt(x: number, y: number): boolean {
-    return isSolid(this.world.get(x, y));
+    const t = this.world.get(x, y);
+    if (!isSolid(t)) return false;
+    if (
+      this.phaseWalkT > 0 &&
+      t !== T.CORE &&
+      t !== T.BEDROCK &&
+      t !== T.PAD &&
+      !isLava(t)
+    ) {
+      return false;
+    }
+    return true;
   }
 
   collideAxis(dt: number, axis: "x" | "y"): void {
@@ -621,13 +818,22 @@ export class Sim {
     p.flash = Math.max(0, p.flash - dt);
     this.heatPulse += dt;
     this.coolantT = Math.max(0, this.coolantT - dt);
+    this.phaseSoftT = Math.max(0, this.phaseSoftT - dt);
+    this.phaseSoftCd = Math.max(0, this.phaseSoftCd - dt);
+    this.phaseWalkT = Math.max(0, this.phaseWalkT - dt);
+    this.phaseDashCd = Math.max(0, this.phaseDashCd - dt);
+    this.resonatorCd = Math.max(0, this.resonatorCd - dt);
 
     if (actions.dynamite) this.blast(1);
     if (actions.hellcharge) this.blast(2);
+    if (actions.nullcharge) this.blast(3);
     if (actions.fuelCan) this.useFuelCan();
     if (actions.nanobots) this.useNanobots();
     if (actions.teleporter) this.teleport();
     if (actions.coolant) this.useCoolant();
+    if (actions.plantNail) this.plantNail();
+    if (actions.chorus) this.chorusSell();
+    if (actions.veinBell) this.pingVeins();
 
     const speed = this.engineSpeed();
     p.grounded = false;
@@ -673,6 +879,20 @@ export class Sim {
     this.collideAxis(dt, "x");
     this.collideAxis(dt, "y");
 
+    if (this.player.upgrades.phase >= 3 && this.phaseWalkT <= 0 && this.phaseDashCd <= 0 && actions.drill && p.fuel > 12) {
+      const dir = p.drillDir;
+      const ox = dir === 1 ? 1 : dir === 3 ? -1 : 0;
+      const oy = dir === 2 ? 1 : dir === 0 ? -1 : 0;
+      const face = this.world.get(this.tileX() + ox, this.tileY() + oy);
+      if (isSolid(face) && face !== T.CORE && face !== T.BEDROCK && face !== T.PAD && !isLava(face)) {
+        this.phaseWalkT = 0.35;
+        this.phaseDashCd = 10;
+        p.fuel = Math.max(0, p.fuel - 12);
+        p.flash = 0.22;
+        this.toastNow("Null interval.");
+      }
+    }
+
     if (actions.drill) {
       const dir = p.drillDir;
       const ox = dir === 1 ? 1 : dir === 3 ? -1 : 0;
@@ -708,15 +928,32 @@ export class Sim {
       }
     }
     if (gas) this.hurt(dt * 7.5, "gas");
-    if (lava) this.hurt(dt * 14, "magma");
-    if (hellLava) this.hurt(dt * 18, "magma");
+    const siphon = p.upgrades.siphon;
+    if (lava) {
+      if (siphon >= 1) {
+        p.fuel = Math.min(this.maxFuel(), p.fuel + dt * 5.5);
+        this.hurt(dt * 14 * 0.55, "magma");
+      } else this.hurt(dt * 14, "magma");
+    }
+    if (hellLava) {
+      if (siphon >= 1) {
+        p.fuel = Math.min(this.maxFuel(), p.fuel + dt * 7);
+        this.hurt(dt * 18 * 0.5, "magma");
+      } else this.hurt(dt * 18, "magma");
+    }
 
     const d = this.depth();
     if (d > this.bestDepth) this.bestDepth = d;
 
     const layer = hellLevel(d);
     if (layer > 0 && this.coolantT <= 0) {
-      this.hurt(dt * HEAT_DPS[layer], "heat");
+      if (siphon >= 2) p.fuel = Math.min(this.maxFuel(), p.fuel + dt * HEAT_DPS[layer] * 0.4);
+      if (siphon >= 3 && layer === 3) {
+        p.fuel = Math.min(this.maxFuel(), p.fuel + dt * HEAT_DPS[3] * 0.55);
+        this.hurt(dt * HEAT_DPS[3] * 0.22, "heat");
+      } else {
+        this.hurt(dt * HEAT_DPS[layer], "heat");
+      }
     }
     if (layer > this.hellSeen) {
       this.hellSeen = layer;
@@ -728,10 +965,16 @@ export class Sim {
         this.toastNow("Brimdeep. Heat climbs. The veins pay for it.");
         this.toastT = 3.4;
       } else {
-        this.toastNow("Heartfire. The well's last room.");
-        this.toastT = 3.4;
+        this.toastNow("Heartfire. The Lattice unseals on the pad.");
+        this.toastT = 4.2;
       }
     }
+
+    if (p.upgrades.resonator >= 1 && this.resonatorCd <= 0) {
+      this.resonatorCd = 7;
+      this.pingVeins(false);
+    }
+    if (p.upgrades.cipher >= 3 && !this.indexUsed && layer >= 3) this.markIndex();
 
     if (p.fuel <= 0 && !onPad) {
       this.kill("fuel");

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { aimFromDelta, feedCheat, kilnOffered, letterFromCode, slideOrigin, snapCardinal } from "./input";
+import { aimFromDelta, feedCheat, kilnOffered, letterFromCode, slideOrigin, snapCardinal, spokenKiln } from "./input";
 
 test("deadzone zeros the stick", () => {
   const a = snapCardinal(0.05, 0.05, null);
@@ -86,4 +86,11 @@ test("a slow kiln33 typing times out", () => {
   buf = feedCheat(buf, "i", 4000, 100);
   assert.equal(buf, "i");
   assert.equal(kilnOffered(buf), false);
+});
+
+test("spoken kiln ignores case and junk", () => {
+  assert.equal(spokenKiln("kiln33"), true);
+  assert.equal(spokenKiln("Kiln 33"), true);
+  assert.equal(spokenKiln("KILN-33"), true);
+  assert.equal(spokenKiln("kiln32"), false);
 });

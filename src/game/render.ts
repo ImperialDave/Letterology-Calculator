@@ -152,6 +152,7 @@ export class Renderer {
     this.drawSky(sim);
     this.drawBuildings(sim);
     this.drawTiles(sim);
+    this.drawNails(sim);
     this.drawParticles(sim);
     if (!sim.dead || sim.explodeT < 0.35) this.drawRig(sim);
     this.drawFloaters(sim);
@@ -257,6 +258,7 @@ export class Renderer {
     drawHut(14, 22, "#4a3a30", "#c4a574", "EXCHANGE");
     drawHut(32, 41, "#3a3834", "#8a8580", "RIGWORKS");
     drawHut(50, 59, "#3a3228", "#4a9b82", "DEPOT");
+    drawHut(62, 70, "#2a3038", "#9aa4b2", "LATTICE", sim.hellSeen < 3);
 
     // fuel tanks at depot
     ctx.fillStyle = "#5a5048";
@@ -275,10 +277,14 @@ export class Renderer {
 
     // pad stripe
     ctx.fillStyle = "#5a5248";
-    ctx.fillRect(2 * TILE, ground, 61 * TILE, 6);
+    ctx.fillRect(2 * TILE, ground, 68 * TILE, 6);
     ctx.fillStyle = "#c45c3a";
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < 16; i++) {
       ctx.fillRect((4 + i * 4) * TILE, ground + 1, TILE, 3);
+    }
+    if (sim.hellSeen >= 3) {
+      ctx.fillStyle = `rgba(154, 164, 178, ${0.35 + Math.sin(this.time * 2.2) * 0.12})`;
+      ctx.fillRect(70 * TILE + 2, ground - 86, 10, 86);
     }
   }
 
@@ -895,12 +901,31 @@ export class Renderer {
     this.drawRadar(sim);
   }
 
+  private drawNails(sim: Sim): void {
+    const ctx = this.ctx;
+    for (let i = 0; i < sim.nails.length; i++) {
+      const n = sim.nails[i]!;
+      ctx.fillStyle = "#9aa4b2";
+      ctx.fillRect(n.x - 2, n.y - 16, 4, 18);
+      ctx.fillStyle = "#c8d0dc";
+      ctx.fillRect(n.x - 5, n.y - 20, 10, 5);
+      ctx.fillStyle = "rgba(154,164,178,0.25)";
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, 10, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
   private drawRadar(sim: Sim): void {
     const ctx = this.ctx;
     const p = sim.player;
-    const r = Math.round(sim.scannerRange());
+    const cipher = p.upgrades.cipher;
+    const extra = cipher >= 2 ? 10 : cipher >= 1 ? 4 : 0;
+    const r = Math.round(sim.scannerRange()) + extra;
     const tx = Math.floor(p.x / TILE);
     const ty = Math.floor(p.y / TILE);
+    ctx.font = "600 8px 'IBM Plex Sans', sans-serif";
+    ctx.textAlign = "center";
     for (let y = ty - r; y <= ty + r; y++) {
       for (let x = tx - r; x <= tx + r; x++) {
         const t = sim.world.get(x, y);
@@ -908,19 +933,36 @@ export class Renderer {
         const o = isOre(t) ? oreById(t) : artifactById(t);
         if (!o) continue;
         const color = "glow" in o ? o.glow : o.color;
-        const [r, g, b] = hexRgb(color);
+        const [cr, cg, cb] = hexRgb(color);
         const bx = (x + 0.5) * TILE;
         const by = (y + 0.5) * TILE;
-        ctx.fillStyle = `rgba(${r},${g},${b},0.35)`;
+        const rare = t === T.ORE_15 || t === T.ORE_16 || t === T.ART_WELL || t === T.ART_CROWN;
+        const rad = cipher >= 2 && rare ? 9 : 6.5;
+        ctx.fillStyle = `rgba(${cr},${cg},${cb},${rare && cipher >= 2 ? 0.55 : 0.35})`;
         ctx.beginPath();
-        ctx.arc(bx, by, 6.5, 0, Math.PI * 2);
+        ctx.arc(bx, by, rad, 0, Math.PI * 2);
         ctx.fill();
         ctx.fillStyle = color;
         ctx.globalAlpha = 0.95;
         ctx.beginPath();
-        ctx.arc(bx, by, 3.4, 0, Math.PI * 2);
+        ctx.arc(bx, by, rare && cipher >= 2 ? 4.4 : 3.4, 0, Math.PI * 2);
         ctx.fill();
+        ctx.globalAlpha = 1;
+        if (cipher >= 1) {
+          ctx.fillStyle = "rgba(239,232,220,0.85)";
+          ctx.fillText(`$${o.value.toLocaleString()}`, bx, by - 10);
+        }
       }
+    }
+    if (sim.indexMark) {
+      const mx = (sim.indexMark.x + 0.5) * TILE;
+      const my = (sim.indexMark.y + 0.5) * TILE;
+      const pulse = 10 + Math.sin(this.time * 4) * 4;
+      ctx.strokeStyle = "rgba(255, 232, 168, 0.85)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(mx, my, pulse, 0, Math.PI * 2);
+      ctx.stroke();
     }
     ctx.globalAlpha = 1;
   }
