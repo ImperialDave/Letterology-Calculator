@@ -2,8 +2,9 @@ import { create } from "zustand";
 import type { CargoItem, ConsumableId, ShopId, Slot, UpgradesState } from "./data";
 import { defaultItems, defaultUpgrades } from "./data";
 import type { SlotMeta } from "./save";
+import { defaultSettings, type CabSettings } from "./settings";
 
-export type Phase = "title" | "playing" | "shop" | "paused" | "dead" | "help";
+export type Phase = "title" | "playing" | "shop" | "paused" | "dead" | "help" | "settings";
 export type SaveMenu = "load" | "save" | "new" | null;
 
 export interface HudSnap {
@@ -37,6 +38,9 @@ export interface HudSnap {
   saveMenu: SaveMenu;
   slots: Array<SlotMeta | null>;
   activeSlot: number | null;
+  settings: CabSettings;
+  fullscreen: boolean;
+  kilnFed: boolean;
 }
 
 const empty: HudSnap = {
@@ -70,6 +74,9 @@ const empty: HudSnap = {
   saveMenu: null,
   slots: [null, null, null],
   activeSlot: null,
+  settings: defaultSettings(),
+  fullscreen: false,
+  kilnFed: false,
 };
 
 interface Store extends HudSnap {

@@ -17,7 +17,7 @@ import {
   type Slot,
 } from "./data";
 import { AudioBus } from "./audio";
-import { Input, aimFromDelta, type Cardinal } from "./input";
+import { Input, aimFromDelta, slideOrigin, STICK_THROW, type Cardinal } from "./input";
 import { Renderer } from "./render";
 import {
   bestSavedDepth,
@@ -33,6 +33,12 @@ import {
 import { Sim, newRun, spawnPlayer } from "./sim";
 import { useGameUI, type Phase, type SaveMenu } from "./store";
 import { World } from "./world";
+import {
+  deadzonePx,
+  loadSettings,
+  saveSettings,
+  type CabSettings,
+} from "./settings";
 
 export class Game {
   canvas: HTMLCanvasElement;
@@ -51,6 +57,9 @@ export class Game {
   drillCue = 0;
   reduced = false;
   activeSlot: number | null = null;
+  settings: CabSettings = loadSettings();
+  settingsReturn: Phase = "title";
+  kilnFed = false;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -68,11 +77,12 @@ export class Game {
       saveMenu: null,
     });
     this.reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-    this.renderer.reduced = this.reduced;
-    this.sim.reducedMotion = this.reduced;
+    this.settings = loadSettings();
+    this.applyCab();
     this.input.attach(canvas);
     this.bindAudioUnlock();
     this.wireControlsTest();
+    document.addEventListener("fullscreenchange", () => this.pushHud());
   }
 
   private bindAudioUnlock(): void {
@@ -85,6 +95,7 @@ export class Game {
         this.save();
       } else {
         this.save();
+        if (this.settings.pauseOnBlur && this.phase === "playing") this.setPhase("paused");
       }
     });
   }
@@ -120,21 +131,73 @@ export class Game {
     };
   }
 
-  steerToClient(clientX: number, clientY: number, locked: Cardinal | null) {
-    const rig = this.rigClientPos();
-    return aimFromDelta(clientX - rig.x, clientY - rig.y, locked);
+  steerFromPointer(clientX: number, clientY: number, locked: Cardinal | null) {
+    const planted = this.input.dragOrigin;
+    if (!planted) return { x: 0, y: 0, lock: null as Cardinal | null };
+    const slid = slideOrigin(planted, { x: clientX, y: clientY }, STICK_THROW);
+    this.input.dragOrigin = slid.origin;
+    const dy = this.settings.invertY ? -slid.dy : slid.dy;
+    return aimFromDelta(slid.dx, dy, locked, deadzonePx(this.settings));
+  }
+
+  applyCab(): void {
+    this.audio.setMuted(this.settings.muted);
+    this.audio.setVolume(this.settings.volume);
+    this.renderer.reduced = !this.settings.shake;
+    this.sim.reducedMotion = !this.settings.grit;
+  }
+
+  patchSettings(partial: Partial<CabSettings>): void {
+    this.settings = { ...this.settings, ...partial, version: 1 };
+    saveSettings(this.settings);
+    this.applyCab();
+    this.pushHud(true);
+  }
+
+  openSettings(): void {
+    this.settingsReturn = this.phase === "playing" ? "paused" : this.phase;
+    if (this.settingsReturn === "settings") this.settingsReturn = "title";
+    this.setPhase("settings");
+  }
+
+  closeSettings(): void {
+    const back = this.settingsReturn === "settings" ? "title" : this.settingsReturn;
+    this.setPhase(back);
+  }
+
+  toggleFullscreen(): void {
+    const root = document.documentElement;
+    if (document.fullscreenElement) {
+      void document.exitFullscreen?.();
+      return;
+    }
+    void root.requestFullscreen?.().catch(() => {
+      /* browser may refuse */
+    });
+  }
+
+  feedKiln(): void {
+    this.kilnFed = true;
+    this.sim.forgeKilnOffering();
+    this.audio.boom();
+    this.audio.buy();
+    this.pushHud(true);
+    if (this.phase !== "title" && this.phase !== "help" && this.phase !== "settings") this.save();
   }
 
   private tick(dt: number): void {
     const actions = this.input.poll();
+    if (this.input.takeCheat()) this.feedKiln();
 
-    if (this.phase === "title" || this.phase === "help") {
+    if (this.phase === "title" || this.phase === "help" || this.phase === "settings") {
       this.renderer.resize();
       this.renderer.camX = SPAWN_TX * TILE - this.renderer.w / 2;
       this.renderer.camY = SURFACE_Y * TILE - this.renderer.h * 0.7;
       this.sim.tickFx(dt);
       this.renderer.draw(this.sim, dt);
       if (actions.pause && useGameUI.getState().saveMenu) this.closeSaveMenu();
+      else if (actions.pause && this.phase === "settings") this.closeSettings();
+      else if (actions.pause && this.phase === "help") this.setPhase("title");
       return;
     }
 
@@ -209,7 +272,9 @@ export class Game {
   }
 
   setPhase(phase: Phase): void {
-    if (phase === "title" && this.phase !== "title" && this.phase !== "help") this.save();
+    if (phase === "title" && this.phase !== "title" && this.phase !== "help" && this.phase !== "settings") {
+      this.save();
+    }
     this.phase = phase;
     if (phase === "title") this.closeSaveMenu();
     this.pushHud(true);
@@ -286,18 +351,18 @@ export class Game {
       player.x = (SPAWN_TX + 0.5) * TILE;
       player.y = (SURFACE_Y - 0.55) * TILE;
     }
-    this.audio.setMuted(saved.muted);
+    this.audio.setMuted(this.settings.muted);
     this.activeSlot = i;
     this.applyRun();
   }
 
   private applyRun(): void {
-    this.sim.reducedMotion = this.reduced;
-    this.renderer.reduced = this.reduced;
+    this.applyCab();
     this.phase = "playing";
     this.shop = null;
     this.closeSaveMenu();
-    this.sim.toastNow("WASD to drill. Sell at the Exchange. Don't run dry.");
+    if (this.kilnFed) this.sim.forgeKilnOffering();
+    else this.sim.toastNow("Drag to drill. Sell at the Exchange. Don't run dry.");
     this.pushHud(true);
   }
 
@@ -386,14 +451,12 @@ export class Game {
   }
 
   setMuted(m: boolean): void {
-    this.audio.setMuted(m);
-    this.pushHud(true);
+    this.patchSettings({ muted: m });
     this.save();
   }
 
   setShake(s: boolean): void {
-    this.renderer.reduced = !s || this.reduced;
-    useGameUI.getState().apply({ shake: s });
+    this.patchSettings({ shake: s });
     this.save();
   }
 
@@ -421,7 +484,7 @@ export class Game {
       hellSeen: this.sim.hellSeen,
       coolantT: this.sim.coolantT,
       muted: this.audio.muted,
-      shake: !this.renderer.reduced || this.reduced,
+      shake: this.settings.shake,
       savedAt: Date.now(),
     });
     this.pushSlots();
@@ -437,7 +500,7 @@ export class Game {
     const world = new World(seed);
     const player = spawnPlayer(up, items, money);
     this.sim = new Sim(world, player, best, this.sim.hellUnlocked);
-    this.sim.reducedMotion = this.reduced;
+    this.applyCab();
     this.sim.toastNow("New claim staked. Same rig.");
     this.phase = "playing";
     this.shop = null;
@@ -480,15 +543,18 @@ export class Game {
       nearby,
       atSurface: this.sim.atSurface(),
       muted: this.audio.muted,
-      shake: !this.renderer.reduced || this.reduced,
+      shake: this.settings.shake,
       deathReason: this.sim.deathReason,
       salvage: this.sim.salvage,
       cargoLost: this.sim.cargoLost,
-      reducedMotion: this.reduced,
+      reducedMotion: !this.settings.grit,
       hasSave: force ? readIndex().slots.some(Boolean) : useGameUI.getState().hasSave,
       saveMenu: useGameUI.getState().saveMenu,
       slots: useGameUI.getState().slots,
       activeSlot: this.activeSlot,
+      settings: this.settings,
+      fullscreen: typeof document !== "undefined" && Boolean(document.fullscreenElement),
+      kilnFed: this.kilnFed,
     });
   }
 
@@ -521,12 +587,32 @@ export class Game {
         self.input.touch.drill = on;
       },
       rigClientPos: () => self.rigClientPos(),
-      aim: (clientX: number, clientY: number) => {
-        const dir = self.steerToClient(clientX, clientY, self.input.touchLock);
+      startDrag: (x: number, y: number) => {
+        self.input.dragOrigin = { x, y };
+        self.input.touchLock = null;
+      },
+      dragTo: (clientX: number, clientY: number) => {
+        const dir = self.steerFromPointer(clientX, clientY, self.input.touchLock);
         self.input.touchLock = dir.lock;
         self.input.touch.moveX = dir.x;
         self.input.touch.moveY = dir.y;
-        self.input.touch.drill = true;
+        self.input.touch.drill = dir.lock != null;
+        return dir;
+      },
+      endDrag: () => {
+        self.input.dragOrigin = null;
+        self.input.touchLock = null;
+        self.input.touch.moveX = 0;
+        self.input.touch.moveY = 0;
+        self.input.touch.drill = false;
+      },
+      aim: (clientX: number, clientY: number) => {
+        if (!self.input.dragOrigin) self.input.dragOrigin = { x: clientX, y: clientY };
+        const dir = self.steerFromPointer(clientX, clientY, self.input.touchLock);
+        self.input.touchLock = dir.lock;
+        self.input.touch.moveX = dir.x;
+        self.input.touch.moveY = dir.y;
+        self.input.touch.drill = dir.lock != null;
         return dir;
       },
       getDrillDir: () => self.sim.player.drillDir,
@@ -534,6 +620,12 @@ export class Game {
         if (self.phase === "title") self.descend(true);
       },
       getPhase: () => self.phase,
+      feedKiln: () => self.feedKiln(),
+      getUpgrades: () => ({ ...self.sim.player.upgrades }),
+      getMoney: () => self.sim.player.money,
+      getHellUnlocked: () => self.sim.hellUnlocked,
+      getSettings: () => self.settings,
+      patchSettings: (p: Partial<CabSettings>) => self.patchSettings(p),
       warpHell: (layer = 1) => {
         const p = self.sim.player;
         for (const slot of BASE_SLOTS) {
@@ -557,7 +649,6 @@ export class Game {
         self.pushHud(true);
       },
       getStratum: () => stratumName(self.sim.depth()),
-      getHellUnlocked: () => self.sim.hellUnlocked,
       openShop: (id: ShopId) => self.openShop(id),
       oreValue: (id: number, depth: number) => {
         const def = ORES.find((o) => o.id === id);

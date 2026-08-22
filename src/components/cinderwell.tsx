@@ -15,7 +15,7 @@ import {
   Bomb,
 } from "lucide-react";
 import { Game, getGame, setGame } from "@/game/engine";
-import { type Cardinal } from "@/game/input";
+import { type Cardinal, STICK_THROW } from "@/game/input";
 import {
   BASE_SLOTS,
   CONSUMABLES,
@@ -96,6 +96,7 @@ export function Cinderwell() {
       <Hud finger={finger} />
       <TitleScreen />
       <HelpScreen />
+      <SettingsScreen />
       <PauseScreen />
       <ClaimsScreen />
       <ShopScreen />
@@ -302,6 +303,7 @@ function TitleScreen() {
   const phase = useGameUI((s) => s.phase);
   const hasSave = useGameUI((s) => s.hasSave);
   const bestDepth = useGameUI((s) => s.bestDepth);
+  const kilnFed = useGameUI((s) => s.kilnFed);
   if (phase !== "title") return null;
   return (
     <div className="absolute inset-0 z-20 flex flex-col justify-end overflow-y-auto overscroll-contain bg-gradient-to-t from-bg via-bg/80 to-transparent px-5 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))] sm:px-6">
@@ -347,10 +349,19 @@ function TitleScreen() {
           >
             How to drill
           </button>
+          <button
+            type="button"
+            className="h-12 rounded-xl border border-border bg-transparent px-6 font-medium text-muted"
+            onClick={() => getGame()?.openSettings()}
+          >
+            Settings
+          </button>
           <ShareWell className="flex h-12 items-center justify-center rounded-xl border border-border bg-transparent px-6 font-medium text-muted" />
         </div>
         <p className="mt-3 max-w-md text-sm text-subtle short:hidden">
-          Hold anywhere on the earth — the rig cuts toward your pointer. WASD still works.
+          {kilnFed
+            ? "Kiln 33 took the offering. Descend in a finished rig — Heartbit, Molten Aegis, the whole rack."
+            : "Press and drag — the rig follows your finger. WASD still works."}
         </p>
         <Link
           to="/"
@@ -383,9 +394,9 @@ function HelpScreen() {
           <strong className="font-medium">WASD / arrows</strong> — move, thrust, and drill into earth.
         </li>
         <li>
-          <strong className="font-medium">Pointer / finger</strong> — hold anywhere on the
-          earth. The rig drives and cuts toward that point (four-way, not analog). Hold on
-          the rig itself to bore straight down. Charge sits under the right thumb on a phone.
+          <strong className="font-medium">Pointer / finger</strong> — press anywhere and drag
+          the way you want to go. The swipe is the heading, not the tap on the map. Charge sits
+          under the right thumb on a phone.
         </li>
         <li>
           <strong className="font-medium">E</strong> — open a surface shop (Exchange, Rigworks, Depot).
@@ -408,6 +419,179 @@ function HelpScreen() {
         Back
       </button>
     </Modal>
+  );
+}
+
+function SettingsScreen() {
+  const phase = useGameUI((s) => s.phase);
+  const cab = useGameUI((s) => s.settings);
+  const fullscreen = useGameUI((s) => s.fullscreen);
+  if (phase !== "settings") return null;
+  const patch = (p: Partial<typeof cab>) => getGame()?.patchSettings(p);
+  return (
+    <Modal onClose={() => getGame()?.closeSettings()}>
+      <h2 className="font-display pr-12 text-3xl font-semibold tracking-wide short:text-2xl">Rig setup</h2>
+      <p className="mt-2 text-pretty text-sm leading-relaxed text-muted">
+        Cab noise, comfort, and how the drill takes a point. These stay in this browser.
+      </p>
+
+      <Section label="Sound">
+        <Row label="Volume" hint={`${Math.round(cab.volume * 100)}%`}>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={Math.round(cab.volume * 100)}
+            aria-label="Volume"
+            className="h-11 w-full accent-accent"
+            onChange={(e) => patch({ volume: Number(e.target.value) / 100, muted: false })}
+          />
+        </Row>
+        <Toggle
+          label="Mute cab"
+          hint="Silence the rig without losing your volume."
+          on={cab.muted}
+          onChange={(on) => getGame()?.setMuted(on)}
+        />
+      </Section>
+
+      <Section label="Comfort">
+        <Toggle
+          label="Cabin shake"
+          hint="Hits and blasts kick the lamp."
+          on={cab.shake}
+          onChange={(on) => patch({ shake: on })}
+        />
+        <Toggle
+          label="Grit and sparks"
+          hint="Debris from the bit. Turn off if the well feels busy."
+          on={cab.grit}
+          onChange={(on) => patch({ grit: on })}
+        />
+        <Toggle
+          label="Pause when I leave"
+          hint="If you switch apps mid-cut, the shift holds."
+          on={cab.pauseOnBlur}
+          onChange={(on) => patch({ pauseOnBlur: on })}
+        />
+        <Toggle
+          label="Haptics"
+          hint="A short buzz when a hold starts, if the glass can."
+          on={cab.haptics}
+          onChange={(on) => patch({ haptics: on })}
+        />
+      </Section>
+
+      <Section label="Controls">
+        <Toggle
+          label="Cut compass"
+          hint="Drag pad under your finger, lighting the way you are cutting."
+          on={cab.compass}
+          onChange={(on) => patch({ compass: on })}
+        />
+        <Toggle
+          label="Invert up / down"
+          hint="Drag up to cut down, down to lift."
+          on={cab.invertY}
+          onChange={(on) => patch({ invertY: on })}
+        />
+        <div>
+          <p className="text-sm font-medium text-fg">Aim slack</p>
+          <p className="mt-0.5 text-xs leading-relaxed text-muted">
+            How far you have to drag before the rig takes a heading.
+          </p>
+          <div className="mt-2 grid grid-cols-3 gap-1.5">
+            {(["tight", "normal", "wide"] as const).map((d) => (
+              <button
+                key={d}
+                type="button"
+                aria-pressed={cab.deadzone === d}
+                onClick={() => patch({ deadzone: d })}
+                className={`h-11 rounded-lg border text-sm font-medium capitalize ${
+                  cab.deadzone === d
+                    ? "border-accent bg-accent text-accent-fg"
+                    : "border-border bg-elevated text-fg"
+                }`}
+              >
+                {d}
+              </button>
+            ))}
+          </div>
+        </div>
+      </Section>
+
+      <Section label="Display">
+        <Toggle
+          label="Fill the glass"
+          hint="Fullscreen this tab. The browser may ask first."
+          on={fullscreen}
+          onChange={() => getGame()?.toggleFullscreen()}
+        />
+      </Section>
+
+      <button
+        type="button"
+        className="mt-5 h-12 w-full rounded-xl bg-accent font-medium text-accent-fg short:mt-3"
+        onClick={() => getGame()?.closeSettings()}
+      >
+        Back
+      </button>
+    </Modal>
+  );
+}
+
+function Section({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <section className="mt-5 border-t border-border pt-4 short:mt-3 short:pt-3">
+      <h3 className="font-display text-xs tracking-[0.16em] text-muted uppercase">{label}</h3>
+      <div className="mt-3 flex flex-col gap-3">{children}</div>
+    </section>
+  );
+}
+
+function Row({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+  return (
+    <label className="block">
+      <span className="flex items-baseline justify-between gap-3">
+        <span className="text-sm font-medium text-fg">{label}</span>
+        {hint ? <span className="text-xs tabular-nums text-muted">{hint}</span> : null}
+      </span>
+      <span className="mt-1 block">{children}</span>
+    </label>
+  );
+}
+
+function Toggle({
+  label,
+  hint,
+  on,
+  onChange,
+}: {
+  label: string;
+  hint: string;
+  on: boolean;
+  onChange: (on: boolean) => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      onClick={() => onChange(!on)}
+      className="flex min-h-11 w-full items-center gap-3 rounded-xl border border-border bg-elevated px-3 py-2 text-left"
+    >
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-medium text-fg">{label}</span>
+        <span className="mt-0.5 block text-xs leading-relaxed text-muted">{hint}</span>
+      </span>
+      <span className={`relative h-6 w-11 shrink-0 rounded-full ${on ? "bg-accent" : "bg-border"}`}>
+        <span
+          className={`absolute top-0.5 size-5 rounded-full bg-accent-fg transition-transform duration-150 ${
+            on ? "left-5" : "left-0.5"
+          }`}
+        />
+      </span>
+    </button>
   );
 }
 
@@ -435,6 +619,7 @@ function PauseScreen() {
           <p className="px-1 py-2 text-sm text-muted">Surface shops unlock when you return to the pad.</p>
         )}
         <MenuBtn onClick={() => getGame()?.setMuted(!muted)}>{muted ? "Unmute" : "Mute"}</MenuBtn>
+        <MenuBtn onClick={() => getGame()?.openSettings()}>Settings</MenuBtn>
         <MenuBtn onClick={() => getGame()?.saveNow()}>Save claim</MenuBtn>
         <MenuBtn onClick={() => getGame()?.openSaveMenu("save")}>Claims</MenuBtn>
         <MenuBtn onClick={() => getGame()?.setPhase("title")}>Abandon shift</MenuBtn>
@@ -1119,30 +1304,45 @@ function setDrillHeld(on: boolean): void {
 
 function SteerField() {
   const phase = useGameUI((s) => s.phase);
-  const ringRef = useRef<HTMLDivElement>(null);
+  const compass = useGameUI((s) => s.settings.compass);
+  const haptics = useGameUI((s) => s.settings.haptics);
+  const padRef = useRef<HTMLDivElement>(null);
+  const nubRef = useRef<HTMLDivElement>(null);
+  const originRef = useRef<{ x: number; y: number } | null>(null);
+  const lastPtr = useRef<{ x: number; y: number } | null>(null);
   const pid = useRef<number | null>(null);
   const lockRef = useRef<Cardinal | null>(null);
+  const buzzed = useRef(false);
   const [lock, setLock] = useState<Cardinal | null>(null);
   const [held, setHeld] = useState(false);
 
+  const paint = (origin: { x: number; y: number }, ptr: { x: number; y: number }) => {
+    const pad = padRef.current;
+    const nub = nubRef.current;
+    if (pad) {
+      pad.style.left = `${origin.x}px`;
+      pad.style.top = `${origin.y}px`;
+    }
+    if (nub) {
+      const dx = ptr.x - origin.x;
+      const dy = ptr.y - origin.y;
+      const mag = Math.hypot(dx, dy);
+      const scale = mag > STICK_THROW && mag > 0 ? STICK_THROW / mag : 1;
+      nub.style.left = `${origin.x + dx * scale}px`;
+      nub.style.top = `${origin.y + dy * scale}px`;
+    }
+  };
+
   useEffect(() => {
     if (phase !== "playing") return;
-    let raf = 0;
-    const tick = () => {
-      const el = ringRef.current;
-      const g = getGame();
-      if (el && g) {
-        const p = g.rigClientPos();
-        el.style.left = `${p.x}px`;
-        el.style.top = `${p.y}px`;
-      }
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
     return () => {
-      cancelAnimationFrame(raf);
       setTouchAxis(0, 0);
       setDrillHeld(false);
+      const g = getGame();
+      if (g) {
+        g.input.dragOrigin = null;
+        g.input.touchLock = null;
+      }
     };
   }, [phase]);
 
@@ -1150,25 +1350,42 @@ function SteerField() {
 
   const apply = (clientX: number, clientY: number) => {
     const g = getGame();
-    if (!g) return;
-    const dir = g.steerToClient(clientX, clientY, lockRef.current);
+    if (!g || !originRef.current) return;
+    lastPtr.current = { x: clientX, y: clientY };
+    const dir = g.steerFromPointer(clientX, clientY, lockRef.current);
+    if (g.input.dragOrigin) originRef.current = g.input.dragOrigin;
     lockRef.current = dir.lock;
-    g.input.touchLock = dir.lock;
     setLock(dir.lock);
     setTouchAxis(dir.x, dir.y);
-    setDrillHeld(true);
+    setDrillHeld(dir.lock != null);
+    g.input.touchLock = dir.lock;
+    paint(originRef.current, lastPtr.current);
+    if (dir.lock != null && !buzzed.current && haptics) {
+      buzzed.current = true;
+      try {
+        if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) navigator.vibrate?.(10);
+      } catch {
+        /* optional */
+      }
+    }
   };
 
   const release = (id: number) => {
     if (pid.current !== id) return;
     pid.current = null;
+    originRef.current = null;
+    lastPtr.current = null;
     lockRef.current = null;
+    buzzed.current = false;
     setLock(null);
     setHeld(false);
     setTouchAxis(0, 0);
     setDrillHeld(false);
     const g = getGame();
-    if (g) g.input.touchLock = null;
+    if (g) {
+      g.input.dragOrigin = null;
+      g.input.touchLock = null;
+    }
   };
 
   return (
@@ -1181,8 +1398,18 @@ function SteerField() {
         e.preventDefault();
         pid.current = e.pointerId;
         e.currentTarget.setPointerCapture(e.pointerId);
+        originRef.current = { x: e.clientX, y: e.clientY };
+        lastPtr.current = { x: e.clientX, y: e.clientY };
+        lockRef.current = null;
+        buzzed.current = false;
+        const g = getGame();
+        if (g) {
+          g.input.dragOrigin = { x: e.clientX, y: e.clientY };
+          g.input.touchLock = null;
+        }
         setHeld(true);
-        apply(e.clientX, e.clientY);
+        setLock(null);
+        paint({ x: e.clientX, y: e.clientY }, { x: e.clientX, y: e.clientY });
       }}
       onPointerMove={(e) => {
         if (pid.current !== e.pointerId) return;
@@ -1193,19 +1420,31 @@ function SteerField() {
       onLostPointerCapture={(e) => release(e.pointerId)}
       onContextMenu={(e) => e.preventDefault()}
     >
-      <div
-        ref={ringRef}
-        aria-hidden="true"
-        className={`pointer-events-none fixed size-[6.5rem] -translate-x-1/2 -translate-y-1/2 rounded-full border transition-opacity duration-150 short:size-[5.25rem] ${
-          held ? "border-accent/55 bg-accent/10 opacity-100" : "border-fg/20 bg-transparent opacity-70"
-        }`}
-        style={{ left: "-999px", top: "-999px" }}
-      >
-        <Chevron dir={0} on={lock === 0} />
-        <Chevron dir={1} on={lock === 1} />
-        <Chevron dir={2} on={lock === 2} />
-        <Chevron dir={3} on={lock === 3} />
-      </div>
+      {compass ? (
+        <div
+          ref={padRef}
+          aria-hidden="true"
+          className={`pointer-events-none fixed size-[7rem] -translate-x-1/2 -translate-y-1/2 rounded-full border bg-accent/10 short:size-[5.75rem] ${
+            held ? "border-accent/50 opacity-100" : "border-transparent opacity-0"
+          }`}
+          style={{ left: "-999px", top: "-999px" }}
+        >
+          <Chevron dir={0} on={lock === 0} />
+          <Chevron dir={1} on={lock === 1} />
+          <Chevron dir={2} on={lock === 2} />
+          <Chevron dir={3} on={lock === 3} />
+        </div>
+      ) : null}
+      {compass ? (
+        <div
+          ref={nubRef}
+          aria-hidden="true"
+          className={`pointer-events-none fixed size-11 -translate-x-1/2 -translate-y-1/2 rounded-full border shadow-panel short:size-9 ${
+            held ? "opacity-100" : "opacity-0"
+          } ${lock != null ? "border-accent bg-accent" : "border-fg/40 bg-elevated"}`}
+          style={{ left: "-999px", top: "-999px" }}
+        />
+      ) : null}
     </div>
   );
 }

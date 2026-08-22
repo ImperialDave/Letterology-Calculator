@@ -35,6 +35,25 @@ const GAME_KEYS = new Set([
   "KeyP",
 ]);
 
+/** Old Kiln firing order. Letters that never steer the rig. */
+export const KILN_CODE = "kiln33";
+const CHEAT_GAP = 2800;
+const CHEAT_MAX = 16;
+
+export function letterFromCode(code: string): string | null {
+  if (/^Key[A-Z]$/.test(code)) return code.slice(3).toLowerCase();
+  if (/^Digit[0-9]$/.test(code)) return code.slice(5);
+  return null;
+}
+
+export function feedCheat(buf: string, ch: string, now: number, last: number): string {
+  const next = (last > 0 && now - last > CHEAT_GAP ? "" : buf) + ch;
+  return next.length > CHEAT_MAX ? next.slice(-CHEAT_MAX) : next;
+}
+
+export function kilnOffered(buf: string): boolean {
+  return buf.includes(KILN_CODE);
+}
 /**
  * Tile miners hate analog diagonals: they chatter between two walls.
  * Snap a stick vector to one cardinal, with hysteresis so 45° corners
@@ -78,18 +97,38 @@ export function snapCardinal(
 }
 
 /**
- * Pointer minus rig, in CSS pixels (+x right, +y down). Click the dirt
- * you want to cut — not a corner stick.
+ * Drag from a planted origin, in CSS pixels (+x right, +y down).
+ * Direction is the swipe — not where the tap sits relative to the rig.
  */
 export function aimFromDelta(
   dx: number,
   dy: number,
   locked: Cardinal | null,
-  deadPx = 32,
+  deadPx = 24,
 ): { x: number; y: number; lock: Cardinal | null } {
   if (Math.hypot(dx, dy) < deadPx) return { x: 0, y: 0, lock: null };
   return snapCardinal(dx, dy, locked, 0.05);
 }
+
+/** If the finger outruns the throw, slide the origin so a long swipe still steers. */
+export function slideOrigin(
+  origin: { x: number; y: number },
+  pointer: { x: number; y: number },
+  maxR: number,
+): { origin: { x: number; y: number }; dx: number; dy: number } {
+  let dx = pointer.x - origin.x;
+  let dy = pointer.y - origin.y;
+  const mag = Math.hypot(dx, dy);
+  if (mag > maxR && mag > 0) {
+    const extra = mag - maxR;
+    origin = { x: origin.x + (dx / mag) * extra, y: origin.y + (dy / mag) * extra };
+    dx = pointer.x - origin.x;
+    dy = pointer.y - origin.y;
+  }
+  return { origin, dx, dy };
+}
+
+export const STICK_THROW = 56;
 
 export class Input {
   keys = new Set<string>();
@@ -97,6 +136,7 @@ export class Input {
   qaKeys: Set<string> | null = null;
   prev = new Set<string>();
   touchLock: Cardinal | null = null;
+  dragOrigin: { x: number; y: number } | null = null;
   touch = {
     moveX: 0,
     moveY: 0,
@@ -109,13 +149,32 @@ export class Input {
     coolant: false,
     drill: false,
   };
+  cheatBuf = "";
+  cheatAt = 0;
+  private cheatReady = false;
   private unbind: Array<() => void> = [];
+
+  takeCheat(): boolean {
+    if (!this.cheatReady) return false;
+    this.cheatReady = false;
+    return true;
+  }
 
   attach(el: HTMLElement): void {
     const down = (e: KeyboardEvent) => {
       if (GAME_KEYS.has(e.code)) e.preventDefault();
       if (!this.keys.has(e.code)) this.edges.add(e.code);
       this.keys.add(e.code);
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const ch = letterFromCode(e.code);
+      if (!ch) return;
+      const now = performance.now();
+      this.cheatBuf = feedCheat(this.cheatBuf, ch, now, this.cheatAt);
+      this.cheatAt = now;
+      if (kilnOffered(this.cheatBuf)) {
+        this.cheatReady = true;
+        this.cheatBuf = "";
+      }
     };
     const up = (e: KeyboardEvent) => {
       this.keys.delete(e.code);
@@ -126,6 +185,7 @@ export class Input {
       this.touch.moveY = 0;
       this.touch.drill = false;
       this.touchLock = null;
+      this.dragOrigin = null;
     };
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);

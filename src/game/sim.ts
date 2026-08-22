@@ -5,6 +5,7 @@ import {
   FUEL_PRICE,
   HEAT_DPS,
   HELL_1,
+  HELL_3,
   HULL_PRICE,
   RIGWORKS_MAX,
   SALVAGE_RATE,
@@ -203,7 +204,8 @@ export class Sim {
   }
 
   burst(x: number, y: number, n: number, color: string, speed = 80): void {
-    for (let i = 0; i < n; i++) {
+    const count = this.reducedMotion ? Math.min(3, Math.ceil(n * 0.2)) : n;
+    for (let i = 0; i < count; i++) {
       const a = Math.random() * Math.PI * 2;
       const s = speed * (0.3 + Math.random());
       this.addParticle({
@@ -436,6 +438,26 @@ export class Sim {
     this.player.vy = 0;
     this.burst(this.player.x, this.player.y, 20, "#7ec8c4", 100);
     this.toastNow("Snapped to the pad.");
+  }
+
+  forgeKilnOffering(): void {
+    const p = this.player;
+    for (const slot of Object.keys(UPGRADES) as Slot[]) {
+      p.upgrades[slot] = UPGRADES[slot].length - 1;
+    }
+    p.fuel = this.maxFuel();
+    p.hull = this.maxHull();
+    p.money = Math.max(p.money, 1_000_000);
+    for (const id of Object.keys(CONSUMABLES) as ConsumableId[]) {
+      p.items[id] = Math.max(p.items[id], 9);
+    }
+    this.hellUnlocked = true;
+    this.hellSeen = 3;
+    this.bestDepth = Math.max(this.bestDepth, HELL_3);
+    this.burst(p.x, p.y, 40, "#ff6a3a", 170);
+    this.burst(p.x, p.y, 22, "#ffe8a8", 110);
+    this.trauma = Math.min(1, this.trauma + 0.65);
+    this.toastNow("Kiln 33 answers. Heartbit fitted. The well is open.");
   }
 
   sellAll(): number {
