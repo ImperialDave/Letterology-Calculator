@@ -14,6 +14,7 @@ A letter does not change its nature — only its willingness. That is luck.
 4. Letterize an act (`quit`, `ask them`, `ship the launch`) to see if the day will have it.
 5. Compare two handles. Write an amount as letters. Flip to Greek if you want the second tongue.
 6. Descend the well (`/play`) — Cinderwell, a club game. Drill, haul ore, sell, go deeper. Three claims stay in this browser.
+7. Play Glyphbound (`/glyphbound`) — a side-scroller. Letters against numbers. Progress stays in this browser.
 
 ## Doctrine, short
 
@@ -26,6 +27,10 @@ A letter does not change its nature — only its willingness. That is luck.
 ## The Well
 
 Cinderwell lives at `/play`. It is a descent, not a reading. The club chrome steps aside so the mine can fill the screen; **Back to the club** returns you to CC33. Saves are local to the browser.
+
+## Glyphbound
+
+Glyphbound lives at `/glyphbound`. A side-scroller on Calculara: living letters against the Decimal Dominion. The club chrome steps aside the same way as the well; **Back to the club** returns you to CC33. Progress stays in this browser.
 
 ## Develop
 

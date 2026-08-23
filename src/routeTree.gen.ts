@@ -24,6 +24,7 @@ import { Route as KeyRouteImport } from './routes/key'
 import { Route as LettersRouteImport } from './routes/letters'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as PlayRouteImport } from './routes/play'
+import { Route as GlyphboundRouteImport } from './routes/glyphbound'
 import { Route as SheetRouteImport } from './routes/sheet'
 import { Route as StoicheiaRouteImport } from './routes/stoicheia'
 import { Route as TwoRouteImport } from './routes/two'
@@ -118,6 +119,11 @@ const LoginRoute = LoginRouteImport.update({
 const PlayRoute = PlayRouteImport.update({
   id: '/play',
   path: '/play',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GlyphboundRoute = GlyphboundRouteImport.update({
+  id: '/glyphbound',
+  path: '/glyphbound',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SheetRoute = SheetRouteImport.update({
@@ -237,6 +243,7 @@ export interface FileRoutesByFullPath {
   '/letters': typeof LettersRoute
   '/login': typeof LoginRoute
   '/play': typeof PlayRoute
+  '/glyphbound': typeof GlyphboundRoute
   '/sheet': typeof SheetRoute
   '/stoicheia': typeof StoicheiaRouteWithChildren
   '/two': typeof TwoRoute
@@ -274,6 +281,7 @@ export interface FileRoutesByTo {
   '/letters': typeof LettersRoute
   '/login': typeof LoginRoute
   '/play': typeof PlayRoute
+  '/glyphbound': typeof GlyphboundRoute
   '/sheet': typeof SheetRoute
   '/two': typeof TwoRoute
   '/why': typeof WhyRoute
@@ -311,6 +319,7 @@ export interface FileRoutesById {
   '/letters': typeof LettersRoute
   '/login': typeof LoginRoute
   '/play': typeof PlayRoute
+  '/glyphbound': typeof GlyphboundRoute
   '/sheet': typeof SheetRoute
   '/stoicheia': typeof StoicheiaRouteWithChildren
   '/two': typeof TwoRoute
@@ -350,6 +359,7 @@ export interface FileRouteTypes {
     | '/letters'
     | '/login'
     | '/play'
+    | '/glyphbound'
     | '/sheet'
     | '/stoicheia'
     | '/two'
@@ -387,6 +397,7 @@ export interface FileRouteTypes {
     | '/letters'
     | '/login'
     | '/play'
+    | '/glyphbound'
     | '/sheet'
     | '/two'
     | '/why'
@@ -423,6 +434,7 @@ export interface FileRouteTypes {
     | '/letters'
     | '/login'
     | '/play'
+    | '/glyphbound'
     | '/sheet'
     | '/stoicheia'
     | '/two'
@@ -461,6 +473,7 @@ export interface RootRouteChildren {
   LettersRoute: typeof LettersRoute
   LoginRoute: typeof LoginRoute
   PlayRoute: typeof PlayRoute
+  GlyphboundRoute: typeof GlyphboundRoute
   SheetRoute: typeof SheetRoute
   StoicheiaRoute: typeof StoicheiaRouteWithChildren
   TwoRoute: typeof TwoRoute
@@ -578,6 +591,13 @@ declare module '@tanstack/react-router' {
       path: '/play'
       fullPath: '/play'
       preLoaderRoute: typeof PlayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/glyphbound': {
+      id: '/glyphbound'
+      path: '/glyphbound'
+      fullPath: '/glyphbound'
+      preLoaderRoute: typeof GlyphboundRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sheet': {
@@ -769,6 +789,7 @@ const rootRouteChildren: RootRouteChildren = {
   LettersRoute: LettersRoute,
   LoginRoute: LoginRoute,
   PlayRoute: PlayRoute,
+  GlyphboundRoute: GlyphboundRoute,
   SheetRoute: SheetRoute,
   StoicheiaRoute: StoicheiaRouteWithChildren,
   TwoRoute: TwoRoute,
