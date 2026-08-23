@@ -176,6 +176,13 @@ function ClubHome() {
           >
             The Well
           </Link>
+          <p className="mt-6 text-sm text-muted">{VOICE.glyphHome}</p>
+          <Link
+            to="/glyphbound"
+            className="mt-2 inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+          >
+            Glyphbound
+          </Link>
         </section>
       ) : (
         <div className="space-y-8">

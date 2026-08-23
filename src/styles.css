@@ -25,6 +25,7 @@
   --color-danger: #9a2f24;
   --color-accent: #7a3328;
   --color-accent-fg: #f6f0e4;
+  --color-accent-dim: #2a6b5c;
   --shadow-panel: 0 12px 40px rgba(28, 23, 18, 0.12);
 
   --font-display: "Fraunces", "Iowan Old Style", "Palatino Linotype", Palatino, serif;
@@ -301,4 +302,66 @@
   --shadow-panel: 0 12px 40px rgba(0, 0, 0, 0.45);
   color: var(--color-fg);
   background: var(--color-bg);
+}
+
+/* Glyphbound — ink room. Tokens only apply inside the scroller. */
+[data-glyphbound] {
+  --color-bg: #07080c;
+  --color-surface: #12141c;
+  --color-elevated: #1a1d28;
+  --color-raised: #1a1d28;
+  --color-ink: #e8ece8;
+  --color-fg: #e8ece8;
+  --color-muted: #8a908c;
+  --color-subtle: #5c625e;
+  --color-primary: #5ee0c0;
+  --color-primary-fg: #07080c;
+  --color-border: color-mix(in oklab, var(--color-fg) 12%, transparent);
+  --color-accent: #5ee0c0;
+  --color-accent-fg: #07080c;
+  --color-accent-dim: #2a6b5c;
+  --color-danger: #d45a4a;
+  --shadow-panel: 0 12px 40px rgba(0, 0, 0, 0.45);
+  color: var(--color-fg);
+  background: var(--color-bg);
+}
+
+.gb-pad {
+  display: none;
+}
+
+@media (pointer: coarse), (hover: none) {
+  .gb-pad {
+    display: block;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) and (min-width: 900px) {
+  .gb-pad {
+    display: none !important;
+  }
+  .gb-fine\:flex {
+    display: flex !important;
+  }
+}
+
+.gb-pad-btn {
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  touch-action: none;
+}
+
+.gb-pad-btn:active {
+  transform: scale(0.92);
+  filter: brightness(1.15);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gb-motion {
+    animation: none !important;
+    transition: none !important;
+  }
+  .gb-pad-btn:active {
+    transform: none;
+  }
 }
