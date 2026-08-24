@@ -13,8 +13,8 @@ export type Mode =
 
 export type RelicId = "dropCap" | "spine" | "copper" | "counter";
 export type WordId = "WALL" | "BURN" | "RISE" | "LOCK";
-export type ThemeId = "hub" | "street" | "fort" | "canal" | "coil";
-export type LevelId = "hub" | "stage1" | "stage2" | "stage3" | "stage4";
+export type ThemeId = "hub" | "street" | "fort" | "canal" | "coil" | "vault";
+export type LevelId = "hub" | "stage1" | "stage2" | "stage3" | "stage4" | "stage5";
 
 export type EnemyKind =
   | "one"
@@ -22,11 +22,16 @@ export type EnemyKind =
   | "two"
   | "three"
   | "four"
+  | "five"
   | "six"
+  | "seven"
   | "eight"
+  | "nine"
   | "dummy"
   | "dualis"
-  | "tetrarch";
+  | "tetrarch"
+  | "importer"
+  | "nullis";
 
 export interface Rect {
   x: number;
@@ -86,7 +91,20 @@ export interface Enemy {
 }
 
 export interface Pickup {
-  kind: "ink" | "heart" | "word" | "relic" | "recruit" | "door" | "case" | "check" | "drop" | "fang" | "scale" | "portal";
+  kind:
+    | "ink"
+    | "heart"
+    | "word"
+    | "relic"
+    | "recruit"
+    | "door"
+    | "case"
+    | "check"
+    | "drop"
+    | "fang"
+    | "scale"
+    | "portal"
+    | "secret";
   id: string;
   x: number;
   y: number;
@@ -173,7 +191,7 @@ export interface Player {
 export interface TaskDef {
   id: string;
   text: string;
-  need?: "stage1" | "stage2" | "stage3" | "stage4";
+  need?: "stage1" | "stage2" | "stage3" | "stage4" | "stage5";
 }
 
 export interface TaskSnap {
@@ -193,6 +211,7 @@ export interface SaveData {
   stage2: boolean;
   stage3: boolean;
   stage4: boolean;
+  stage5: boolean;
   hard: boolean;
   muted: boolean;
   shake: boolean;
@@ -235,6 +254,7 @@ export interface UiSnap {
   stage2: boolean;
   stage3: boolean;
   stage4: boolean;
+  stage5: boolean;
   transforming: number;
   shield: number;
   maxShield: number;
