@@ -1,1 +1,1 @@
-// temporary restore marker — full content follows in next commit
+PLACEHOLDER_WILL_FAIL
