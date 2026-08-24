@@ -1,9 +1,9 @@
 import { DISTRICTS } from "./districts";
 import type { LevelId, TaskDef, ThemeId } from "./types";
-import { STAGE_COUNT } from "./types";
+import { FIRST_BOOK, STAGE_COUNT } from "./types";
 
 export type { LevelId, ThemeId };
-export { STAGE_COUNT };
+export { STAGE_COUNT, FIRST_BOOK };
 
 export interface LevelMeta {
   id: LevelId;
@@ -407,6 +407,74 @@ function rng(seed: number) {
   };
 }
 
+const FLYERS = "0689BCLM";
+const WALKERS = "123457AEUYGHKQUNJ";
+const MOBS = "1023456789ABCEYGHKQUNJLM!";
+
+function sprinkleMobs(
+  g: Grid,
+  n: number,
+  roles: string[],
+  rand: () => number,
+  floorY: number,
+) {
+  const { put, W } = g;
+  const start = 10;
+  const stop = W - 14;
+  const density = Math.min(0.78, 0.34 + n * 0.012);
+  const flyPool = roles.filter((r) => FLYERS.includes(r));
+  const walkPool = roles.filter((r) => WALKERS.includes(r));
+  const fly = () => (flyPool.length ? flyPool[Math.floor(rand() * flyPool.length)] : roles[Math.floor(rand() * roles.length)]);
+  const walk = () => (walkPool.length ? walkPool[Math.floor(rand() * walkPool.length)] : roles[Math.floor(rand() * roles.length)]);
+  const cell = (x: number, y: number) => {
+    if (y < 0 || y >= g.length || x < 0 || x >= W) return "#";
+    return g[y][x];
+  };
+  const vacant = (x: number, y: number) => cell(x, y) === ".";
+  const crowded = (x: number, y: number, r = 5) => {
+    for (let dx = -r; dx <= r; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        if (MOBS.includes(cell(x + dx, y + dy))) return true;
+      }
+    }
+    return false;
+  };
+  const seat = (x: number, y: number, ch: string) => {
+    if (!vacant(x, y) || crowded(x, y)) return false;
+    put(x, y, ch);
+    return true;
+  };
+
+  for (let x = start; x < stop; x++) {
+    if (cell(x, floorY) === "#" && vacant(x, floorY - 1) && rand() < density) {
+      if (seat(x, floorY - 1, walk())) x += 5;
+    }
+  }
+
+  for (let y = 2; y < floorY - 1; y++) {
+    for (let x = start; x < stop; x++) {
+      const below = cell(x, y + 1);
+      if ((below === "=" || below === "-" || below === "T" || below === "/" || below === "\\") && vacant(x, y) && rand() < density * 0.85) {
+        if (seat(x, y, rand() < 0.45 ? fly() : walk())) x += 4;
+      }
+    }
+  }
+
+  for (let x = start + 2; x < stop; x++) {
+    const pit = cell(x, floorY) === "." || cell(x, floorY) === "~" || cell(x, floorY) === "^";
+    if (pit && vacant(x, floorY - 3) && rand() < density * 0.7) {
+      if (seat(x, Math.max(2, floorY - 3 - Math.floor(rand() * 2)), fly())) x += 6;
+    }
+  }
+
+  const air = 2 + Math.floor(n / 7);
+  for (let i = 0; i < air; i++) {
+    const x = start + Math.floor(rand() * Math.max(1, stop - start));
+    const y = 2 + Math.floor(rand() * Math.max(1, floorY - 6));
+    seat(x, y, fly());
+  }
+}
+
 function buildProgressive(n: number): string[] {
   const rand = rng(n * 9973 + 42);
   const tier = Math.min(ROLE_TIERS.length - 1, Math.floor((n - 1) / 3));
@@ -618,6 +686,154 @@ function buildProgressive(n: number): string[] {
   else put(end - 6, floorY - 1, pick());
   put(end, floorY - 1, "P");
   put(end - 2, floorY - 1, "i");
+  sprinkleMobs(g, n, roles, rand, floorY);
+  return g;
+}
+
+const REMAINDER_ROLES: string[][] = [
+  ["Q", "U", "M", "1"],
+  ["Q", "U", "N", "J", "M"],
+  ["Q", "U", "N", "J", "L", "M", "5"],
+  ["Q", "U", "N", "J", "L", "M", "9", "A", "B"],
+];
+
+function buildRemainder(n: number): string[] {
+  const rand = rng(n * 7919 + 11);
+  const tier = Math.min(REMAINDER_ROLES.length - 1, Math.floor((n - 31) / 8));
+  const roles = REMAINDER_ROLES[tier];
+  const pick = () => roles[Math.floor(rand() * roles.length)];
+  const H = 18 + Math.min(10, Math.floor((n - 30) / 3));
+  const floorY = H - 3;
+  const beats = 5 + Math.floor((n - 31) / 5);
+  const W = 32 + beats * (18 + Math.min(8, Math.floor((n - 30) / 4))) + 24;
+  const g = grid(W, H, floorY) as Grid;
+  const { put, fill } = g;
+  const pit = (x: number, w: number, spiked = true) => {
+    fill(x, floorY, w, ".");
+    if (spiked && floorY + 1 < H - 1) fill(x, floorY + 1, w, "^");
+  };
+  put(1, floorY - 1, "@");
+  put(3, floorY - 1, "i");
+  put(5, floorY - 1, "h");
+  let cx = 9;
+  const island = (w: number) => {
+    fill(cx, floorY, w, "#");
+    if (rand() < 0.5) put(cx + 1, floorY - 1, "i");
+    cx += w;
+  };
+  const catalog = ["belt", "spring", "updraft", "foldwell", "gap"];
+  if (n >= 36) catalog.push("minusguard", "split");
+  if (n >= 42) catalog.push("orbit", "gauntlet");
+  if (n >= 50) catalog.push("doublefold", "tideway");
+
+  for (let s = 0; s < beats; s++) {
+    let kind = catalog[(s * 4 + n) % catalog.length];
+    island(3);
+    if (kind === "belt") {
+      const w = 8 + (n >= 40 ? 2 : 0);
+      pit(cx, w, true);
+      put(cx, floorY - 1, "/".repeat(Math.min(5, w - 1)));
+      if (n >= 38) put(cx + 3, floorY - 3, "\\".repeat(3));
+      put(cx + w - 2, floorY - 1, pick());
+      cx += w;
+    } else if (kind === "spring") {
+      const w = 9;
+      pit(cx, w, true);
+      put(cx + 1, floorY - 1, "T");
+      put(cx + 4, floorY - 4, "==");
+      put(cx + 7, floorY - 7, "==");
+      cx += w;
+    } else if (kind === "updraft") {
+      const w = 7;
+      pit(cx, w, true);
+      for (let y = Math.max(2, floorY - 7); y <= floorY - 1; y++) put(cx + 2, y, ":");
+      put(cx + 4, floorY - 6, "==");
+      put(cx + 1, floorY - 1, pick());
+      cx += w;
+    } else if (kind === "foldwell") {
+      const w = 8;
+      pit(cx, w, true);
+      for (let y = 3; y <= floorY; y++) {
+        put(cx, y, "#");
+        put(cx + w - 1, y, "#");
+      }
+      put(cx + 1, floorY - 2, "==");
+      put(cx + w - 3, floorY - 6, "==");
+      put(cx + 2, floorY - 9, "i");
+      cx += w;
+    } else if (kind === "minusguard") {
+      const w = 8;
+      pit(cx, w, true);
+      put(cx + 2, floorY - 2, "====");
+      put(cx + 3, floorY - 3, "U");
+      put(cx + 5, floorY - 4, "==");
+      cx += w;
+    } else if (kind === "split") {
+      const w = 10;
+      pit(cx, w, true);
+      put(cx + 1, floorY - 2, "==");
+      put(cx + 1, floorY - 5, "====");
+      put(cx + 6, floorY - 2, "TT");
+      put(cx + 7, floorY - 6, pick());
+      cx += w;
+    } else if (kind === "orbit") {
+      const w = 9;
+      pit(cx, w, true);
+      put(cx + 2, floorY - 3, "====");
+      put(cx + 3, floorY - 4, "L");
+      put(cx + 6, floorY - 5, "==");
+      cx += w;
+    } else if (kind === "gauntlet") {
+      const w = 12;
+      pit(cx, w, true);
+      put(cx, floorY - 1, "////");
+      put(cx + 5, floorY - 3, "====");
+      put(cx + 6, floorY - 4, "J");
+      put(cx + 9, floorY - 1, "||||");
+      cx += w;
+    } else if (kind === "doublefold") {
+      const w = 9;
+      pit(cx, w, true);
+      for (let y = 2; y <= floorY; y++) put(cx + 1, y, "#");
+      for (let y = 4; y <= floorY; y++) put(cx + 7, y, "#");
+      put(cx + 3, floorY - 4, "N");
+      cx += w;
+    } else if (kind === "tideway") {
+      const w = 11;
+      pit(cx, w, true);
+      put(cx, floorY - 1, "\\\\\\\\");
+      put(cx + 5, floorY - 3, "====");
+      put(cx + 8, floorY - 1, "////");
+      cx += w;
+    } else {
+      const w = 6 + Math.min(3, Math.floor((n - 30) / 10));
+      pit(cx, w, true);
+      if (n >= 44) put(cx + 2, floorY - 1, "T");
+      cx += w;
+    }
+  }
+
+  island(7);
+  put(cx - 5, floorY - 1, "%");
+  if (n === 32) put(6, floorY - 2, "O");
+  if (n === 40) put(6, floorY - 2, "I");
+  if (n % 4 === 0) {
+    put(7, 3, "====");
+    put(8, 2, "$");
+  }
+  const end = W - 10;
+  if (cx < end - 14) {
+    const remain = end - 14 - cx;
+    pit(cx, remain, true);
+    for (let x = cx + 2; x < cx + remain - 2; x += 6) put(x, floorY - 2, n >= 45 ? "T" : "==");
+  }
+  fill(end - 12, floorY, 14, "#");
+  put(end - 8, floorY - 2, "====");
+  if (n % 5 === 0 || n === STAGE_COUNT) put(end - 6, floorY - 1, "!");
+  else put(end - 6, floorY - 1, pick());
+  put(end, floorY - 1, "P");
+  put(end - 2, floorY - 1, "i");
+  sprinkleMobs(g, n, roles, rand, floorY);
   return g;
 }
 
@@ -651,24 +867,72 @@ function progressiveMeta(n: number): LevelMeta {
     "Tight Column",
     "Last Margin",
   ];
+  const remainderNames = [
+    "After the Point",
+    "Plus Field",
+    "Minus Cut",
+    "Product Yard",
+    "Quotient Shaft",
+    "Pi Gallery",
+    "Radix Ditch",
+    "Summand Walk",
+    "Difference Hall",
+    "Fold Well",
+    "Tide Road",
+    "Operator Court",
+    "Gold Remainder",
+    "Hail Column",
+    "Orrery Annex",
+    "Glass Margin",
+    "Script Vein",
+    "Lattice Rise",
+    "Void Phrase",
+    "Last Operator",
+  ];
   const name =
-    n === STAGE_COUNT ? "Final Account" : isBoss ? `Warden ${n}` : `${names[(n - 1) % names.length]} ${n}`;
+    n === FIRST_BOOK
+      ? "The Period"
+      : n === STAGE_COUNT
+        ? "The Remainder"
+        : n === 35
+          ? "Summand"
+          : n === 40
+            ? "Difference"
+            : n === 45
+              ? "Product"
+              : n === 50
+                ? "Quotient"
+                : n === 55
+                  ? "Infinitum"
+                  : isBoss
+                    ? `Warden ${n}`
+                    : n > FIRST_BOOK
+                      ? `${remainderNames[(n - 31) % remainderNames.length]} ${n}`
+                      : `${names[(n - 1) % names.length]} ${n}`;
   const tasks: TaskDef[] = [{ id: `clear-${n}`, text: isBoss ? "Defeat the warden" : "Reach the gate" }];
   if (n === 6) tasks.push({ id: "word-wall", text: "Pick up WALL" });
   if (n === 8) tasks.push({ id: "word-rise", text: "Pick up RISE" });
   if (n === 10) tasks.push({ id: "word-lock", text: "Pick up LOCK" });
   if (n === 12) tasks.push({ id: "word-burn", text: "Pick up BURN" });
+  if (n === 32) tasks.push({ id: "word-fold", text: "Pick up FOLD" });
+  if (n === 40) tasks.push({ id: "word-tide", text: "Pick up TIDE" });
   return {
     id: `stage${n}` as LevelId,
     name,
     theme,
     objective: isBoss
-      ? "Clear the warden. Take the gate."
-      : n >= 10
-        ? "Scribe the gaps. The floor will not carry you."
-        : "Cross the ledger. Reach the gate.",
+      ? n === FIRST_BOOK
+        ? "End-Mark is the period. Close it. The sentence is not over."
+        : n === STAGE_COUNT
+          ? "The Remainder is the last unfiled mark. Write over it."
+          : "Clear the warden. Take the gate."
+      : n > FIRST_BOOK
+        ? "Operators eat shelves. Fold off stems. Ride the belts."
+        : n >= 10
+          ? "Scribe the gaps. The floor will not carry you."
+          : "Cross the ledger. Reach the gate.",
     tasks,
-    rows: buildProgressive(n),
+    rows: n > FIRST_BOOK ? buildRemainder(n) : buildProgressive(n),
     exit: n === STAGE_COUNT ? "win" : "hub",
     index: n,
   };
@@ -693,7 +957,7 @@ const hand: Record<string, LevelMeta> = {
     id: "hub",
     name: "Lower Register Stacks",
     theme: "hub",
-    objective: "Talk to the letters, then pick a door. Continue opens the next unread ledger.",
+    objective: "Numbered doors: first five. Continue: new ledgers through 60. Replay: last page only.",
     tasks: [
       { id: "talk-e", text: "Talk to e" },
       { id: "talk-t", text: "Learn scribing from t" },
@@ -702,7 +966,7 @@ const hand: Record<string, LevelMeta> = {
       { id: "enter-coil", text: "Enter the Coil Yard", need: 3 },
       { id: "enter-fort", text: "Enter G's Fort", need: 4 },
       { id: "enter-ledger", text: "Enter the Null Ledger", need: 4 },
-      { id: "continue", text: "Take the Continue gate deeper", need: 5 },
+      { id: "continue", text: "Take Continue — the only door that keeps opening new ledgers through 60", need: 5 },
     ],
     rows: buildHub(),
     index: 0,

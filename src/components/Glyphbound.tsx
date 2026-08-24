@@ -6,7 +6,8 @@ import { Pause, Volume2, VolumeX } from "lucide-react";
 const INTRO = [
   "Calculara was a manuscript before it was an equation. Letters walked it. Words were weather.",
   "G opened the ports. Ships of digits landed overnight. The Decimal Dominion rounded magic down and filed every letter that would stand in line.",
-  "You were posted as a warning mark: a lowercase c nobody counted. The Drop Cap still remembers how a letter used to begin a page. Thirty ledgers wait. Willingness, not fate, turns them.",
+  "You were posted as a warning mark: a lowercase c nobody counted. Thirty ledgers close on a period. After the first five, only Continue keeps opening new pages. Replay only repeats the last.",
+  "End-Mark is not the end. After the point come the operators: plus, minus, times, divide, remainder. Sixty ledgers. Willingness still turns them.",
 ];
 
 function ControlsCard() {
@@ -193,7 +194,7 @@ export function Glyphbound() {
           onClick={() => g()?.advanceIntro()}
         >
           <div className="max-w-lg rounded-xl border border-border bg-surface/90 p-6">
-            <p className="font-display text-2xl leading-snug text-fg">{INTRO[ui.introPage] ?? INTRO[2]}</p>
+            <p className="font-display text-2xl leading-snug text-fg">{INTRO[ui.introPage] ?? INTRO[INTRO.length - 1]}</p>
             <p className="mt-4 text-sm text-muted">Tap or press J to continue</p>
           </div>
         </div>
@@ -283,11 +284,11 @@ export function Glyphbound() {
       {ui.mode === "win" && (
         <div className="absolute inset-0 flex items-center justify-center bg-bg/80 px-6">
           <div className="max-w-md text-center">
-            <p className="text-sm uppercase tracking-[0.25em] text-accent">End-Mark falls</p>
+            <p className="text-sm uppercase tracking-[0.25em] text-accent">Remainder filed</p>
             <h2 className="mt-2 font-display text-5xl">The last sentence is yours</h2>
             <p className="mt-4 text-muted leading-relaxed">
-              Thirty ledgers, closed. The Dominion still counts, but it has to answer now. G opened the ports.
-              You kept writing. Willingness, not fate, turned the page.
+              Sixty ledgers. A period, then the operators, then the remainder the Dominion could not file. G opened
+              the ports. You kept writing. Willingness, not fate, turned every page.
             </p>
             <button
               type="button"

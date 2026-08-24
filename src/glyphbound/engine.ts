@@ -23,6 +23,7 @@ import {
   TILE,
   VIEW_H,
   VIEW_W,
+  FIRST_BOOK,
   type Bullet,
   type Construct,
   type Enemy,
@@ -113,6 +114,8 @@ export class GameEngine {
   nearHint = "";
   lastDone = new Set<string>();
   lastCheck = "";
+  wallCoyote = 0;
+  wallDir: 1 | -1 = 1;
 
   constructor(canvas: HTMLCanvasElement, ui: (s: UiSnap) => void) {
     this.canvas = canvas;
@@ -250,6 +253,10 @@ export class GameEngine {
         else if (ch === "~") this.solids.push({ x, y: y + 18, w: TILE, h: 30, type: "sluice" });
         else if (ch === "-") this.solids.push({ x, y, w: TILE, h: 10, type: "crumble", phase: 0 });
         else if (ch === "|") this.solids.push({ x: x + 18, y, w: 12, h: TILE, type: "laser", phase: tx * 0.37 });
+        else if (ch === "/") this.solids.push({ x, y: y + 28, w: TILE, h: 12, type: "conveyor", phase: 1 });
+        else if (ch === "\\") this.solids.push({ x, y: y + 28, w: TILE, h: 12, type: "conveyor", phase: -1 });
+        else if (ch === "T") this.solids.push({ x: x + 4, y: y + 28, w: TILE - 8, h: 12, type: "bounce" });
+        else if (ch === ":") this.solids.push({ x: x + 10, y, w: 28, h: TILE, type: "fan" });
         else if (ch === "@") {
           spawnX = x;
           spawnY = y;
@@ -258,12 +265,12 @@ export class GameEngine {
             this.pickups.push({
               kind: "door",
               id: ch === ">" ? "continue" : "replay",
-              x: x - 16,
-              y: y - 40,
-              w: 72,
-              h: 96,
+              x: x - 20,
+              y: y - 44,
+              w: ch === ">" ? 92 : 80,
+              h: 100,
               taken: false,
-              label: ch === ">" ? "CONT." : "REPLAY",
+              label: ch === ">" ? "CONTINUE" : "REPLAY",
             });
           } else {
             this.markers.push({
@@ -273,7 +280,7 @@ export class GameEngine {
               kind: ch === "V" ? "down" : "arrow",
             });
           }
-        } else if (ch === "!" || "1023456789ABCEYGHK".includes(ch)) {
+        } else if (ch === "!" || "1023456789ABCEYGHKQUNJLM".includes(ch)) {
           const map: Record<string, EnemyKind> = {
             "1": "one",
             "0": "zero",
@@ -293,6 +300,12 @@ export class GameEngine {
             G: "importer",
             H: "archivist",
             K: "crossseal",
+            Q: "plus",
+            U: "minus",
+            N: "times",
+            J: "divide",
+            L: "pi",
+            M: "radix",
           };
           this.enemies.push(this.spawnEnemy(ch === "!" ? this.bossKindFor(id) : map[ch], x, y));
         } else if (ch === "s" || ch === "b") {
@@ -398,6 +411,28 @@ export class GameEngine {
             taken: this.save.words.includes("LOCK"),
             label: "LOCK",
           });
+        } else if (ch === "O") {
+          this.pickups.push({
+            kind: "word",
+            id: "FOLD",
+            x: x + 4,
+            y: y + 8,
+            w: 28,
+            h: 20,
+            taken: this.save.words.includes("FOLD"),
+            label: "FOLD",
+          });
+        } else if (ch === "I") {
+          this.pickups.push({
+            kind: "word",
+            id: "TIDE",
+            x: x + 4,
+            y: y + 8,
+            w: 28,
+            h: 20,
+            taken: this.save.words.includes("TIDE"),
+            label: "TIDE",
+          });
         } else if (ch === "D") {
           this.pickups.push({
             kind: "drop",
@@ -483,7 +518,7 @@ export class GameEngine {
     this.save.stage = id;
     if (!this.save.visited.includes(id)) this.save.visited.push(id);
     this.lastDone = new Set(this.currentTasks().filter((t) => t.done).map((t) => t.id));
-    if (id === "hub") this.say("Stem writes a wall. Shelf writes a platform. Continue opens the next unread ledger.");
+    if (id === "hub") this.say("Numbered doors are the first five. Continue is the only gate that keeps opening new ledgers through 60. Replay only repeats the last one.");
     this.persist();
     this.emit();
   }
@@ -513,7 +548,19 @@ export class GameEngine {
   }
 
   private isBossKind(kind: EnemyKind) {
-    return kind === "dualis" || kind === "tetrarch" || kind === "importer" || kind === "nullis" || kind === "endmark";
+    return (
+      kind === "dualis" ||
+      kind === "tetrarch" ||
+      kind === "importer" ||
+      kind === "nullis" ||
+      kind === "endmark" ||
+      kind === "summand" ||
+      kind === "difference" ||
+      kind === "product" ||
+      kind === "quotient" ||
+      kind === "infinitum" ||
+      kind === "remainder"
+    );
   }
 
   private bossKindFor(id: string): EnemyKind {
@@ -521,10 +568,16 @@ export class GameEngine {
     if (id === "stage2") return "importer";
     if (id === "stage5") return "nullis";
     const n = this.stageIndex(id);
-    if (n === STAGE_COUNT) return "endmark";
-    if (n % 10 === 0) return "tetrarch";
-    if (n % 10 === 5) return "nullis";
-    return "importer";
+    if (n === FIRST_BOOK) return "endmark";
+    if (n === STAGE_COUNT) return "remainder";
+    if (n === 35) return "summand";
+    if (n === 40) return "difference";
+    if (n === 45) return "product";
+    if (n === 50) return "quotient";
+    if (n === 55) return "infinitum";
+    if (n % 10 === 0) return n > FIRST_BOOK ? "product" : "tetrarch";
+    if (n % 10 === 5) return n > FIRST_BOOK ? "summand" : "nullis";
+    return n > FIRST_BOOK ? "difference" : "importer";
   }
 
   private markProgress() {
@@ -564,6 +617,18 @@ export class GameEngine {
       crossseal: { w: 44, h: 44, hp: 9, name: "4-Seal" },
       archivist: { w: 34, h: 46, hp: 8, name: "5-Clerk" },
       endmark: { w: 82, h: 86, hp: 56, name: "End-Mark · 8" },
+      plus: { w: 40, h: 42, hp: 8, name: "+" },
+      minus: { w: 38, h: 28, hp: 7, name: "−" },
+      times: { w: 40, h: 40, hp: 9, name: "×" },
+      divide: { w: 36, h: 44, hp: 8, name: "÷" },
+      pi: { w: 38, h: 42, hp: 9, name: "π" },
+      radix: { w: 24, h: 28, hp: 4, name: "." },
+      summand: { w: 76, h: 80, hp: 42, name: "Summand · +" },
+      difference: { w: 74, h: 70, hp: 44, name: "Difference · −" },
+      product: { w: 78, h: 78, hp: 48, name: "Product · ×" },
+      quotient: { w: 72, h: 84, hp: 50, name: "Quotient · ÷" },
+      infinitum: { w: 86, h: 70, hp: 54, name: "Infinitum · ∞" },
+      remainder: { w: 90, h: 88, hp: 64, name: "Remainder · %" },
     };
     const s = sizes[kind];
     const hp = this.hard ? Math.ceil(s.hp * 1.35) : s.hp;
@@ -645,7 +710,7 @@ export class GameEngine {
       if (a.attack || a.jump || a.interact) {
         this.introPage += 1;
         this.audio.sfxUi();
-        if (this.introPage > 2) this.loadLevel("hub");
+        if (this.introPage > 3) this.loadLevel("hub");
         this.emit();
       }
       return;
@@ -699,7 +764,8 @@ export class GameEngine {
       if (s.type === "laser") s.phase = (s.phase ?? 0) + dt;
     }
     this.walls = this.walls.filter((w) => {
-      w.life -= dt;
+      if (this.save.words.includes("TIDE") && w.kind === "plat") w.x += this.player.facing * 42 * dt;
+      w.life -= this.save.words.includes("TIDE") ? dt * 0.62 : dt;
       return w.life > 0;
     });
     this.burns = this.burns.filter((b) => {
@@ -717,6 +783,17 @@ export class GameEngine {
       for (const w of this.walls) {
         for (const e of this.enemies) {
           if (e.alive && aabb(e, w) && e.stun < 0.35 && !this.isBossKind(e.kind)) e.stun = 1.45;
+        }
+      }
+    }
+    for (const e of this.enemies) {
+      if (!e.alive || (e.kind !== "minus" && e.kind !== "difference")) continue;
+      for (const w of this.walls) {
+        const dx = w.x + w.w / 2 - (e.x + e.w / 2);
+        const dy = w.y + w.h / 2 - (e.y + e.h / 2);
+        if (Math.hypot(dx, dy) < 90) {
+          w.life -= 2.4 * dt;
+          if (w.life < 1) this.burst(w.x + w.w / 2, w.y, "#d45a4a", 4, "ink");
         }
       }
     }
@@ -770,6 +847,16 @@ export class GameEngine {
       p.jumpCut = false;
       p.squash = 0.74;
       this.audio.sfxJump();
+    } else if (p.jumpBuf > 0 && this.save.words.includes("FOLD") && this.wallCoyote > 0 && !p.grounded) {
+      p.vy = -505;
+      p.vx = this.wallDir * 240;
+      p.facing = this.wallDir;
+      p.jumpBuf = 0;
+      this.wallCoyote = 0;
+      p.jumpCut = false;
+      p.squash = 0.8;
+      this.audio.sfxJump();
+      this.burst(p.x + p.w / 2, p.y + p.h / 2, "#e8d48a", 6, "glyph");
     }
     if (p.roll > 0) {
       p.roll -= dt;
@@ -809,6 +896,29 @@ export class GameEngine {
     const wasGround = p.grounded;
     const fall = p.vy;
     this.moveActor(p, dt, large, a.down);
+    const wallL = this.blockedAt(p.x - 3, p.y + 6, 4, p.h - 12, large);
+    const wallR = this.blockedAt(p.x + p.w - 1, p.y + 6, 4, p.h - 12, large);
+    if (!p.grounded && (wallL || wallR)) {
+      this.wallCoyote = 0.12;
+      this.wallDir = wallL ? 1 : -1;
+    } else this.wallCoyote = Math.max(0, this.wallCoyote - dt);
+    for (const s of this.solids) {
+      if (s.type === "conveyor" && p.grounded && aabb({ x: p.x, y: p.y + p.h - 8, w: p.w, h: 10 }, s)) {
+        p.x += (s.phase ?? 1) * 110 * dt;
+      }
+      if (s.type === "bounce" && p.grounded && aabb({ x: p.x + 4, y: p.y + p.h - 8, w: p.w - 8, h: 10 }, s)) {
+        p.vy = -560;
+        p.grounded = false;
+        p.squash = 0.78;
+        this.audio.sfxJump();
+        this.burst(p.x + p.w / 2, p.y + p.h, "#e8d48a", 5, "glyph");
+      }
+      if (s.type === "fan" && aabb(p, s)) {
+        p.vy -= 2200 * dt;
+        if (p.vy < -320) p.vy = -320;
+        p.grounded = false;
+      }
+    }
     if (p.grounded && !wasGround) {
       if (fall > 280) {
         p.squash = 1.22;
@@ -885,6 +995,7 @@ export class GameEngine {
       if (s.type === "crumble" && s.broken) return false;
       if (s.type === "sluice") return false;
       if (s.type === "laser") return false;
+      if (s.type === "fan") return false;
       if (s.type === "spike") return false;
       if (s.type === "vent" && !large) return false;
       return true;
@@ -900,7 +1011,7 @@ export class GameEngine {
     for (const s of this.solidsNow(large)) {
       if (s.type === "spike") continue;
       if (!aabb(a, s)) continue;
-      if (s.type === "oneway" || s.type === "crumble") {
+      if (s.type === "oneway" || s.type === "crumble" || s.type === "bounce" || s.type === "conveyor") {
         if (axis !== "y" || a.vy < 0 || drop) continue;
         if (a.y + a.h - Math.max(8, a.vy * 0.02) > s.y + 10) continue;
       }
@@ -1536,6 +1647,106 @@ export class GameEngine {
         if (e.phase >= 2) this.shoot(e, -e.facing, 0.15);
       }
       if (e.grounded && Math.random() < 0.012) e.vy = -380;
+    } else if (e.kind === "plus" || e.kind === "summand") {
+      if (!e.grounded) e.vy += 1600 * dt;
+      e.facing = p.x > e.x ? 1 : -1;
+      e.vx = e.facing * (e.kind === "summand" ? 70 : 40);
+      this.moveActor(e, dt, e.kind === "summand");
+      if (e.aux > 1.6) {
+        e.aux = 0;
+        for (const o of this.enemies) {
+          if (o.alive && o !== e && Math.hypot(o.x - e.x, o.y - e.y) < 140) o.hp = Math.min(o.maxHp, o.hp + 1);
+        }
+        this.burst(e.x + e.w / 2, e.y, "#e8d48a", 8, "glyph");
+        if (e.kind === "summand") this.stampAt(p.x + p.w / 2, p.y + p.h - 4);
+      }
+    } else if (e.kind === "minus" || e.kind === "difference") {
+      if (!e.grounded) e.vy += 1600 * dt;
+      e.facing = p.x > e.x ? 1 : -1;
+      e.vx = e.facing * (e.kind === "difference" ? 90 : 55);
+      this.moveActor(e, dt, e.kind === "difference");
+      if (e.aux > 1.4) {
+        e.aux = 0;
+        this.shoot(e, e.facing, 0);
+        if (e.kind === "difference") this.shockwave(e);
+      }
+    } else if (e.kind === "times" || e.kind === "product") {
+      if (!e.grounded) e.vy += 1500 * dt;
+      e.facing = p.x > e.x ? 1 : -1;
+      e.vx = e.facing * 35;
+      this.moveActor(e, dt, e.kind === "product");
+      if (e.aux > (e.kind === "product" ? 2.2 : 2.8) && this.enemies.filter((x) => x.alive).length < 14) {
+        e.aux = 0;
+        this.enemies.push(this.spawnEnemy("radix", e.x + 20, e.y));
+        this.burst(e.x, e.y, "#c46ad4", 8, "glyph");
+      }
+    } else if (e.kind === "divide" || e.kind === "quotient") {
+      e.vx *= 0.85;
+      if (!e.grounded) e.vy += 1400 * dt;
+      this.moveActor(e, dt, e.kind === "quotient");
+      if (e.aux > 0.7) {
+        e.aux = 0;
+        this.shoot(e, 0, 1);
+        this.shoot(e, 0, -1);
+        if (e.kind === "quotient") {
+          this.shoot(e, 1, 0);
+          this.shoot(e, -1, 0);
+        }
+      }
+    } else if (e.kind === "pi") {
+      e.y += Math.sin(e.t * 2.2) * 18 * dt;
+      e.facing = p.x > e.x ? 1 : -1;
+      if (e.aux > 0.85) {
+        e.aux = 0;
+        const a = e.t * 2.2;
+        this.bullets.push({
+          x: e.x + e.w / 2,
+          y: e.y + e.h / 2,
+          vx: Math.cos(a) * 170,
+          vy: Math.sin(a) * 170,
+          r: 5,
+          from: "enemy",
+          dmg: 1,
+          life: 1.8,
+          kind: "shot",
+          alive: true,
+          pierce: 0,
+        });
+      }
+    } else if (e.kind === "radix") {
+      if (!e.grounded) e.vy += 900 * dt;
+      e.vx = e.facing * 140;
+      this.moveActor(e, dt, false);
+      if (e.aux > 0.9) {
+        e.aux = 0;
+        e.facing = (e.facing * -1) as 1 | -1;
+        e.vy = -220;
+      }
+    } else if (e.kind === "infinitum") {
+      e.x += Math.sin(e.t * 1.6) * 80 * dt;
+      e.y += Math.cos(e.t * 2.4) * 30 * dt;
+      e.facing = p.x > e.x ? 1 : -1;
+      if (e.aux > 0.55) {
+        e.aux = 0;
+        this.shoot(e, e.facing, 0.2);
+        this.shoot(e, -e.facing, -0.2);
+      }
+    } else if (e.kind === "remainder") {
+      if (!e.grounded) e.vy += 1500 * dt;
+      e.facing = p.x > e.x ? 1 : -1;
+      e.vx = e.facing * (90 + e.phase * 20);
+      this.moveActor(e, dt, true);
+      if (e.hp < e.maxHp * 0.5 && e.phase < 1) e.phase = 1;
+      if (e.aux > (e.phase ? 0.6 : 0.95)) {
+        e.aux = 0;
+        e.aux2 = (e.aux2 + 1) % 3;
+        if (e.aux2 === 0) this.shockwave(e);
+        else if (e.aux2 === 1) this.stampAt(p.x + p.w / 2, p.y + p.h - 4);
+        else {
+          this.mortar(e, e.facing, -0.8);
+          this.mortar(e, -e.facing, -0.8);
+        }
+      }
     } else {
       if (!e.grounded) e.vy += 1800 * dt;
       e.facing = p.x > e.x ? 1 : -1;
@@ -1716,9 +1927,25 @@ export class GameEngine {
     if (id === "stage4") return "The Coil is still counted shut.";
     if (id === "stage2") return "The Fort is still counted shut.";
     if (id === "stage5") return "The Ledger is still counted shut.";
-    if (id === "continue") return "Continue opens after the first five ledgers.";
-    if (id === "replay") return "Replay waits for a page you have already closed.";
+    if (id === "continue") return "Continue opens after the first five. Then it is the only door that keeps offering new ledgers through 60.";
+    if (id === "replay") return "Replay only repeats the last page you closed. New ledgers are on Continue.";
     return "Still counted shut.";
+  }
+
+  private doorPlaque(id: string): { title: string; sub: string } {
+    if (id === "continue") {
+      if (this.save.progress < 5) return { title: "CONTINUE", sub: "new ledgers 6–60 · after 5" };
+      if (this.save.progress >= STAGE_COUNT) return { title: "CONTINUE", sub: "all 60 written" };
+      const n = Math.min(STAGE_COUNT, this.save.progress + 1);
+      return { title: "CONTINUE", sub: `next new · ${n} of 30` };
+    }
+    if (id === "replay") {
+      if (this.save.progress < 1) return { title: "REPLAY", sub: "last cleared only" };
+      const last = lastClearedId(this.save.progress);
+      const name = last ? LEVELS[last]?.name ?? last : "";
+      return { title: "REPLAY", sub: `last only · ${name}` };
+    }
+    return { title: "", sub: "" };
   }
 
   private scribe(down: boolean) {
@@ -1735,6 +1962,7 @@ export class GameEngine {
     this.audio.sfxWord();
     const life = thick ? 7.2 : 5.2;
     const maxN = thick ? 4 : 3;
+    const cap = this.save.words.includes("TIDE") ? maxN + 1 : maxN;
     let c: Construct;
     if (down) {
       const w = thick ? 92 : 76;
@@ -1769,7 +1997,7 @@ export class GameEngine {
     if (this.save.words.includes("BURN")) {
       this.burns.push({ x: c.x - 6, y: c.y - 6, w: c.w + 12, h: c.h + 12, life: life * 0.9 });
     }
-    while (this.walls.length > maxN) this.walls.shift();
+    while (this.walls.length > cap) this.walls.shift();
     this.burst(c.x + c.w / 2, c.y + c.h / 2, "#5ee0c0", 8, "glyph");
   }
 
@@ -1802,9 +2030,15 @@ export class GameEngine {
     }
     for (const u of this.pickups) {
       if (u.kind === "door" && aabb(p, padBox(u, 28, 16))) {
-        this.nearHint = this.doorLocked(u.id)
-          ? this.doorShutLine(u.id)
-          : "E  enter  " + (u.label ?? "");
+        if (this.doorLocked(u.id)) this.nearHint = this.doorShutLine(u.id);
+        else if (u.id === "continue") {
+          this.nearHint =
+            this.save.progress >= STAGE_COUNT
+              ? "All 30 written. Replay only repeats the last."
+              : "E  Continue — the only door that keeps opening new ledgers until 60";
+        } else if (u.id === "replay") {
+          this.nearHint = "E  Replay — last cleared page only. New ledgers are on Continue.";
+        } else this.nearHint = "E  enter  " + (u.label ?? "");
       }
       if (u.kind === "portal" && aabb(p, padBox(u, 18, 12))) {
         this.nearHint = this.portalLocked() ? "Gate counted shut — drop the warden" : "E  enter  " + (u.label ?? "GATE");
@@ -1866,7 +2100,21 @@ export class GameEngine {
         const w = u.label as WordId;
         if (!this.save.words.includes(w)) this.save.words.push(w);
         this.audio.sfxWord();
-        this.say(w === "WALL" ? "Scribe thickens." : w === "BURN" ? "Scribe burns." : w === "RISE" ? "Shelves lift." : w === "LOCK" ? "Stems hold." : "Learned " + w);
+        this.say(
+          w === "WALL"
+            ? "Scribe thickens."
+            : w === "BURN"
+              ? "Scribe burns."
+              : w === "RISE"
+                ? "Shelves lift."
+                : w === "LOCK"
+                  ? "Stems hold."
+                  : w === "FOLD"
+                    ? "Stems kick. Jump off a wall you wrote."
+                    : w === "TIDE"
+                      ? "Shelves drift with you."
+                      : "Learned " + w,
+        );
         this.persist();
       } else if (u.kind === "drop") {
         u.taken = true;
@@ -1948,7 +2196,11 @@ export class GameEngine {
           this.say(this.doorShutLine(u.id));
           return true;
         }
-        if (u.id === "continue") this.loadLevel(nextStageId(this.save.progress));
+        if (u.id === "continue") {
+          if (this.save.progress >= STAGE_COUNT) {
+            this.say("All sixty ledgers are written. Replay only repeats the last one.");
+          } else this.loadLevel(nextStageId(this.save.progress));
+        }
         else if (u.id === "replay") {
           const last = lastClearedId(this.save.progress);
           if (last) this.loadLevel(last);
@@ -2074,7 +2326,7 @@ export class GameEngine {
     this.audio.unlock();
     this.audio.sfxUi();
     this.introPage += 1;
-    if (this.introPage > 2) this.loadLevel("hub");
+    if (this.introPage > 3) this.loadLevel("hub");
     this.emit();
   }
 
@@ -2278,6 +2530,14 @@ export class GameEngine {
       const w = pk("word", "LOCK");
       if (w) return { x: w.x, y: w.y, label: "LOCK" };
     }
+    if (id === "word-fold") {
+      const w = pk("word", "FOLD");
+      if (w) return { x: w.x, y: w.y, label: "FOLD" };
+    }
+    if (id === "word-tide") {
+      const w = pk("word", "TIDE");
+      if (w) return { x: w.x, y: w.y, label: "TIDE" };
+    }
     if (id === "drop-cap") {
       const d = pk("drop");
       if (d) return { x: d.x + 16, y: d.y, label: "DROP CAP" };
@@ -2296,7 +2556,7 @@ export class GameEngine {
     }
     if (id === "continue") {
       const d = this.pickups.find((u) => u.kind === "door" && u.id === "continue");
-      if (d) return { x: d.x + d.w / 2, y: d.y + 20, label: "CONT." };
+      if (d) return { x: d.x + d.w / 2, y: d.y + 20, label: "CONTINUE" };
     }
     if (id === "importer") {
       const b = this.enemies.find((e) => e.kind === "importer" && e.alive);
@@ -2504,18 +2764,26 @@ export class GameEngine {
       return;
     }
     ctx.fillStyle = locked ? "rgba(122,139,150,0.28)" : `rgba(94,224,192,${0.16 + pulse})`;
+    if (u.id === "continue" && !locked) ctx.fillStyle = `rgba(232,212,138,${0.18 + pulse})`;
     ctx.fillRect(x, y, u.w, u.h + 20);
-    ctx.strokeStyle = locked ? "#7a8b96" : "#5ee0c0";
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = locked ? "#7a8b96" : u.id === "continue" ? "#e8d48a" : "#5ee0c0";
+    ctx.lineWidth = u.id === "continue" ? 2.6 : 2;
     ctx.strokeRect(x + 2, y + 2, u.w - 4, u.h + 16);
     ctx.beginPath();
     ctx.moveTo(x + 8, y + 12);
     ctx.quadraticCurveTo(x + u.w / 2, y - 8, x + u.w - 8, y + 12);
     ctx.stroke();
+    const plaque = this.doorPlaque(u.id);
+    const title = plaque.title || u.label || "";
     ctx.fillStyle = "#e8ece8";
-    ctx.font = "600 11px 'Source Sans 3', sans-serif";
+    ctx.font = "700 12px 'Source Sans 3', sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(u.label ?? "", x + u.w / 2, y - 10);
+    ctx.fillText(title, x + u.w / 2, y - (plaque.sub ? 22 : 10));
+    if (plaque.sub) {
+      ctx.fillStyle = u.id === "continue" ? "#e8d48a" : "#8ec8d4";
+      ctx.font = "600 10px 'Source Sans 3', sans-serif";
+      ctx.fillText(plaque.sub, x + u.w / 2, y - 8);
+    }
   }
 
   private drawTitleScene(ctx: CanvasRenderingContext2D) {

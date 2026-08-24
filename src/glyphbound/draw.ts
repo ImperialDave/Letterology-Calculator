@@ -88,6 +88,12 @@ export function drawTiles(
         drawLaser(ctx, x, y, t, tx);
       } else if (ch === "F") {
         drawCaseFont(ctx, x, y, t);
+      } else if (ch === "/" || ch === "\\") {
+        drawConveyor(ctx, x, y, t, ch === "/");
+      } else if (ch === "T") {
+        drawBounce(ctx, x, y, t);
+      } else if (ch === ":") {
+        drawFan(ctx, x, y, t);
       }
     }
   }
@@ -246,6 +252,50 @@ function drawBlock(
     ctx.fillRect(x + TILE - 14, y + 12, 5, 5);
     ctx.fillStyle = "#140c1a";
     ctx.fillRect(x, y + TILE - 6, TILE, 6);
+  } else if (theme === "orbit") {
+    ctx.fillStyle = "#12101c";
+    ctx.fillRect(x, y, TILE + 0.5, TILE + 0.5);
+    ctx.fillStyle = "#1c1830";
+    ctx.fillRect(x + 2, y + 2, TILE - 4, TILE - 4);
+    if (top) {
+      ctx.fillStyle = "#e8d48a";
+      ctx.fillRect(x, y, TILE, 4);
+    }
+    ctx.strokeStyle = "rgba(232,212,138,0.35)";
+    ctx.beginPath();
+    ctx.arc(x + 24, y + 24, 11, 0.2, Math.PI * 1.8);
+    ctx.stroke();
+    ctx.fillStyle = "#0c0a14";
+    ctx.fillRect(x, y + TILE - 6, TILE, 6);
+  } else if (theme === "glacier") {
+    ctx.fillStyle = "#1a2a34";
+    ctx.fillRect(x, y, TILE + 0.5, TILE + 0.5);
+    ctx.fillStyle = "#2a4450";
+    ctx.fillRect(x + 2, y + 2, TILE - 4, TILE - 4);
+    if (top) {
+      ctx.fillStyle = "#c8e8f4";
+      ctx.fillRect(x, y, TILE, 5);
+      ctx.fillStyle = "#e8f6fc";
+      ctx.fillRect(x + 4, y + 1, TILE - 10, 2);
+    }
+    ctx.fillStyle = "rgba(200,232,244,0.12)";
+    ctx.fillRect(x + 10, y + 14, 6, 18);
+    ctx.fillStyle = "#122028";
+    ctx.fillRect(x, y + TILE - 6, TILE, 6);
+  } else if (theme === "remainder") {
+    ctx.fillStyle = "#1a100c";
+    ctx.fillRect(x, y, TILE + 0.5, TILE + 0.5);
+    ctx.fillStyle = "#2a1810";
+    ctx.fillRect(x + 2, y + 2, TILE - 4, TILE - 4);
+    if (top) {
+      ctx.fillStyle = "#e07040";
+      ctx.fillRect(x, y, TILE, 4);
+    }
+    ctx.fillStyle = "rgba(232,212,138,0.2)";
+    ctx.font = "700 16px 'Source Sans 3', sans-serif";
+    ctx.fillText("%", x + 16, y + 32);
+    ctx.fillStyle = "#120c08";
+    ctx.fillRect(x, y + TILE - 6, TILE, 6);
   } else {
     ctx.fillStyle = "#2a333c";
     ctx.fillRect(x, y, TILE + 0.5, TILE + 0.5);
@@ -384,6 +434,53 @@ function drawLaser(ctx: CanvasRenderingContext2D, x: number, y: number, t: numbe
     ctx.globalAlpha = 0.35;
     ctx.fillStyle = "#d45a4a";
     ctx.fillRect(x + 18, y, 12, TILE);
+  }
+  ctx.restore();
+}
+
+function drawConveyor(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, right: boolean) {
+  ctx.fillStyle = "#1a2228";
+  ctx.fillRect(x, y + 28, TILE, 12);
+  ctx.fillStyle = "#e8d48a";
+  ctx.fillRect(x, y + 28, TILE, 3);
+  const dir = right ? 1 : -1;
+  ctx.fillStyle = "#5ee0c0";
+  for (let i = 0; i < 4; i++) {
+    const ax = x + ((i * 14 + t * 40 * dir) % TILE + TILE) % TILE;
+    ctx.beginPath();
+    ctx.moveTo(ax, y + 32);
+    ctx.lineTo(ax + dir * 6, y + 36);
+    ctx.lineTo(ax, y + 40);
+    ctx.fill();
+  }
+}
+
+function drawBounce(ctx: CanvasRenderingContext2D, x: number, y: number, t: number) {
+  const pop = 1 + Math.sin(t * 8 + x) * 0.08;
+  ctx.fillStyle = "#2a2418";
+  ctx.fillRect(x + 4, y + 30, TILE - 8, 10);
+  ctx.fillStyle = "#e8d48a";
+  ctx.beginPath();
+  ctx.ellipse(x + TILE / 2, y + 30, 16 * pop, 7 * pop, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#5ee0c0";
+  ctx.fillRect(x + 18, y + 24, 12, 4);
+}
+
+function drawFan(ctx: CanvasRenderingContext2D, x: number, y: number, t: number) {
+  ctx.save();
+  ctx.globalAlpha = 0.22 + Math.sin(t * 10 + x) * 0.08;
+  ctx.fillStyle = "#8ec8d4";
+  ctx.fillRect(x + 18, y, 12, TILE);
+  ctx.strokeStyle = "#5ee0c0";
+  ctx.lineWidth = 1.4;
+  for (let i = 0; i < 4; i++) {
+    const yy = y + ((t * 80 + i * 12) % TILE);
+    ctx.beginPath();
+    ctx.moveTo(x + 10, yy);
+    ctx.lineTo(x + 24, yy - 6);
+    ctx.lineTo(x + 38, yy);
+    ctx.stroke();
   }
   ctx.restore();
 }
@@ -1354,6 +1451,92 @@ export function drawEnemy(ctx: CanvasRenderingContext2D, e: Enemy, camX: number,
     ctx.fillText("G", 0, 4 * s);
     tail(-12 * s, 12 * s);
     legs();
+  } else if (k === "plus" || k === "summand") {
+    const b = k === "summand" ? 1.35 : 1;
+    body(9 * b, () => {
+      ctx.moveTo(-14 * s * b, 0);
+      ctx.lineTo(14 * s * b, 0);
+      ctx.moveTo(0, -14 * s * b);
+      ctx.lineTo(0, 14 * s * b);
+    }, "#e8d48a");
+    energyCore(ctx, 0, 0, 3.4 * s * b, t, "#e8d48a");
+    head(12 * s * b, -8 * s * b, -0.25, 0.52 * b, k === "summand");
+    tail(-12 * s * b, 8 * s * b);
+    legs();
+  } else if (k === "minus" || k === "difference") {
+    const b = k === "difference" ? 1.3 : 1;
+    body(9 * b, () => {
+      ctx.moveTo(-16 * s * b, 0);
+      ctx.lineTo(16 * s * b, 0);
+    }, "#d45a4a");
+    energyCore(ctx, 0, 0, 3 * s * b, t, visor);
+    head(14 * s * b, -4 * s * b, -0.2, 0.5 * b, k === "difference");
+    tail(-14 * s * b, 4 * s * b);
+    legs();
+  } else if (k === "times" || k === "product") {
+    const b = k === "product" ? 1.3 : 1;
+    body(8.4 * b, () => {
+      ctx.moveTo(-12 * s * b, -12 * s * b);
+      ctx.lineTo(12 * s * b, 12 * s * b);
+      ctx.moveTo(12 * s * b, -12 * s * b);
+      ctx.lineTo(-12 * s * b, 12 * s * b);
+    }, "#c46ad4");
+    energyCore(ctx, 0, 0, 3.2 * s * b, t, "#c46ad4");
+    head(10 * s * b, -10 * s * b, -0.35, 0.5 * b, k === "product");
+    legs();
+  } else if (k === "divide" || k === "quotient") {
+    const b = k === "quotient" ? 1.3 : 1;
+    body(8.2 * b, () => {
+      ctx.moveTo(-12 * s * b, 8 * s * b);
+      ctx.lineTo(12 * s * b, -8 * s * b);
+    }, "#7fd0ff");
+    ctx.fillStyle = "#7fd0ff";
+    ctx.beginPath();
+    ctx.arc(0, -12 * s * b, 3.2 * s * b, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(0, 12 * s * b, 3.2 * s * b, 0, Math.PI * 2);
+    ctx.fill();
+    head(10 * s * b, -6 * s * b, -0.3, 0.5 * b, k === "quotient");
+    legs();
+  } else if (k === "pi") {
+    body(8.5, () => {
+      ctx.moveTo(-12 * s, -12 * s);
+      ctx.lineTo(12 * s, -12 * s);
+      ctx.moveTo(-6 * s, -12 * s);
+      ctx.lineTo(-8 * s, 16 * s);
+      ctx.moveTo(6 * s, -12 * s);
+      ctx.quadraticCurveTo(10 * s, 4 * s, 4 * s, 16 * s);
+    }, "#9af8de");
+    energyCore(ctx, 0, -4 * s, 3 * s, t, aether);
+    head(10 * s, -10 * s, -0.25, 0.52);
+    tail(-8 * s, 14 * s);
+    legs();
+  } else if (k === "radix") {
+    body(6.5, () => {
+      ctx.arc(0, 4 * s, 7 * s, 0, Math.PI * 2);
+    });
+    head(6 * s, -2 * s, -0.2, 0.4);
+  } else if (k === "infinitum") {
+    body(9.4, () => {
+      ctx.ellipse(-10 * s, 0, 10 * s, 8 * s, 0, 0, Math.PI * 2);
+      ctx.ellipse(10 * s, 0, 10 * s, 8 * s, 0, 0, Math.PI * 2);
+    }, "#e8d48a");
+    energyCore(ctx, -10 * s, 0, 3.4 * s, t, visor);
+    energyCore(ctx, 10 * s, 0, 3.4 * s, t + 1, aether);
+    head(18 * s, -8 * s, -0.3, 0.62, true);
+    tail(-18 * s, 6 * s);
+  } else if (k === "remainder") {
+    body(10, () => {
+      ctx.moveTo(-8 * s, -16 * s);
+      ctx.lineTo(6 * s, 16 * s);
+      ctx.ellipse(-6 * s, -10 * s, 7 * s, 7 * s, 0, 0, Math.PI * 2);
+      ctx.ellipse(6 * s, 10 * s, 7 * s, 7 * s, 0, 0, Math.PI * 2);
+    }, "#e8d48a");
+    energyCore(ctx, 0, 0, 4.2 * s, t, "#e8d48a");
+    head(12 * s, -12 * s, -0.4, 0.7, true);
+    tail(-12 * s, 12 * s);
+    legs();
   } else {
     body(8, () => {
       ctx.ellipse(0, 0, 11 * s, 15 * s, 0, 0, Math.PI * 2);
@@ -1376,7 +1559,19 @@ export function drawEnemy(ctx: CanvasRenderingContext2D, e: Enemy, camX: number,
     ctx.stroke();
     ctx.restore();
   }
-  if (e.kind === "dualis" || e.kind === "tetrarch" || e.kind === "importer" || e.kind === "nullis" || e.kind === "endmark") {
+  if (
+    e.kind === "dualis" ||
+    e.kind === "tetrarch" ||
+    e.kind === "importer" ||
+    e.kind === "nullis" ||
+    e.kind === "endmark" ||
+    e.kind === "summand" ||
+    e.kind === "difference" ||
+    e.kind === "product" ||
+    e.kind === "quotient" ||
+    e.kind === "infinitum" ||
+    e.kind === "remainder"
+  ) {
     const ratio = e.hp / e.maxHp;
     ctx.fillStyle = "rgba(0,0,0,0.5)";
     ctx.fillRect(e.x - camX, e.y - camY - 10, e.w, 4);

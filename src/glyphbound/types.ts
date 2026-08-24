@@ -12,13 +12,25 @@ export type Mode =
   | "codex";
 
 export type RelicId = "dropCap" | "spine" | "copper" | "counter";
-export type WordId = "WALL" | "BURN" | "RISE" | "LOCK";
-export type ThemeId = "hub" | "street" | "fort" | "canal" | "coil" | "vault" | "abyss" | "spire";
+export type WordId = "WALL" | "BURN" | "RISE" | "LOCK" | "FOLD" | "TIDE";
+export type ThemeId =
+  | "hub"
+  | "street"
+  | "fort"
+  | "canal"
+  | "coil"
+  | "vault"
+  | "abyss"
+  | "spire"
+  | "orbit"
+  | "glacier"
+  | "remainder";
 
 /** hub + stage1..stageN. N is STAGE_COUNT. */
 export type LevelId = "hub" | `stage${number}`;
 
-export const STAGE_COUNT = 30;
+export const STAGE_COUNT = 60;
+export const FIRST_BOOK = 30;
 
 export type EnemyKind =
   | "one"
@@ -43,7 +55,19 @@ export type EnemyKind =
   | "gradient"
   | "crossseal"
   | "archivist"
-  | "endmark";
+  | "endmark"
+  | "plus"
+  | "minus"
+  | "times"
+  | "divide"
+  | "pi"
+  | "radix"
+  | "summand"
+  | "difference"
+  | "product"
+  | "quotient"
+  | "infinitum"
+  | "remainder";
 
 export interface Rect {
   x: number;
@@ -152,7 +176,7 @@ export interface Solid {
   y: number;
   w: number;
   h: number;
-  type: "solid" | "oneway" | "vent" | "break" | "spike" | "laser" | "sluice" | "crumble";
+  type: "solid" | "oneway" | "vent" | "break" | "spike" | "laser" | "sluice" | "crumble" | "conveyor" | "bounce" | "fan";
   broken?: boolean;
   phase?: number;
 }

@@ -202,6 +202,52 @@ function drawWeather(ctx: CanvasRenderingContext2D, kind: Weather, camX: number,
     ctx.beginPath();
     ctx.arc(w * 0.5, 80, 90 + Math.sin(t) * 6, 0, Math.PI * 2);
     ctx.stroke();
+  } else if (kind === "hail") {
+    ctx.fillStyle = "#e8ece8";
+    ctx.globalAlpha = 0.4 * layer;
+    for (let i = 0; i < 28; i++) {
+      const rx = ((i * 53 + t * 180 - camX * 0.4) % (w + 16)) - 8;
+      const ry = ((i * 71 + t * 260) % (h + 16)) - 8;
+      ctx.fillRect(rx, ry, 2.4, 3.4);
+    }
+  } else if (kind === "gold") {
+    ctx.fillStyle = accent;
+    ctx.globalAlpha = 0.32 * layer;
+    for (let i = 0; i < 24; i++) {
+      const rx = ((i * 79 + t * 14 - camX * 0.18) % (w + 20)) - 10;
+      const ry = 16 + (i * 41 + Math.sin(t * 0.8 + i) * 10) % (h - 30);
+      ctx.beginPath();
+      ctx.arc(rx, ry, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (kind === "lightning") {
+    if (Math.sin(t * 7) > 0.92) {
+      ctx.fillStyle = accent;
+      ctx.globalAlpha = 0.18 * layer;
+      ctx.fillRect(0, 0, w, h);
+    }
+    ctx.strokeStyle = accent;
+    ctx.globalAlpha = 0.35 * layer;
+    ctx.lineWidth = 1.6;
+    for (let i = 0; i < 3; i++) {
+      const x0 = ((i * 211 + Math.floor(t * 2) * 40) % w);
+      ctx.beginPath();
+      ctx.moveTo(x0, 0);
+      ctx.lineTo(x0 + 12, 40);
+      ctx.lineTo(x0 - 8, 80);
+      ctx.lineTo(x0 + 10, 130);
+      ctx.stroke();
+    }
+  } else if (kind === "void") {
+    ctx.fillStyle = accent;
+    ctx.globalAlpha = 0.12 * layer;
+    for (let i = 0; i < 10; i++) {
+      const rx = ((i * 97 + t * 8 - camX * 0.1) % (w + 40)) - 20;
+      const ry = 40 + (i * 53) % (h - 60);
+      ctx.beginPath();
+      ctx.arc(rx, ry, 10 + Math.sin(t + i) * 4, 0, Math.PI * 2);
+      ctx.stroke();
+    }
   }
   ctx.restore();
 }
@@ -224,6 +270,12 @@ function drawMid(ctx: CanvasRenderingContext2D, d: DistrictLook, camX: number, t
     docks: midDocks,
     foundry: midFoundry,
     forest: midForest,
+    lattice: midLattice,
+    orrery: midOrrery,
+    glacier: midGlacier,
+    glass: midGlass,
+    garden: midGarden,
+    script: midScript,
   };
   fn[d.mid](ctx, d, camX, t, index);
 }
@@ -548,6 +600,107 @@ function midForest(ctx: CanvasRenderingContext2D, d: DistrictLook, camX: number)
     ctx.arc(x + 20, h - 100, 10, 0, Math.PI * 2);
     ctx.fill();
     ctx.globalAlpha = 0.3;
+  }
+  ctx.globalAlpha = 1;
+}
+
+function midLattice(ctx: CanvasRenderingContext2D, d: DistrictLook, camX: number) {
+  const w = VIEW_W;
+  const h = VIEW_H;
+  ctx.strokeStyle = d.accent;
+  ctx.globalAlpha = 0.18;
+  ctx.lineWidth = 1.4;
+  for (let i = 0; i < 8; i++) {
+    const x = ((i * 90 - camX * 0.14) % (w + 80)) - 20;
+    ctx.beginPath();
+    ctx.moveTo(x, h - 40);
+    ctx.lineTo(x + 40, h - 200);
+    ctx.lineTo(x + 80, h - 40);
+    ctx.stroke();
+    ctx.strokeRect(x + 16, h - 160, 48, 48);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function midOrrery(ctx: CanvasRenderingContext2D, d: DistrictLook, camX: number, t: number) {
+  const w = VIEW_W;
+  ctx.strokeStyle = d.accent;
+  ctx.globalAlpha = 0.28;
+  for (let i = 0; i < 5; i++) {
+    const x = ((i * 160 - camX * 0.08) % (w + 120)) - 40;
+    const y = 90 + i * 18;
+    ctx.beginPath();
+    ctx.arc(x, y, 28 + i * 6, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x + Math.cos(t + i) * (28 + i * 6), y + Math.sin(t + i) * (18 + i * 3), 4, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function midGlacier(ctx: CanvasRenderingContext2D, d: DistrictLook, camX: number) {
+  const w = VIEW_W;
+  const h = VIEW_H;
+  ctx.globalAlpha = 0.28;
+  for (let i = 0; i < 8; i++) {
+    const x = ((i * 110 - camX * 0.16) % (w + 140)) - 50;
+    ctx.fillStyle = i % 2 ? "#8aa8bc" : "#6a889c";
+    ctx.beginPath();
+    ctx.moveTo(x, h);
+    ctx.lineTo(x + 40, h - 140 - (i % 3) * 30);
+    ctx.lineTo(x + 80, h);
+    ctx.fill();
+    ctx.fillStyle = d.accent;
+    ctx.globalAlpha = 0.1;
+    ctx.fillRect(x + 30, h - 80, 8, 80);
+    ctx.globalAlpha = 0.28;
+  }
+  ctx.globalAlpha = 1;
+}
+
+function midGlass(ctx: CanvasRenderingContext2D, d: DistrictLook, camX: number, t: number) {
+  const w = VIEW_W;
+  const h = VIEW_H;
+  ctx.globalAlpha = 0.2;
+  for (let i = 0; i < 10; i++) {
+    const x = ((i * 70 - camX * 0.12) % (w + 90)) - 30;
+    ctx.strokeStyle = d.accent;
+    ctx.strokeRect(x, h - 200 + Math.sin(t + i) * 4, 36, 160);
+    ctx.fillStyle = d.accent;
+    ctx.globalAlpha = 0.06;
+    ctx.fillRect(x, h - 200, 36, 160);
+    ctx.globalAlpha = 0.2;
+  }
+  ctx.globalAlpha = 1;
+}
+
+function midGarden(ctx: CanvasRenderingContext2D, d: DistrictLook, camX: number, t: number) {
+  const w = VIEW_W;
+  const h = VIEW_H;
+  ctx.globalAlpha = 0.32;
+  for (let i = 0; i < 14; i++) {
+    const x = ((i * 70 - camX * 0.1) % (w + 80)) - 20;
+    ctx.fillStyle = "#1a2a18";
+    ctx.fillRect(x + 10, h - 70, 5, 70);
+    ctx.fillStyle = d.accent;
+    ctx.beginPath();
+    ctx.ellipse(x + 12, h - 78 + Math.sin(t + i) * 3, 14, 8, t + i, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function midScript(ctx: CanvasRenderingContext2D, d: DistrictLook, camX: number, t: number) {
+  const w = VIEW_W;
+  ctx.globalAlpha = 0.28;
+  ctx.fillStyle = d.accent;
+  const marks = ["+", "−", "×", "÷", "%", "∞", "π", "Σ"];
+  for (let i = 0; i < 12; i++) {
+    const x = ((i * 150 - camX * 0.07) % (w + 60)) - 20;
+    const y = 50 + (i * 41) % 200;
+    ctx.font = `${22 + (i % 4) * 8}px "Cormorant Garamond", serif`;
+    ctx.fillText(marks[i % marks.length], x, y + Math.sin(t * 0.6 + i) * 5);
   }
   ctx.globalAlpha = 1;
 }
