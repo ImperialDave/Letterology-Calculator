@@ -29,7 +29,6 @@ export const defaultSave = (): SaveData => ({
   powerups: [],
   talked: [],
   visited: [],
-  letter: "c",
 });
 
 export function loadSave(): SaveData {
@@ -48,15 +47,12 @@ export function loadSave(): SaveData {
       maxShield: Math.max(3, parsed.maxShield ?? 3),
       talked: parsed.talked ?? [],
       visited: parsed.visited ?? [],
-      letter: parsed.letter === "s" || parsed.letter === "b" || parsed.letter === "e" || parsed.letter === "r" || parsed.letter === "c"
-        ? parsed.letter
-        : "c",
       progress: Math.max(0, parsed.progress ?? 0),
     };
     if (merged.progress < 1 && merged.stage1) merged.progress = Math.max(merged.progress, 1);
-    if (merged.progress < 2 && merged.stage2) merged.progress = Math.max(merged.progress, 2);
     if (merged.progress < 3 && merged.stage3) merged.progress = Math.max(merged.progress, 3);
     if (merged.progress < 4 && merged.stage4) merged.progress = Math.max(merged.progress, 4);
+    if (merged.progress < 2 && merged.stage2) merged.progress = Math.max(merged.progress, 2);
     if (merged.progress < 5 && merged.stage5) merged.progress = Math.max(merged.progress, 5);
     return merged;
   } catch {
