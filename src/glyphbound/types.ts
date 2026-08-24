@@ -13,8 +13,12 @@ export type Mode =
 
 export type RelicId = "dropCap" | "spine" | "copper" | "counter";
 export type WordId = "WALL" | "BURN" | "RISE" | "LOCK";
-export type ThemeId = "hub" | "street" | "fort" | "canal" | "coil" | "vault";
-export type LevelId = "hub" | "stage1" | "stage2" | "stage3" | "stage4" | "stage5";
+export type ThemeId = "hub" | "street" | "fort" | "canal" | "coil" | "vault" | "abyss" | "spire";
+
+/** hub + stage1..stageN. N is STAGE_COUNT. */
+export type LevelId = "hub" | `stage${number}`;
+
+export const STAGE_COUNT = 30;
 
 export type EnemyKind =
   | "one"
@@ -31,7 +35,16 @@ export type EnemyKind =
   | "dualis"
   | "tetrarch"
   | "importer"
-  | "nullis";
+  | "nullis"
+  // Second Landing
+  | "triad" // ∴ Triad-Splitter
+  | "nullring" // ⌀ Null-Ring
+  | "mobius" // ∞ Möbius Coil
+  | "summoner" // Σ Summoner
+  | "gradient" // ∇ Gradient
+  | "crossseal" // ⊗ Cross-Seal
+  | "archivist" // ϖ Archivist
+  | "endmark"; // Ω End-Mark
 
 export interface Rect {
   x: number;
@@ -191,7 +204,7 @@ export interface Player {
 export interface TaskDef {
   id: string;
   text: string;
-  need?: "stage1" | "stage2" | "stage3" | "stage4" | "stage5";
+  need?: number; // minimum progress (stage index) required to show this task
 }
 
 export interface TaskSnap {
@@ -207,6 +220,9 @@ export interface SaveData {
   party: LetterId[];
   relics: RelicId[];
   words: WordId[];
+  /** Highest stage index cleared (1..STAGE_COUNT). 0 = nothing cleared. */
+  progress: number;
+  /** Milestone flags kept for compatibility and special doors. */
   stage1: boolean;
   stage2: boolean;
   stage3: boolean;
@@ -255,6 +271,7 @@ export interface UiSnap {
   stage3: boolean;
   stage4: boolean;
   stage5: boolean;
+  progress: number;
   transforming: number;
   shield: number;
   maxShield: number;
