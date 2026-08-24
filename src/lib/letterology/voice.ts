@@ -72,7 +72,7 @@ export const VOICE = {
     "The club keeps a well. Drill the crust, haul ore, sell it, go deeper. Three claims stay in this browser.",
   wellHome: "The club keeps a well. A descent, not a reading.",
   glyphLede:
-    "A side-scroller. You play as the letter c against living numbers. Progress stays in this browser.",
+    "Play as the letter c against living numbers. Sixty ledgers. The rest of the book is still being written.",
   glyphHome: "The club keeps a side-scroller. Letters against numbers.",
 } as const;
 
