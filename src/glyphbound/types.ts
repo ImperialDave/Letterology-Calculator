@@ -22,11 +22,14 @@ export type EnemyKind =
   | "two"
   | "three"
   | "four"
+  | "five"
   | "six"
+  | "seven"
   | "eight"
   | "dummy"
   | "dualis"
-  | "tetrarch";
+  | "tetrarch"
+  | "importer";
 
 export interface Rect {
   x: number;
@@ -86,7 +89,20 @@ export interface Enemy {
 }
 
 export interface Pickup {
-  kind: "ink" | "heart" | "word" | "relic" | "recruit" | "door" | "case" | "check" | "drop" | "fang" | "scale" | "portal";
+  kind:
+    | "ink"
+    | "heart"
+    | "word"
+    | "relic"
+    | "recruit"
+    | "door"
+    | "case"
+    | "check"
+    | "drop"
+    | "fang"
+    | "scale"
+    | "portal"
+    | "secret";
   id: string;
   x: number;
   y: number;
