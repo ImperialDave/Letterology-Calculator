@@ -1,1 +1,1 @@
-PLACEHOLDER_WILL_REPLACE
+// temporary restore marker — full content follows in next commit
