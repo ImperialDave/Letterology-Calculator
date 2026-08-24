@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
-import { Link } from "@tanstack/react-router";
 import { GameEngine } from "@/glyphbound/engine";
 import type { UiSnap } from "@/glyphbound/types";
 import { Pause, Volume2, VolumeX } from "lucide-react";
 
 const INTRO = [
   "Calculara was a manuscript before it was an equation. Letters walked it. Words were weather.",
-  "Then the Decimal Dominion rounded magic down. Temples became server farms. You were posted as a warning mark on a coolant pipe: a lowercase c nobody counted.",
-  "A Wordstone shard lodged in your open curve. The cell is waiting. The Drop Cap still remembers how a letter used to begin a page.",
+  "G opened the ports. Ships of digits landed overnight. The Decimal Dominion rounded magic down and filed every letter that would stand in line.",
+  "You were posted as a warning mark: a lowercase c nobody counted. The Drop Cap still remembers how a letter used to begin a page. Thirty ledgers wait. Willingness, not fate, turns them.",
 ];
 
 function ControlsCard() {
@@ -24,7 +23,7 @@ function ControlsCard() {
         <span className="text-fg">K</span>
         <span>Skill (dash / cage / cut)</span>
         <span className="text-fg">L</span>
-        <span>Scribe · pull stick down + Scribe for a shelf</span>
+        <span>Stem wall · hold down, then L, for a Shelf</span>
         <span className="text-fg">E</span>
         <span>Talk / enter · appears on touch when you can</span>
         <span className="text-fg">1–3</span>
@@ -35,7 +34,7 @@ function ControlsCard() {
         <span>Always on · blocks every hit</span>
       </div>
       <p className="mt-3 text-[11px] leading-snug text-subtle">
-        Touch: left half is a floating stick. Jump sits under your right thumb. Fang is next to it. Talk only shows when something is in reach.
+        Touch: left stick to move. Jump under the right thumb. Fang beside it. Stem and Shelf are separate so you do not fight the stick while you write. Talk only shows when something is in reach.
       </p>
     </div>
   );
@@ -68,6 +67,8 @@ const emptyUi = (): UiSnap => ({
   stage2: false,
   stage3: false,
   stage4: false,
+  stage5: false,
+  progress: 0,
   transforming: 0,
   shield: 3,
   maxShield: 3,
@@ -106,7 +107,6 @@ export function Glyphbound() {
   return (
     <div
       ref={wrapRef}
-      data-glyphbound
       className="relative h-dvh w-full overflow-hidden bg-bg text-fg touch-none select-none"
       style={{ touchAction: "none" }}
     >
@@ -120,6 +120,9 @@ export function Glyphbound() {
               Glyphbound
             </h1>
             <p className="mt-2 font-display text-xl italic text-accent">Case of the Crescent</p>
+            {ui.progress > 0 && (
+              <p className="mt-3 text-sm tracking-wide text-muted">Ledger {ui.progress} of 30 closed</p>
+            )}
           </div>
           <div className="flex w-full max-w-sm flex-col gap-3">
             <button
@@ -180,13 +183,6 @@ export function Glyphbound() {
                 )}
               </>
             )}
-            <Link
-              to="/"
-              search={{ club: true }}
-              className="inline-flex h-11 items-center justify-center font-display text-xs tracking-[0.14em] uppercase text-muted hover:text-fg"
-            >
-              Back to the club
-            </Link>
           </div>
         </div>
       )}
@@ -220,7 +216,10 @@ export function Glyphbound() {
         <div className="absolute inset-0 flex items-center justify-center bg-bg/70 px-6">
           <div className="w-full max-w-sm max-h-[90dvh] overflow-y-auto rounded-xl border border-border bg-surface p-6">
             <h2 className="font-display text-3xl">Paused</h2>
-            <p className="mt-1 text-sm text-muted">{ui.stage}</p>
+            <p className="mt-1 text-sm text-muted">
+              {ui.stage}
+              {ui.progress > 0 ? ` · ${ui.progress}/30` : ""}
+            </p>
             {ui.tasks.length > 0 && (
               <div className="mt-3 rounded-lg border border-border bg-elevated/80 p-3">
                 <p className="mb-1 text-[10px] uppercase tracking-[0.2em] text-accent">Objectives</p>
@@ -260,13 +259,6 @@ export function Glyphbound() {
               >
                 Return to Stacks
               </button>
-              <Link
-                to="/"
-                search={{ club: true }}
-                className="flex h-11 items-center justify-center rounded-lg border border-border font-medium text-muted"
-              >
-                Back to the club
-              </Link>
             </div>
           </div>
         </div>
@@ -291,11 +283,11 @@ export function Glyphbound() {
       {ui.mode === "win" && (
         <div className="absolute inset-0 flex items-center justify-center bg-bg/80 px-6">
           <div className="max-w-md text-center">
-            <p className="text-sm uppercase tracking-[0.25em] text-accent">Tetrarch falls</p>
-            <h2 className="mt-2 font-display text-5xl">A chapter, not the book</h2>
+            <p className="text-sm uppercase tracking-[0.25em] text-accent">End-Mark falls</p>
+            <h2 className="mt-2 font-display text-5xl">The last sentence is yours</h2>
             <p className="mt-4 text-muted leading-relaxed">
-              Capital C stands in a broken 4. Zero Prime still holds the rest of the equation. The cell has ink left
-              to spend.
+              Thirty ledgers, closed. The Dominion still counts, but it has to answer now. G opened the ports.
+              You kept writing. Willingness, not fate, turned the page.
             </p>
             <button
               type="button"
@@ -398,7 +390,7 @@ export function Glyphbound() {
               data-role="word"
               className="rounded-sm bg-accent px-2 py-1 text-xs tracking-wider text-bg"
             >
-              SCRIBE
+              STEM
             </button>
             {ui.words.map((w) => (
               <span key={w} className="rounded-sm bg-surface/70 px-2 py-1 text-[10px] tracking-wider text-muted">
@@ -569,6 +561,13 @@ function MobilePad({
         >
           ↓
         </button>
+        <button
+          type="button"
+          data-role="shelf"
+          className="gb-pad-btn pointer-events-auto absolute bottom-[4.1rem] left-[6.6rem] flex h-11 w-11 items-center justify-center rounded-full border border-accent/40 bg-surface/55 text-[10px] font-medium tracking-wide text-accent"
+        >
+          Shelf
+        </button>
       </div>
 
       <div
@@ -591,10 +590,10 @@ function MobilePad({
         </button>
         <button
           type="button"
-          data-role="word"
+          data-role="stem"
           className="gb-pad-btn pointer-events-auto absolute bottom-[5.6rem] right-[5.7rem] flex h-[2.85rem] w-[2.85rem] items-center justify-center rounded-full border border-accent/35 bg-surface/55 text-[10px] font-medium tracking-wide text-accent"
         >
-          Scribe
+          Stem
         </button>
         <button
           type="button"

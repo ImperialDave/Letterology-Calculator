@@ -52,7 +52,7 @@ export function drawParallax(
       const px = ((i * 173 - camX * 0.08) % (w + 80)) - 40;
       const py = 40 + (i * 37) % 220;
       ctx.fillStyle = i % 2 ? "#c9b896" : "#8a7a62";
-      ctx.font = `${18 + (i % 5) * 6}px "Fraunces", serif`;
+      ctx.font = `${18 + (i % 5) * 6}px "Cormorant Garamond", serif`;
       ctx.fillText(["Aa", "Ee", "Ss", "Rr", "Mm"][i % 5], px, py + Math.sin(t + i) * 6);
     }
     ctx.globalAlpha = 0.12;
@@ -108,7 +108,7 @@ export function drawParallax(
       }
       if (i % 4 === 0) {
         ctx.fillStyle = "rgba(212,90,74,0.55)";
-        ctx.font = "700 28px 'Source Serif 4', sans-serif";
+        ctx.font = "700 28px 'Source Sans 3', sans-serif";
         ctx.fillText(String((i * 3) % 10), x + bw * 0.25, base - bh + 32);
       }
     }
@@ -203,6 +203,81 @@ export function drawParallax(
       const ry = (i * 41 + t * 70) % h;
       ctx.fillRect(rx, ry, 2, 2);
     }
+  } else if (theme === "vault") {
+    const vg = ctx.createLinearGradient(0, 0, 0, h);
+    vg.addColorStop(0, "#0c1018");
+    vg.addColorStop(0.5, "#121820");
+    vg.addColorStop(1, "#080c12");
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, w, h);
+    ctx.globalAlpha = 0.22;
+    ctx.strokeStyle = "#8ec8d4";
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 6; i++) {
+      const x = ((i * 180 - camX * 0.12) % (w + 160)) - 50;
+      ctx.strokeRect(x, 40 + (i % 3) * 18, 70, 110);
+      ctx.beginPath();
+      ctx.moveTo(x + 8, 40);
+      ctx.lineTo(x + 35, 18);
+      ctx.lineTo(x + 62, 40);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 0.18;
+    ctx.fillStyle = "#5ee0c0";
+    for (let i = 0; i < 20; i++) {
+      const rx = ((i * 73 - camX * 0.3) % (w + 20)) - 8;
+      ctx.fillRect(rx, 30 + (i % 5) * 40, 2, 40);
+    }
+  } else if (theme === "abyss") {
+    const ag = ctx.createLinearGradient(0, 0, 0, h);
+    ag.addColorStop(0, "#06080e");
+    ag.addColorStop(0.55, "#0a1018");
+    ag.addColorStop(1, "#04060a");
+    ctx.fillStyle = ag;
+    ctx.fillRect(0, 0, w, h);
+    ctx.globalAlpha = 0.35;
+    for (let i = 0; i < 12; i++) {
+      const x = ((i * 130 - camX * 0.08) % (w + 140)) - 40;
+      ctx.fillStyle = i % 2 ? "#101820" : "#0c141c";
+      ctx.beginPath();
+      ctx.moveTo(x, h);
+      ctx.lineTo(x + 40, h - 80 - (i % 4) * 30);
+      ctx.lineTo(x + 80, h);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 0.25;
+    ctx.fillStyle = "#7a8b96";
+    for (let i = 0; i < 30; i++) {
+      const rx = ((i * 51 + t * 12 - camX * 0.2) % (w + 12)) - 6;
+      const ry = (i * 37 + t * 8) % h;
+      ctx.beginPath();
+      ctx.arc(rx, ry, 1.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (theme === "spire") {
+    const sg = ctx.createLinearGradient(0, 0, 0, h);
+    sg.addColorStop(0, "#141018");
+    sg.addColorStop(0.4, "#1c1824");
+    sg.addColorStop(1, "#0c0a10");
+    ctx.fillStyle = sg;
+    ctx.fillRect(0, 0, w, h);
+    ctx.globalAlpha = 0.28;
+    ctx.fillStyle = "#2a2434";
+    for (let i = 0; i < 8; i++) {
+      const x = ((i * 160 - camX * 0.14) % (w + 180)) - 60;
+      const bh = 140 + (i % 3) * 40;
+      ctx.fillRect(x, h - bh, 36, bh);
+      ctx.fillStyle = "rgba(94,224,192,0.12)";
+      ctx.fillRect(x + 12, h - bh, 4, bh);
+      ctx.fillStyle = "#2a2434";
+    }
+    ctx.globalAlpha = 0.4;
+    ctx.strokeStyle = "#5ee0c0";
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(w * 0.5 - camX * 0.05, 20);
+    ctx.lineTo(w * 0.5 - camX * 0.05, h);
+    ctx.stroke();
   } else {
     const g = ctx.createLinearGradient(0, 0, 0, h);
     g.addColorStop(0, "#101218");
@@ -301,6 +376,8 @@ export function drawTiles(
         drawVent(ctx, x, y, t);
       } else if (ch === "^") {
         drawSpikes(ctx, x, y, t);
+      } else if (ch === "|") {
+        drawLaser(ctx, x, y, t, tx);
       } else if (ch === "F") {
         drawCaseFont(ctx, x, y, t);
       }
@@ -337,7 +414,7 @@ function drawBlock(
       for (let i = 0; i < 4; i++) ctx.fillRect(x + 8 + i * 10, y + 3, 3, 3);
     }
     ctx.fillStyle = "rgba(201,184,150,0.18)";
-    ctx.font = "italic 22px 'Fraunces', serif";
+    ctx.font = "italic 22px 'Cormorant Garamond', serif";
     ctx.fillText(["e", "s", "r", "n", "c", "a"][stamp], x + 14, y + 32);
     if (stamp === 0) {
       ctx.strokeStyle = "rgba(0,0,0,0.35)";
@@ -366,6 +443,56 @@ function drawBlock(
     ctx.fillRect(x + TILE - 12, y + 6, 5, 5);
     ctx.fillRect(x + 6, y + TILE - 12, 5, 5);
     ctx.fillRect(x + TILE - 12, y + TILE - 12, 5, 5);
+  } else if (theme === "vault") {
+    ctx.fillStyle = "#141c24";
+    ctx.fillRect(x, y, TILE + 0.5, TILE + 0.5);
+    ctx.fillStyle = "#1c2832";
+    ctx.fillRect(x + 2, y + 2, TILE - 4, TILE - 4);
+    if (top) {
+      ctx.fillStyle = "#8ec8d4";
+      ctx.fillRect(x, y, TILE, 5);
+      ctx.fillStyle = "#d8eef0";
+      ctx.fillRect(x + 4, y + 1, TILE - 10, 2);
+    }
+    ctx.strokeStyle = "rgba(142,200,212,0.25)";
+    ctx.strokeRect(x + 10, y + 12, TILE - 20, TILE - 22);
+    ctx.fillStyle = "rgba(94,224,192,0.12)";
+    ctx.font = "italic 16px 'Cormorant Garamond', serif";
+    ctx.fillText("&", x + 16, y + 32);
+    ctx.fillStyle = "#0c1418";
+    ctx.fillRect(x, y + TILE - 6, TILE, 6);
+  } else if (theme === "abyss") {
+    ctx.fillStyle = "#0c1016";
+    ctx.fillRect(x, y, TILE + 0.5, TILE + 0.5);
+    ctx.fillStyle = "#161c24";
+    ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
+    if (top) {
+      ctx.fillStyle = "#5c6a74";
+      ctx.fillRect(x, y, TILE, 4);
+    }
+    ctx.fillStyle = "rgba(122,139,150,0.2)";
+    ctx.fillRect(x + 8, y + 14, 6, 18);
+    ctx.fillRect(x + 22, y + 10, 4, 22);
+    ctx.fillStyle = "#080c10";
+    ctx.fillRect(x, y + TILE - 6, TILE, 6);
+  } else if (theme === "spire") {
+    ctx.fillStyle = "#1a1620";
+    ctx.fillRect(x, y, TILE + 0.5, TILE + 0.5);
+    ctx.fillStyle = "#262030";
+    ctx.fillRect(x + 2, y + 2, TILE - 4, TILE - 4);
+    if (top) {
+      ctx.fillStyle = "#5ee0c0";
+      ctx.fillRect(x, y, TILE, 4);
+      ctx.fillStyle = "#9af8de";
+      ctx.fillRect(x + 6, y + 1, TILE - 14, 1.5);
+    }
+    ctx.strokeStyle = "rgba(94,224,192,0.28)";
+    ctx.beginPath();
+    ctx.moveTo(x + 24, y + 8);
+    ctx.lineTo(x + 24, y + TILE - 8);
+    ctx.stroke();
+    ctx.fillStyle = "#100e16";
+    ctx.fillRect(x, y + TILE - 6, TILE, 6);
   } else if (theme === "canal") {
     ctx.fillStyle = "#14241c";
     ctx.fillRect(x, y, TILE + 0.5, TILE + 0.5);
@@ -386,7 +513,7 @@ function drawBlock(
     ctx.strokeRect(x + 10, y + 18, TILE - 20, 12);
     if (stamp === 2) {
       ctx.fillStyle = "rgba(94,224,192,0.28)";
-      ctx.font = "italic 14px 'Fraunces', serif";
+      ctx.font = "italic 14px 'Cormorant Garamond', serif";
       ctx.fillText("g", x + 18, y + 34);
     }
     ctx.fillStyle = "#0c1814";
@@ -437,7 +564,7 @@ function drawBlock(
     ctx.strokeRect(x + 26, y + 12, 12, 14);
     if (stamp === 1) {
       ctx.fillStyle = "rgba(212,90,74,0.45)";
-      ctx.font = "700 13px 'Source Serif 4', sans-serif";
+      ctx.font = "700 13px 'Source Sans 3', sans-serif";
       ctx.fillText(String((tx + ty) % 10), x + 18, y + 40);
     }
     ctx.fillStyle = "#1a2026";
@@ -533,6 +660,26 @@ function drawVent(ctx: CanvasRenderingContext2D, x: number, y: number, t: number
   ctx.fillRect(x + 14, y + ((t * 40 + y) % TILE), 8, 10);
 }
 
+function drawLaser(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, tx: number) {
+  const hot = Math.sin((t + tx * 0.37) * 3.15) > -0.22;
+  ctx.save();
+  ctx.globalAlpha = hot ? 0.85 : 0.18;
+  ctx.strokeStyle = hot ? "#d45a4a" : "#7a8b96";
+  ctx.shadowColor = hot ? "#d45a4a" : "transparent";
+  ctx.shadowBlur = hot ? 14 : 0;
+  ctx.lineWidth = hot ? 4 : 2;
+  ctx.beginPath();
+  ctx.moveTo(x + 24, y + 2);
+  ctx.lineTo(x + 24, y + TILE - 2);
+  ctx.stroke();
+  if (hot) {
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = "#d45a4a";
+    ctx.fillRect(x + 18, y, 12, TILE);
+  }
+  ctx.restore();
+}
+
 function drawSpikes(ctx: CanvasRenderingContext2D, x: number, y: number, t: number) {
   for (let i = 0; i < 3; i++) {
     const ox = x + 4 + i * 14;
@@ -561,7 +708,7 @@ function drawCaseFont(ctx: CanvasRenderingContext2D, x: number, y: number, t: nu
   ctx.lineWidth = 2;
   ctx.strokeRect(-14, -16, 28, 32);
   ctx.fillStyle = "#5ee0c0";
-  ctx.font = "italic 16px 'Fraunces', serif";
+  ctx.font = "italic 16px 'Cormorant Garamond', serif";
   ctx.textAlign = "center";
   ctx.fillText("Aa", 0, 4);
   ctx.restore();
@@ -1059,6 +1206,220 @@ export function drawEnemy(ctx: CanvasRenderingContext2D, e: Enemy, camX: number,
     ctx.arc(0, 8, 6 + Math.sin(t * 5) * 1.5, 0, Math.PI * 2);
     ctx.fill();
     ctx.globalAlpha = 1;
+  } else if (e.kind === "five") {
+    ctx.strokeStyle = hide;
+    ctx.lineWidth = 9;
+    ctx.beginPath();
+    ctx.moveTo(-12, -16);
+    ctx.lineTo(-12, 6);
+    ctx.lineTo(12, 6);
+    ctx.moveTo(-12, -4);
+    ctx.lineTo(8, -16);
+    ctx.moveTo(2, 6);
+    ctx.lineTo(8, 18);
+    ctx.stroke();
+    ctx.strokeStyle = metal;
+    ctx.lineWidth = 2.6;
+    ctx.stroke();
+    drawWyrmHead(ctx, -8, -16, -1.1, 0.68, visor, scale, t, false, true);
+  } else if (e.kind === "seven") {
+    ctx.strokeStyle = hide;
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.moveTo(-10, -22);
+    ctx.lineTo(10, -22);
+    ctx.lineTo(-4, -8);
+    ctx.lineTo(-4, 22);
+    ctx.stroke();
+    ctx.strokeStyle = metal;
+    ctx.lineWidth = 2.4;
+    ctx.stroke();
+    drawWyrmHead(ctx, 8, -20, -0.6, 0.55, visor, scale, t, false, true);
+  } else if (e.kind === "nine") {
+    ctx.strokeStyle = hide;
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.arc(0, -6, 11, 0.2, Math.PI * 1.8);
+    ctx.moveTo(8, 2);
+    ctx.quadraticCurveTo(12, 14, 0, 16);
+    ctx.stroke();
+    ctx.strokeStyle = metal;
+    ctx.lineWidth = 2.4;
+    ctx.stroke();
+    ctx.globalAlpha = 0.5 + Math.sin(t * 8) * 0.3;
+    drawWyrmHead(ctx, 8, -8, -0.3, 0.58, visor, scale, t, false, true);
+    ctx.globalAlpha = 1;
+  } else if (e.kind === "triad") {
+    const spin = t * 2.4;
+    for (let i = 0; i < 3; i++) {
+      const a = spin + (i * Math.PI * 2) / 3;
+      ctx.save();
+      ctx.rotate(a);
+      ctx.strokeStyle = hide;
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(16, 0);
+      ctx.stroke();
+      ctx.strokeStyle = metal;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      drawWyrmHead(ctx, 16, 0, 0, 0.42, visor, scale, t + i, false, i === 0);
+      ctx.restore();
+    }
+  } else if (e.kind === "nullring") {
+    const open = 0.4 + Math.sin(t * 3) * 0.15;
+    ctx.strokeStyle = hide;
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.arc(0, 0, 16, open, Math.PI * 2 - open);
+    ctx.stroke();
+    ctx.strokeStyle = metal;
+    ctx.lineWidth = 2.4;
+    ctx.stroke();
+    ctx.strokeStyle = visor;
+    ctx.globalAlpha = 0.35 + Math.sin(t * 4) * 0.2;
+    ctx.beginPath();
+    ctx.arc(0, 0, 10 + Math.sin(t * 5) * 3, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    drawWyrmHead(ctx, 14, -6, -0.4, 0.5, visor, scale, t, false, true);
+  } else if (e.kind === "mobius") {
+    ctx.rotate(t * 2.2 * e.facing);
+    ctx.strokeStyle = hide;
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 16, 8, 0.6, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 8, 16, -0.4, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = metal;
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 16, 8, 0.6, 0, Math.PI * 2);
+    ctx.stroke();
+    drawWyrmHead(ctx, 14, -4, 0.4, 0.48, visor, scale, t, false, true);
+  } else if (e.kind === "summoner") {
+    ctx.strokeStyle = hide;
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.ellipse(0, 4, 14, 10, 0, 0, Math.PI * 2);
+    ctx.moveTo(-6, -8);
+    ctx.quadraticCurveTo(0, -22, 8, -8);
+    ctx.stroke();
+    ctx.strokeStyle = "#c46ad4";
+    ctx.lineWidth = 2.4;
+    ctx.stroke();
+    ctx.strokeStyle = visor;
+    ctx.globalAlpha = 0.5;
+    ctx.beginPath();
+    ctx.arc(0, -16, 6 + Math.sin(t * 6) * 2, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    drawWyrmHead(ctx, 10, -6, -0.5, 0.52, visor, scale, t, false, true);
+  } else if (e.kind === "gradient") {
+    ctx.rotate(0.25 * e.facing);
+    ctx.strokeStyle = hide;
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.moveTo(-16, 10);
+    ctx.lineTo(16, -14);
+    ctx.lineTo(16, 12);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.strokeStyle = metal;
+    ctx.lineWidth = 2.4;
+    ctx.stroke();
+    drawWyrmHead(ctx, 14, -12, -0.8, 0.55, visor, scale, t, false, true);
+  } else if (e.kind === "crossseal") {
+    ctx.rotate((t * 1.4) % (Math.PI * 2));
+    ctx.strokeStyle = hide;
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.moveTo(-18, 0);
+    ctx.lineTo(18, 0);
+    ctx.moveTo(0, -18);
+    ctx.lineTo(0, 18);
+    ctx.stroke();
+    ctx.strokeStyle = visor;
+    ctx.lineWidth = 2.6;
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(212,90,74,0.45)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-28, 0);
+    ctx.lineTo(28, 0);
+    ctx.moveTo(0, -28);
+    ctx.lineTo(0, 28);
+    ctx.stroke();
+    drawWyrmHead(ctx, 0, -18, -1.5, 0.5, visor, scale, t, false, true);
+  } else if (e.kind === "archivist") {
+    ctx.strokeStyle = hide;
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.moveTo(-10, -16);
+    ctx.lineTo(-10, 16);
+    ctx.moveTo(-10, -16);
+    ctx.lineTo(10, -10);
+    ctx.lineTo(-10, -2);
+    ctx.moveTo(-10, 2);
+    ctx.lineTo(12, 16);
+    ctx.stroke();
+    ctx.strokeStyle = "#8ec8d4";
+    ctx.lineWidth = 2.3;
+    ctx.stroke();
+    drawWyrmHead(ctx, 8, -12, -0.4, 0.5, visor, scale, t, false, false);
+  } else if (e.kind === "importer") {
+    const s = 1.3;
+    ctx.strokeStyle = hide;
+    ctx.lineWidth = 9;
+    ctx.beginPath();
+    ctx.ellipse(0, 4, 16 * s, 12 * s, 0, 0.4, Math.PI * 2 - 0.2);
+    ctx.moveTo(-8, -10);
+    ctx.quadraticCurveTo(0, -28, 12, -8);
+    ctx.stroke();
+    ctx.strokeStyle = "#c4b08a";
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    drawWyrmHead(ctx, 14, -12, -0.5, 0.72, visor, scale, t, true, true);
+    ctx.fillStyle = visor;
+    ctx.font = "700 14px 'Source Sans 3', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("G", 0, 8);
+  } else if (e.kind === "nullis") {
+    ctx.globalAlpha = 0.55 + Math.sin(t * 5) * 0.25;
+    ctx.strokeStyle = hide;
+    ctx.lineWidth = 10;
+    ctx.beginPath();
+    ctx.arc(0, 0, 22, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = "#7a8b96";
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.fillStyle = "#07080c";
+    ctx.beginPath();
+    ctx.arc(0, 0, 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = visor;
+    ctx.beginPath();
+    ctx.arc(0, 0, 14 + Math.sin(t * 3) * 4, 0.4, Math.PI * 2 - 0.4);
+    ctx.stroke();
+    drawWyrmHead(ctx, 18, -8, -0.2, 0.62, visor, scale, t, true, true);
+  } else if (e.kind === "endmark") {
+    const s = e.phase >= 2 ? 0.72 : 1.25;
+    ctx.strokeStyle = hide;
+    ctx.lineWidth = 9 * s;
+    ctx.beginPath();
+    ctx.moveTo(-16 * s, -18 * s);
+    ctx.quadraticCurveTo(18 * s, -8 * s, 4 * s, 4 * s);
+    ctx.quadraticCurveTo(-18 * s, 8 * s, 14 * s, 18 * s);
+    ctx.stroke();
+    ctx.strokeStyle = visor;
+    ctx.lineWidth = 3 * s;
+    ctx.stroke();
+    drawWyrmHead(ctx, 10 * s, -16 * s, -0.6, 0.7 * s, visor, scale, t, true, true);
+    if (e.phase < 2) drawWyrmHead(ctx, 12 * s, 16 * s, 0.6, 0.55 * s, visor, scale, t + 1, false, true);
   }
   ctx.restore();
   if (e.stun > 0) {
@@ -1075,7 +1436,7 @@ export function drawEnemy(ctx: CanvasRenderingContext2D, e: Enemy, camX: number,
     ctx.stroke();
     ctx.restore();
   }
-  if (e.kind === "dualis" || e.kind === "tetrarch") {
+  if (e.kind === "dualis" || e.kind === "tetrarch" || e.kind === "importer" || e.kind === "nullis" || e.kind === "endmark") {
     const ratio = e.hp / e.maxHp;
     ctx.fillStyle = "rgba(0,0,0,0.5)";
     ctx.fillRect(e.x - camX, e.y - camY - 10, e.w, 4);
@@ -1211,14 +1572,14 @@ export function drawNpcGlyph(
     emberEye(ctx, -6, -12, "#c4b49a");
   } else {
     ctx.fillStyle = "#d8e8e0";
-    ctx.font = "600 42px 'Fraunces', serif";
+    ctx.font = "600 42px 'Cormorant Garamond', serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(glyph, 0, 0);
   }
   ctx.shadowBlur = 0;
   ctx.fillStyle = "rgba(232,236,232,0.75)";
-  ctx.font = "500 9px 'Source Serif 4', sans-serif";
+  ctx.font = "500 9px 'Source Sans 3', sans-serif";
   ctx.textAlign = "center";
   ctx.fillText(glyph === "&" ? "board" : glyph, 0, 26);
   ctx.restore();
@@ -1322,7 +1683,7 @@ export function drawPickup(
     ctx.closePath();
     ctx.fill();
     ctx.fillStyle = "#5ee0c0";
-    ctx.font = "600 8px 'Source Serif 4', sans-serif";
+    ctx.font = "600 8px 'Source Sans 3', sans-serif";
     ctx.textAlign = "center";
     ctx.shadowBlur = 0;
     ctx.fillText("FANG", 0, 16);
@@ -1340,7 +1701,7 @@ export function drawPickup(
     ctx.stroke();
     ctx.shadowBlur = 0;
     ctx.fillStyle = "#5ee0c0";
-    ctx.font = "600 8px 'Source Serif 4', sans-serif";
+    ctx.font = "600 8px 'Source Sans 3', sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("SCALE", 0, 18);
   } else if (kind === "check") {
@@ -1361,7 +1722,7 @@ export function drawPickup(
     ctx.lineTo(5, 3);
     ctx.stroke();
     ctx.fillStyle = "#c4b08a";
-    ctx.font = "600 8px 'Source Serif 4', sans-serif";
+    ctx.font = "600 8px 'Source Sans 3', sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("CHECK", 0, 20);
   } else if (kind === "drop") {
@@ -1374,15 +1735,28 @@ export function drawPickup(
     ctx.stroke();
     ctx.shadowBlur = 0;
     ctx.fillStyle = "#e8ece8";
-    ctx.font = "600 9px 'Source Serif 4', sans-serif";
+    ctx.font = "600 9px 'Source Sans 3', sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("DROP CAP", 0, 22);
+  } else if (kind === "secret") {
+    ctx.fillStyle = "#e8d48a";
+    ctx.shadowColor = "#e8d48a";
+    ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.arc(0, 0, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "#07080c";
+    ctx.font = "700 11px 'Cormorant Garamond', serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("$", 0, 1);
   } else {
     ctx.fillStyle = "rgba(7,8,12,0.55)";
     roundRect(ctx, -16, -10, 32, 18, 6);
     ctx.fill();
     ctx.fillStyle = "#5ee0c0";
-    ctx.font = "600 10px 'Source Serif 4', sans-serif";
+    ctx.font = "600 10px 'Source Sans 3', sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(label, 0, 0);
@@ -1413,7 +1787,7 @@ export function drawBeacon(
   ctx.closePath();
   ctx.fill();
   ctx.fillStyle = `rgba(232,236,232,${0.75 + Math.sin(t * 4) * 0.2})`;
-  ctx.font = "600 10px 'Source Serif 4', sans-serif";
+  ctx.font = "600 10px 'Source Sans 3', sans-serif";
   ctx.textAlign = "center";
   ctx.fillText(label, 0, -10);
   ctx.restore();
@@ -1441,19 +1815,19 @@ export function drawHudCanvas(
   ctx.fillStyle = "#5ee0c0";
   ctx.fillRect(144, 44, Math.max(0, 160 * (p.ink / p.maxInk)), 5);
   ctx.fillStyle = "#e8ece8";
-  ctx.font = "600 11px 'Source Serif 4', sans-serif";
+  ctx.font = "600 11px 'Source Sans 3', sans-serif";
   ctx.textAlign = "left";
   ctx.fillText(p.letter === "c" && p.capital ? "C" : p.letter, 310, 30);
   ctx.fillStyle = "#8ec8d4";
-  ctx.font = "600 9px 'Source Serif 4', sans-serif";
+  ctx.font = "600 9px 'Source Sans 3', sans-serif";
   ctx.fillText(`FANG ${"I".repeat(p.shotLevel)}`, 310, 44);
   ctx.fillStyle = "rgba(232,236,232,0.85)";
-  ctx.font = "500 13px 'Source Serif 4', sans-serif";
+  ctx.font = "500 13px 'Source Sans 3', sans-serif";
   if (objective) ctx.fillText(objective, 16, VIEW_H - 18);
   if (toast) {
     ctx.textAlign = "center";
     ctx.fillStyle = "#e8ece8";
-    ctx.font = "600 16px 'Fraunces', serif";
+    ctx.font = "600 16px 'Cormorant Garamond', serif";
     ctx.fillText(toast, VIEW_W / 2, 72);
   }
 }

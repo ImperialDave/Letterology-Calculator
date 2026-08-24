@@ -13,7 +13,7 @@ import {
 } from "./draw";
 import { AudioBus } from "./audio";
 import { Input } from "./input";
-import { LEVELS, type LevelId } from "./levels";
+import { lastClearedId, LEVELS, nextStageId, STAGE_COUNT, type LevelId } from "./levels";
 import { collectedLore, LORE, loreIdFromGlyph } from "./lore";
 import { clearSave, defaultSave, loadSave, writeSave } from "./save";
 import {
@@ -210,6 +210,10 @@ export class GameEngine {
     p.h = sz.h;
     p.y = feet - p.h;
     p.x = mid - p.w / 2;
+    const large = p.letter === "b" || (p.letter === "c" && p.capital);
+    if (this.solids.length && this.blockedAt(p.x, p.y - 1, p.w, p.h + 1, large)) {
+      for (let i = 0; i < 8 && this.blockedAt(p.x, p.y, p.w, p.h, large); i++) p.y += 1;
+    }
     this.syncVitals();
   }
 
@@ -243,41 +247,52 @@ export class GameEngine {
         else if (ch === "^") this.solids.push({ x, y: y + 18, w: TILE, h: 22, type: "spike" });
         else if (ch === "~") this.solids.push({ x, y: y + 18, w: TILE, h: 30, type: "sluice" });
         else if (ch === "-") this.solids.push({ x, y, w: TILE, h: 10, type: "crumble", phase: 0 });
+        else if (ch === "|") this.solids.push({ x: x + 18, y, w: 12, h: TILE, type: "laser", phase: tx * 0.37 });
         else if (ch === "@") {
           spawnX = x;
           spawnY = y;
         } else if (ch === ">" || ch === "<" || ch === "V") {
-          this.markers.push({
-            x,
-            y,
-            dir: ch === "<" ? -1 : 1,
-            kind: ch === "V" ? "down" : "arrow",
-          });
-        } else if (ch === "1" || ch === "0" || ch === "2" || ch === "3" || ch === "4" || ch === "6" || ch === "8" || ch === "!") {
+          if (id === "hub" && (ch === ">" || ch === "<")) {
+            this.pickups.push({
+              kind: "door",
+              id: ch === ">" ? "continue" : "replay",
+              x: x - 16,
+              y: y - 40,
+              w: 72,
+              h: 96,
+              taken: false,
+              label: ch === ">" ? "CONT." : "REPLAY",
+            });
+          } else {
+            this.markers.push({
+              x,
+              y,
+              dir: ch === "<" ? -1 : 1,
+              kind: ch === "V" ? "down" : "arrow",
+            });
+          }
+        } else if (ch === "!" || "1023456789ABCEYGHK".includes(ch)) {
           const map: Record<string, EnemyKind> = {
             "1": "one",
             "0": "zero",
             "2": "two",
             "3": "three",
             "4": "four",
+            "5": "five",
             "6": "six",
+            "7": "seven",
             "8": "eight",
-            "!": id === "stage2" ? "tetrarch" : "dualis",
+            "9": "nine",
+            A: "triad",
+            B: "nullring",
+            C: "mobius",
+            E: "summoner",
+            Y: "gradient",
+            G: "importer",
+            H: "archivist",
+            K: "crossseal",
           };
-          this.enemies.push(this.spawnEnemy(map[ch], x, y));
-        } else if (ch === "e" || ch === "t" || ch === "r" || ch === "k" || ch === "n" || ch === "m" || ch === "a" || ch === "y" || ch === "q" || ch === "u" || ch === "g" || ch === "p") {
-          if (this.save.talked.includes(ch)) continue;
-          const def = LORE[ch];
-          this.npcs.push({
-            id: ch,
-            glyph: def.glyph,
-            name: def.name,
-            x: x + 4,
-            y: y - 16,
-            w: 36,
-            h: 48,
-            lines: def.lines,
-          });
+          this.enemies.push(this.spawnEnemy(ch === "!" ? this.bossKindFor(id) : map[ch], x, y));
         } else if (ch === "s" || ch === "b") {
           if (!this.save.party.includes(ch)) {
             const def = LORE[ch];
@@ -302,10 +317,29 @@ export class GameEngine {
               label: ch,
             });
           }
-        } else if (ch === "i") {
-          this.pickups.push({ kind: "ink", id: "i" + tx + ty, x: x + 12, y: y + 12, w: 16, h: 16, taken: false });
-        } else if (ch === "h") {
-          this.pickups.push({ kind: "heart", id: "h" + tx + ty, x: x + 12, y: y + 10, w: 16, h: 16, taken: false });
+        } else if (ch === "i" || ch === "h" || ch === "o") {
+          const below = ty + 1 < this.rows.length ? this.rows[ty + 1][tx] : "#";
+          const onSolid = below === "#" || below === "=" || below === "*";
+          if (!onSolid) this.spawnLoreNpc(ch, x, y);
+          else if (ch === "i") {
+            this.pickups.push({ kind: "ink", id: "i" + tx + ty, x: x + 12, y: y + 12, w: 16, h: 16, taken: false });
+          } else if (ch === "h") {
+            this.pickups.push({ kind: "heart", id: "h" + tx + ty, x: x + 12, y: y + 10, w: 16, h: 16, taken: false });
+          } else {
+            const pid = "scale-" + id + "-" + tx + "-" + ty;
+            this.pickups.push({
+              kind: "scale",
+              id: pid,
+              x: x + 8,
+              y: y + 8,
+              w: 28,
+              h: 28,
+              taken: this.save.powerups.includes(pid) || this.save.maxShield >= 5,
+              label: "SCALE",
+            });
+          }
+        } else if (/^[a-z]$/.test(ch)) {
+          this.spawnLoreNpc(ch, x, y);
         } else if (ch === "+") {
           const pid = "fang-" + id + "-" + tx + "-" + ty;
           this.pickups.push({
@@ -317,18 +351,6 @@ export class GameEngine {
             h: 28,
             taken: this.save.powerups.includes(pid) || this.save.shotLevel >= 4,
             label: "FANG",
-          });
-        } else if (ch === "o") {
-          const pid = "scale-" + id + "-" + tx + "-" + ty;
-          this.pickups.push({
-            kind: "scale",
-            id: pid,
-            x: x + 8,
-            y: y + 8,
-            w: 28,
-            h: 28,
-            taken: this.save.powerups.includes(pid) || this.save.maxShield >= 5,
-            label: "SCALE",
           });
         } else if (ch === "W") {
           this.pickups.push({
@@ -395,6 +417,20 @@ export class GameEngine {
           this.pickups.push({ kind: "door", id: "stage3", x: x - 16, y: y - 40, w: 72, h: 96, taken: false, label: "PRESS" });
         } else if (ch === "}") {
           this.pickups.push({ kind: "door", id: "stage4", x: x - 16, y: y - 40, w: 72, h: 96, taken: false, label: "COIL" });
+        } else if (ch === "(") {
+          this.pickups.push({ kind: "door", id: "stage5", x: x - 16, y: y - 40, w: 72, h: 96, taken: false, label: "LEDGER" });
+        } else if (ch === "$") {
+          const pid = "secret-" + id + "-" + tx + "-" + ty;
+          this.pickups.push({
+            kind: "secret",
+            id: pid,
+            x: x + 8,
+            y: y + 8,
+            w: 24,
+            h: 24,
+            taken: this.save.powerups.includes(pid),
+            label: "SECRET",
+          });
         } else if (ch === "%") {
           this.pickups.push({
             kind: "check",
@@ -407,6 +443,14 @@ export class GameEngine {
             label: "CHECK",
           });
         } else if (ch === "P") {
+          const n = this.stageIndex(id);
+          const labels: Record<string, string> = {
+            stage1: "STACKS",
+            stage2: "CHAPTER",
+            stage3: "PRESS",
+            stage4: "COIL",
+            stage5: "LEDGER",
+          };
           this.pickups.push({
             kind: "portal",
             id: LEVELS[id]?.exit === "win" ? "win" : "hub",
@@ -415,7 +459,7 @@ export class GameEngine {
             w: 60,
             h: 88,
             taken: false,
-            label: id === "stage2" ? "CHAPTER" : id === "stage3" ? "PRESS" : id === "stage4" ? "COIL" : "STACKS",
+            label: LEVELS[id]?.exit === "win" ? "FINAL" : labels[id] ?? (n ? `GATE ${n}` : "GATE"),
           });
         }
       }
@@ -437,9 +481,60 @@ export class GameEngine {
     this.save.stage = id;
     if (!this.save.visited.includes(id)) this.save.visited.push(id);
     this.lastDone = new Set(this.currentTasks().filter((t) => t.done).map((t) => t.id));
-    if (id === "hub") this.say("L scribes a wall. Hold down + L for a shelf.");
+    if (id === "hub") this.say("Stem writes a wall. Shelf writes a platform. Continue opens the next unread ledger.");
     this.persist();
     this.emit();
+  }
+
+  private spawnLoreNpc(ch: string, x: number, y: number) {
+    const who = loreIdFromGlyph(ch);
+    const def = LORE[who];
+    if (!def) return;
+    if (this.save.talked.includes(who)) return;
+    if (this.npcs.some((n) => n.id === who)) return;
+    this.npcs.push({
+      id: who,
+      glyph: def.glyph,
+      name: def.name,
+      x: x + 4,
+      y: y - 16,
+      w: 36,
+      h: 48,
+      lines: def.lines,
+    });
+  }
+
+  private stageIndex(id: string = this.stage): number {
+    if (id === "hub") return 0;
+    const n = Number(String(id).replace("stage", ""));
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  private isBossKind(kind: EnemyKind) {
+    return kind === "dualis" || kind === "tetrarch" || kind === "importer" || kind === "nullis" || kind === "endmark";
+  }
+
+  private bossKindFor(id: string): EnemyKind {
+    if (id === "stage1") return "dualis";
+    if (id === "stage2") return "importer";
+    if (id === "stage5") return "nullis";
+    const n = this.stageIndex(id);
+    if (n === STAGE_COUNT) return "endmark";
+    if (n % 10 === 0) return "tetrarch";
+    if (n % 10 === 5) return "nullis";
+    return "importer";
+  }
+
+  private markProgress() {
+    const n = this.stageIndex();
+    if (n < 1) return;
+    this.save.progress = Math.max(this.save.progress, n);
+    if (n === 1) this.save.stage1 = true;
+    if (n === 2) this.save.stage2 = true;
+    if (n === 3) this.save.stage3 = true;
+    if (n === 4) this.save.stage4 = true;
+    if (n === 5) this.save.stage5 = true;
+    this.persist();
   }
 
   private spawnEnemy(kind: EnemyKind, x: number, y: number): Enemy {
@@ -450,10 +545,23 @@ export class GameEngine {
       two: { w: 38, h: 42, hp: 5, name: "Twin Tongue" },
       three: { w: 30, h: 40, hp: 4, name: "Triad" },
       four: { w: 40, h: 48, hp: 6, name: "Corner Guard" },
+      five: { w: 42, h: 52, hp: 10, name: "Pent Guard" },
       six: { w: 34, h: 46, hp: 5, name: "Hook Six" },
+      seven: { w: 28, h: 56, hp: 6, name: "Sept Spire" },
       eight: { w: 38, h: 50, hp: 8, name: "Loop Brute" },
+      nine: { w: 34, h: 40, hp: 5, name: "Niner" },
       dualis: { w: 64, h: 72, hp: 28, name: "Dualis" },
       tetrarch: { w: 78, h: 88, hp: 40, name: "Tetrarch" },
+      importer: { w: 70, h: 80, hp: 38, name: "G the Importer" },
+      nullis: { w: 72, h: 72, hp: 44, name: "Nullis" },
+      triad: { w: 36, h: 42, hp: 6, name: "Triad-Splitter" },
+      nullring: { w: 42, h: 42, hp: 8, name: "Null-Ring" },
+      mobius: { w: 32, h: 34, hp: 7, name: "Möbius Coil" },
+      summoner: { w: 38, h: 48, hp: 9, name: "Port Summoner" },
+      gradient: { w: 36, h: 40, hp: 7, name: "Gradient" },
+      crossseal: { w: 44, h: 44, hp: 9, name: "Cross-Seal" },
+      archivist: { w: 34, h: 46, hp: 8, name: "Archivist" },
+      endmark: { w: 82, h: 86, hp: 56, name: "End-Mark" },
     };
     const s = sizes[kind];
     const hp = this.hard ? Math.ceil(s.hp * 1.35) : s.hp;
@@ -485,7 +593,7 @@ export class GameEngine {
   begin() {
     this.audio.unlock();
     this.audio.sfxUi();
-    if (this.save.stage1 || this.save.hasCapital) {
+    if (this.save.progress > 0 || this.save.stage1 || this.save.hasCapital) {
       this.loadLevel("hub");
     } else {
       this.mode = "intro";
@@ -585,6 +693,9 @@ export class GameEngine {
     this.updateBullets(dt);
     this.updatePickups();
     this.updateParticles(dt);
+    for (const s of this.solids) {
+      if (s.type === "laser") s.phase = (s.phase ?? 0) + dt;
+    }
     this.walls = this.walls.filter((w) => {
       w.life -= dt;
       return w.life > 0;
@@ -603,7 +714,7 @@ export class GameEngine {
     if (this.save.words.includes("LOCK")) {
       for (const w of this.walls) {
         for (const e of this.enemies) {
-          if (e.alive && aabb(e, w) && e.stun < 0.35) e.stun = 1.45;
+          if (e.alive && aabb(e, w) && e.stun < 0.35 && !this.isBossKind(e.kind)) e.stun = 1.45;
         }
       }
     }
@@ -717,7 +828,9 @@ export class GameEngine {
     if (a.interact) this.intBuf = 0.22;
     this.intBuf -= dt;
     if (this.intBuf > 0 && this.tryInteract()) this.intBuf = 0;
-    if (a.word) this.scribe(a.down);
+    if (a.stem) this.scribe(false);
+    else if (a.shelf) this.scribe(true);
+    else if (a.word) this.scribe(a.down);
   }
 
   private moveActor(
@@ -758,6 +871,8 @@ export class GameEngine {
       if (s.type === "break" && s.broken) return false;
       if (s.type === "crumble" && s.broken) return false;
       if (s.type === "sluice") return false;
+      if (s.type === "laser") return false;
+      if (s.type === "spike") return false;
       if (s.type === "vent" && !large) return false;
       return true;
     });
@@ -811,9 +926,9 @@ export class GameEngine {
       } else {
         const fromTop = a.y + a.h - s.y;
         const fromBot = s.y + s.h - a.y;
-        if (a.vy < 0 && fromBot < fromTop) {
-          a.y = s.y + s.h;
-          a.vy = 0;
+        if (fromBot < fromTop && (a.vy < 0 || fromBot + 1 < fromTop)) {
+          a.y = s.y + s.h + 0.5;
+          if (a.vy < 0) a.vy = 0;
         } else {
           a.y = s.y - a.h;
           a.vy = 0;
@@ -918,22 +1033,25 @@ export class GameEngine {
         this.hurt(1, p.facing);
         p.vy = Math.min(p.vy, -220);
       }
+      if (s.type === "laser" && aabb(p, s) && p.invuln <= 0 && this.laserHot(s)) {
+        this.hurt(1, p.x + p.w / 2 < s.x + s.w / 2 ? -1 : 1);
+      }
     }
   }
 
+  private laserHot(s: Solid) {
+    return Math.sin((s.phase ?? 0) * 3.15) > -0.22;
+  }
+
   private hitEnemy(e: Enemy, dmg: number, dir: number) {
-    if (e.hurt > 0 && e.kind !== "dualis" && e.kind !== "tetrarch") return;
+    if (e.hurt > 0 && !this.isBossKind(e.kind)) return;
     e.hp -= dmg;
     e.hurt = 0.1;
-    const boss = e.kind === "dualis" || e.kind === "tetrarch";
-    if (boss) {
-      if (e.stun <= 0) e.stun = 0.3;
-    } else {
-      e.stun = 0.95;
-    }
+    const boss = this.isBossKind(e.kind);
+    if (!boss) e.stun = 0.95;
     e.flash = Math.max(e.flash, 0.18);
-    e.vx += dir * (boss ? 50 : 160);
-    e.vy = boss ? e.vy : -36;
+    e.vx += dir * (boss ? 36 : 160);
+    if (!boss) e.vy = -36;
     e.aux = 0;
     this.audio.sfxHit();
     this.trauma = Math.min(1, this.trauma + 0.25);
@@ -948,17 +1066,42 @@ export class GameEngine {
       this.player.ink = Math.min(this.player.maxInk, this.player.ink + (boss ? 12 : 4));
       this.burst(e.x + e.w / 2, e.y + e.h / 2, "#3d5a48", 16, "ink");
       this.audio.sfxDeath();
-      if (e.kind === "dualis") {
-        this.save.stage1 = true;
-        this.say("Dualis falls. The STACKS gate opens.");
-        this.objective = "Enter the exit gate.";
-        this.persist();
+      if (e.kind === "triad") {
+        this.enemies.push(this.spawnEnemy("one", e.x - 18, e.y));
+        this.enemies.push(this.spawnEnemy("one", e.x + 10, e.y));
+        this.enemies.push(this.spawnEnemy("one", e.x - 4, e.y - 12));
+        this.say("The triad splits.");
       }
-      if (e.kind === "tetrarch") {
-        this.save.stage2 = true;
-        this.say("Tetrarch falls. The last gate opens.");
-        this.objective = "Enter the CHAPTER gate.";
-        this.persist();
+      if (e.kind === "endmark" && e.phase < 2) {
+        const feet = e.y + e.h;
+        e.alive = true;
+        e.phase = 2;
+        e.hp = Math.ceil(e.maxHp * 0.35);
+        e.maxHp = e.hp;
+        e.w = 48;
+        e.h = 52;
+        e.y = feet - e.h;
+        const twin = this.spawnEnemy("endmark", e.x + 56, e.y);
+        twin.phase = 2;
+        twin.hp = e.hp;
+        twin.maxHp = e.hp;
+        twin.w = 48;
+        twin.h = 52;
+        twin.y = e.y;
+        twin.x = e.x + 56;
+        twin.name = "End-Mark Arc";
+        this.enemies.push(twin);
+        this.say("End-Mark splits. Finish both arcs.");
+      }
+      if (boss && e.kind !== "endmark") {
+        this.markProgress();
+        this.say(e.name + " falls. The gate opens.");
+        this.objective = "Enter the exit gate.";
+      }
+      if (e.kind === "endmark" && !this.enemies.some((x) => x.kind === "endmark" && x.alive)) {
+        this.markProgress();
+        this.say("End-Mark falls. The last gate opens.");
+        this.objective = "Enter the FINAL gate.";
       }
     }
   }
@@ -1001,12 +1144,13 @@ export class GameEngine {
       e.hurt = Math.max(0, e.hurt - dt);
       e.flash = Math.max(0, e.flash - dt);
       e.stun = Math.max(0, e.stun - dt);
-      if (e.stun > 0) {
+      if (e.stun > 0 && !this.isBossKind(e.kind)) {
         e.vx *= Math.max(0, 1 - 8 * dt);
         if (!e.grounded) e.vy += 1800 * dt;
-        this.moveActor(e, dt, e.kind === "tetrarch");
+        this.moveActor(e, dt, false);
         continue;
       }
+      e.stun = 0;
       e.aux += dt;
       const large = false;
       if (e.kind === "zero") {
@@ -1017,26 +1161,31 @@ export class GameEngine {
           e.aux = 0;
           this.shoot(e, p.x < e.x ? -1 : 1, 0.15);
         }
-      } else if (e.kind === "one" || e.kind === "two" || e.kind === "four" || e.kind === "three") {
+      } else if (e.kind === "one" || e.kind === "two" || e.kind === "four" || e.kind === "three" || e.kind === "five" || e.kind === "seven" || e.kind === "triad") {
         if (!e.grounded) e.vy += 1800 * dt;
-        if (Math.abs(p.x - e.x) < 280) {
+        const spd = e.kind === "five" ? 32 : e.kind === "four" ? 40 : e.kind === "seven" ? 48 : e.kind === "three" || e.kind === "triad" ? 58 : 70;
+        if (Math.abs(p.x - e.x) < 300) {
           e.facing = p.x > e.x ? 1 : -1;
-          e.vx = e.facing * (e.kind === "four" ? 40 : e.kind === "three" ? 55 : 70);
+          e.vx = e.facing * spd;
         } else {
           e.vx = e.facing * 40;
           if (Math.random() < 0.005) e.facing *= -1;
         }
         this.moveActor(e, dt, large);
-        if (e.kind === "three" && e.grounded && e.aux > 0.9 && Math.abs(p.x - e.x) < 220) {
+        if ((e.kind === "three" || e.kind === "triad") && e.grounded && e.aux > 0.9 && Math.abs(p.x - e.x) < 220) {
           e.vy = -420;
           e.aux = 0;
         }
-        if (e.aux > (e.kind === "four" ? 1.8 : 1.3)) {
+        if (e.aux > (e.kind === "five" ? 2.1 : e.kind === "four" ? 1.8 : 1.3)) {
           e.aux = 0;
-          if (e.kind === "four") {
+          if (e.kind === "four" || e.kind === "five") {
             this.trauma += 0.08;
-            if (aabb({ x: e.x - 10, y: e.y, w: e.w + 20, h: e.h + 8 }, p) && p.invuln <= 0) this.hurt(1, e.facing);
-          } else if (e.kind !== "three") this.shoot(e, e.facing, 0);
+            if (aabb({ x: e.x - 12, y: e.y, w: e.w + 24, h: e.h + 8 }, p) && p.invuln <= 0) this.hurt(1, e.facing);
+          } else if (e.kind === "seven") {
+            this.shoot(e, e.facing, -0.45);
+            this.shoot(e, e.facing, 0);
+            this.shoot(e, e.facing, 0.45);
+          } else if (e.kind !== "three" && e.kind !== "triad") this.shoot(e, e.facing, 0);
         }
       } else if (e.kind === "six") {
         if (Math.abs(p.x - e.x) < 48 && p.y > e.y) {
@@ -1051,6 +1200,18 @@ export class GameEngine {
         if (e.aux > 1.5) {
           e.aux = 0;
           this.shoot(e, 0, 1);
+        }
+      } else if (e.kind === "nine") {
+        e.y += Math.sin(e.t * 3) * 16 * dt;
+        e.facing = p.x > e.x ? 1 : -1;
+        if (e.aux > 2.3) {
+          e.aux = 0;
+          e.x = Math.max(40, Math.min(this.worldW - 80, p.x + (Math.random() > 0.5 ? 90 : -90)));
+          e.y = Math.max(24, p.y - 70);
+          this.burst(e.x + e.w / 2, e.y + e.h / 2, "#d45a4a", 10, "ink");
+          this.shoot(e, 0, 1);
+          this.shoot(e, -0.35, 1);
+          this.shoot(e, 0.35, 1);
         }
       } else if (e.kind === "eight") {
         e.x += Math.sin(e.t * 1.4) * 70 * dt;
@@ -1101,8 +1262,193 @@ export class GameEngine {
             this.shoot(e, p.x < e.x ? -1 : 1, 0);
           }
         }
+      } else {
+        this.aiSecond(e, dt, p);
       }
       if (aabb(e, p) && p.invuln <= 0 && p.roll <= 0) this.hurt(1, p.x < e.x ? -1 : 1);
+    }
+  }
+
+  private aiSecond(e: Enemy, dt: number, p: Player) {
+    if (e.kind === "nullring") {
+      e.y += Math.sin(e.t * 1.6) * 20 * dt;
+      e.facing = p.x > e.x ? 1 : -1;
+      if (e.phase === 1) {
+        const cx = e.x + e.w / 2;
+        const cy = e.y + e.h / 2;
+        const dx = cx - (p.x + p.w / 2);
+        const dy = cy - (p.y + p.h / 2);
+        const d = Math.hypot(dx, dy) || 1;
+        if (d < 170) {
+          p.x += (dx / d) * 85 * dt;
+          p.y += (dy / d) * 50 * dt;
+        }
+        for (const b of this.bullets) {
+          if (!b.alive) continue;
+          const bx = cx - b.x;
+          const by = cy - b.y;
+          const bd = Math.hypot(bx, by) || 1;
+          if (bd < 170) {
+            b.vx += (bx / bd) * 140 * dt;
+            b.vy += (by / bd) * 140 * dt;
+          }
+        }
+        e.aux2 += dt;
+        if (e.aux2 > 0.85) {
+          e.phase = 0;
+          e.aux2 = 0;
+        }
+      } else if (e.aux > 2.1) {
+        e.aux = 0;
+        e.phase = 1;
+        this.burst(e.x + e.w / 2, e.y + e.h / 2, "#7a8b96", 8, "ink");
+      }
+    } else if (e.kind === "mobius") {
+      if (!e.grounded) e.vy += 900 * dt;
+      e.vx = e.facing * 70;
+      const oldVx = e.vx;
+      this.moveActor(e, dt, false);
+      if (e.vx === 0 && oldVx !== 0) {
+        e.facing = (e.facing * -1) as 1 | -1;
+        e.vy = -90;
+        e.vx = e.facing * 70;
+      }
+      if (e.aux > 1.6) {
+        e.aux = 0;
+        this.shoot(e, e.facing, 0.15);
+      }
+    } else if (e.kind === "summoner") {
+      if (!e.grounded) e.vy += 1600 * dt;
+      e.facing = p.x > e.x ? 1 : -1;
+      const dist = Math.abs(p.x - e.x);
+      e.vx = dist < 220 ? -e.facing * 55 : dist > 360 ? e.facing * 40 : 0;
+      this.moveActor(e, dt, false);
+      if (e.aux > 2.8 && this.enemies.filter((x) => x.alive).length < 16) {
+        e.aux = 0;
+        this.enemies.push(this.spawnEnemy("one", e.x + e.facing * -20, e.y));
+        this.burst(e.x, e.y, "#c46ad4", 8, "glyph");
+      }
+    } else if (e.kind === "gradient") {
+      e.facing = p.x > e.x ? 1 : -1;
+      if (!e.grounded) {
+        e.vx += e.facing * 180 * dt;
+        e.vy += 2100 * dt;
+        if (e.vx > 260) e.vx = 260;
+        if (e.vx < -260) e.vx = -260;
+      } else {
+        e.vx = e.facing * 95;
+      }
+      this.moveActor(e, dt, false);
+      if (e.aux > 1.5) {
+        e.aux = 0;
+        this.shoot(e, e.facing, 0.2);
+      }
+    } else if (e.kind === "crossseal") {
+      e.vx *= 0.8;
+      if (!e.grounded) e.vy += 1400 * dt;
+      this.moveActor(e, dt, false);
+      if (e.aux > 0.95) {
+        e.aux = 0;
+        e.phase = (e.phase + 1) % 8;
+        const a = (e.phase * Math.PI) / 4;
+        this.bullets.push({
+          x: e.x + e.w / 2,
+          y: e.y + e.h / 2,
+          vx: Math.cos(a) * 190,
+          vy: Math.sin(a) * 190,
+          r: 4,
+          from: "enemy",
+          dmg: 1,
+          life: 1.6,
+          kind: "shot",
+          alive: true,
+          pierce: 0,
+        });
+      }
+    } else if (e.kind === "archivist") {
+      if (!e.grounded) e.vy += 1700 * dt;
+      e.facing = p.facing;
+      e.vx = e.facing * 50;
+      this.moveActor(e, dt, false);
+      if (e.aux > 1.45) {
+        e.aux = 0;
+        this.shoot(e, p.facing, 0);
+        this.shoot(e, p.facing, 0.2);
+      }
+    } else if (e.kind === "importer") {
+      if (!e.grounded) e.vy += 1500 * dt;
+      e.facing = p.x > e.x ? 1 : -1;
+      if (e.hp < e.maxHp * 0.55 && e.phase < 1) e.phase = 1;
+      if (e.hp < e.maxHp * 0.28 && e.phase < 2) e.phase = 2;
+      e.vx = e.facing * (70 + e.phase * 20);
+      this.moveActor(e, dt, true);
+      if (e.aux > (e.phase === 2 ? 0.7 : 1.05)) {
+        e.aux = 0;
+        e.aux2 = (e.aux2 + 1) % 3;
+        if (e.aux2 === 0) {
+          this.shoot(e, e.facing, 0);
+          this.shoot(e, e.facing, -0.25);
+          this.shoot(e, e.facing, 0.25);
+        } else if (e.aux2 === 1 && this.enemies.filter((x) => x.alive).length < 12) {
+          this.enemies.push(this.spawnEnemy(e.phase >= 1 ? "five" : "one", e.x - 40, e.y));
+          this.say("G opens a port.");
+        } else {
+          e.vy = -300;
+          e.vx = e.facing * 140;
+        }
+      }
+    } else if (e.kind === "nullis") {
+      e.facing = p.x > e.x ? 1 : -1;
+      if (e.phase === 1) {
+        e.aux2 += dt;
+        const cx = e.x + e.w / 2;
+        const cy = e.y + e.h / 2;
+        const dx = cx - (p.x + p.w / 2);
+        const dy = cy - (p.y + p.h / 2);
+        const d = Math.hypot(dx, dy) || 1;
+        if (d < 200) {
+          p.x += (dx / d) * 110 * dt;
+          p.y += (dy / d) * 70 * dt;
+        }
+        if (e.aux2 > 1.1) {
+          e.phase = 0;
+          e.aux2 = 0;
+        }
+      } else {
+        if (!e.grounded) e.vy += 1400 * dt;
+        e.vx = e.facing * 60;
+        this.moveActor(e, dt, true);
+        if (e.aux > 1.2) {
+          e.aux = 0;
+          if (Math.random() < 0.4) {
+            e.phase = 1;
+            e.x = Math.max(40, Math.min(this.worldW - 80, p.x + (Math.random() > 0.5 ? 120 : -120)));
+            this.burst(e.x + e.w / 2, e.y, "#7a8b96", 12, "ink");
+          } else {
+            this.shoot(e, -1, 0);
+            this.shoot(e, 1, 0);
+            this.shoot(e, 0, -1);
+            this.shoot(e, 0, 1);
+          }
+        }
+      }
+    } else if (e.kind === "endmark") {
+      if (!e.grounded) e.vy += 1600 * dt;
+      e.facing = p.x > e.x ? 1 : -1;
+      e.vx = e.facing * (e.phase >= 2 ? 120 : 80);
+      this.moveActor(e, dt, true);
+      if (e.aux > (e.phase >= 2 ? 0.65 : 1.0)) {
+        e.aux = 0;
+        this.shoot(e, e.facing, 0);
+        this.shoot(e, e.facing, -0.3);
+        if (e.phase >= 2) this.shoot(e, -e.facing, 0.15);
+      }
+      if (e.grounded && Math.random() < 0.012) e.vy = -380;
+    } else {
+      if (!e.grounded) e.vy += 1800 * dt;
+      e.facing = p.x > e.x ? 1 : -1;
+      e.vx = e.facing * 50;
+      this.moveActor(e, dt, false);
     }
   }
 
@@ -1174,9 +1520,30 @@ export class GameEngine {
   }
 
   private portalLocked() {
-    if (this.stage === "stage1") return this.enemies.some((e) => e.kind === "dualis" && e.alive);
-    if (this.stage === "stage2") return this.enemies.some((e) => e.kind === "tetrarch" && e.alive);
+    return this.enemies.some((e) => e.alive && this.isBossKind(e.kind));
+  }
+
+  private doorLocked(id: string): boolean {
+    if (id === "stage1") return false;
+    if (id === "stage3") return !this.save.stage1;
+    if (id === "stage4") return !this.save.stage3;
+    if (id === "stage2") return !this.save.stage4 && !this.save.stage2;
+    if (id === "stage5") return !this.save.stage2;
+    if (id === "continue") return this.save.progress < 5;
+    if (id === "replay") return this.save.progress < 1;
+    const m = /^stage(\d+)$/.exec(id);
+    if (m) return this.save.progress < Number(m[1]) - 1;
     return false;
+  }
+
+  private doorShutLine(id: string) {
+    if (id === "stage3") return "The Press is still counted shut.";
+    if (id === "stage4") return "The Coil is still counted shut.";
+    if (id === "stage2") return "The Fort is still counted shut.";
+    if (id === "stage5") return "The Ledger is still counted shut.";
+    if (id === "continue") return "Continue opens after the first five ledgers.";
+    if (id === "replay") return "Replay waits for a page you have already closed.";
+    return "Still counted shut.";
   }
 
   private scribe(down: boolean) {
@@ -1237,10 +1604,8 @@ export class GameEngine {
       return;
     }
     this.audio.sfxTransform();
-    if (this.stage === "stage3") this.save.stage3 = true;
-    if (this.stage === "stage4") this.save.stage4 = true;
-    if (u.id === "win" || this.stage === "stage2") {
-      this.save.stage2 = true;
+    this.markProgress();
+    if (u.id === "win" || this.stageIndex() === STAGE_COUNT || LEVELS[this.stage]?.exit === "win") {
       this.mode = "win";
       this.persist();
       this.emit();
@@ -1262,16 +1627,8 @@ export class GameEngine {
     }
     for (const u of this.pickups) {
       if (u.kind === "door" && aabb(p, padBox(u, 28, 16))) {
-        const locked =
-          (u.id === "stage2" && !this.save.stage4 && !this.save.stage2) ||
-          (u.id === "stage3" && !this.save.stage1) ||
-          (u.id === "stage4" && !this.save.stage3);
-        this.nearHint = locked
-          ? u.id === "stage3"
-            ? "Press still counted shut"
-            : u.id === "stage4"
-              ? "Coils still counted shut"
-              : "Still counted shut"
+        this.nearHint = this.doorLocked(u.id)
+          ? this.doorShutLine(u.id)
           : "E  enter  " + (u.label ?? "");
       }
       if (u.kind === "portal" && aabb(p, padBox(u, 18, 12))) {
@@ -1320,6 +1677,14 @@ export class GameEngine {
         p.shield = p.maxShield;
         this.audio.sfxWord();
         this.say("Scale plate thickens.");
+        this.persist();
+      } else if (u.kind === "secret") {
+        u.taken = true;
+        if (!this.save.powerups.includes(u.id)) this.save.powerups.push(u.id);
+        p.ink = Math.min(p.maxInk, p.ink + 16);
+        p.hp = Math.min(p.maxHp, p.hp + 1);
+        this.audio.sfxWord();
+        this.say("A hidden cache. Ink and a spare curve.");
         this.persist();
       } else if (u.kind === "word" && u.label) {
         u.taken = true;
@@ -1404,17 +1769,15 @@ export class GameEngine {
     }
     for (const u of this.pickups) {
       if (u.kind === "door" && aabb(p, padBox(u, 28, 16))) {
-        if (u.id === "stage1") this.loadLevel("stage1");
-        else if (u.id === "stage3") {
-          if (!this.save.stage1) this.say("The Press is still counted shut.");
-          else this.loadLevel("stage3");
-        } else if (u.id === "stage4") {
-          if (!this.save.stage3) this.say("The Coil is still counted shut.");
-          else this.loadLevel("stage4");
-        } else if (u.id === "stage2") {
-          if (!this.save.stage4 && !this.save.stage2) this.say("The Fort is still counted shut.");
-          else this.loadLevel("stage2");
+        if (this.doorLocked(u.id)) {
+          this.say(this.doorShutLine(u.id));
+          return true;
         }
+        if (u.id === "continue") this.loadLevel(nextStageId(this.save.progress));
+        else if (u.id === "replay") {
+          const last = lastClearedId(this.save.progress);
+          if (last) this.loadLevel(last);
+        } else this.loadLevel(u.id as LevelId);
         return true;
       }
       if (u.kind === "portal" && aabb(p, padBox(u, 20, 12))) {
@@ -1578,10 +1941,7 @@ export class GameEngine {
     const defs = LEVELS[this.stage]?.tasks ?? [];
     return defs
       .filter((t) => {
-        if (t.need === "stage1" && !this.save.stage1) return false;
-        if (t.need === "stage2" && !this.save.stage2) return false;
-        if (t.need === "stage3" && !this.save.stage3) return false;
-        if (t.need === "stage4" && !this.save.stage4) return false;
+        if (typeof t.need === "number" && this.save.progress < t.need) return false;
         return true;
       })
       .map((t) => ({ id: t.id, text: t.text, done: this.isTaskDone(t.id) }));
@@ -1600,6 +1960,8 @@ export class GameEngine {
         return s.talked.includes("u");
       case "talk-p":
         return s.talked.includes("p");
+      case "talk-n":
+        return s.talked.includes("n");
       case "enter-lanes":
         return s.visited.includes("stage1");
       case "enter-gutter":
@@ -1608,6 +1970,10 @@ export class GameEngine {
         return s.visited.includes("stage4");
       case "enter-fort":
         return s.visited.includes("stage2");
+      case "enter-ledger":
+        return s.visited.includes("stage5");
+      case "continue":
+        return s.progress >= 6;
       case "recruit-s":
         return s.party.includes("s");
       case "recruit-b":
@@ -1625,9 +1991,14 @@ export class GameEngine {
       case "dualis":
         return s.stage1;
       case "tetrarch":
+      case "importer":
         return s.stage2;
+      case "nullis":
+        return s.stage5;
       case "cross-gutter":
         return this.stage === "stage3" && this.player.x > 140 * TILE;
+      case "cross-lasers":
+        return this.stage === "stage5" && this.player.x > 180 * TILE;
       case "gate-stacks":
         return s.stage1 && this.stage !== "stage1";
       case "gate-press":
@@ -1635,9 +2006,17 @@ export class GameEngine {
       case "gate-coil":
         return s.stage4 && this.stage !== "stage4";
       case "gate-chapter":
-        return this.mode === "win" || (s.stage2 && this.stage !== "stage2");
-      default:
+        return s.stage2 && this.stage !== "stage2";
+      case "gate-ledger":
+        return s.stage5 && this.stage !== "stage5";
+      default: {
+        if (id.startsWith("clear-")) {
+          const n = Number(id.slice(6));
+          return s.progress >= n && this.stage !== `stage${n}`;
+        }
+        if (id.startsWith("word-")) return s.words.includes(id.slice(5).toUpperCase() as WordId);
         return false;
+      }
     }
   }
 
@@ -1736,7 +2115,23 @@ export class GameEngine {
       const b = this.enemies.find((e) => e.kind === "tetrarch" && e.alive);
       if (b) return { x: b.x + b.w / 2, y: b.y, label: "TETRARCH" };
     }
-    if (id === "gate-stacks" || id === "gate-chapter" || id === "gate-press" || id === "gate-coil") {
+    if (id === "enter-ledger") {
+      const d = this.pickups.find((u) => u.kind === "door" && u.id === "stage5");
+      if (d) return { x: d.x + d.w / 2, y: d.y + 20, label: "LEDGER" };
+    }
+    if (id === "continue") {
+      const d = this.pickups.find((u) => u.kind === "door" && u.id === "continue");
+      if (d) return { x: d.x + d.w / 2, y: d.y + 20, label: "CONT." };
+    }
+    if (id === "importer") {
+      const b = this.enemies.find((e) => e.kind === "importer" && e.alive);
+      if (b) return { x: b.x + b.w / 2, y: b.y, label: "G" };
+    }
+    if (id === "nullis") {
+      const b = this.enemies.find((e) => e.kind === "nullis" && e.alive);
+      if (b) return { x: b.x + b.w / 2, y: b.y, label: "NULLIS" };
+    }
+    if (id === "gate-stacks" || id === "gate-chapter" || id === "gate-press" || id === "gate-coil" || id === "gate-ledger" || (id && id.startsWith("clear-"))) {
       const g = this.pickups.find((u) => u.kind === "portal");
       if (g) return { x: g.x + g.w / 2, y: g.y + 20, label: g.label ?? "GATE" };
     }
@@ -1744,7 +2139,7 @@ export class GameEngine {
   }
 
   private emit() {
-    const boss = this.enemies.find((e) => (e.kind === "dualis" || e.kind === "tetrarch") && e.alive);
+    const boss = this.enemies.find((e) => this.isBossKind(e.kind) && e.alive);
     this.ui({
       mode: this.mode,
       hp: this.player.hp,
@@ -1765,13 +2160,15 @@ export class GameEngine {
       muted: this.audio.muted,
       shake: this.save.shake,
       hard: this.hard,
-      canContinue: this.save.hasCapital || this.save.stage1 || this.save.party.length > 1,
+      canContinue: this.save.progress > 0 || this.save.hasCapital || this.save.stage1 || this.save.party.length > 1,
       introPage: this.introPage,
       hasCapital: this.save.hasCapital,
       stage1: this.save.stage1,
       stage2: this.save.stage2,
       stage3: this.save.stage3,
       stage4: this.save.stage4,
+      stage5: this.save.stage5,
+      progress: this.save.progress,
       transforming: this.transformT,
       shield: this.player.shield,
       maxShield: this.player.maxShield,
@@ -1895,12 +2292,7 @@ export class GameEngine {
   }
 
   private drawGate(ctx: CanvasRenderingContext2D, u: Pickup) {
-    const locked =
-      u.kind === "portal"
-        ? this.portalLocked()
-        : (u.id === "stage2" && !this.save.stage4 && !this.save.stage2) ||
-          (u.id === "stage3" && !this.save.stage1) ||
-          (u.id === "stage4" && !this.save.stage3);
+    const locked = u.kind === "portal" ? this.portalLocked() : this.doorLocked(u.id);
     const pulse = 0.18 + Math.sin(this.time * 3) * 0.08;
     const x = u.x - this.camX;
     const y = u.y - this.camY;

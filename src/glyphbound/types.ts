@@ -36,15 +36,14 @@ export type EnemyKind =
   | "tetrarch"
   | "importer"
   | "nullis"
-  // Second Landing
-  | "triad" // ∴ Triad-Splitter
-  | "nullring" // ⌀ Null-Ring
-  | "mobius" // ∞ Möbius Coil
-  | "summoner" // Σ Summoner
-  | "gradient" // ∇ Gradient
-  | "crossseal" // ⊗ Cross-Seal
-  | "archivist" // ϖ Archivist
-  | "endmark"; // Ω End-Mark
+  | "triad"
+  | "nullring"
+  | "mobius"
+  | "summoner"
+  | "gradient"
+  | "crossseal"
+  | "archivist"
+  | "endmark";
 
 export interface Rect {
   x: number;
@@ -204,7 +203,7 @@ export interface Player {
 export interface TaskDef {
   id: string;
   text: string;
-  need?: number; // minimum progress (stage index) required to show this task
+  need?: number;
 }
 
 export interface TaskSnap {
@@ -222,7 +221,6 @@ export interface SaveData {
   words: WordId[];
   /** Highest stage index cleared (1..STAGE_COUNT). 0 = nothing cleared. */
   progress: number;
-  /** Milestone flags kept for compatibility and special doors. */
   stage1: boolean;
   stage2: boolean;
   stage3: boolean;
