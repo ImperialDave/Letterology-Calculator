@@ -300,18 +300,11 @@ export interface UiSnap {
   shield: number;
   maxShield: number;
   shotLevel: number;
-  powerups: string[];
-  wordCooldown: number;
-  caseReady: boolean;
-  skillLabel: string;
-  skillName: string;
-  skillCd: number;
-  skillMax: number;
-  partyIndex: number;
-  partyCount: number;
-  time: number;
-  fps: number;
-  hardMode: boolean;
-  // extra for UI
-  [key: string]: any;
+  hint: string;
+  lore: { id: string; glyph: string; name: string; lines: string[] }[];
 }
+
+export const VIEW_W = 640;
+export const VIEW_H = 360;
+export const TILE = 48;
+export const STEP = 1 / 60;
