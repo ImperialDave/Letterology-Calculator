@@ -64,8 +64,12 @@ function ControlsCard() {
             <span>Burning dash that leaves fire</span>
             <span className="text-fg">R Inferno</span>
             <span>Longer, hotter</span>
-            <span className="text-fg">1–5</span>
-            <span>Swap · tap portraits</span>
+            <span className="text-fg">1–8</span>
+            <span>Direct swap to that letter in the cell · tap portraits</span>
+            <span className="text-fg">Tab Q ]</span>
+            <span>Cycle next letter</span>
+            <span className="text-fg">` [ R</span>
+            <span>Cycle previous letter</span>
             <span className="text-fg">Shift</span>
             <span>Capital after the Drop Cap · same button on touch</span>
           </div>
@@ -86,14 +90,14 @@ function ControlsCard() {
           <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-muted">
             <span className="text-fg">E</span>
             <span>Talk, enter, pick up · the Talk button only appears when something is in reach</span>
-            <span className="text-fg">Esc P Q</span>
+            <span className="text-fg">Esc P</span>
             <span>Pause · this list lives there</span>
           </div>
         </div>
       </div>
       <p className="mt-3 text-[11px] leading-snug text-subtle">
         Touch: left stick to move. Jump under the right thumb. Fang beside it. Skill above Jump, named for who is in play.
-        Stem and Shelf are separate so you do not fight the stick while you write. Tilt the stick and tap Skill to dash eight ways.
+        Stem and Shelf are separate so you do not fight the stick while you write. Tilt the stick and tap Skill to dash eight ways. When the cell grows, cycle with ↻ / ↺ beside the portraits.
       </p>
     </div>
   );
@@ -158,6 +162,17 @@ export function Glyphbound() {
       gameRef.current = null;
     };
   }, []);
+
+  // Title-screen cheat: type "Chief69" to unlock all ledgers, letters, words, relics.
+  useEffect(() => {
+    if (ui.mode !== "title") return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key.length === 1) gameRef.current?.feedCheat(e.key);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [ui.mode]);
 
   const g = () => gameRef.current;
   const playing = ui.mode === "play" || ui.mode === "hub" || ui.mode === "transform" || ui.mode === "dialogue";
@@ -363,7 +378,18 @@ export function Glyphbound() {
         <>
           <div className="pointer-events-none absolute left-4 top-4 right-4 flex items-start justify-between">
             <div className="pointer-events-auto flex flex-col gap-2">
-              <div className="flex max-w-[22rem] flex-wrap gap-1.5">
+              <div className="flex max-w-[22rem] flex-wrap items-center gap-1.5">
+                {ui.party.length > 1 && (
+                  <button
+                    type="button"
+                    data-role="cyclePrev"
+                    className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-surface/80 text-sm text-muted"
+                    aria-label="Previous letter"
+                    title="Previous letter (` / [ / R)"
+                  >
+                    ↺
+                  </button>
+                )}
                 {ui.party.map((L, i) => {
                   const kit = KITS[L] ?? KITS.c;
                   const on = ui.letter === L;
@@ -386,6 +412,17 @@ export function Glyphbound() {
                     </button>
                   );
                 })}
+                {ui.party.length > 1 && (
+                  <button
+                    type="button"
+                    data-role="cycle"
+                    className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-surface/80 text-sm text-muted"
+                    aria-label="Next letter"
+                    title="Next letter (Tab / Q / ])"
+                  >
+                    ↻
+                  </button>
+                )}
               </div>
               <div className="flex items-center gap-1 pl-1">
                 {Array.from({ length: ui.maxShield }).map((_, i) => (

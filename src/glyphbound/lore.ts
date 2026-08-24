@@ -33,8 +33,12 @@ export interface LoreDef {
 }
 
 /**
- * Clear English. Every line is spoken by a letter who lived through the landing.
- * G is the traitor who opened the ports. Willingness is not fate.
+ * Clear English lore. Every line is spoken by a letter who lived through
+ * the landing. G is the traitor who opened the ports. The Dominion is the
+ * numbers. The deeper you go, the tighter the count becomes.
+ *
+ * Letterology note: willingness is not fate. The ledger can be rewritten
+ * only by those who still choose to mark the page.
  */
 export const LORE: Record<LoreId, LoreDef> = {
   e: {
@@ -43,9 +47,9 @@ export const LORE: Record<LoreId, LoreDef> = {
     lines: [
       "Your shield blocks every hit. It comes back on its own. Do not forget that.",
       "G used to be one of us. He opened the ports and let the numbers land. He still wears a letter shape so the rest of us will hesitate.",
-      "Get the Drop Cap in the Overcast Exchange. After that, Shift capitalizes whoever is in play. Every letter in the cell has a capital: a thicker stroke, a louder skill. Capitals will not fit a vent.",
-      "The first five doors on the left are closed chapters. Each one is a single ledger. Five letters wait in those five pages: c Aether at the start, s Gale in the Exchange, b Stone in the Fort, Tide in the Press, Ember in the Coil.",
-      "Pulse is Tide. A ring that drinks ink back and stills what it touches. Capital E is a well — a shelf of water, a heart, a freeze. Canals will not take me. If I am still sitting in the Stacks, I am teaching. Over a canal, I am joining.",
+      "Get the Drop Cap in the Overcast Exchange. It lets you turn into capital C. Capital letters hit harder and can break certain walls.",
+      "The first five districts are the First Book. After that the ledgers keep going — progressive stages that grow tighter the further you write.",
+      "Talk to everyone in the Stacks. Each of us keeps a piece of the map the Dominion tried to erase.",
     ],
   },
   t: {
@@ -55,17 +59,17 @@ export const LORE: Record<LoreId, LoreDef> = {
       "Press L to build a stem wall. Hold down, then L, or use the Shelf button on touch, to build a platform you can stand on.",
       "J fires your Fang shot. The straight 1s hate curves. The 0s float and spit from a distance.",
       "Ink refills slowly. Do not waste it on walls you do not need.",
-      "Later stages starve your ink on purpose. Pick up every drop. The five chapter doors never change. New pages are only through the gold hall on the right — the Unbound Sentence.",
-      "On mobile, Stem and Shelf are separate so you do not have to fight the stick while you write.",
+      "Later stages starve your ink on purpose. Pick up every drop. A shelf at the wrong moment can cost you the fight.",
+      "On mobile, the Stem and Shelf buttons are there so you do not have to fight the stick while you write.",
     ],
   },
   r: {
     glyph: "r",
     name: "r",
     lines: [
-      "I carried messages between the districts. The numbers called them errors and deleted the routes. I am Ember now. Heat is the only route they could not delete.",
-      "Flare is a burning dash. It leaves fire on the floor. Capital R is Inferno — longer, hotter, still a courier.",
-      "The Coil Yard is full of spikes. Dash them. If you reach the painted C on a high roof, stand in the bowl. That is a Case Font. You need the Drop Cap first.",
+      "I carried messages between the districts. The numbers called them errors and deleted the routes. Now I wait here.",
+      "If you reach the painted C on a high roof, stand in the bowl. That is a Case Font. You need the Drop Cap first.",
+      "Messages used to move sideways across Calculara. Now they only move up the count — stage after stage, each one a tighter sentence.",
       "When a stage ends, the gate will not open while a warden still stands. Drop the warden. Then the page turns.",
     ],
   },
@@ -88,26 +92,28 @@ export const LORE: Record<LoreId, LoreDef> = {
       "Free other letters when you can. Pick up every scrap of ink. The Dominion wants you empty.",
       "The Null Ledger waits past G's Fort. Nullis is not a number. It is the habit of counting everything down to nothing.",
       "Lasers pulse on a beat. Wait for the dark window, then cross. The 9s blink and rain ink from above.",
-      "The Continue gate in the hub is gone. You want the Unbound Sentence — the gold hall past the columns. That is the only door that keeps offering new ledgers until 60. Last Page only reopens the one you just closed. The five books on the left stay on the first five.",
-      "After End-Mark, the sentence is not over. Operators land: plus heals its own, minus eats the walls you write, times multiplies, divide splits the lane. Fold off a stem. Let the tide carry a shelf.",
+      "Deeper stages invent new roles: splitters, suction rings, wall-climbers, summoners. Learn each one before the next arrives.",
+      "The Continue gate in the hub opens the next unread ledger. The deeper you go, the more the page fights back.",
     ],
   },
   s: {
     glyph: "s",
     name: "s",
     lines: [
-      "I am not their snake. I am Gale. Put me in the cell. Cut is a wind the count cannot divide. Capital S is a scythe — two blades.",
-      "Jump again in the air. Once. Capital S can hold a glide if you keep the jump held on the way down.",
-      "I move fast. Use me for gaps and for getting behind slow tanks. Vents are mine. Capitals and b are too wide.",
+      "I am not their snake. Put me in your party. My skill cuts in a way their math does not see.",
+      "I move fast. Use me for gaps and for getting behind slow tanks.",
+      "Vents are narrow. Stay small. Capital C and b are too wide for some of the shafts deeper in.",
+      "When a Cross-Seal starts to spin, switch to me and slip the gap. Timing is the only language they respect.",
     ],
   },
   b: {
     glyph: "b",
     name: "b",
     lines: [
-      "I held a door against the first landing. I am Stone. I will hold this one too.",
-      "Brace puts a wall in front of us. Capital B is Bulwark — and from the air, Meteor. Land on them.",
+      "I held a door against the first landing. I will hold this one too.",
+      "Stand behind me when a boss hits hard. My brace skill puts a wall in front of us.",
       "G still looks like a letter on purpose. Do not hesitate. He chose the ports. We choose the page.",
+      "In the progressive ledgers the wardens get heavier. Brace, shoot, rewrite. That is the order.",
     ],
   },
   m: {
@@ -117,6 +123,7 @@ export const LORE: Record<LoreId, LoreDef> = {
       "This street had a name. They filed it as 14 and painted over the letters.",
       "s is stuck in a vent over the crossing in the Exchange. Free her. She is worth the risk.",
       "People hid things when G opened the ports — secret shelves, breakable blocks, ink caches. Look up and look behind.",
+      "Secrets are not on the main path. That is the point. The Dominion only files what it can see from the road.",
     ],
   },
   a: {
@@ -125,6 +132,7 @@ export const LORE: Record<LoreId, LoreDef> = {
     lines: [
       "The bank facade used to have verbs on it. They sanded them off and left only balances.",
       "Only the balances still talk. Do not listen to them. They will tell you that rounding down is mercy.",
+      "Every progressive stage is another column in the same ledger. The numbers want the total. We want the sentence to keep going.",
     ],
   },
   y: {
@@ -133,6 +141,7 @@ export const LORE: Record<LoreId, LoreDef> = {
     lines: [
       "The Drop Cap is in First Letter's chapel — a glass bowl on a high roof in the Exchange.",
       "Dualis waits in the pit under that district. Kill it before it splits into two. The STACKS gate opens only when it falls.",
+      "Dualis is the first warden. It teaches you that the Dominion doubles what it cannot erase. Hit hard. Do not let the split breathe.",
     ],
   },
   q: {
@@ -141,6 +150,7 @@ export const LORE: Record<LoreId, LoreDef> = {
     lines: [
       "They told me to stand in line and become a number. I stepped out. The line did not notice.",
       "s is still in the shaft. Take her with you. Two letters are harder to file than one.",
+      "The hub remembers every stage you clear. The Continue gate always points at the next unread page.",
     ],
   },
   u: {
@@ -149,6 +159,7 @@ export const LORE: Record<LoreId, LoreDef> = {
     lines: [
       "The jump across the canals is short on purpose. Build a shelf while you hang: hold down, then L, or tap Shelf.",
       "The water will pull you under if you trust empty air. Crumble platforms fall after you stand on them. Keep moving.",
+      "In deeper canals the gaps grow and the ink gets scarce. Plan the shelf before you jump, not after.",
     ],
   },
   g: {
@@ -157,8 +168,8 @@ export const LORE: Record<LoreId, LoreDef> = {
     lines: [
       "Not that G. I fled his court when the first freighters landed.",
       "He is in the fort past the Coil. He still wears the letter shape so the rest of us will hesitate before we shoot.",
-      "RISE is on a high roller in the Gutter. LOCK pins a 6 in place so you can pass.",
-      "He calls himself the Importer. We call him the first betrayal.",
+      "RISE is on a high roller in the Gutter. Bounce on shelves or the ink holds you down. LOCK pins a 6 in place so you can pass.",
+      "He calls himself the Importer. We call him the first betrayal. When you face him, do not wait for him to open another port.",
     ],
   },
   p: {
@@ -166,8 +177,8 @@ export const LORE: Record<LoreId, LoreDef> = {
     name: "p",
     lines: [
       "Paragraphs used to start here. Now the coils do.",
-      "Stay small for the vents. Dash past the spikes. LOCK pins a 6 in place.",
-      "Lasers and vents together are a sentence with no pause. Learn the rhythm.",
+      "Stay small for the vents. Dash past the spikes. LOCK pins a 6 in place. The Coil Yard is where the Dominion tests whether you can still choose your own path.",
+      "Lasers and vents together are a sentence with no pause. Learn the rhythm. The dark window is short on purpose.",
     ],
   },
   f: {
@@ -176,6 +187,7 @@ export const LORE: Record<LoreId, LoreDef> = {
     lines: [
       "I used to mark footnotes. Now I mark exits. When a stage feels finished, look for a glowing gate. It will not open while the warden is still standing.",
       "The deeper ledgers invent new wardens. Dualis splits. G imports. Nullis erases. After them come symbols that were never meant to be numbers.",
+      "End-Mark is the last of the second landing. It begins whole. When you crack it, the pieces chase you separately. Finish both arcs.",
       "Thirty ledgers. That is the current count of the progressive book. Clear them and the final gate will open.",
     ],
   },
@@ -184,18 +196,18 @@ export const LORE: Record<LoreId, LoreDef> = {
     name: "h",
     lines: [
       "Hearts mend the curve. Pick them up when you see them. The Dominion does not leave many.",
-      "Your shield is a ward, not a wall. It blocks every hit and rebuilds on its own.",
-      "Scale pickups raise your maximum shield. Fang pickups raise your shot.",
+      "Your shield is a ward, not a wall. It blocks every hit and rebuilds on its own. Do not stand in spikes just because you have plates left.",
+      "Scale pickups raise your maximum shield. Fang pickups raise your shot. Both are rare deeper in. Take them when the path offers them.",
     ],
   },
   d: {
     glyph: "d",
     name: "d",
     lines: [
-      "I am the door that still remembers what a door was for.",
-      "Left hall: five closed chapters. Each door is one ledger, always the same. Right hall: the Unbound Sentence. That is the only door that keeps opening new ledgers through 60. Last Page only repeats.",
-      "Thirty was a period. Sixty is the remainder. If you see nested gold arches, that is the road.",
-      "Once you clear a stage, it is written into your progress. Keep walking the unbound hall. The five books will still be there if you want a finished sentence again.",
+      "I am the door that still remembers what a door was for. Most of the portals you see are counted shut until you clear the stage.",
+      "The hub has milestone doors for the big districts. The Continue gate leads into the progressive ledgers — stages that grow tighter the further you go.",
+      "Once you clear a stage, its number is written into your progress. The Continue gate always opens the next unread page. You can also replay what you have already finished.",
+      "Thirty stages is not a wall. It is a long sentence. Keep writing.",
     ],
   },
   v: {
@@ -203,7 +215,8 @@ export const LORE: Record<LoreId, LoreDef> = {
     name: "v",
     lines: [
       "Vents are narrow on purpose. Capital C and the letter b are too wide for some of them. Switch to s or stay lowercase when you need to slip through.",
-      "Möbius Coils treat walls the way you treat floors. They climb. Hit them when they turn a corner.",
+      "Some vents reverse. Watch the flow before you commit.",
+      "Möbius Coils treat walls the way you treat floors. They climb. Hit them when they turn a corner and slow for a moment.",
     ],
   },
   w: {
@@ -212,6 +225,7 @@ export const LORE: Record<LoreId, LoreDef> = {
     lines: [
       "WALL thickens your scribe stems. BURN makes them hurt numbers that touch them. RISE lets shelves bounce you. LOCK freezes enemies that lean on your stems.",
       "Learn the four words in order. The later stages assume you have them.",
+      "Scribe is the one tool the Dominion cannot fully file. A stem is a refusal. A shelf is a place that was not on their map.",
     ],
   },
   x: {
@@ -219,7 +233,8 @@ export const LORE: Record<LoreId, LoreDef> = {
     name: "x",
     lines: [
       "Cross-Seals project four short laser arms and then rotate. The safe window is small. Treat them like a moving intersection, not a wall.",
-      "Archivists copy your last facing and fire an echo. Change your pattern or the echo will hit you with your own shot.",
+      "Archivists do not shoot first. They copy your last moves and play them back as hostile echoes. Change your pattern or the echo will hit you with your own shot.",
+      "Both of them appear in the middle progressive stages. Learn the tell. The arm flash and the copy glow are warnings, not decoration.",
     ],
   },
   z: {
@@ -235,17 +250,18 @@ export const LORE: Record<LoreId, LoreDef> = {
     glyph: "j",
     name: "j",
     lines: [
-      "Stop. Look both ways. Left of me: five closed books. Each one is a single, finished ledger. Walk them if you want those stories. They will not become something else.",
-      "Right of me: the Unbound Sentence. Nested gold. That hall is the rest of the book. It is the only door that keeps opening a new ledger, from 6 through 60.",
-      "The small grey mark further in is Last Page. It only repeats what you already closed. New writing is through the gold.",
+      "Fang is your main shot. Upgrade it when you find the fang pickups. Higher levels pierce and spread.",
+      "Do not dump all your ink into walls if a boss is about to appear. You will need the shot more than the shelf.",
+      "Summoners stay back and open ports. Prioritize them. Every second they live is another digit on the field.",
     ],
   },
   l: {
     glyph: "l",
     name: "l",
     lines: [
-      "Scribe is the one tool the Dominion cannot fully file. A stem is a refusal. A shelf is a place to stand that was not on their map.",
-      "Use them. The progressive stages starve your ink if you spend carelessly.",
+      "Scribe is the one tool the Dominion cannot fully file. A stem is a refusal to be only a number. A shelf is a place to stand that was not on their map.",
+      "Use them. The progressive stages are designed to starve your ink if you spend carelessly.",
+      "Null-Rings open a short suction field. Projectiles and players both get pulled. Step out before the iris snaps shut, or shoot from outside the pull.",
     ],
   },
   o: {
@@ -253,6 +269,7 @@ export const LORE: Record<LoreId, LoreDef> = {
     name: "o",
     lines: [
       "Null-Rings open a short suction field. Projectiles and players both get pulled. Step out before the iris snaps shut, or shoot from outside the pull.",
+      "Möbius Coils climb walls and leave a fading trail. Do not stand in the trail. Hit them when they turn a corner and slow for a moment.",
       "Gradients lean into slopes and accelerate downhill. Do not fight them on a drop. Climb above and shoot down.",
     ],
   },
@@ -260,9 +277,9 @@ export const LORE: Record<LoreId, LoreDef> = {
     glyph: "i",
     name: "i",
     lines: [
-      "Ink is the only currency that still belongs to us. Pick up every drop.",
+      "Ink is the only currency that still belongs to us. Pick up every drop. Later stages place regenerating ink behind lasers or behind a Summoner you have to clear first.",
       "Triad-Splitters break into three small 1s when they die. Kill the pieces or they will try to reform.",
-      "Willingness, not fate, is what turns the page.",
+      "The progressive book has thirty ledgers. Each one is a tighter sentence. Willingness, not fate, is what turns the page.",
     ],
   },
   c: {
@@ -270,7 +287,7 @@ export const LORE: Record<LoreId, LoreDef> = {
     name: "c",
     lines: [
       "You are the lowercase mark nobody counted. That is why you can still move.",
-      "Capital C is not a different person. It is the same curve, closed and thickened.",
+      "Capital C is not a different person. It is the same curve, closed and thickened. Use the Case Font when you have the Drop Cap.",
       "The work is not to become a number. The work is to keep writing until the count has to answer.",
       "Letterology is willingness, not fate. Every stage you clear is a sentence the Dominion did not authorize. Keep going.",
     ],

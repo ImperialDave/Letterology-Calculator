@@ -84,7 +84,7 @@ export function drawTiles(
       } else if (ch === "v") {
         drawVent(ctx, x, y, t);
       } else if (ch === "^") {
-        drawSpikes(ctx, x, y, t);
+        drawSpikes(ctx, x, y, t, tx, ty);
       } else if (ch === "_") {
         drawRail(ctx, x, y, t, theme);
       } else if (ch === "&") {
@@ -398,16 +398,35 @@ function drawCrumble(ctx: CanvasRenderingContext2D, x: number, y: number, t: num
 }
 
 function drawSluice(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, theme: string) {
-  const ink = theme === "coil" ? "196,106,212" : "45,140,110";
-  ctx.fillStyle = `rgba(${ink},0.55)`;
-  ctx.fillRect(x, y + 16, TILE, TILE - 16);
-  ctx.fillStyle = `rgba(${ink},0.28)`;
-  ctx.fillRect(x, y + 8, TILE, 10);
-  ctx.strokeStyle = `rgba(232,236,232,${0.15 + Math.sin(t * 4 + x * 0.05) * 0.1})`;
+  const ink =
+    theme === "coil"
+      ? "196,106,212"
+      : theme === "canal"
+        ? "45,180,150"
+        : theme === "glacier"
+          ? "120,180,210"
+          : "45,140,110";
+  // Deep residual ink
+  ctx.fillStyle = `rgba(${ink},0.62)`;
+  ctx.fillRect(x, y + 18, TILE, TILE - 18);
+  // Surface film
+  ctx.fillStyle = `rgba(${ink},0.32)`;
+  ctx.fillRect(x, y + 10, TILE, 12);
+  // Moving surface wave
+  ctx.strokeStyle = `rgba(232,236,232,${0.18 + Math.sin(t * 3.2 + x * 0.04) * 0.1})`;
+  ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.moveTo(x, y + 22 + Math.sin(t * 3 + x) * 2);
-  ctx.quadraticCurveTo(x + 24, y + 18, x + TILE, y + 24);
+  ctx.moveTo(x, y + 20 + Math.sin(t * 2.6 + x * 0.08) * 2.5);
+  ctx.quadraticCurveTo(x + 16, y + 14 + Math.sin(t * 3.1) * 2, x + 32, y + 21);
+  ctx.quadraticCurveTo(x + 40, y + 24, x + TILE, y + 19 + Math.cos(t * 2.4 + x) * 2);
   ctx.stroke();
+  // Occasional ink bubble
+  const bx = x + 10 + ((Math.sin(t * 1.7 + x) + 1) * 0.5) * (TILE - 20);
+  const by = y + 22 + Math.sin(t * 4 + x * 0.3) * 6;
+  ctx.fillStyle = `rgba(232,236,232,${0.12 + Math.sin(t * 5 + x) * 0.06})`;
+  ctx.beginPath();
+  ctx.arc(bx, by, 2.2, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 function drawVent(ctx: CanvasRenderingContext2D, x: number, y: number, t: number) {
@@ -442,7 +461,7 @@ function drawLaser(ctx: CanvasRenderingContext2D, x: number, y: number, t: numbe
   ctx.strokeStyle = hot ? "#d45a4a" : warn ? "#e8d48a" : "#7a8b96";
   ctx.shadowColor = hot ? "#d45a4a" : warn ? "#e8d48a" : "transparent";
   ctx.shadowBlur = hot ? 14 : warn ? 8 : 0;
-  ctx.lineWidth = hot ? 4 : warn ? 3 : 2;
+  ctx.lineWidth = hot ? 3.5 : warn ? 2.5 : 1.6;
   ctx.beginPath();
   ctx.moveTo(x + 24, y + 2);
   ctx.lineTo(x + 24, y + TILE - 2);
@@ -450,11 +469,11 @@ function drawLaser(ctx: CanvasRenderingContext2D, x: number, y: number, t: numbe
   if (hot) {
     ctx.globalAlpha = 0.35;
     ctx.fillStyle = "#d45a4a";
-    ctx.fillRect(x + 18, y, 12, TILE);
+    ctx.fillRect(x + 20, y, 8, TILE);
   } else if (warn) {
     ctx.globalAlpha = 0.18;
     ctx.fillStyle = "#e8d48a";
-    ctx.fillRect(x + 20, y, 8, TILE);
+    ctx.fillRect(x + 21, y, 6, TILE);
   }
   ctx.restore();
 }
@@ -506,21 +525,38 @@ function drawFan(ctx: CanvasRenderingContext2D, x: number, y: number, t: number)
   ctx.restore();
 }
 
-function drawSpikes(ctx: CanvasRenderingContext2D, x: number, y: number, t: number) {
+function drawSpikes(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, tx = 0, ty = 0) {
+  // Match engine pulse rule: ~30% of teeth retract on a 1.8s cycle.
+  const pulse = ((tx * 17 + ty * 31) % 10) < 3;
+  let extend = 1;
+  if (pulse) {
+    const phase = tx * 0.41 + ty * 0.17;
+    const cycle = (t + phase) % 1.8;
+    // Smooth rise/fall so it reads as mechanical lizard-tech rather than a blink.
+    if (cycle < 0.2) extend = cycle / 0.2;
+    else if (cycle < 1.0) extend = 1;
+    else if (cycle < 1.25) extend = 1 - (cycle - 1.0) / 0.25;
+    else extend = 0;
+  }
+  const tipY = y + TILE - (TILE - 10) * extend;
+  const midY = y + TILE - (TILE - 14) * extend;
   for (let i = 0; i < 3; i++) {
     const ox = x + 4 + i * 14;
-    ctx.fillStyle = "#6a2e2a";
+    const wobble = pulse ? 0 : Math.sin(t * 8 + i) * 1.5;
+    ctx.fillStyle = pulse && extend < 0.35 ? "#3a2420" : "#6a2e2a";
     ctx.beginPath();
     ctx.moveTo(ox, y + TILE);
-    ctx.lineTo(ox + 7, y + 10 + Math.sin(t * 8 + i) * 1.5);
+    ctx.lineTo(ox + 7, tipY + wobble);
     ctx.lineTo(ox + 14, y + TILE);
     ctx.fill();
-    ctx.fillStyle = "#d45a4a";
-    ctx.beginPath();
-    ctx.moveTo(ox + 4, y + TILE);
-    ctx.lineTo(ox + 7, y + 14);
-    ctx.lineTo(ox + 10, y + TILE);
-    ctx.fill();
+    if (extend > 0.2) {
+      ctx.fillStyle = "#d45a4a";
+      ctx.beginPath();
+      ctx.moveTo(ox + 4, y + TILE);
+      ctx.lineTo(ox + 7, midY);
+      ctx.lineTo(ox + 10, y + TILE);
+      ctx.fill();
+    }
   }
 }
 
