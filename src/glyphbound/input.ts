@@ -81,11 +81,15 @@ export class Input {
     window.addEventListener("keydown", this.onKeyDown);
     window.addEventListener("keyup", this.onKeyUp);
     window.addEventListener("blur", this.clear);
+    // Safety net: mobile browsers sometimes drop the pointer without a local up/cancel.
+    window.addEventListener("pointerup", this.onWindowPtrEnd);
+    window.addEventListener("pointercancel", this.onWindowPtrEnd);
     document.addEventListener("visibilitychange", this.onVis);
     el.addEventListener("pointerdown", this.onPtrDown);
     el.addEventListener("pointermove", this.onPtrMove);
     el.addEventListener("pointerup", this.onPtrUp);
     el.addEventListener("pointercancel", this.onPtrUp);
+    el.addEventListener("lostpointercapture", this.onLostCapture);
     el.addEventListener("contextmenu", (e) => e.preventDefault());
   }
 
@@ -93,11 +97,14 @@ export class Input {
     window.removeEventListener("keydown", this.onKeyDown);
     window.removeEventListener("keyup", this.onKeyUp);
     window.removeEventListener("blur", this.clear);
+    window.removeEventListener("pointerup", this.onWindowPtrEnd);
+    window.removeEventListener("pointercancel", this.onWindowPtrEnd);
     document.removeEventListener("visibilitychange", this.onVis);
     this.canvas?.removeEventListener("pointerdown", this.onPtrDown);
     this.canvas?.removeEventListener("pointermove", this.onPtrMove);
     this.canvas?.removeEventListener("pointerup", this.onPtrUp);
     this.canvas?.removeEventListener("pointercancel", this.onPtrUp);
+    this.canvas?.removeEventListener("lostpointercapture", this.onLostCapture);
   }
 
   private onVis = () => {
@@ -132,7 +139,11 @@ export class Input {
     const role = t.dataset.role;
     if (!role) return;
     e.preventDefault();
-    t.setPointerCapture?.(e.pointerId);
+    try {
+      t.setPointerCapture?.(e.pointerId);
+    } catch {
+      /* capture can fail on some mobile browsers; still track the pointer */
+    }
     this.pointers.set(e.pointerId, { role });
     if (role === "stick") {
       this.stick.active = true;
@@ -151,10 +162,10 @@ export class Input {
     if (p.role === "stick") this.updateStick(e);
   };
 
-  private onPtrUp = (e: PointerEvent) => {
-    const p = this.pointers.get(e.pointerId);
+  private releasePointer(pointerId: number) {
+    const p = this.pointers.get(pointerId);
     if (!p) return;
-    this.pointers.delete(e.pointerId);
+    this.pointers.delete(pointerId);
     if (p.role === "stick") {
       const still = [...this.pointers.values()].some((q) => q.role === "stick");
       if (!still) {
@@ -165,6 +176,20 @@ export class Input {
     } else {
       this.buttons.delete(p.role);
     }
+  }
+
+  private onPtrUp = (e: PointerEvent) => {
+    this.releasePointer(e.pointerId);
+  };
+
+  private onLostCapture = (e: PointerEvent) => {
+    this.releasePointer(e.pointerId);
+  };
+
+  /** Window-level safety: if the finger lifts outside the game root, still release. */
+  private onWindowPtrEnd = (e: PointerEvent) => {
+    if (!this.pointers.has(e.pointerId)) return;
+    this.releasePointer(e.pointerId);
   };
 
   private updateStick(e: PointerEvent) {
@@ -175,7 +200,8 @@ export class Input {
       x /= m;
       y /= m;
     }
-    if (m < 0.22) {
+    // Slightly larger dead-zone so a resting thumb does not drift into movement.
+    if (m < 0.28) {
       x = 0;
       y = 0;
     }
@@ -196,6 +222,17 @@ export class Input {
   }
 
   poll(): Actions {
+    // Defensive: if the stick claims active but no stick pointer remains, force-release.
+    // Covers rare mobile cases where up/cancel/lostcapture never arrived.
+    if (this.stick.active) {
+      const stillStick = [...this.pointers.values()].some((q) => q.role === "stick");
+      if (!stillStick) {
+        this.stick.active = false;
+        this.stick.x = 0;
+        this.stick.y = 0;
+      }
+    }
+
     const a = empty();
     let mx = 0;
     if (this.held("KeyA") || this.held("ArrowLeft")) mx -= 1;
@@ -239,10 +276,14 @@ export class Input {
       this.edge("Escape") ||
       this.edge("KeyP") ||
       (this.buttons.has("pause") && !this.prevButtons.has("pause"));
+    // Dedicated mobile shelf button forces down so a single tap places a platform.
+    const shelfTap = this.buttons.has("shelf") && !this.prevButtons.has("shelf");
     a.word =
       this.edge("KeyL") ||
       this.edge("KeyI") ||
-      (this.buttons.has("word") && !this.prevButtons.has("word"));
+      (this.buttons.has("word") && !this.prevButtons.has("word")) ||
+      shelfTap;
+    if (shelfTap) a.down = true;
     a.caseShift =
       this.edge("ShiftLeft") ||
       this.edge("ShiftRight") ||
