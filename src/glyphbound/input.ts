@@ -58,6 +58,10 @@ const GAME_KEYS = new Set([
   "Digit2",
   "Digit3",
   "Digit4",
+  "Digit5",
+  "Digit6",
+  "Digit7",
+  "Digit8",
   "Escape",
 ]);
 
@@ -231,7 +235,7 @@ export class Input {
       this.held("KeyW") ||
       this.held("ArrowUp") ||
       this.buttons.has("jump");
-    a.jumpHeld = jumpNow;
+    a.jumpHeld = jumpNow || (this.stick.active && this.stick.y < -0.48);
     a.jump =
       this.edge("Space") ||
       this.edge("KeyW") ||
@@ -252,6 +256,7 @@ export class Input {
     a.pause =
       this.edge("Escape") ||
       this.edge("KeyP") ||
+      this.edge("KeyQ") ||
       (this.buttons.has("pause") && !this.prevButtons.has("pause"));
     a.word =
       this.edge("KeyL") ||

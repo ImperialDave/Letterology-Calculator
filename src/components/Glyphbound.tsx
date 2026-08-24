@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { GameEngine } from "@/glyphbound/engine";
 import type { UiSnap } from "@/glyphbound/types";
+import { STAGE_COUNT } from "@/glyphbound/types";
 import { Pause, Volume2, VolumeX } from "lucide-react";
 import { KITS, skillName } from "@/glyphbound/roster";
 
@@ -15,28 +16,84 @@ function ControlsCard() {
   return (
     <div className="rounded-lg border border-border bg-elevated/90 p-3 text-left">
       <p className="mb-2 text-[11px] uppercase tracking-[0.2em] text-accent">Controls</p>
-      <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm text-muted">
-        <span className="text-fg">A / D</span>
-        <span>Move · left stick on touch</span>
-        <span className="text-fg">Space</span>
-        <span>Jump · tap hop, hold full</span>
-        <span className="text-fg">J</span>
-        <span>Fang shot · hold to fire</span>
-        <span className="text-fg">K</span>
-        <span>Skill — c dashes eight ways through shot and digit (once in air). Gale cut, Stone brace, Tide pulse, Ember flare</span>
-        <span className="text-fg">L</span>
-        <span>Stem wall · hold down, then L, for a Shelf</span>
-        <span className="text-fg">E</span>
-        <span>Talk / enter · appears on touch when you can</span>
-        <span className="text-fg">1–8</span>
-        <span>Swap letters · tap portraits</span>
-        <span className="text-fg">Shift</span>
-        <span>Case shift any letter (after Drop Cap)</span>
-        <span className="text-fg">Ward</span>
-        <span>Always on · blocks every hit</span>
+      <div className="grid gap-3 text-sm">
+        <div>
+          <p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-subtle">Move</p>
+          <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-muted">
+            <span className="text-fg">A D · ← →</span>
+            <span>Walk</span>
+            <span className="text-fg">Space W ↑</span>
+            <span>Jump · tap hop, hold full</span>
+            <span className="text-fg">S ↓</span>
+            <span>Drop through shelves · aim dash down</span>
+            <span className="text-fg">Stick</span>
+            <span>Walk · tilt down to drop · tilt up + skill to dash up</span>
+          </div>
+        </div>
+        <div>
+          <p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-subtle">Fight</p>
+          <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-muted">
+            <span className="text-fg">J Z</span>
+            <span>Fang · hold to fire</span>
+            <span className="text-fg">K X</span>
+            <span>Skill of the letter in play</span>
+            <span className="text-fg">Ward</span>
+            <span>Always on · eats a hit before health</span>
+          </div>
+        </div>
+        <div>
+          <p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-subtle">Letters · K</p>
+          <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-muted">
+            <span className="text-fg">c Dash</span>
+            <span>Eight-way. Through shot and digit. Once in the air, refresh on land. Hold a direction.</span>
+            <span className="text-fg">C Cage</span>
+            <span>Stem wall in front</span>
+            <span className="text-fg">s Cut</span>
+            <span>Gale blade · air hop is Space in the air</span>
+            <span className="text-fg">S Scythe</span>
+            <span>Two arcs · hold Space to glide</span>
+            <span className="text-fg">b Brace</span>
+            <span>Stone shell</span>
+            <span className="text-fg">B Bulwark</span>
+            <span>Heavier shell · Meteor if used in the air</span>
+            <span className="text-fg">e Pulse</span>
+            <span>Stun, ink, ice shelf · swim in sluice</span>
+            <span className="text-fg">E Well</span>
+            <span>Heal a mark · wider freeze</span>
+            <span className="text-fg">r Flare</span>
+            <span>Burning dash that leaves fire</span>
+            <span className="text-fg">R Inferno</span>
+            <span>Longer, hotter</span>
+            <span className="text-fg">1–5</span>
+            <span>Swap · tap portraits</span>
+            <span className="text-fg">Shift</span>
+            <span>Capital after the Drop Cap · same button on touch</span>
+          </div>
+        </div>
+        <div>
+          <p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-subtle">Write</p>
+          <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-muted">
+            <span className="text-fg">L I</span>
+            <span>Stem · a wall you can stand beside</span>
+            <span className="text-fg">↓ + L</span>
+            <span>Shelf · a floor you can stand on</span>
+            <span className="text-fg">Words</span>
+            <span>WALL RISE LOCK BURN FOLD TIDE as you collect them. FOLD wall-jumps off stems. TIDE drifts shelves.</span>
+          </div>
+        </div>
+        <div>
+          <p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-subtle">Talk · Menu</p>
+          <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-muted">
+            <span className="text-fg">E</span>
+            <span>Talk, enter, pick up · the Talk button only appears when something is in reach</span>
+            <span className="text-fg">Esc P Q</span>
+            <span>Pause · this list lives there</span>
+          </div>
+        </div>
       </div>
       <p className="mt-3 text-[11px] leading-snug text-subtle">
-        Touch: left stick to move. Jump under the right thumb. Fang beside it. Stem and Shelf are separate so you do not fight the stick while you write. Talk only shows when something is in reach.
+        Touch: left stick to move. Jump under the right thumb. Fang beside it. Skill above Jump, named for who is in play.
+        Stem and Shelf are separate so you do not fight the stick while you write. Tilt the stick and tap Skill to dash eight ways.
       </p>
     </div>
   );
@@ -123,7 +180,7 @@ export function Glyphbound() {
             </h1>
             <p className="mt-2 font-display text-xl italic text-accent">Case of the Crescent</p>
             {ui.progress > 0 && (
-              <p className="mt-3 text-sm tracking-wide text-muted">Ledger {ui.progress} of 30 closed</p>
+              <p className="mt-3 text-sm tracking-wide text-muted">Ledger {ui.progress} of {STAGE_COUNT} closed</p>
             )}
           </div>
           <div className="flex w-full max-w-sm flex-col gap-3">
@@ -220,7 +277,7 @@ export function Glyphbound() {
             <h2 className="font-display text-3xl">Paused</h2>
             <p className="mt-1 text-sm text-muted">
               {ui.stage}
-              {ui.progress > 0 ? ` · ${ui.progress}/30` : ""}
+              {ui.progress > 0 ? ` · ${ui.progress}/${STAGE_COUNT}` : ""}
             </p>
             {ui.tasks.length > 0 && (
               <div className="mt-3 rounded-lg border border-border bg-elevated/80 p-3">
