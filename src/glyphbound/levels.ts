@@ -411,164 +411,211 @@ function buildProgressive(n: number): string[] {
   const rand = rng(n * 9973 + 42);
   const tier = Math.min(ROLE_TIERS.length - 1, Math.floor((n - 1) / 3));
   const roles = ROLE_TIERS[tier];
-  const W = 130 + Math.min(110, n * 5);
-  const H = 12 + Math.min(7, Math.floor(n / 4));
+  const pick = () => roles[Math.floor(rand() * roles.length)];
+  const H = 15 + Math.min(11, Math.floor(n / 2.4));
   const floorY = H - 3;
+  const beats = 4 + Math.floor((n - 1) / 5);
+  const W = 28 + beats * (16 + Math.min(8, Math.floor(n / 4))) + 22;
   const g = grid(W, H, floorY) as Grid;
   const { put, fill } = g;
 
+  const pit = (x: number, w: number, spiked = true) => {
+    fill(x, floorY, w, ".");
+    if (spiked && floorY + 1 < H - 1) fill(x, floorY + 1, w, "^");
+  };
+
   put(1, floorY - 1, "@");
-  put(4, floorY - 1, "i");
-  if (n >= 8) put(6, floorY - 1, "h");
+  put(3, floorY - 1, "i");
+  if (n >= 8) put(5, floorY - 1, "h");
 
-  const mid = Math.floor(W * 0.42);
-  put(mid, floorY - 1, "%");
-  put(mid + 2, floorY - 1, "i");
+  let cx = 8;
+  const island = (w: number, loot = true) => {
+    fill(cx, floorY, w, "#");
+    if (loot && rand() < 0.55) put(cx + Math.max(0, Math.floor(w / 2) - 1), floorY - 1, "i");
+    if (loot && rand() < 0.22 && n >= 8) put(cx + 1, floorY - 1, "h");
+    cx += w;
+  };
 
-  const enemyCount = 5 + Math.floor(n * 0.65);
-  const usedX: number[] = [];
-  for (let i = 0; i < enemyCount; i++) {
-    let x = 12 + Math.floor(rand() * (W - 36));
-    let tries = 0;
-    while (usedX.some((u) => Math.abs(u - x) < 7) && tries < 12) {
-      x = 12 + Math.floor(rand() * (W - 36));
-      tries++;
-    }
-    usedX.push(x);
-    const role = roles[Math.floor(rand() * roles.length)];
-    if ((role === "C" || role === "0" || role === "6") && rand() < 0.45) {
-      const y = 3 + Math.floor(rand() * Math.max(1, floorY - 5));
-      put(x, y, "=".repeat(3 + Math.floor(rand() * 3)));
-      put(x + 1, y - 1, role);
+  const catalog: string[] = ["gap", "stairs", "crumble", "canal"];
+  if (n >= 8) catalog.push("laser", "tease");
+  if (n >= 11) catalog.push("climb", "squeeze");
+  if (n >= 14) catalog.push("vent", "false");
+  if (n >= 18) catalog.push("lockgate", "rhythm");
+  if (n >= 22) catalog.push("double", "bounce");
+  if (n >= 26) catalog.push("gauntlet");
+
+  const used: string[] = [];
+  for (let s = 0; s < beats; s++) {
+    let kind = catalog[(s * 3 + n * 2) % catalog.length];
+    if (used[used.length - 1] === kind) kind = catalog[(s * 5 + n) % catalog.length];
+    used.push(kind);
+    island(3 + (s === 0 ? 2 : 0), s === 0);
+
+    if (kind === "gap") {
+      const w = 5 + Math.min(4, Math.floor(n / 8));
+      pit(cx, w, true);
+      if (n >= 12 && w >= 7) put(cx + Math.floor(w / 2), floorY - 1, "--");
+      if (rand() < 0.4) put(cx - 1, floorY - 1, pick());
+      cx += w;
+    } else if (kind === "stairs") {
+      const span = 10 + Math.min(4, Math.floor(n / 10));
+      pit(cx, span, true);
+      put(cx + 1, floorY - 2, "===");
+      put(cx + 6, floorY - 4, "==");
+      if (n >= 10) put(cx + span - 3, floorY - 6, "==");
+      if (n >= 16) put(cx + 4, floorY - 5, "=");
+      cx += span;
+    } else if (kind === "crumble") {
+      const w = 7 + Math.min(5, Math.floor(n / 7));
+      pit(cx, w, true);
+      put(cx, floorY - 1, "-".repeat(Math.min(6, w - 1)));
+      if (n >= 14) put(cx + 3, floorY - 3, "----");
+      cx += w;
+    } else if (kind === "canal") {
+      const w = 6 + Math.min(4, Math.floor(n / 9));
+      fill(cx, floorY, w, "~");
+      if (floorY + 1 < H - 1) fill(cx, floorY + 1, w, "~");
+      put(cx, floorY - 1, "=");
+      put(cx + w - 1, floorY - 1, "=");
+      if (n >= 15) put(cx + 2, floorY - 3, "===");
+      cx += w;
+    } else if (kind === "laser") {
+      const w = 7 + (n >= 18 ? 2 : 0);
+      pit(cx, w, n >= 12);
+      put(cx + 2, floorY - 1, "|");
+      put(cx + 2, floorY - 2, "|");
+      if (n >= 12) {
+        put(cx + 4, floorY - 1, "|");
+        put(cx + 4, floorY - 2, "|");
+        put(cx + 4, floorY - 3, "|");
+      }
+      if (n >= 18) {
+        put(cx + 6, floorY - 2, "|");
+        put(cx + 6, floorY - 1, "|");
+      }
+      put(cx + 1, floorY - 5, "====");
+      if (rand() < 0.5) put(cx + w - 1, floorY - 1, pick());
+      cx += w;
+    } else if (kind === "tease") {
+      const w = 8;
+      pit(cx, w, true);
+      put(cx + 2, floorY - 2, "==");
+      put(cx + 5, floorY - 2, "--");
+      put(cx + 3, floorY - 4, "=");
+      cx += w;
+    } else if (kind === "climb") {
+      const w = 8;
+      pit(cx, w, true);
+      for (let y = 2; y <= floorY; y++) {
+        put(cx, y, "#");
+        put(cx + w - 1, y, "#");
+      }
+      put(cx + 1, floorY - 2, "==");
+      put(cx + w - 3, floorY - 5, "==");
+      put(cx + 1, floorY - 8, "==");
+      if (n >= 20) put(cx + w - 3, floorY - 11, "==");
+      put(cx + 2, floorY - 6, "i");
+      cx += w;
+    } else if (kind === "squeeze") {
+      const w = 7 + (n >= 20 ? 2 : 0);
+      pit(cx, w, true);
+      fill(cx, floorY - 3, w, "#");
+      put(cx + 1, floorY - 2, "i");
+      cx += w;
+    } else if (kind === "vent") {
+      const w = 6;
+      fill(cx + 2, Math.max(2, floorY - 5), 1, "v");
+      for (let y = Math.max(2, floorY - 5); y <= floorY - 1; y++) put(cx + 2, y, "v");
+      pit(cx + 3, 3, true);
+      put(cx, floorY - 1, pick());
+      cx += w;
+    } else if (kind === "false") {
+      const w = 8;
+      pit(cx, w, true);
+      put(cx, floorY - 1, "-".repeat(w - 1));
+      put(cx + 2, floorY - 3, "----");
+      put(cx + 4, floorY - 5, "--");
+      cx += w;
+    } else if (kind === "lockgate") {
+      const w = 8;
+      pit(cx, w, true);
+      put(cx + 1, floorY - 2, "===");
+      put(cx + 2, floorY - 3, pick());
+      put(cx + 5, floorY - 4, "==");
+      cx += w;
+    } else if (kind === "rhythm") {
+      const w = 12;
+      pit(cx, w, true);
+      put(cx + 1, floorY - 2, "==");
+      put(cx + 5, floorY - 3, "==");
+      put(cx + 9, floorY - 2, "==");
+      if (n >= 22) put(cx + 6, floorY - 5, "--");
+      cx += w;
+    } else if (kind === "double") {
+      const w = 11;
+      pit(cx, 5, true);
+      fill(cx + 5, floorY, 2, "#");
+      put(cx + 5, floorY - 1, "--");
+      pit(cx + 7, 4, true);
+      cx += w;
+    } else if (kind === "bounce") {
+      const w = 9;
+      pit(cx, w, true);
+      put(cx + 1, floorY - 2, "===");
+      put(cx + 1, floorY - 5, "===");
+      put(cx + 1, floorY - 8, "===");
+      put(cx + w - 3, floorY - 3, "==");
+      put(cx + w - 3, floorY - 6, "==");
+      cx += w;
+    } else if (kind === "gauntlet") {
+      const w = 12;
+      pit(cx, w, true);
+      put(cx + 2, floorY - 1, "|");
+      put(cx + 2, floorY - 2, "|");
+      put(cx + 5, floorY - 3, "====");
+      put(cx + 6, floorY - 4, pick());
+      put(cx + 9, floorY - 1, "|");
+      put(cx + 9, floorY - 2, "|");
+      put(cx + 9, floorY - 3, "|");
+      put(cx + 3, floorY - 6, "====");
+      cx += w;
     } else {
-      put(x, floorY - 1, role);
+      const w = 6;
+      pit(cx, w, true);
+      cx += w;
     }
   }
 
-  const sections = 3 + Math.floor(n / 6);
-  const sectionW = Math.floor((W - 24) / sections);
-  for (let s = 0; s < sections; s++) {
-    const base = 10 + s * sectionW;
-    const pattern = (s * 3 + n * 2) % 8;
-    if (pattern === 0) {
-      const spikes = 2 + Math.min(4, Math.floor(n / 8));
-      for (let k = 0; k < spikes; k++) put(base + 2 + k * (n > 16 ? 2 : 3), floorY - 1, "^");
-      if (n >= 14) put(base + 4, floorY - 3, "====");
-    } else if (pattern === 1) {
-      put(base + 2, floorY - 1, "------");
-      if (n >= 8) put(base + 4, floorY - 2, "1");
-      if (n >= 18) put(base + 7, floorY - 1, "^^^");
-    } else if (pattern === 2 && n >= 4) {
-      put(base + 3, floorY - 2, "|");
-      put(base + 3, floorY - 1, "|");
-      if (n >= 10) {
-        put(base + 6, floorY - 3, "|");
-        put(base + 6, floorY - 2, "|");
-        put(base + 6, floorY - 1, "|");
-      }
-      if (n >= 16) {
-        put(base + 9, floorY - 2, "|");
-        put(base + 9, floorY - 1, "|");
-      }
-      put(base + 4, floorY - 1, "i");
-    } else if (pattern === 3 && n >= 3) {
-      const gw = 4 + Math.floor(rand() * 4) + (n > 20 ? 2 : 0);
-      fill(base + 2, floorY, gw, "~");
-      if (floorY + 1 < H - 1) fill(base + 2, floorY + 1, gw, "~");
-      put(base + 1, floorY - 1, "=");
-      put(base + 2 + gw, floorY - 1, "=");
-      if (n >= 14) put(base + 3, floorY - 3, "====");
-    } else if (pattern === 4) {
-      put(base + 2, floorY - 2, "====");
-      put(base + 3, floorY - 1, "^^");
-      if (rand() < 0.5) put(base + 4, floorY - 3, roles[Math.floor(rand() * roles.length)]);
-      if (n >= 12) put(base + 8, floorY - 4, "----");
-    } else if (pattern === 5) {
-      const vw = 1 + (n > 18 ? 1 : 0);
-      for (let x = 0; x < vw; x++) {
-        for (let y = Math.max(2, floorY - 5); y <= floorY - 1; y++) put(base + 3 + x, y, "v");
-      }
-      put(base + 5, floorY - 1, "i");
-      if (n >= 15) put(base + 7, floorY - 1, "^^^");
-    } else if (pattern === 6) {
-      put(base + 2, floorY - 1, "----");
-      put(base + 8, floorY - 2, "====");
-      put(base + 12, floorY - 1, "------");
-      if (n >= 11) put(base + 10, floorY - 3, roles[Math.floor(rand() * roles.length)]);
-    } else {
-      put(base + 2, floorY - 3, "====");
-      put(base + 6, floorY - 1, "^^");
-      put(base + 8, floorY - 4, "====");
-      if (n >= 9) put(base + 9, floorY - 5, "0");
-      if (n >= 17) {
-        put(base + 12, floorY - 2, "|");
-        put(base + 12, floorY - 1, "|");
-      }
-    }
-  }
+  island(8, true);
+  put(cx - 6, floorY - 1, "%");
+  put(cx - 4, floorY - 1, "i");
 
-  const shelfCount = 4 + Math.floor(n / 2);
-  for (let i = 0; i < shelfCount; i++) {
-    const x = 8 + Math.floor(rand() * (W - 28));
-    const y = 3 + Math.floor(rand() * Math.max(1, floorY - 5));
-    const len = 3 + Math.floor(rand() * 5);
-    put(x, y, "=".repeat(len));
-    if (rand() < 0.45) put(x + 1, y - 1, "i");
-    if (rand() < 0.22 && n >= 6) put(x + Math.min(2, len - 1), y - 1, roles[Math.floor(rand() * roles.length)]);
-    if (rand() < 0.15 && n >= 10) put(x + 1, y - 1, "h");
-  }
-
-  if (n >= 4) {
-    const vents = 1 + Math.floor(n / 7);
-    for (let i = 0; i < vents; i++) {
-      const x = 14 + Math.floor(rand() * (W - 32));
-      for (let y = Math.max(2, floorY - 4); y <= floorY - 1; y++) put(x, y, "v");
-    }
-  }
-
-  if (n >= 3) {
-    const bx = Math.floor(W * (0.62 + (n % 5) * 0.04));
-    put(bx, floorY - 2, "####");
-    put(bx + 1, floorY - 3, "*");
-    put(bx + 2, floorY - 3, "*");
-    if (n % 4 === 0) put(bx + 1, floorY - 4, "+");
-    if (n % 5 === 0) put(bx + 2, floorY - 4, "o");
-  }
-
-  if (n >= 6) {
-    put(Math.floor(W * 0.25), 3, "====");
-    put(Math.floor(W * 0.25) + 1, 2, "i");
-  }
-  if (n >= 12) {
-    put(Math.floor(W * 0.55), 3, "====");
-    put(Math.floor(W * 0.55) + 1, 2, "i");
-    put(Math.floor(W * 0.55) + 2, 2, "h");
-  }
+  if (n === 6) put(6, floorY - 2, "W");
+  if (n === 8) put(6, floorY - 2, "X");
+  if (n === 10) put(6, floorY - 2, "Z");
+  if (n === 12) put(6, floorY - 2, "R");
 
   if (n % 3 === 0) {
     put(6, 3, "====");
     put(7, 2, "$");
   }
   if (n % 7 === 0) {
-    put(W - 18, 3, "====");
-    put(W - 17, 2, "$");
+    put(W - 16, 3, "====");
+    put(W - 15, 2, "$");
   }
-
-  if (n === 6) put(Math.floor(W * 0.28), floorY - 2, "W");
-  if (n === 8) put(Math.floor(W * 0.32), floorY - 3, "X");
-  if (n === 10) put(Math.floor(W * 0.38), floorY - 2, "Z");
-  if (n === 12) put(Math.floor(W * 0.34), floorY - 3, "R");
 
   const end = W - 10;
-  put(end - 14, floorY - 1, "========");
-  put(end - 6, floorY - 2, "====");
-  if (n % 5 === 0 || n === STAGE_COUNT) put(end - 8, floorY - 1, "!");
-  else if (n % 7 === 0) put(end - 6, floorY - 1, "H");
-  else if (n % 4 === 0 && n >= 10) put(end - 7, floorY - 1, "E");
-  else {
-    put(end - 8, floorY - 1, roles[Math.floor(rand() * roles.length)]);
-    put(end - 4, floorY - 1, roles[Math.floor(rand() * roles.length)]);
+  if (cx < end - 14) {
+    const remain = end - 14 - cx;
+    pit(cx, remain, true);
+    for (let x = cx + 2; x < cx + remain - 2; x += 5 + Math.min(3, Math.floor(n / 10))) {
+      put(x, floorY - 2, "==");
+    }
   }
+  fill(end - 12, floorY, 14, "#");
+  put(end - 8, floorY - 2, "====");
+  if (n % 5 === 0 || n === STAGE_COUNT) put(end - 6, floorY - 1, "!");
+  else put(end - 6, floorY - 1, pick());
   put(end, floorY - 1, "P");
   put(end - 2, floorY - 1, "i");
   return g;
@@ -615,7 +662,11 @@ function progressiveMeta(n: number): LevelMeta {
     id: `stage${n}` as LevelId,
     name,
     theme,
-    objective: isBoss ? "Clear the warden. Take the gate." : "Cross the ledger. Reach the gate.",
+    objective: isBoss
+      ? "Clear the warden. Take the gate."
+      : n >= 10
+        ? "Scribe the gaps. The floor will not carry you."
+        : "Cross the ledger. Reach the gate.",
     tasks,
     rows: buildProgressive(n),
     exit: n === STAGE_COUNT ? "win" : "hub",

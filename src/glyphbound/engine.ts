@@ -1173,13 +1173,87 @@ export class GameEngine {
         e.y += Math.sin(e.t * 2) * 18 * dt;
         e.x += Math.sin(e.t * 0.6) * 30 * dt;
         e.facing = p.x > e.x ? 1 : -1;
-        if (e.aux > 1.6) {
+        if (e.phase === 1) {
+          this.pullToward(e, p, 150, 95, dt);
+          if (e.aux > 0.6) {
+            e.phase = 0;
+            e.aux = 0;
+          }
+        } else if (e.aux > 1.7) {
           e.aux = 0;
-          this.shoot(e, p.x < e.x ? -1 : 1, 0.15);
+          if (Math.abs(p.x - e.x) < 160) {
+            e.phase = 1;
+            this.burst(e.x + e.w / 2, e.y + e.h / 2, "#7a8b96", 8, "ink");
+          } else {
+            this.shoot(e, p.x < e.x ? -1 : 1, 0.15);
+          }
         }
-      } else if (e.kind === "one" || e.kind === "two" || e.kind === "four" || e.kind === "three" || e.kind === "five" || e.kind === "seven" || e.kind === "triad") {
+      } else if (e.kind === "one") {
         if (!e.grounded) e.vy += 1800 * dt;
-        const spd = e.kind === "five" ? 32 : e.kind === "four" ? 40 : e.kind === "seven" ? 48 : e.kind === "three" || e.kind === "triad" ? 58 : 70;
+        if (e.phase === 1) {
+          e.vx = e.facing * 230;
+          this.moveActor(e, dt, large);
+          if (e.aux > 0.32) {
+            e.phase = 0;
+            e.aux = 0;
+          }
+        } else {
+          e.facing = p.x > e.x ? 1 : -1;
+          e.vx = e.facing * 55;
+          this.moveActor(e, dt, large);
+          if (e.grounded && this.atLedge(e)) {
+            e.facing = (e.facing * -1) as 1 | -1;
+            e.vx = 0;
+          }
+          if (e.aux > 1.05 && Math.abs(p.x - e.x) < 110 && Math.abs(p.y - e.y) < 40) {
+            e.phase = 1;
+            e.aux = 0;
+            this.burst(e.x + e.w / 2, e.y + e.h, "#d45a4a", 5, "dust");
+          }
+        }
+      } else if (e.kind === "two") {
+        if (!e.grounded) e.vy += 1800 * dt;
+        e.facing = p.x > e.x ? 1 : -1;
+        e.vx = e.facing * 62;
+        this.moveActor(e, dt, large);
+        if (e.grounded && this.atLedge(e)) {
+          e.facing = (e.facing * -1) as 1 | -1;
+          e.vx = 0;
+        }
+        if (e.aux > 1.55) {
+          e.aux = 0;
+          this.mortar(e, e.facing, -0.9);
+          this.mortar(e, e.facing * 0.55, -1.1);
+        }
+      } else if (e.kind === "four") {
+        if (!e.grounded) e.vy += 1800 * dt;
+        e.facing = p.x > e.x ? 1 : -1;
+        e.vx = e.facing * 38;
+        this.moveActor(e, dt, large);
+        if (e.grounded && this.atLedge(e)) {
+          e.facing = (e.facing * -1) as 1 | -1;
+          e.vx = 0;
+        }
+        if (e.aux > 1.85) {
+          e.aux = 0;
+          this.stampAt(p.x + p.w / 2, p.y + p.h - 4);
+        }
+      } else if (e.kind === "five") {
+        if (!e.grounded) e.vy += 1800 * dt;
+        e.facing = p.x > e.x ? 1 : -1;
+        e.vx = e.facing * 30;
+        this.moveActor(e, dt, large);
+        if (e.grounded && this.atLedge(e)) {
+          e.facing = (e.facing * -1) as 1 | -1;
+          e.vx = 0;
+        }
+        if (e.aux > 2.15 && e.grounded) {
+          e.aux = 0;
+          this.shockwave(e);
+        }
+      } else if (e.kind === "three" || e.kind === "seven" || e.kind === "triad") {
+        if (!e.grounded) e.vy += 1800 * dt;
+        const spd = e.kind === "seven" ? 48 : 58;
         if (Math.abs(p.x - e.x) < 300) {
           e.facing = p.x > e.x ? 1 : -1;
           e.vx = e.facing * spd;
@@ -1188,20 +1262,19 @@ export class GameEngine {
           if (Math.random() < 0.005) e.facing *= -1;
         }
         this.moveActor(e, dt, large);
+        if (e.grounded && this.atLedge(e)) {
+          e.facing = (e.facing * -1) as 1 | -1;
+          e.vx = 0;
+        }
         if ((e.kind === "three" || e.kind === "triad") && e.grounded && e.aux > 0.9 && Math.abs(p.x - e.x) < 220) {
           e.vy = -420;
           e.aux = 0;
         }
-        if (e.aux > (e.kind === "five" ? 2.1 : e.kind === "four" ? 1.8 : 1.3)) {
+        if (e.kind === "seven" && e.aux > 1.35) {
           e.aux = 0;
-          if (e.kind === "four" || e.kind === "five") {
-            this.trauma += 0.08;
-            if (aabb({ x: e.x - 12, y: e.y, w: e.w + 24, h: e.h + 8 }, p) && p.invuln <= 0) this.hurt(1, e.facing);
-          } else if (e.kind === "seven") {
-            this.shoot(e, e.facing, -0.45);
-            this.shoot(e, e.facing, 0);
-            this.shoot(e, e.facing, 0.45);
-          } else if (e.kind !== "three" && e.kind !== "triad") this.shoot(e, e.facing, 0);
+          this.shoot(e, e.facing, -0.45);
+          this.shoot(e, e.facing, 0);
+          this.shoot(e, e.facing, 0.45);
         }
       } else if (e.kind === "six") {
         if (Math.abs(p.x - e.x) < 48 && p.y > e.y) {
@@ -1215,7 +1288,9 @@ export class GameEngine {
         e.facing = p.x > e.x ? 1 : -1;
         if (e.aux > 1.5) {
           e.aux = 0;
-          this.shoot(e, 0, 1);
+          this.mortar(e, 0, 0.35);
+          this.mortar(e, 0.4, 0.2);
+          this.mortar(e, -0.4, 0.2);
         }
       } else if (e.kind === "nine") {
         e.y += Math.sin(e.t * 3) * 16 * dt;
@@ -1240,7 +1315,8 @@ export class GameEngine {
         }
         if (e.aux > 1.4) {
           e.aux = 0;
-          this.shoot(e, e.facing, 0.2);
+          if (Math.random() < 0.45) this.stampAt(p.x + p.w / 2, p.y + p.h - 4);
+          else this.shoot(e, e.facing, 0.2);
         }
       } else if (e.kind === "dualis") {
         if (!e.grounded) e.vy += 1600 * dt;
@@ -1484,24 +1560,107 @@ export class GameEngine {
     });
   }
 
+  private mortar(e: Enemy, dir: number, lift: number) {
+    this.bullets.push({
+      x: e.x + e.w / 2,
+      y: e.y + 8,
+      vx: dir * 140,
+      vy: lift * 220,
+      r: 6,
+      from: "enemy",
+      dmg: 1,
+      life: 2.2,
+      kind: "mortar",
+      alive: true,
+      pierce: 0,
+    });
+  }
+
+  private shockwave(e: Enemy) {
+    this.trauma = Math.min(1, this.trauma + 0.12);
+    this.burst(e.x + e.w / 2, e.y + e.h, "#d45a4a", 10, "dust");
+    for (const dir of [-1, 1] as const) {
+      this.bullets.push({
+        x: e.x + e.w / 2,
+        y: e.y + e.h - 8,
+        vx: dir * 160,
+        vy: 0,
+        r: 12,
+        from: "enemy",
+        dmg: 1,
+        life: 0.85,
+        kind: "wave",
+        alive: true,
+        pierce: 0,
+      });
+    }
+  }
+
+  private stampAt(x: number, y: number) {
+    this.bullets.push({
+      x,
+      y,
+      vx: 0,
+      vy: 0,
+      r: 22,
+      from: "enemy",
+      dmg: 1,
+      life: 0.82,
+      kind: "stamp",
+      alive: true,
+      pierce: 0,
+    });
+  }
+
+  private atLedge(e: Enemy) {
+    const x = e.facing > 0 ? e.x + e.w + 2 : e.x - 10;
+    return !this.blockedAt(x, e.y + e.h + 3, 8, 8, false);
+  }
+
+  private pullToward(e: Enemy, p: Player, radius: number, force: number, dt: number) {
+    const cx = e.x + e.w / 2;
+    const cy = e.y + e.h / 2;
+    const dx = cx - (p.x + p.w / 2);
+    const dy = cy - (p.y + p.h / 2);
+    const d = Math.hypot(dx, dy) || 1;
+    if (d < radius) {
+      p.x += (dx / d) * force * dt;
+      p.y += (dy / d) * (force * 0.55) * dt;
+    }
+  }
+
   private updateBullets(dt: number) {
     const p = this.player;
     for (const b of this.bullets) {
       if (!b.alive) continue;
       b.life -= dt;
-      b.x += b.vx * dt;
-      b.y += b.vy * dt;
+      if (b.kind === "mortar") b.vy += 980 * dt;
+      if (b.kind !== "stamp") {
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+      }
       if (b.kind === "wind") b.vx *= 0.999;
       if (b.life <= 0) b.alive = false;
-      const box = { x: b.x - b.r, y: b.y - b.r, w: b.r * 2, h: b.r * 2 };
+      const box =
+        b.kind === "wave"
+          ? { x: b.x - 16, y: b.y - 6, w: 32, h: 14 }
+          : { x: b.x - b.r, y: b.y - b.r, w: b.r * 2, h: b.r * 2 };
       if (b.from === "enemy") {
-        if (aabb(box, p) && p.invuln <= 0 && p.roll <= 0) {
-          b.alive = false;
+        const hot = b.kind !== "stamp" || b.life < 0.34;
+        if (hot && aabb(box, p) && p.invuln <= 0 && p.roll <= 0) {
+          if (b.kind !== "wave") b.alive = false;
           this.hurt(b.dmg, b.vx > 0 ? 1 : -1);
         }
-        const large = p.letter === "b" || p.capital;
-        for (const s of this.solidsNow(large)) {
-          if (s.type !== "spike" && aabb(box, s)) b.alive = false;
+        if (b.kind !== "stamp") {
+          const large = p.letter === "b" || p.capital;
+          for (const s of this.solidsNow(large)) {
+            if (s.type === "spike") continue;
+            if (b.kind === "wave" && (s.type === "oneway" || s.type === "crumble" || s.y >= b.y - 2)) continue;
+            if (aabb(box, s)) {
+              b.alive = false;
+              if (b.kind === "mortar") this.burst(b.x, b.y, "#d45a4a", 6, "ember");
+            }
+          }
         }
       } else {
         for (const e of this.enemies) {

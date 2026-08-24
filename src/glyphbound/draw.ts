@@ -492,13 +492,14 @@ function emberEye(ctx: CanvasRenderingContext2D, x: number, y: number, glow: str
 }
 
 function orbitMotes(ctx: CanvasRenderingContext2D, t: number, glow: string, r: number, run = 0) {
+  if (run > 0.45) return;
   ctx.fillStyle = glow;
-  for (let i = 0; i < 6; i++) {
-    const a = t * (1.7 + run) + i * 1.05;
-    const wob = 1 + Math.sin(t * 2.4 + i) * 0.12;
-    ctx.globalAlpha = 0.28 + Math.sin(t * 2.6 + i) * 0.16;
+  const n = 3;
+  for (let i = 0; i < n; i++) {
+    const a = t * 1.4 + i * ((Math.PI * 2) / n);
+    ctx.globalAlpha = 0.22;
     ctx.beginPath();
-    ctx.arc(Math.cos(a) * r * wob, Math.sin(a * 1.13 + 0.4) * (r * 0.68) * wob, 1.15 + (i % 3) * 0.25, 0, Math.PI * 2);
+    ctx.arc(Math.cos(a) * r, Math.sin(a * 1.05) * (r * 0.62), 1.05, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.globalAlpha = 1;
@@ -510,28 +511,52 @@ function strokeInk(
   core: string,
   width: number,
   path: () => void,
-  blur = 14,
+  _blur = 0,
 ) {
+  ctx.shadowBlur = 0;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
   ctx.strokeStyle = glow;
-  ctx.shadowColor = glow;
-  ctx.shadowBlur = blur;
-  ctx.lineWidth = width + 4.2;
+  ctx.globalAlpha = 0.7;
+  ctx.lineWidth = width + 2.4;
   ctx.beginPath();
   path();
   ctx.stroke();
-  ctx.shadowBlur = 0;
+  ctx.globalAlpha = 1;
   ctx.strokeStyle = core;
   ctx.lineWidth = width;
   ctx.beginPath();
   path();
   ctx.stroke();
+}
+
+function inkStride(
+  ctx: CanvasRenderingContext2D,
+  gait: number,
+  run: number,
+  yBase: number,
+  glow: string,
+  core: string,
+) {
+  const amp = 0.12 + run * 0.88;
+  const foot = (side: number, phase: number) => {
+    const lift = Math.max(0, Math.sin(phase)) * 5.5 * amp;
+    const slide = -Math.cos(phase) * 4.2 * amp;
+    const x0 = side * 4.5 + slide;
+    ctx.beginPath();
+    ctx.moveTo(x0, yBase - 2 - lift);
+    ctx.quadraticCurveTo(x0 + side * 2, yBase + 1 - lift * 0.35, x0 + side * 5 + 1, yBase + 3.2 - lift * 0.15);
+    ctx.stroke();
+  };
+  ctx.lineCap = "round";
   ctx.strokeStyle = glow;
-  ctx.globalAlpha = 0.45;
-  ctx.lineWidth = Math.max(1.1, width * 0.32);
-  ctx.beginPath();
-  path();
-  ctx.stroke();
-  ctx.globalAlpha = 1;
+  ctx.lineWidth = 2.6;
+  foot(-1, gait);
+  foot(1, gait + Math.PI);
+  ctx.strokeStyle = core;
+  ctx.lineWidth = 1.5;
+  foot(-1, gait);
+  foot(1, gait + Math.PI);
 }
 
 type Motion = { vx?: number; vy?: number; grounded?: boolean; special?: number };
@@ -540,23 +565,22 @@ function poseOf(t: number, squash: number, motion: Motion) {
   const vx = motion.vx ?? 0;
   const vy = motion.vy ?? 0;
   const grounded = motion.grounded ?? true;
-  const run = Math.min(1, Math.abs(vx) / 150);
-  const gait = t * (4.1 + run * 5.4);
+  const run = Math.min(1, Math.abs(vx) / 170);
+  const gait = t * (5.2 + run * 3.6);
   const air = !grounded;
-  const breath = Math.sin(t * 2.25) * 0.035;
   const step = Math.sin(gait);
   const pass = Math.sin(gait * 2);
-  const walkSq = grounded && run > 0.06 ? 1 + Math.abs(step) * 0.1 * run : 1 + breath;
-  let sy = squash * (air ? (vy < 0 ? 0.88 : 1.08) : walkSq);
-  sy = Math.max(0.64, Math.min(1.36, sy));
+  const contact = grounded ? Math.abs(step) : 0;
+  let sy = squash;
+  if (air) sy *= vy < 0 ? 0.92 : 1.06;
+  else sy *= 1 + contact * 0.035 * run;
+  sy = Math.max(0.78, Math.min(1.18, sy));
   const lean = air
-    ? Math.max(-0.22, Math.min(0.22, vx * 0.0007))
-    : step * 0.09 * run;
+    ? Math.max(-0.14, Math.min(0.14, vx * 0.00045))
+    : step * 0.042 * run;
   const bob = air
-    ? (vy < 0 ? -1.5 : Math.min(4, vy * 0.006))
-    : run > 0.06
-      ? Math.abs(step) * (2.6 + run * 2.2) - 1.4 * run
-      : Math.sin(t * 2.4) * 1.55;
+    ? (vy < 0 ? -1.2 : Math.min(3, vy * 0.004))
+    : contact * (1.4 + run * 1.1);
   return { vx, vy, grounded, run, gait, air, step, pass, sy, lean, bob };
 }
 
@@ -902,114 +926,91 @@ export function drawLetterForm(
 
   if (letter === "c") {
     const r = capital ? 22 : 15.4;
-    const thick = capital ? 7.2 : 4.7;
-    const jaw = 0.04 + snap * 0.28 - wind * 0.08 + Math.sin(t * 1.8) * 0.018;
-    const a0 = 0.52 - jaw + pose.step * 0.08 * pose.run;
-    const a1 = Math.PI * 2 - 0.5 + jaw - pose.step * 0.06 * pose.run;
-    const ox = pose.air ? 0 : pose.step * 1.6 * pose.run;
-    const oy = pose.air ? (pose.vy < 0 ? -1 : 1.4) : pose.pass * 0.8 * pose.run;
+    const thick = capital ? 7.2 : 4.8;
+    const jaw = 0.05 + snap * 0.22 - wind * 0.08 + Math.sin(t * 1.6) * 0.01;
+    const a0 = 0.5 - jaw;
+    const a1 = Math.PI * 2 - 0.48 + jaw;
     strokeInk(ctx, pal.glow, pal.core, thick, () => {
-      ctx.arc(ox, oy, r, a0, a1);
-    }, capital ? 20 : 15);
-    ctx.strokeStyle = pal.glow;
-    ctx.globalAlpha = 0.5;
-    ctx.lineWidth = thick * 0.38;
-    ctx.beginPath();
-    ctx.arc(ox - 0.6, oy - 0.8, r - thick * 0.38, a0 + 0.22, a1 - 0.22);
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-    const tipX = ox + Math.cos(a0) * r;
-    const tipY = oy + Math.sin(a0) * r;
-    const tailX = ox + Math.cos(a1) * r;
-    const tailY = oy + Math.sin(a1) * r;
+      ctx.arc(0, 0, r, a0, a1);
+    });
+    const tailX = Math.cos(a1) * r;
+    const tailY = Math.sin(a1) * r;
+    const wag = pose.step * (2.2 + pose.run * 2);
     ctx.strokeStyle = pal.core;
-    ctx.lineWidth = 2.1;
+    ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(tailX, tailY);
-    ctx.quadraticCurveTo(tailX - 6, tailY + 8 + pose.step * 3, tailX + 2, tailY + 10);
+    ctx.quadraticCurveTo(tailX - 5, tailY + 7 + wag, tailX + 3, tailY + 9 + wag * 0.4);
     ctx.stroke();
-    emberEye(ctx, ox + r * 0.1, oy - r * 0.22, pal.glow, t, 1);
+    emberEye(ctx, r * 0.12, -r * 0.22, pal.glow, t, 1);
     if (capital) {
-      const crest = Math.sin(t * 5 + pose.gait) * 2;
       ctx.strokeStyle = pal.core;
-      ctx.lineWidth = 2.5;
+      ctx.lineWidth = 2.4;
       ctx.beginPath();
-      ctx.moveTo(ox - 2, oy - r - 2);
-      ctx.quadraticCurveTo(ox + 4, oy - r - 12 + crest, ox + 13, oy - r - 5);
+      ctx.moveTo(-2, -r - 2);
+      ctx.quadraticCurveTo(4, -r - 11 + Math.sin(t * 4) * 1.2, 13, -r - 5);
       ctx.stroke();
     }
+    if (pose.grounded) inkStride(ctx, pose.gait, pose.run, r * 0.72, pal.glow, pal.core);
     orbitMotes(ctx, t, pal.glow, r + 7, pose.run);
     if (snap > 0.2) {
-      ctx.strokeStyle = "rgba(232,236,232,0.8)";
-      ctx.lineWidth = 2.6;
+      ctx.strokeStyle = "rgba(232,236,232,0.75)";
+      ctx.lineWidth = 2.2;
       ctx.beginPath();
-      ctx.arc(8 + snap * 6, oy, r + 8 + snap * 6, -0.5, 0.7);
+      ctx.arc(8 + snap * 6, 0, r + 7 + snap * 5, -0.45, 0.65);
       ctx.stroke();
-    }
-    if (pose.run > 0.4 && pose.grounded) {
-      ctx.globalAlpha = 0.28;
-      ctx.strokeStyle = pal.glow;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(ox - 7, oy + 2, r * 0.92, a0, a1);
-      ctx.stroke();
-      ctx.globalAlpha = 1;
     }
     if (special > 0) {
-      ctx.strokeStyle = "rgba(94,224,192,0.45)";
+      ctx.strokeStyle = "rgba(94,224,192,0.4)";
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(0, 0, r + 10 + Math.sin(t * 20) * 2, 0, Math.PI * 2);
       ctx.stroke();
     }
   } else if (letter === "s") {
-    const w1 = pose.step * (4.8 + pose.run * 3) + (pose.air ? 3 : 0);
-    const w2 = Math.sin(pose.gait + 1.15) * (5.2 + pose.run * 2);
-    const w3 = Math.sin(pose.gait + 2.1) * 4.4 * pose.run;
-    const rec = -wind * 6 + snap * 10;
-    strokeInk(ctx, pal.glow, pal.core, 3.8, () => {
-      ctx.moveTo(11 + w1 * 0.3, -13);
-      ctx.bezierCurveTo(-18 - w2, -18 + w1 * 0.2, 18 + rec, 0 - w1, -11 - w3, 5);
-      ctx.bezierCurveTo(-22, 10 + w1, 16 + w2, 18 - w3, 10 + w2 * 0.4, 13 + pose.pass);
-    }, 14);
-    emberEye(ctx, 6 + w1 * 0.15, -10, pal.glow, t, 2);
+    const rec = -wind * 5 + snap * 8;
+    const tail = pose.step * 1.6 * pose.run;
+    strokeInk(ctx, pal.glow, pal.core, 3.9, () => {
+      ctx.moveTo(11, -13);
+      ctx.bezierCurveTo(-16, -17, 16 + rec, -1, -11, 5);
+      ctx.bezierCurveTo(-20, 10, 16, 17, 10, 13 + tail * 0.2);
+    });
+    emberEye(ctx, 6, -10, pal.glow, t, 2);
+    ctx.strokeStyle = pal.core;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(10, 13);
+    ctx.quadraticCurveTo(15, 16 + tail, 8, 18 + tail * 0.4);
+    ctx.stroke();
+    if (pose.grounded) inkStride(ctx, pose.gait, pose.run, 16, pal.glow, pal.core);
     orbitMotes(ctx, t, pal.glow, 17, pose.run);
     if (snap > 0.15) {
       ctx.strokeStyle = "rgba(127,208,255,0.75)";
-      ctx.lineWidth = 2.4;
+      ctx.lineWidth = 2.2;
       ctx.beginPath();
       ctx.moveTo(14, -4);
       ctx.quadraticCurveTo(22 + snap * 8, 2, 28 + snap * 10, 6);
       ctx.stroke();
     }
-    ctx.strokeStyle = pal.core;
-    ctx.lineWidth = 1.8;
-    ctx.beginPath();
-    ctx.moveTo(10 + w2 * 0.4, 13 + pose.pass);
-    ctx.quadraticCurveTo(16, 16 + pose.step * 2, 8, 18);
-    ctx.stroke();
   } else {
-    const b1 = pose.step * 3.4 * pose.run;
-    const b2 = -pose.step * 3.4 * pose.run;
-    const punch = snap * 5 - wind * 3;
-    strokeInk(ctx, pal.glow, pal.core, 3.9, () => {
+    const punch = snap * 4 - wind * 2;
+    strokeInk(ctx, pal.glow, pal.core, 4, () => {
       ctx.moveTo(-11, -18);
       ctx.lineTo(-11, 18);
-      ctx.moveTo(-11, -16 + b1);
-      ctx.arc(1 + punch, -8 + b1, 9, -Math.PI * 0.5, Math.PI * 0.5);
-      ctx.moveTo(-11, 0 + b2);
-      ctx.arc(3 + punch * 0.6, 8 + b2, 10, -Math.PI * 0.5, Math.PI * 0.5);
-    }, 12);
-    emberEye(ctx, -4, -12 + b1 * 0.3, pal.glow, t, 3);
-    orbitMotes(ctx, t, pal.glow, 18, pose.run);
+      ctx.moveTo(-11, -16);
+      ctx.arc(1 + punch, -8, 9, -Math.PI * 0.5, Math.PI * 0.5);
+      ctx.moveTo(-11, 0);
+      ctx.arc(3 + punch * 0.5, 8, 10, -Math.PI * 0.5, Math.PI * 0.5);
+    });
+    emberEye(ctx, -4, -12, pal.glow, t, 3);
     ctx.strokeStyle = pal.core;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1.9;
     ctx.beginPath();
     ctx.moveTo(-11, 18);
-    ctx.quadraticCurveTo(-16, 20 + pose.pass, -6, 22);
-    ctx.moveTo(3 + punch * 0.6 + 10, 8 + b2);
-    ctx.quadraticCurveTo(16, 14, 10, 20);
+    ctx.quadraticCurveTo(-15, 20 + pose.pass * 0.6, -6, 22);
     ctx.stroke();
+    if (pose.grounded) inkStride(ctx, pose.gait, pose.run, 18, pal.glow, pal.core);
+    orbitMotes(ctx, t, pal.glow, 18, pose.run);
   }
   ctx.restore();
 }
@@ -1529,15 +1530,13 @@ export function drawNpcGlyph(
 
 
 export function drawPlayer(ctx: CanvasRenderingContext2D, p: Player, camX: number, camY: number, t: number) {
-  const cx = p.x + p.w / 2 - camX;
-  const cy = p.y + p.h / 2 - camY;
+  const cx = Math.round(p.x + p.w / 2 - camX);
+  const cy = Math.round(p.y + p.h / 2 - camY);
   const motion = { vx: p.vx, vy: p.vy, grounded: p.grounded, special: p.special };
-  if (Math.abs(p.vx) > 150 || p.roll > 0) {
+  if (p.roll > 0) {
     ctx.save();
-    ctx.globalAlpha = 0.2;
-    drawLetterForm(ctx, p.letter, p.letter === "c" && p.capital, cx - p.facing * 10, cy, p.facing, t + p.anim, p.squash * p.stretch, p.attack, p.roll, 0, motion);
-    ctx.globalAlpha = 0.1;
-    drawLetterForm(ctx, p.letter, p.letter === "c" && p.capital, cx - p.facing * 18, cy, p.facing, t + p.anim, p.squash * p.stretch, p.attack, p.roll, 0, motion);
+    ctx.globalAlpha = 0.18;
+    drawLetterForm(ctx, p.letter, p.letter === "c" && p.capital, cx - p.facing * 8, cy, p.facing, t + p.anim, p.squash * p.stretch, p.attack, 0, 0, motion);
     ctx.restore();
   }
   drawLetterForm(
@@ -1560,10 +1559,39 @@ export function drawPlayer(ctx: CanvasRenderingContext2D, p: Player, camX: numbe
 export function drawShot(ctx: CanvasRenderingContext2D, b: Bullet, camX: number, camY: number) {
   ctx.save();
   ctx.translate(b.x - camX, b.y - camY);
+  if (b.kind === "stamp") {
+    const hot = b.life < 0.34;
+    const r = hot ? b.r * (0.7 + (0.34 - b.life) * 2) : b.r * (1.15 - b.life);
+    ctx.strokeStyle = hot ? "#d45a4a" : "#e8d48a";
+    ctx.globalAlpha = hot ? 0.9 : 0.4;
+    ctx.lineWidth = hot ? 4 : 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, Math.max(6, r), 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = hot ? 0.25 : 0.12;
+    ctx.fillStyle = hot ? "#d45a4a" : "#e8d48a";
+    ctx.fill();
+    ctx.restore();
+    return;
+  }
+  if (b.kind === "wave") {
+    ctx.fillStyle = "#d45a4a";
+    ctx.globalAlpha = 0.7;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 18, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#e8ece8";
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    ctx.restore();
+    return;
+  }
   ctx.rotate(Math.atan2(b.vy, b.vx));
   const col =
     b.from === "enemy"
-      ? "#d45a4a"
+      ? b.kind === "mortar"
+        ? "#e07040"
+        : "#d45a4a"
       : b.kind === "solar"
         ? "#e8d48a"
         : b.kind === "venom"
