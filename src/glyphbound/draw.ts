@@ -85,6 +85,20 @@ export function drawTiles(
         drawVent(ctx, x, y, t);
       } else if (ch === "^") {
         drawSpikes(ctx, x, y, t);
+      } else if (ch === "_") {
+        drawRail(ctx, x, y, t, theme);
+      } else if (ch === "&") {
+        drawPlinth(ctx, x, y, t, theme);
+      } else if (ch === "'") {
+        drawTorch(ctx, x, y, t, theme);
+      } else if (ch === ";") {
+        drawLantern(ctx, x, y, t, theme);
+      } else if (ch === "\"") {
+        drawBanner(ctx, x, y, t, theme);
+      } else if (ch === ",") {
+        drawDrip(ctx, x, y, t, theme);
+      } else if (ch === "?") {
+        drawShard(ctx, x, y, t, theme);
       } else if (ch === "|") {
         drawLaser(ctx, x, y, t, tx);
       } else if (ch === "F") {
@@ -420,13 +434,15 @@ function drawVent(ctx: CanvasRenderingContext2D, x: number, y: number, t: number
 }
 
 function drawLaser(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, tx: number) {
-  const hot = Math.sin((t + tx * 0.37) * 3.15) > -0.22;
+  const cycle = (t + tx * 0.37) % 1.5;
+  const hot = cycle < 0.5;
+  const warn = !hot && cycle > 1.22;
   ctx.save();
-  ctx.globalAlpha = hot ? 0.85 : 0.18;
-  ctx.strokeStyle = hot ? "#d45a4a" : "#7a8b96";
-  ctx.shadowColor = hot ? "#d45a4a" : "transparent";
-  ctx.shadowBlur = hot ? 14 : 0;
-  ctx.lineWidth = hot ? 4 : 2;
+  ctx.globalAlpha = hot ? 0.9 : warn ? 0.45 : 0.16;
+  ctx.strokeStyle = hot ? "#d45a4a" : warn ? "#e8d48a" : "#7a8b96";
+  ctx.shadowColor = hot ? "#d45a4a" : warn ? "#e8d48a" : "transparent";
+  ctx.shadowBlur = hot ? 14 : warn ? 8 : 0;
+  ctx.lineWidth = hot ? 4 : warn ? 3 : 2;
   ctx.beginPath();
   ctx.moveTo(x + 24, y + 2);
   ctx.lineTo(x + 24, y + TILE - 2);
@@ -435,6 +451,10 @@ function drawLaser(ctx: CanvasRenderingContext2D, x: number, y: number, t: numbe
     ctx.globalAlpha = 0.35;
     ctx.fillStyle = "#d45a4a";
     ctx.fillRect(x + 18, y, 12, TILE);
+  } else if (warn) {
+    ctx.globalAlpha = 0.18;
+    ctx.fillStyle = "#e8d48a";
+    ctx.fillRect(x + 20, y, 8, TILE);
   }
   ctx.restore();
 }
@@ -502,6 +522,146 @@ function drawSpikes(ctx: CanvasRenderingContext2D, x: number, y: number, t: numb
     ctx.lineTo(ox + 10, y + TILE);
     ctx.fill();
   }
+}
+
+function inkOf(theme: ThemeId) {
+  if (theme === "coil") return { a: "#c46ad4", b: "#e8a0f0", dim: "#2c1838" };
+  if (theme === "canal") return { a: "#5ee0c0", b: "#7fd0b8", dim: "#163028" };
+  if (theme === "fort") return { a: "#b08a4a", b: "#e0c888", dim: "#2a323c" };
+  if (theme === "hub") return { a: "#c9b896", b: "#efe4c8", dim: "#2c2436" };
+  if (theme === "glacier") return { a: "#c8e8f4", b: "#e8f6fc", dim: "#1a2a34" };
+  if (theme === "orbit") return { a: "#e8d48a", b: "#f4e8b0", dim: "#1c1830" };
+  if (theme === "remainder") return { a: "#e07040", b: "#e8d48a", dim: "#2a1810" };
+  if (theme === "vault") return { a: "#8ec8d4", b: "#d8eef0", dim: "#141c24" };
+  return { a: "#5ee0c0", b: "#e8d48a", dim: "#1a2228" };
+}
+
+function drawRail(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, theme: ThemeId) {
+  const c = inkOf(theme);
+  ctx.fillStyle = c.dim;
+  ctx.fillRect(x, y + 34, TILE, 6);
+  ctx.fillStyle = c.a;
+  ctx.fillRect(x, y + 34, TILE, 2);
+  ctx.fillStyle = c.b;
+  ctx.globalAlpha = 0.55 + Math.sin(t * 4 + x) * 0.15;
+  ctx.fillRect(x + 8, y + 35, 8, 2);
+  ctx.globalAlpha = 1;
+}
+
+function drawPlinth(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, theme: ThemeId) {
+  const c = inkOf(theme);
+  ctx.fillStyle = c.dim;
+  ctx.fillRect(x + 8, y + 18, TILE - 16, TILE - 18);
+  ctx.fillStyle = c.a;
+  ctx.fillRect(x + 6, y + 14, TILE - 12, 6);
+  ctx.strokeStyle = c.b;
+  ctx.globalAlpha = 0.7;
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.moveTo(x + 16, y + 28);
+  ctx.quadraticCurveTo(x + 24, y + 22 + Math.sin(t * 2) * 2, x + 32, y + 28);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+function drawTorch(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, theme: ThemeId) {
+  const c = inkOf(theme);
+  ctx.fillStyle = c.dim;
+  ctx.fillRect(x + 21, y + 22, 6, 18);
+  ctx.fillStyle = c.a;
+  ctx.fillRect(x + 19, y + 20, 10, 4);
+  const flicker = 0.75 + Math.sin(t * 11 + x) * 0.2;
+  ctx.save();
+  ctx.globalAlpha = flicker;
+  ctx.fillStyle = "#e8d48a";
+  ctx.beginPath();
+  ctx.moveTo(x + 24, y + 6);
+  ctx.lineTo(x + 18, y + 20);
+  ctx.lineTo(x + 30, y + 20);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "#fff6d0";
+  ctx.beginPath();
+  ctx.moveTo(x + 24, y + 10);
+  ctx.lineTo(x + 21, y + 20);
+  ctx.lineTo(x + 27, y + 20);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawLantern(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, theme: ThemeId) {
+  const c = inkOf(theme);
+  const sway = Math.sin(t * 1.6 + x * 0.05) * 4;
+  ctx.save();
+  ctx.translate(x + 24 + sway, y);
+  ctx.strokeStyle = c.a;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(0, 14);
+  ctx.stroke();
+  ctx.fillStyle = c.dim;
+  ctx.fillRect(-8, 14, 16, 18);
+  ctx.strokeStyle = c.b;
+  ctx.strokeRect(-8, 14, 16, 18);
+  ctx.fillStyle = `rgba(232,212,138,${0.35 + Math.sin(t * 5) * 0.12})`;
+  ctx.fillRect(-6, 16, 12, 12);
+  ctx.restore();
+}
+
+function drawBanner(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, theme: ThemeId) {
+  const c = inkOf(theme);
+  const wave = Math.sin(t * 2 + x) * 3;
+  ctx.fillStyle = c.dim;
+  ctx.fillRect(x + 8, y, TILE - 16, 4);
+  ctx.fillStyle = c.a;
+  ctx.beginPath();
+  ctx.moveTo(x + 10, y + 4);
+  ctx.lineTo(x + TILE - 10, y + 4);
+  ctx.lineTo(x + TILE - 12 + wave, y + 38);
+  ctx.lineTo(x + 24, y + 44);
+  ctx.lineTo(x + 12 - wave, y + 38);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = c.b;
+  ctx.globalAlpha = 0.5;
+  ctx.beginPath();
+  ctx.moveTo(x + 24, y + 8);
+  ctx.lineTo(x + 24 + wave * 0.4, y + 36);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+function drawDrip(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, theme: ThemeId) {
+  const c = inkOf(theme);
+  const fall = ((t * 40 + x * 13) % (TILE + 20)) - 4;
+  ctx.fillStyle = c.a;
+  ctx.fillRect(x + 22, y, 4, 8);
+  ctx.globalAlpha = 0.7;
+  ctx.beginPath();
+  ctx.ellipse(x + 24, y + 10 + fall, 3, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+function drawShard(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, theme: ThemeId) {
+  const c = inkOf(theme);
+  ctx.save();
+  ctx.translate(x + 24, y + 24);
+  ctx.rotate(t * 0.6 + x);
+  ctx.strokeStyle = c.a;
+  ctx.shadowColor = c.b;
+  ctx.shadowBlur = 8;
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.moveTo(0, -10);
+  ctx.lineTo(8, 0);
+  ctx.lineTo(0, 10);
+  ctx.lineTo(-8, 0);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawCaseFont(ctx: CanvasRenderingContext2D, x: number, y: number, t: number) {
@@ -1397,6 +1557,16 @@ export function drawEnemy(ctx: CanvasRenderingContext2D, e: Enemy, camX: number,
   const metal = "#b7c4c8";
   const visor = "#d45a4a";
   const aether = "#5ee0c0";
+  if (e.phase === 1 || (e.aux > 0.7 && e.vx * e.vx < 900)) {
+    ctx.save();
+    ctx.globalAlpha = 0.22 + Math.sin(t * 14) * 0.1;
+    ctx.strokeStyle = visor;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(0, e.h * 0.42, 16 * s, 7 * s, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
 
@@ -2023,7 +2193,7 @@ export function drawShot(ctx: CanvasRenderingContext2D, b: Bullet, camX: number,
   ctx.save();
   ctx.translate(b.x - camX, b.y - camY);
   if (b.kind === "stamp") {
-    const hot = b.life < 0.34;
+    const hot = b.life < 0.4;
     const r = hot ? b.r * (0.7 + (0.34 - b.life) * 2) : b.r * (1.15 - b.life);
     ctx.strokeStyle = hot ? "#d45a4a" : "#e8d48a";
     ctx.globalAlpha = hot ? 0.9 : 0.4;

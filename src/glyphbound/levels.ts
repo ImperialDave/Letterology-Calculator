@@ -67,31 +67,78 @@ function armTeeth<T extends string[]>(rows: T, floorY?: number): T {
       }
     }
   }
-  const keepNear = (x: number, y: number) => {
-    for (let dx = -2; dx <= 2; dx++) {
-      for (let dy = -1; dy <= 1; dy++) {
-        const c = rows[y + dy]?.[x + dx];
-        if (c === "P" || c === "!" || c === "@") return true;
-      }
-    }
-    return false;
-  };
-  for (let y = fy + 1; y < H - 1; y++) {
+  const set = (x: number, y: number, ch: string) => {
+    if (y < 0 || y >= H || x < 0 || x >= W) return;
     const r = rows[y];
-    let out = "";
-    for (let x = 0; x < W; x++) {
-      const ch = r[x];
-      if (ch !== ".") {
-        out += ch;
-        continue;
-      }
+    rows[y] = r.slice(0, x) + ch + r.slice(x + 1);
+  };
+  const busy = (x: number, y: number) => {
+    const c = rows[y]?.[x];
+    return !c || c !== ".";
+  };
+  // One solid lip under the main floor so you cannot crawl the crawlspace.
+  // Pits (floor is open) stay open. Secret undercrofts below fy+1 stay open.
+  if (fy + 1 < H - 1) {
+    for (let x = 1; x < W - 1; x++) {
       const floor = rows[fy][x];
-      if ((floor === "#" || floor === "~") && !keepNear(x, y)) out += "^";
-      else out += ch;
+      if ((floor === "#" || floor === "~") && rows[fy + 1][x] === ".") set(x, fy + 1, "#");
     }
-    rows[y] = out;
   }
+  // Recoverable pits: bounce in the middle, a rail if the gap is wide.
+  let x = 1;
+  while (x < W - 1) {
+    if (rows[fy][x] !== ".") {
+      x++;
+      continue;
+    }
+    let x2 = x;
+    while (x2 < W - 1 && rows[fy][x2] === ".") x2++;
+    const w = x2 - x;
+    const mid = x + Math.floor(w / 2);
+    if (fy + 1 < H - 1 && !busy(mid, fy + 1)) {
+      const below = rows[fy + 2]?.[mid];
+      if (below === "#" || fy + 2 >= H - 1) set(mid, fy + 1, "T");
+    }
+    if (w >= 7 && fy - 1 > 0) {
+      const rw = Math.min(3, w - 4);
+      for (let i = 0; i < rw; i++) if (!busy(x + 2 + i, fy - 1)) set(x + 2 + i, fy - 1, "_");
+    }
+    x = x2;
+  }
+  dressDecor(rows, fy);
   return rows;
+}
+
+function dressDecor(rows: string[], fy: number) {
+  const H = rows.length;
+  const W = rows[0]?.length ?? 0;
+  const hash = (x: number, y: number, s: number) => {
+    const n = Math.imul(x + 3, 374761) ^ Math.imul(y + 7, 668265) ^ Math.imul(s + fy, 127);
+    return ((n >>> 0) % 1000) / 1000;
+  };
+  const set = (x: number, y: number, ch: string) => {
+    if (y < 1 || y >= H - 1 || x < 1 || x >= W - 1) return;
+    if (rows[y][x] !== ".") return;
+    rows[y] = rows[y].slice(0, x) + ch + rows[y].slice(x + 1);
+  };
+  for (let x = 2; x < W - 2; x++) {
+    const aboveFloor = fy - 1;
+    if (aboveFloor > 1 && rows[fy][x] === "#" && rows[aboveFloor][x] === ".") {
+      const wall = rows[aboveFloor][x - 1] === "#" || rows[aboveFloor][x + 1] === "#";
+      if (wall && hash(x, aboveFloor, 1) < 0.16) set(x, aboveFloor, "'");
+      else if (hash(x, aboveFloor, 2) < 0.07) set(x, aboveFloor, "&");
+    }
+    if (fy - 2 > 1 && rows[fy][x] === "#" && rows[fy - 2][x] === "." && hash(x, fy - 2, 3) < 0.05) {
+      set(x, fy - 2, "?");
+    }
+    if (rows[0][x] === "#" && rows[1][x] === ".") {
+      if (hash(x, 1, 4) < 0.14) set(x, 1, ";");
+      else if (hash(x, 1, 5) < 0.12) set(x, 1, "\"");
+    }
+    if (rows[fy][x] === "." && rows[0][x] === "#" && rows[1][x] === "." && hash(x, 1, 6) < 0.2) {
+      set(x, 1, ",");
+    }
+  }
 }
 
 function buildExchange(): string[] {
@@ -574,9 +621,9 @@ function buildGenerated(n: number, rem: boolean): string[] {
   const g = grid(W, H, fy) as Grid;
   const { put, fill } = g;
 
-  const pit = (x: number, w: number, spiked = true) => {
+  const pit = (x: number, w: number, _spiked = false) => {
     fill(x, fy, w, ".");
-    if (spiked) fill(x, fy + 1, w, "^");
+    if (fy + 1 < H - 1) fill(x, fy + 1, w, ".");
   };
   const shelf = (x: number, up: number, s: string) => put(x, fy - up, s);
 
@@ -625,30 +672,54 @@ function buildGenerated(n: number, rem: boolean): string[] {
     "ruin",
   ];
   const catalog = rem ? book2 : book1;
-  const seq: string[] = [];
-  for (let i = 0; i < rooms; i++) {
-    let k = catalog[(n * 11 + i * 17 + i * i * 3) % catalog.length];
-    if (seq[seq.length - 1] === k) k = catalog[(i * 9 + n) % catalog.length];
-    seq.push(k);
-  }
+  const idea = catalog[n % catalog.length];
+  const other = catalog[(n * 5 + 3) % catalog.length];
+  const seq: { kind: string; beat: string }[] = [
+    { kind: "yard", beat: "safe" },
+    { kind: idea, beat: "intro" },
+    { kind: "secretHigh", beat: "rest" },
+    { kind: idea, beat: "dev" },
+    { kind: other, beat: "dev" },
+    { kind: idea, beat: "twist" },
+    { kind: "alcove", beat: "rest" },
+    { kind: idea, beat: "exam" },
+  ];
+  if (rooms > 8) seq.splice(5, 0, { kind: other === idea ? "bridge" : other, beat: "dev" });
+  while (seq.length < rooms) seq.push({ kind: catalog[(seq.length * 7 + n) % catalog.length], beat: "dev" });
+  seq.length = rooms;
 
   put(1, fy - 1, "@");
   put(3, fy - 1, "i");
   if (n >= 8) put(5, fy - 1, "h");
   let cx = 8;
 
-  const land = (w = 3 + Math.floor(rand() * 3)) => {
+  const land = (w = 4 + Math.floor(rand() * 2)) => {
     fill(cx, fy, w, "#");
     cx += w;
   };
 
-  for (const kind of seq) {
-    if (kind === "street") {
+  const quiet: [number, number][] = [[1, 14]];
+  for (const step of seq) {
+    const kind = step.kind;
+    const beat = step.beat;
+    const exam = beat === "exam";
+    const intro = beat === "intro";
+    const twist = beat === "twist";
+    const mob = !intro && beat !== "safe" && beat !== "rest";
+    const x0 = cx;
+    if (kind === "secretHigh") {
+      const w = 10;
+      fill(cx, fy, w, "#");
+      shelf(cx + 2, 3, "______");
+      put(cx + 4, fy - 4, "$");
+      if (mob) put(cx + 7, fy - 1, pick());
+      cx += w;
+    } else if (kind === "street") {
       const w = 12 + Math.floor(rand() * 6);
       fill(cx, fy, w, "#");
       const a = cx + 3 + Math.floor(rand() * 3);
       pit(a, 2 + Math.floor(rand() * 2), true);
-      if (n >= 10) put(cx + w - 4, fy - 1, pick());
+      if (mob && n >= 10) put(cx + w - 4, fy - 1, pick());
       cx += w;
     } else if (kind === "chasm") {
       land(2);
@@ -665,7 +736,7 @@ function buildGenerated(n: number, rem: boolean): string[] {
         pit(cx, 3, true);
         fill(cx + 1, fy, 1, "#");
         fill(cx + 1, fy - 1, 1, "#");
-        if (rand() < 0.4) put(cx + 1, fy - 2, pick());
+        if (mob && rand() < 0.4) put(cx + 1, fy - 2, pick());
         cx += 3;
       }
       land(2);
@@ -675,7 +746,7 @@ function buildGenerated(n: number, rem: boolean): string[] {
       fill(cx, fy - 4, w, "#");
       put(cx + 3, fy - 1, "|");
       put(cx + 3, fy - 2, "|");
-      if (n >= 14) {
+      if (n >= 14 && !intro) {
         put(cx + 7, fy - 1, "|");
         put(cx + 7, fy - 2, "|");
       }
@@ -720,15 +791,21 @@ function buildGenerated(n: number, rem: boolean): string[] {
       fill(cx + 2, fy - 1, 2, "#");
       fill(cx + 6, fy - 1, 3, "#");
       fill(cx + 6, fy - 2, 2, "#");
-      if (rand() < 0.6) put(cx + 7, fy - 3, pick());
+      put(cx + 1, fy - 1, "'");
+      put(cx + 4, fy - 1, "&");
+      if (mob && rand() < 0.6) put(cx + 7, fy - 3, pick());
       cx += w;
     } else if (kind === "gate") {
       const w = 8;
       fill(cx, fy, w, "#");
-      put(cx + 3, fy - 1, "|");
-      put(cx + 3, fy - 2, "|");
+      if (!intro) {
+        put(cx + 3, fy - 1, "|");
+        put(cx + 3, fy - 2, "|");
+      } else {
+        put(cx + 3, fy - 1, "|");
+      }
       shelf(cx + 5, 3, "==");
-      put(cx + 1, fy - 1, pick());
+      if (mob) put(cx + 1, fy - 1, pick());
       cx += w;
     } else if (kind === "fork") {
       land(2);
@@ -736,7 +813,7 @@ function buildGenerated(n: number, rem: boolean): string[] {
       pit(cx, w, true);
       put(cx + 1, fy - 1, "----");
       shelf(cx + 4, 3, "====");
-      if (rand() < 0.5) put(cx + 5, fy - 4, pick());
+      if (mob && rand() < 0.5) put(cx + 5, fy - 4, pick());
       cx += w;
       land(2);
     } else if (kind === "alcove") {
@@ -747,7 +824,9 @@ function buildGenerated(n: number, rem: boolean): string[] {
         put(cx + w - 1, y, "#");
       }
       put(cx + w - 1, fy - 1, ".");
-      if (rand() < 0.55) put(cx + 4, fy - 1, pick());
+      put(cx + 2, fy - 1, "'");
+      put(cx + 3, fy - 1, "&");
+      if (mob && rand() < 0.55) put(cx + 4, fy - 1, pick());
       cx += w;
     } else if (kind === "meander") {
       const w = 14;
@@ -755,13 +834,15 @@ function buildGenerated(n: number, rem: boolean): string[] {
       fill(cx + 3, fy - 1, 3, "#");
       fill(cx + 8, fy - 1, 4, "#");
       fill(cx + 8, fy - 2, 2, "#");
+      put(cx + 1, fy - 1, "'");
+      put(cx + 12, fy - 1, "&");
       cx += w;
     } else if (kind === "gallery") {
       land(2);
       const w = 12;
       pit(cx, w, true);
       shelf(cx + 1, 2, "==");
-      shelf(cx + 5, 3, "==");
+      shelf(cx + 5, 3, "___");
       shelf(cx + 9, 2, "==");
       cx += w;
       land(2);
@@ -805,7 +886,7 @@ function buildGenerated(n: number, rem: boolean): string[] {
       const w = 10;
       fill(cx, fy, w, "#");
       fill(cx + 2, fy - 1, w - 4, "#");
-      put(cx + w - 3, fy - 2, pick());
+      if (mob) put(cx + w - 3, fy - 2, pick());
       cx += w;
     } else if (kind === "sparse") {
       land(3);
@@ -818,7 +899,7 @@ function buildGenerated(n: number, rem: boolean): string[] {
       pit(cx, w, true);
       put(cx, fy - 1, "/".repeat(Math.min(5, w - 1)));
       if (n >= 38) shelf(cx + 3, 3, "\\\\\\");
-      put(cx + w - 2, fy - 1, pick());
+      if (mob) put(cx + w - 2, fy - 1, pick());
       cx += w;
       land(2);
     } else if (kind === "springs") {
@@ -880,9 +961,11 @@ function buildGenerated(n: number, rem: boolean): string[] {
       fill(cx, fy, w, "#");
       put(cx + 2, fy - 1, "|");
       put(cx + 2, fy - 2, "|");
-      put(cx + 6, fy - 1, pick());
-      put(cx + 8, fy - 1, "|");
-      put(cx + 8, fy - 2, "|");
+      if (mob) put(cx + 6, fy - 1, pick());
+      if (!intro) {
+        put(cx + 8, fy - 1, "|");
+        put(cx + 8, fy - 2, "|");
+      }
       cx += w;
     } else if (kind === "tideway") {
       land(2);
@@ -899,6 +982,21 @@ function buildGenerated(n: number, rem: boolean): string[] {
       cx += 6;
       land(2);
     }
+    if (beat === "safe" || beat === "rest") land(4);
+    if (twist) {
+      land(1);
+      put(cx, fy - 1, "T");
+      cx += 1;
+      land(2);
+    }
+    if (exam) {
+      land(2);
+      put(cx, fy - 1, "|");
+      put(cx, fy - 2, "|");
+      cx += 1;
+      land(3);
+    }
+    if (!mob) quiet.push([x0, cx]);
   }
 
   land(6);
@@ -933,7 +1031,54 @@ function buildGenerated(n: number, rem: boolean): string[] {
   put(end - 2, fy - 1, "i");
   sprinkleMobs(g, n, roles, rand, fy);
   dedupeMobs(g, roles, rand);
+  silentTeach(g, fy);
+  hushBands(g, fy, quiet);
   return armTeeth(g, fy);
+}
+
+function hushBands(g: Grid, fy: number, bands: [number, number][]) {
+  const W = g.W;
+  const set = (x: number, y: number, ch: string) => {
+    if (y < 0 || y >= g.length || x < 0 || x >= W) return;
+    g[y] = g[y].slice(0, x) + ch + g[y].slice(x + 1);
+  };
+  for (const [a, b] of bands) {
+    for (let x = a; x < b && x < W; x++) {
+      for (let y = 1; y < fy; y++) {
+        const c = g[y][x];
+        if (MOBS.includes(c) && c !== "!") set(x, y, ".");
+      }
+    }
+  }
+}
+
+function silentTeach(g: Grid, fy: number) {
+  const W = g.W;
+  const set = (x: number, y: number, ch: string) => {
+    if (y < 0 || y >= g.length || x < 0 || x >= W) return;
+    g[y] = g[y].slice(0, x) + ch + g[y].slice(x + 1);
+  };
+  const isMob = (c: string) => MOBS.includes(c) && c !== "!";
+  for (let x = 1; x < Math.min(14, W - 2); x++) {
+    for (let y = 1; y < fy; y++) {
+      if (isMob(g[y][x])) set(x, y, ".");
+    }
+  }
+  const marks = ["|", "/", "\\", "^", "~", "T", ":"];
+  const firstAt = new Map<string, number>();
+  for (let x = 1; x < W - 1; x++) {
+    for (let y = 1; y < fy; y++) {
+      const c = g[y][x];
+      if (marks.includes(c) && !firstAt.has(c)) firstAt.set(c, x);
+    }
+  }
+  for (const x0 of firstAt.values()) {
+    for (let x = x0 - 4; x <= x0 + 4; x++) {
+      for (let y = 1; y < fy; y++) {
+        if (x > 0 && x < W && isMob(g[y][x])) set(x, y, ".");
+      }
+    }
+  }
 }
 
 function dedupeMobs(g: Grid, roles: string[], rand: () => number) {
@@ -1218,7 +1363,7 @@ const hand: Record<string, LevelMeta> = {
 ##########################################################################################.....#
 #................................3.......................9...............................#P.!..#
 ################################################################################################
-`)),
+`), 8),
     exit: "hub",
     index: 2,
   },

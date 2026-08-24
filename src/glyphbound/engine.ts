@@ -353,6 +353,8 @@ export class GameEngine {
         else if (ch === "/") this.solids.push({ x, y: y + 28, w: TILE, h: 12, type: "conveyor", phase: 1 });
         else if (ch === "\\") this.solids.push({ x, y: y + 28, w: TILE, h: 12, type: "conveyor", phase: -1 });
         else if (ch === "T") this.solids.push({ x: x + 4, y: y + 28, w: TILE - 8, h: 12, type: "bounce" });
+        else if (ch === "_") this.solids.push({ x, y: y + 34, w: TILE, h: 6, type: "oneway" });
+        else if (ch === "&") this.solids.push({ x: x + 6, y: y + 12, w: TILE - 12, h: TILE - 12, type: "solid" });
         else if (ch === ":") this.solids.push({ x: x + 10, y, w: 28, h: TILE, type: "fan" });
         else if (ch === "@") {
           spawnX = x;
@@ -878,9 +880,6 @@ export class GameEngine {
     this.updateBullets(dt);
     this.updatePickups();
     this.updateParticles(dt);
-    for (const s of this.solids) {
-      if (s.type === "laser") s.phase = (s.phase ?? 0) + dt;
-    }
     this.walls = this.walls.filter((w) => {
       if (this.save.words.includes("TIDE") && w.kind === "plat") w.x += this.player.facing * 42 * dt;
       w.life -= this.save.words.includes("TIDE") ? dt * 0.62 : dt;
@@ -1545,7 +1544,10 @@ export class GameEngine {
       this.castSpecial(a);
     }
     for (const s of this.solids) {
-      if (s.type === "spike" && aabb(p, s) && p.invuln <= 0) this.hurt(1, p.x + p.w / 2 < s.x + s.w / 2 ? -1 : 1);
+      if (s.type === "spike" && aabb(p, s) && p.invuln <= 0) {
+        if (p.grounded && s.y >= p.y + p.h - 6) continue;
+        this.hurt(1, p.x + p.w / 2 < s.x + s.w / 2 ? -1 : 1);
+      }
       if (s.type === "sluice" && aabb(p, s)) {
         if (p.letter === "e") {
           p.vy = Math.min(p.vy, p.capital ? 40 : 90);
@@ -1562,7 +1564,8 @@ export class GameEngine {
   }
 
   private laserHot(s: Solid) {
-    return Math.sin((s.phase ?? 0) * 3.15) > -0.22;
+    const cycle = (this.time + (s.phase ?? 0)) % 1.5;
+    return cycle < 0.5;
   }
 
   private hitEnemy(e: Enemy, dmg: number, dir: number) {
@@ -1674,32 +1677,50 @@ export class GameEngine {
       }
       e.stun = 0;
       e.aux += dt;
+      if (!this.isBossKind(e.kind) && !this.inSight(e)) {
+        if (!e.grounded) e.vy += 1800 * dt;
+        e.vx *= 0.86;
+        this.moveActor(e, dt, false);
+        continue;
+      }
       const large = false;
       if (e.kind === "zero") {
         e.y += Math.sin(e.t * 2) * 18 * dt;
         e.x += Math.sin(e.t * 0.6) * 30 * dt;
         e.facing = p.x > e.x ? 1 : -1;
         if (e.phase === 1) {
-          this.pullToward(e, p, 150, 95, dt);
-          if (e.aux > 0.6) {
+          this.pullToward(e, p, 160, 100, dt);
+          if (e.aux > 0.55) {
+            e.phase = 2;
+            e.aux = 0;
+            this.burst(e.x + e.w / 2, e.y + e.h / 2, "#e8d48a", 8, "ink");
+          }
+        } else if (e.phase === 2) {
+          const cx = e.x + e.w / 2;
+          const cy = e.y + e.h / 2;
+          const dx = p.x + p.w / 2 - cx;
+          const dy = p.y + p.h / 2 - cy;
+          const d = Math.hypot(dx, dy) || 1;
+          if (d < 150 && !this.hazardAt(p.x - (dx / d) * 90 * dt, p.y, p.w, p.h)) {
+            p.x -= (dx / d) * 90 * dt;
+          }
+          if (e.aux > 0.35) {
             e.phase = 0;
             e.aux = 0;
+            this.shoot(e, p.x < e.x ? -1 : 1, 0.2);
           }
-        } else if (e.aux > 1.7) {
-          e.aux = 0;
-          if (Math.abs(p.x - e.x) < 160) {
+        } else if (this.windFire(e, 1.7)) {
+          if (Math.abs(p.x - e.x) < 170) {
             e.phase = 1;
             this.burst(e.x + e.w / 2, e.y + e.h / 2, "#7a8b96", 8, "ink");
-          } else {
-            this.shoot(e, p.x < e.x ? -1 : 1, 0.15);
-          }
+          } else this.fanShot(e, p.x < e.x ? -1 : 1, 0.4, 2);
         }
       } else if (e.kind === "one") {
         if (!e.grounded) e.vy += 1800 * dt;
         if (e.phase === 1) {
-          e.vx = e.facing * 230;
+          e.vx = e.facing * 250;
           this.moveActor(e, dt, large);
-          if (e.aux > 0.32) {
+          if (e.aux > 0.34) {
             e.phase = 0;
             e.aux = 0;
           }
@@ -1711,9 +1732,11 @@ export class GameEngine {
             e.facing = (e.facing * -1) as 1 | -1;
             e.vx = 0;
           }
-          if (e.aux > 1.05 && Math.abs(p.x - e.x) < 110 && Math.abs(p.y - e.y) < 40) {
+          if (e.aux > 0.75 && Math.abs(p.x - e.x) < 120 && Math.abs(p.y - e.y) < 70) e.vx *= 0.2;
+          if (e.aux > 1.05 && Math.abs(p.x - e.x) < 120 && Math.abs(p.y - e.y) < 70) {
             e.phase = 1;
             e.aux = 0;
+            if (p.y + 18 < e.y) e.vy = -300;
             this.burst(e.x + e.w / 2, e.y + e.h, "#d45a4a", 5, "dust");
           }
         }
@@ -1726,10 +1749,13 @@ export class GameEngine {
           e.facing = (e.facing * -1) as 1 | -1;
           e.vx = 0;
         }
-        if (e.aux > 1.55) {
-          e.aux = 0;
-          this.mortar(e, e.facing, -0.9);
-          this.mortar(e, e.facing * 0.55, -1.1);
+        if (this.windFire(e, 1.55)) {
+          if (Math.abs(p.x - e.x) < 56 && e.grounded) this.shockwave(e);
+          else {
+            this.mortar(e, e.facing, -0.9);
+            this.mortar(e, e.facing * 0.5, -1.15);
+            if (Math.abs(p.y - e.y) > 40) this.mortar(e, e.facing * 0.15, -1.35);
+          }
         }
       } else if (e.kind === "four") {
         if (!e.grounded) e.vy += 1800 * dt;
@@ -1740,22 +1766,32 @@ export class GameEngine {
           e.facing = (e.facing * -1) as 1 | -1;
           e.vx = 0;
         }
-        if (e.aux > 1.85) {
-          e.aux = 0;
-          this.stampAt(p.x + p.w / 2, p.y + p.h - 4);
+        if (this.windFire(e, 1.9)) {
+          this.stampLine(p.x + p.w / 2, p.y + p.h - 4, 3, 42);
         }
       } else if (e.kind === "five") {
         if (!e.grounded) e.vy += 1800 * dt;
         e.facing = p.x > e.x ? 1 : -1;
-        e.vx = e.facing * 30;
-        this.moveActor(e, dt, large);
-        if (e.grounded && this.atLedge(e)) {
-          e.facing = (e.facing * -1) as 1 | -1;
-          e.vx = 0;
-        }
-        if (e.aux > 2.15 && e.grounded) {
-          e.aux = 0;
-          this.shockwave(e);
+        if (e.phase === 1) {
+          this.moveActor(e, dt, large);
+          if (e.grounded) {
+            this.shockwave(e);
+            this.stampAt(e.x + e.w / 2, e.y + e.h - 2);
+            e.phase = 0;
+            e.aux = 0;
+          }
+        } else {
+          e.vx = e.facing * 30;
+          this.moveActor(e, dt, large);
+          if (e.grounded && this.atLedge(e)) {
+            e.facing = (e.facing * -1) as 1 | -1;
+            e.vx = 0;
+          }
+          if (e.grounded && this.windFire(e, 2.15)) {
+            e.phase = 1;
+            e.vy = -360;
+            e.grounded = false;
+          }
         }
       } else if (e.kind === "three" || e.kind === "seven" || e.kind === "triad") {
         if (!e.grounded) e.vy += 1800 * dt;
@@ -1773,42 +1809,61 @@ export class GameEngine {
           e.vx = 0;
         }
         if ((e.kind === "three" || e.kind === "triad") && e.grounded && e.aux > 0.9 && Math.abs(p.x - e.x) < 220) {
-          e.vy = -420;
+          e.vy = -440;
           e.aux = 0;
+          e.phase = 1;
         }
-        if (e.kind === "seven" && e.aux > 1.35) {
+        if ((e.kind === "three" || e.kind === "triad") && e.phase === 1 && e.vy > -40 && e.vy < 80 && !e.grounded) {
+          this.fanShot(e, e.facing, 0.7, 3);
+          e.phase = 0;
+        }
+        if (e.kind === "seven" && this.windFire(e, 1.4)) {
+          this.fanShot(e, e.facing, 0.9, 3);
+          e.phase = 1;
+        }
+        if (e.kind === "seven" && e.phase === 1 && e.aux > 0.28) {
+          this.fanShot(e, e.facing, 0.35, 2);
+          e.phase = 0;
           e.aux = 0;
-          this.shoot(e, e.facing, -0.45);
-          this.shoot(e, e.facing, 0);
-          this.shoot(e, e.facing, 0.45);
         }
       } else if (e.kind === "six") {
-        if (Math.abs(p.x - e.x) < 48 && p.y > e.y) {
-          if (!e.grounded) e.vy += 2200 * dt;
+        if (Math.abs(p.x - e.x) < 52 && p.y > e.y + 8) {
+          if (!e.grounded) e.vy += 2600 * dt;
           this.moveActor(e, dt, false);
+          if (e.grounded) {
+            this.shockwave(e);
+            e.vy = -420;
+            e.grounded = false;
+          }
         } else {
           e.y += Math.sin(e.t * 2.2) * 22 * dt;
           e.x += Math.sin(e.t * 0.8) * 24 * dt;
           e.vy = 0;
         }
         e.facing = p.x > e.x ? 1 : -1;
-        if (e.aux > 1.5) {
-          e.aux = 0;
-          this.mortar(e, 0, 0.35);
-          this.mortar(e, 0.4, 0.2);
-          this.mortar(e, -0.4, 0.2);
+        if (this.windFire(e, 1.55)) {
+          this.mortar(e, 0, 0.45);
+          this.mortar(e, 0.45, 0.22);
+          this.mortar(e, -0.45, 0.22);
         }
       } else if (e.kind === "nine") {
         e.y += Math.sin(e.t * 3) * 16 * dt;
         e.facing = p.x > e.x ? 1 : -1;
-        if (e.aux > 2.3) {
-          e.aux = 0;
-          e.x = Math.max(40, Math.min(this.worldW - 80, p.x + (Math.random() > 0.5 ? 90 : -90)));
-          e.y = Math.max(24, p.y - 70);
-          this.burst(e.x + e.w / 2, e.y + e.h / 2, "#d45a4a", 10, "ink");
-          this.shoot(e, 0, 1);
-          this.shoot(e, -0.35, 1);
-          this.shoot(e, 0.35, 1);
+        if (e.phase === 1) {
+          if (e.aux > 0.42) {
+            e.x = e.armor;
+            e.y = Math.max(24, p.y - 64);
+            this.burst(e.x + e.w / 2, e.y + e.h / 2, "#d45a4a", 10, "ink");
+            this.fanShot(e, 0, 0.7, 3);
+            e.phase = 0;
+            e.aux = 0;
+          }
+        } else if (this.windFire(e, 2.15)) {
+          const nx = Math.max(40, Math.min(this.worldW - 80, p.x + (Math.random() > 0.5 ? 96 : -96)));
+          e.armor = nx;
+          e.phase = 1;
+          this.stampAt(nx + 16, p.y + p.h - 4);
+          this.burst(nx, p.y - 60, "#d45a4a", 6, "ink");
         }
       } else if (e.kind === "eight") {
         e.x += Math.sin(e.t * 1.4) * 70 * dt;
@@ -1818,11 +1873,12 @@ export class GameEngine {
         if (e.aux2 > 3 && e.hp < e.maxHp) {
           e.hp = Math.min(e.maxHp, e.hp + 1);
           e.aux2 = 0;
+          this.burst(e.x + e.w / 2, e.y, "#5ee0c0", 8, "glyph");
         }
-        if (e.aux > 1.4) {
-          e.aux = 0;
-          if (Math.random() < 0.45) this.stampAt(p.x + p.w / 2, p.y + p.h - 4);
-          else this.shoot(e, e.facing, 0.2);
+        if (this.windFire(e, 1.45)) {
+          if (e.hp < e.maxHp * 0.5) this.ringShot(e, 6, 160, e.t);
+          else if (Math.random() < 0.5) this.stampLine(p.x + p.w / 2, p.y + p.h - 4, 2, 50);
+          else this.fanShot(e, e.facing, 0.45, 2);
         }
       } else if (e.kind === "dualis") {
         if (!e.grounded) e.vy += 1600 * dt;
@@ -1840,22 +1896,23 @@ export class GameEngine {
         this.moveActor(e, dt, false);
         if (e.aux > (e.phase >= 2 ? 0.52 : 0.85)) {
           e.aux = 0;
-          e.aux2 = (e.aux2 + 1) % 4;
+          e.aux2 = (e.aux2 + 1) % 5;
           if (e.aux2 === 0) {
-            this.shoot(e, e.facing, 0.1);
-            this.shoot(e, e.facing, -0.25);
-            if (e.phase >= 2) this.shoot(e, -e.facing, 0.1);
+            this.fanShot(e, e.facing, 0.45, e.phase >= 2 ? 3 : 2);
+            if (e.phase >= 2) this.fanShot(e, -e.facing, 0.3, 2);
           } else if (e.aux2 === 1) {
-            e.vy = -380;
-            if (e.phase >= 1) {
-              this.mortar(e, e.facing, -0.95);
-              this.mortar(e, e.facing * 0.4, -1.15);
-            }
+            e.vy = -400;
+            this.mortar(e, e.facing, -0.95);
+            this.mortar(e, e.facing * 0.4, -1.15);
+            if (e.phase >= 1) this.mortar(e, -e.facing * 0.3, -1.05);
           } else if (e.aux2 === 2) {
-            e.vx = e.facing * 240;
-            this.stampAt(p.x + p.w / 2, p.y + p.h - 4);
+            e.vx = e.facing * 260;
+            this.stampLine(p.x + p.w / 2, p.y + p.h - 4, e.phase >= 2 ? 3 : 2, 40);
+          } else if (e.aux2 === 3) {
+            this.ringShot(e, e.phase >= 2 ? 8 : 5, 190);
           } else {
-            this.ringShot(e, e.phase >= 2 ? 6 : 4, 190);
+            e.vy = -280;
+            this.shockwave(e);
           }
         }
         if (e.grounded && Math.random() < 0.012) e.vy = -340;
@@ -1873,8 +1930,8 @@ export class GameEngine {
           e.aux2 = (e.aux2 + 1) % 6;
           if (e.aux2 === 0) this.ringShot(e, 4, 200);
           else if (e.aux2 === 1) {
-            e.vy = -320;
-            this.stampAt(p.x + p.w / 2, p.y + p.h - 4);
+            e.vy = -340;
+            this.stampLine(p.x + p.w / 2, p.y + p.h - 4, 4, 46);
           } else if (e.aux2 === 2 && e.hp < e.maxHp * 0.6 && this.enemies.filter((x) => x.kind === "four" && x.alive).length < 2) {
             this.enemies.push(this.spawnEnemy("four", e.x - 80, e.y));
             this.enemies.push(this.spawnEnemy("four", e.x + 80, e.y));
@@ -1897,13 +1954,7 @@ export class GameEngine {
       if (e.phase === 1) {
         const cx = e.x + e.w / 2;
         const cy = e.y + e.h / 2;
-        const dx = cx - (p.x + p.w / 2);
-        const dy = cy - (p.y + p.h / 2);
-        const d = Math.hypot(dx, dy) || 1;
-        if (d < 170) {
-          p.x += (dx / d) * 85 * dt;
-          p.y += (dy / d) * 50 * dt;
-        }
+        this.pullToward(e, p, 170, 85, dt);
         for (const b of this.bullets) {
           if (!b.alive) continue;
           const bx = cx - b.x;
@@ -2027,7 +2078,7 @@ export class GameEngine {
         } else if (e.aux2 === 2) {
           e.vy = -340;
           e.vx = e.facing * 160;
-          this.stampAt(p.x + p.w / 2, p.y + p.h - 4);
+          this.stampLine(p.x + p.w / 2, p.y + p.h - 4, e.phase >= 1 ? 3 : 2, 42);
         } else {
           if (e.phase >= 1) this.shockwave(e);
           else this.shoot(e, e.facing, 0.1);
@@ -2038,19 +2089,12 @@ export class GameEngine {
       const fury = e.hp < e.maxHp * 0.4;
       if (e.phase === 1) {
         e.aux2 += dt;
-        const cx = e.x + e.w / 2;
-        const cy = e.y + e.h / 2;
-        const dx = cx - (p.x + p.w / 2);
-        const dy = cy - (p.y + p.h / 2);
-        const d = Math.hypot(dx, dy) || 1;
-        const pull = fury ? 150 : 110;
-        if (d < 220) {
-          p.x += (dx / d) * pull * dt;
-          p.y += (dy / d) * (pull * 0.65) * dt;
-        }
+        this.pullToward(e, p, 220, fury ? 150 : 110, dt);
         if (e.aux2 > (fury ? 0.85 : 1.1)) {
           e.phase = 0;
           e.aux2 = 0;
+          this.stampAt(p.x + p.w / 2, p.y + p.h - 4);
+          if (fury) this.shockwave(e);
         }
       } else {
         if (!e.grounded) e.vy += 1400 * dt;
@@ -2092,10 +2136,11 @@ export class GameEngine {
           this.shoot(e, e.facing, -0.32);
           if (e.phase >= 1) this.shoot(e, e.facing, 0.32);
         } else if (e.aux2 === 1) {
-          e.vy = -400;
-          this.stampAt(p.x + p.w / 2, p.y + p.h - 4);
+          e.vy = -420;
+          this.stampLine(p.x + p.w / 2, p.y + p.h - 4, e.phase >= 1 ? 3 : 2, 48);
         } else if (e.aux2 === 2) {
           if (e.phase >= 2) {
+            this.pullToward(e, p, 200, 140, dt * 18);
             this.shoot(e, -e.facing, 0.15);
             this.shockwave(e);
           } else {
@@ -2232,8 +2277,9 @@ export class GameEngine {
         this.shoot(e, -e.facing, -0.2);
         if (e.aux2 === 1) this.ringShot(e, 6, 165, e.t);
         if (e.aux2 === 2) {
-          this.pullToward(e, p, 180, 90, dt * 40);
+          this.pullToward(e, p, 200, 110, dt * 36);
           this.burst(e.x + e.w / 2, e.y, "#c46ad4", 8, "glyph");
+          this.stampAt(p.x + p.w / 2, p.y + p.h - 4);
         }
         if (e.aux2 === 3 && e.phase) this.ringShot(e, 10, 150, e.t * 0.5);
       }
@@ -2254,7 +2300,7 @@ export class GameEngine {
         e.aux = 0;
         e.aux2 = (e.aux2 + 1) % 5;
         if (e.aux2 === 0) this.shockwave(e);
-        else if (e.aux2 === 1) this.stampAt(p.x + p.w / 2, p.y + p.h - 4);
+        else if (e.aux2 === 1) this.stampLine(p.x + p.w / 2, p.y + p.h - 4, e.phase >= 1 ? 4 : 2, 44);
         else if (e.aux2 === 2) {
           this.mortar(e, e.facing, -0.8);
           this.mortar(e, -e.facing, -0.8);
@@ -2271,6 +2317,29 @@ export class GameEngine {
       e.vx = e.facing * 50;
       this.moveActor(e, dt, false);
     }
+  }
+
+  private windFire(e: Enemy, period: number): boolean {
+    const wind = Math.min(0.36, period * 0.3);
+    if (e.aux >= period) {
+      e.aux = 0;
+      return true;
+    }
+    if (e.aux >= period - wind) e.vx *= 0.32;
+    return false;
+  }
+
+  private fanShot(e: Enemy, dir: number, spread: number, n: number) {
+    if (n <= 1) {
+      this.shoot(e, dir, 0);
+      return;
+    }
+    for (let i = 0; i < n; i++) this.shoot(e, dir, (i / (n - 1) - 0.5) * spread);
+  }
+
+  private stampLine(x: number, y: number, n = 3, gap = 44) {
+    const mid = Math.floor(n / 2);
+    for (let i = 0; i < n; i++) this.stampAt(x + (i - mid) * gap, y);
   }
 
   private shoot(e: Enemy, dir: number, vy: number) {
@@ -2355,7 +2424,7 @@ export class GameEngine {
       r: 22,
       from: "enemy",
       dmg: 1,
-      life: 0.82,
+      life: 1.05,
       kind: "stamp",
       alive: true,
       pierce: 0,
@@ -2367,16 +2436,38 @@ export class GameEngine {
     return !this.blockedAt(x, e.y + e.h + 3, 8, 8, false);
   }
 
+  private inSight(e: Enemy) {
+    const pad = 64;
+    return (
+      e.x + e.w > this.camX - pad &&
+      e.x < this.camX + VIEW_W + pad &&
+      e.y + e.h > this.camY - pad &&
+      e.y < this.camY + VIEW_H + pad
+    );
+  }
+
   private pullToward(e: Enemy, p: Player, radius: number, force: number, dt: number) {
     const cx = e.x + e.w / 2;
     const cy = e.y + e.h / 2;
     const dx = cx - (p.x + p.w / 2);
     const dy = cy - (p.y + p.h / 2);
     const d = Math.hypot(dx, dy) || 1;
-    if (d < radius) {
-      p.x += (dx / d) * force * dt;
-      p.y += (dy / d) * (force * 0.55) * dt;
+    if (d >= radius) return;
+    const nx = p.x + (dx / d) * force * dt;
+    const ny = p.y + (dy / d) * (force * 0.55) * dt;
+    const large = isLarge(p.letter, p.capital);
+    if (this.blockedAt(nx, ny, p.w, p.h, large)) return;
+    if (this.hazardAt(nx, ny, p.w, p.h)) return;
+    p.x = nx;
+    p.y = ny;
+  }
+
+  private hazardAt(x: number, y: number, w: number, h: number) {
+    const box = { x, y, w, h };
+    for (const s of this.solids) {
+      if ((s.type === "spike" || s.type === "sluice" || s.type === "laser") && aabb(box, s)) return true;
     }
+    return false;
   }
 
   private updateBullets(dt: number) {
@@ -2396,7 +2487,7 @@ export class GameEngine {
           ? { x: b.x - 16, y: b.y - 6, w: 32, h: 14 }
           : { x: b.x - b.r, y: b.y - b.r, w: b.r * 2, h: b.r * 2 };
       if (b.from === "enemy") {
-        const hot = b.kind !== "stamp" || b.life < 0.34;
+        const hot = b.kind !== "stamp" || b.life < 0.4;
         if (hot && aabb(box, p) && p.invuln <= 0 && p.roll <= 0) {
           if (b.kind !== "wave") b.alive = false;
           this.hurt(b.dmg, b.vx > 0 ? 1 : -1);
