@@ -1,3 +1,4 @@
+import { DISTRICTS } from "./districts";
 import type { LevelId, TaskDef, ThemeId } from "./types";
 import { STAGE_COUNT } from "./types";
 
@@ -398,8 +399,6 @@ const ROLE_TIERS: string[][] = [
   ["5", "7", "8", "9", "A", "B", "C", "E", "Y", "G", "H", "K"],
 ];
 
-const THEMES: ThemeId[] = ["street", "canal", "coil", "fort", "vault", "abyss", "spire"];
-
 function rng(seed: number) {
   let s = seed | 0;
   return () => {
@@ -576,7 +575,7 @@ function buildProgressive(n: number): string[] {
 }
 
 function progressiveMeta(n: number): LevelMeta {
-  const theme = THEMES[Math.min(THEMES.length - 1, Math.floor((n - 1) / 4))];
+  const theme = DISTRICTS[Math.min(DISTRICTS.length - 1, n)]?.theme ?? "street";
   const isBoss = n % 5 === 0 || n === STAGE_COUNT;
   const names = [
     "First Recount",

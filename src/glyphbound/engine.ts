@@ -10,6 +10,8 @@ import {
   drawPlayer,
   drawShot,
   drawTiles,
+  drawWeatherFront,
+  drawGrade,
 } from "./draw";
 import { AudioBus } from "./audio";
 import { Input } from "./input";
@@ -539,29 +541,29 @@ export class GameEngine {
 
   private spawnEnemy(kind: EnemyKind, x: number, y: number): Enemy {
     const sizes: Record<EnemyKind, { w: number; h: number; hp: number; name: string }> = {
-      one: { w: 26, h: 44, hp: 3, name: "Line Trooper" },
-      dummy: { w: 26, h: 44, hp: 99, name: "Dummy" },
-      zero: { w: 36, h: 36, hp: 4, name: "Null Skiff" },
-      two: { w: 38, h: 42, hp: 5, name: "Twin Tongue" },
-      three: { w: 30, h: 40, hp: 4, name: "Triad" },
-      four: { w: 40, h: 48, hp: 6, name: "Corner Guard" },
-      five: { w: 42, h: 52, hp: 10, name: "Pent Guard" },
-      six: { w: 34, h: 46, hp: 5, name: "Hook Six" },
-      seven: { w: 28, h: 56, hp: 6, name: "Sept Spire" },
-      eight: { w: 38, h: 50, hp: 8, name: "Loop Brute" },
-      nine: { w: 34, h: 40, hp: 5, name: "Niner" },
-      dualis: { w: 64, h: 72, hp: 28, name: "Dualis" },
-      tetrarch: { w: 78, h: 88, hp: 40, name: "Tetrarch" },
+      one: { w: 26, h: 44, hp: 3, name: "1" },
+      dummy: { w: 26, h: 44, hp: 99, name: "Dummy 1" },
+      zero: { w: 36, h: 36, hp: 4, name: "0" },
+      two: { w: 38, h: 42, hp: 5, name: "2" },
+      three: { w: 30, h: 40, hp: 4, name: "3" },
+      four: { w: 40, h: 48, hp: 6, name: "4" },
+      five: { w: 42, h: 52, hp: 10, name: "5" },
+      six: { w: 34, h: 46, hp: 5, name: "6" },
+      seven: { w: 28, h: 56, hp: 6, name: "7" },
+      eight: { w: 38, h: 50, hp: 8, name: "8" },
+      nine: { w: 34, h: 40, hp: 5, name: "9" },
+      dualis: { w: 64, h: 72, hp: 28, name: "Dualis · 2" },
+      tetrarch: { w: 78, h: 88, hp: 40, name: "Tetrarch · 4" },
       importer: { w: 70, h: 80, hp: 38, name: "G the Importer" },
-      nullis: { w: 72, h: 72, hp: 44, name: "Nullis" },
-      triad: { w: 36, h: 42, hp: 6, name: "Triad-Splitter" },
-      nullring: { w: 42, h: 42, hp: 8, name: "Null-Ring" },
-      mobius: { w: 32, h: 34, hp: 7, name: "Möbius Coil" },
-      summoner: { w: 38, h: 48, hp: 9, name: "Port Summoner" },
-      gradient: { w: 36, h: 40, hp: 7, name: "Gradient" },
-      crossseal: { w: 44, h: 44, hp: 9, name: "Cross-Seal" },
-      archivist: { w: 34, h: 46, hp: 8, name: "Archivist" },
-      endmark: { w: 82, h: 86, hp: 56, name: "End-Mark" },
+      nullis: { w: 72, h: 72, hp: 44, name: "Nullis · 0" },
+      triad: { w: 36, h: 42, hp: 6, name: "3-Splitter" },
+      nullring: { w: 42, h: 42, hp: 8, name: "0-Iris" },
+      mobius: { w: 32, h: 34, hp: 7, name: "8-Coil" },
+      summoner: { w: 38, h: 48, hp: 9, name: "6-Caller" },
+      gradient: { w: 36, h: 40, hp: 7, name: "7-Fall" },
+      crossseal: { w: 44, h: 44, hp: 9, name: "4-Seal" },
+      archivist: { w: 34, h: 46, hp: 8, name: "5-Clerk" },
+      endmark: { w: 82, h: 86, hp: 56, name: "End-Mark · 8" },
     };
     const s = sizes[kind];
     const hp = this.hard ? Math.ceil(s.hp * 1.35) : s.hp;
@@ -791,8 +793,19 @@ export class GameEngine {
       p.shieldCd = 1.35;
     }
     p.ink = Math.min(p.maxInk, p.ink + 5.5 * dt);
-    p.anim += dt * (Math.abs(p.vx) > 20 ? 8 : 3);
+    const prevAnim = p.anim;
+    const walkSpd = Math.abs(p.vx);
+    p.anim += dt * (walkSpd > 24 ? 7.5 + Math.min(6, walkSpd / 40) : 2.6);
     p.squash += (1 - p.squash) * Math.min(1, dt * 12);
+    if (!p.grounded) {
+      const want = p.vy < 0 ? 0.86 : 1.1;
+      p.stretch += (want - p.stretch) * Math.min(1, dt * 10);
+    } else {
+      p.stretch += (1 - p.stretch) * Math.min(1, dt * 14);
+    }
+    if (p.grounded && walkSpd > 46 && Math.floor(p.anim) !== Math.floor(prevAnim) && Math.floor(p.anim) % 2 === 0) {
+      this.burst(p.x + p.w * 0.5, p.y + p.h - 2, "#8a908c", 2, "dust");
+    }
     const wasGround = p.grounded;
     const fall = p.vy;
     this.moveActor(p, dt, large, a.down);
@@ -984,6 +997,7 @@ export class GameEngine {
     if ((a.attack || a.attackHeld) && p.shotCd <= 0 && p.roll <= 0) {
       p.attack = 0.16;
       p.shotCd = cd;
+      p.squash = 0.92;
       this.fireShot();
     }
     if (a.special && p.specialCd <= 0 && p.roll <= 0) {
@@ -991,6 +1005,8 @@ export class GameEngine {
         p.roll = 0.28;
         p.invuln = Math.max(p.invuln, 0.28);
         p.specialCd = 0.7;
+        p.squash = 0.78;
+        p.stretch = 0.84;
         this.audio.sfxJump();
       } else if (p.letter === "c" && p.capital) {
         this.walls.push({
@@ -2216,12 +2232,13 @@ export class GameEngine {
     const sx = (Math.random() * 2 - 1) * 10 * sh;
     const sy = (Math.random() * 2 - 1) * 8 * sh;
     const theme = LEVELS[this.stage]?.theme ?? "hub";
+    const district = LEVELS[this.stage]?.index ?? 0;
 
     if (this.mode === "title" || this.mode === "intro") {
-      drawParallax(ctx, this.titleC * 40, 0, this.time, "street", 0, 0);
+      drawParallax(ctx, this.titleC * 40, 0, this.time, "street", 0, 0, 1);
       this.drawTitleScene(ctx);
     } else {
-      drawParallax(ctx, this.camX, this.camY, this.time, theme, sx, sy);
+      drawParallax(ctx, this.camX, this.camY, this.time, theme, sx, sy, district);
       ctx.save();
       ctx.translate(sx, sy);
       drawTiles(ctx, this.rows, this.camX, this.camY, this.time, theme, this.broken);
@@ -2250,7 +2267,9 @@ export class GameEngine {
         ctx.fillRect(q.x - this.camX, q.y - this.camY, q.size, q.size);
         ctx.globalAlpha = 1;
       }
+      drawWeatherFront(ctx, this.camX, this.camY, this.time, district);
       ctx.restore();
+      drawGrade(ctx, district);
       if (this.mode === "play" || this.mode === "hub" || this.mode === "transform") {
         drawHudCanvas(ctx, this.player, this.nearHint, this.toast);
       }
