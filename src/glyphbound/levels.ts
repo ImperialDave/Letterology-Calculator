@@ -475,219 +475,382 @@ function sprinkleMobs(
   }
 }
 
-function buildProgressive(n: number): string[] {
-  const rand = rng(n * 9973 + 42);
-  const tier = Math.min(ROLE_TIERS.length - 1, Math.floor((n - 1) / 3));
-  const roles = ROLE_TIERS[tier];
+function buildGenerated(n: number, rem: boolean): string[] {
+  const rand = rng(n * (rem ? 7919 : 9973) + (rem ? 11 : 42));
+  const roles = rem
+    ? REMAINDER_ROLES[Math.min(REMAINDER_ROLES.length - 1, Math.floor((n - 31) / 8))]
+    : ROLE_TIERS[Math.min(ROLE_TIERS.length - 1, Math.floor((n - 1) / 3))];
   const pick = () => roles[Math.floor(rand() * roles.length)];
-  const H = 15 + Math.min(11, Math.floor(n / 2.4));
-  const floorY = H - 3;
-  const beats = 4 + Math.floor((n - 1) / 5);
-  const W = 28 + beats * (16 + Math.min(8, Math.floor(n / 4))) + 22;
-  const g = grid(W, H, floorY) as Grid;
+  const H = 13;
+  const fy = 10;
+  const rooms = 6 + (n % 4) + (n >= 45 ? 2 : n >= 25 ? 1 : 0);
+  const W = 24 + rooms * (13 + (n % 5)) + 16 + (n % 3) * 8;
+  const g = grid(W, H, fy) as Grid;
   const { put, fill } = g;
 
   const pit = (x: number, w: number, spiked = true) => {
-    fill(x, floorY, w, ".");
-    if (spiked && floorY + 1 < H - 1) fill(x, floorY + 1, w, "^");
+    fill(x, fy, w, ".");
+    if (spiked) fill(x, fy + 1, w, "^");
   };
+  const shelf = (x: number, up: number, s: string) => put(x, fy - up, s);
 
-  put(1, floorY - 1, "@");
-  put(3, floorY - 1, "i");
-  if (n >= 8) put(5, floorY - 1, "h");
+  const book1 = [
+    "street",
+    "chasm",
+    "pillars",
+    "hall",
+    "docks",
+    "crumble",
+    "roofs",
+    "needles",
+    "yard",
+    "gate",
+    "fork",
+    "alcove",
+    "meander",
+    "gallery",
+    "ruin",
+    "canal",
+    "bridge",
+    "steps",
+    "raised",
+    "sparse",
+  ];
+  const book2 = [
+    "belt",
+    "springs",
+    "draft",
+    "foldgap",
+    "minus",
+    "splitbelt",
+    "orbit",
+    "gauntlet",
+    "tideway",
+    "chasm",
+    "pillars",
+    "fork",
+    "gallery",
+    "needles",
+    "yard",
+    "alcove",
+    "street",
+    "raised",
+    "docks",
+    "ruin",
+  ];
+  const catalog = rem ? book2 : book1;
+  const seq: string[] = [];
+  for (let i = 0; i < rooms; i++) {
+    let k = catalog[(n * 11 + i * 17 + i * i * 3) % catalog.length];
+    if (seq[seq.length - 1] === k) k = catalog[(i * 9 + n) % catalog.length];
+    seq.push(k);
+  }
 
+  put(1, fy - 1, "@");
+  put(3, fy - 1, "i");
+  if (n >= 8) put(5, fy - 1, "h");
   let cx = 8;
-  const island = (w: number, loot = true) => {
-    fill(cx, floorY, w, "#");
-    if (loot && rand() < 0.55) put(cx + Math.max(0, Math.floor(w / 2) - 1), floorY - 1, "i");
-    if (loot && rand() < 0.22 && n >= 8) put(cx + 1, floorY - 1, "h");
+
+  const land = (w = 3 + Math.floor(rand() * 3)) => {
+    fill(cx, fy, w, "#");
     cx += w;
   };
 
-  const catalog: string[] = ["gap", "stairs", "crumble", "canal"];
-  if (n >= 8) catalog.push("laser", "tease");
-  if (n >= 11) catalog.push("climb", "squeeze");
-  if (n >= 14) catalog.push("vent", "false");
-  if (n >= 18) catalog.push("lockgate", "rhythm");
-  if (n >= 22) catalog.push("double", "bounce");
-  if (n >= 26) catalog.push("gauntlet");
-
-  const used: string[] = [];
-  for (let s = 0; s < beats; s++) {
-    let kind = catalog[(s * 3 + n * 2) % catalog.length];
-    if (used[used.length - 1] === kind) kind = catalog[(s * 5 + n) % catalog.length];
-    used.push(kind);
-    island(3 + (s === 0 ? 2 : 0), s === 0);
-
-    if (kind === "gap") {
-      const w = 5 + Math.min(4, Math.floor(n / 8));
-      pit(cx, w, true);
-      if (n >= 12 && w >= 7) put(cx + Math.floor(w / 2), floorY - 1, "--");
-      if (rand() < 0.4) put(cx - 1, floorY - 1, pick());
+  for (const kind of seq) {
+    if (kind === "street") {
+      const w = 12 + Math.floor(rand() * 6);
+      fill(cx, fy, w, "#");
+      const a = cx + 3 + Math.floor(rand() * 3);
+      pit(a, 2 + Math.floor(rand() * 2), true);
+      if (n >= 10) put(cx + w - 4, fy - 1, pick());
       cx += w;
-    } else if (kind === "stairs") {
-      const span = 10 + Math.min(4, Math.floor(n / 10));
-      pit(cx, span, true);
-      put(cx + 1, floorY - 2, "===");
-      put(cx + 6, floorY - 4, "==");
-      if (n >= 10) put(cx + span - 3, floorY - 6, "==");
-      if (n >= 16) put(cx + 4, floorY - 5, "=");
-      cx += span;
+    } else if (kind === "chasm") {
+      land(2);
+      const w = 6 + Math.min(5, Math.floor(n / 8));
+      pit(cx, w, true);
+      if (w >= 7) shelf(cx + Math.floor(w / 2) - 1, 2, "==");
+      else if (rand() < 0.5) shelf(cx + 1, 2, "--");
+      cx += w;
+      land(2);
+    } else if (kind === "pillars") {
+      land(2);
+      const count = 3 + (n >= 16 ? 1 : 0);
+      for (let i = 0; i < count; i++) {
+        pit(cx, 3, true);
+        fill(cx + 1, fy, 1, "#");
+        fill(cx + 1, fy - 1, 1, "#");
+        if (rand() < 0.4) put(cx + 1, fy - 2, pick());
+        cx += 3;
+      }
+      land(2);
+    } else if (kind === "hall") {
+      const w = 10 + Math.floor(rand() * 4);
+      fill(cx, fy, w, "#");
+      fill(cx, fy - 4, w, "#");
+      put(cx + 3, fy - 1, "|");
+      put(cx + 3, fy - 2, "|");
+      if (n >= 14) {
+        put(cx + 7, fy - 1, "|");
+        put(cx + 7, fy - 2, "|");
+      }
+      cx += w;
+    } else if (kind === "docks") {
+      land(2);
+      const w = 8;
+      fill(cx, fy, w, "~");
+      fill(cx, fy + 1, w, "~");
+      put(cx, fy - 1, "=");
+      put(cx + w - 1, fy - 1, "=");
+      if (n >= 12) shelf(cx + 3, 2, "==");
+      cx += w;
+      land(2);
     } else if (kind === "crumble") {
-      const w = 7 + Math.min(5, Math.floor(n / 7));
+      land(2);
+      const w = 7 + Math.min(4, Math.floor(n / 9));
       pit(cx, w, true);
-      put(cx, floorY - 1, "-".repeat(Math.min(6, w - 1)));
-      if (n >= 14) put(cx + 3, floorY - 3, "----");
+      put(cx, fy - 1, "-".repeat(Math.min(w, 6)));
       cx += w;
-    } else if (kind === "canal") {
-      const w = 6 + Math.min(4, Math.floor(n / 9));
-      fill(cx, floorY, w, "~");
-      if (floorY + 1 < H - 1) fill(cx, floorY + 1, w, "~");
-      put(cx, floorY - 1, "=");
-      put(cx + w - 1, floorY - 1, "=");
-      if (n >= 15) put(cx + 2, floorY - 3, "===");
+      land(2);
+    } else if (kind === "roofs") {
+      land(2);
+      const w = 9;
+      pit(cx, w, true);
+      shelf(cx + 1, 2, "===");
+      shelf(cx + 5, 3, "==");
       cx += w;
-    } else if (kind === "laser") {
-      const w = 7 + (n >= 18 ? 2 : 0);
-      pit(cx, w, n >= 12);
-      put(cx + 2, floorY - 1, "|");
-      put(cx + 2, floorY - 2, "|");
-      if (n >= 12) {
-        put(cx + 4, floorY - 1, "|");
-        put(cx + 4, floorY - 2, "|");
-        put(cx + 4, floorY - 3, "|");
+      land(2);
+    } else if (kind === "needles") {
+      const gaps = 3 + (n >= 18 ? 1 : 0);
+      for (let i = 0; i < gaps; i++) {
+        fill(cx, fy, 2, "#");
+        cx += 2;
+        pit(cx, 4 + Math.min(3, Math.floor(n / 10)), true);
+        cx += 4 + Math.min(3, Math.floor(n / 10));
       }
-      if (n >= 18) {
-        put(cx + 6, floorY - 2, "|");
-        put(cx + 6, floorY - 1, "|");
-      }
-      put(cx + 1, floorY - 5, "====");
-      if (rand() < 0.5) put(cx + w - 1, floorY - 1, pick());
+      land(2);
+    } else if (kind === "yard") {
+      const w = 11;
+      fill(cx, fy, w, "#");
+      fill(cx + 2, fy - 1, 2, "#");
+      fill(cx + 6, fy - 1, 3, "#");
+      fill(cx + 6, fy - 2, 2, "#");
+      if (rand() < 0.6) put(cx + 7, fy - 3, pick());
       cx += w;
-    } else if (kind === "tease") {
+    } else if (kind === "gate") {
       const w = 8;
-      pit(cx, w, true);
-      put(cx + 2, floorY - 2, "==");
-      put(cx + 5, floorY - 2, "--");
-      put(cx + 3, floorY - 4, "=");
+      fill(cx, fy, w, "#");
+      put(cx + 3, fy - 1, "|");
+      put(cx + 3, fy - 2, "|");
+      shelf(cx + 5, 3, "==");
+      put(cx + 1, fy - 1, pick());
       cx += w;
-    } else if (kind === "climb") {
-      const w = 8;
+    } else if (kind === "fork") {
+      land(2);
+      const w = 9;
       pit(cx, w, true);
-      for (let y = 2; y <= floorY; y++) {
+      put(cx + 1, fy - 1, "----");
+      shelf(cx + 4, 3, "====");
+      if (rand() < 0.5) put(cx + 5, fy - 4, pick());
+      cx += w;
+      land(2);
+    } else if (kind === "alcove") {
+      const w = 10;
+      fill(cx, fy, w, "#");
+      for (let y = fy - 3; y <= fy; y++) {
         put(cx, y, "#");
         put(cx + w - 1, y, "#");
       }
-      put(cx + 1, floorY - 2, "==");
-      put(cx + w - 3, floorY - 5, "==");
-      put(cx + 1, floorY - 8, "==");
-      if (n >= 20) put(cx + w - 3, floorY - 11, "==");
-      put(cx + 2, floorY - 6, "i");
+      put(cx + w - 1, fy - 1, ".");
+      if (rand() < 0.55) put(cx + 4, fy - 1, pick());
       cx += w;
-    } else if (kind === "squeeze") {
-      const w = 7 + (n >= 20 ? 2 : 0);
-      pit(cx, w, true);
-      fill(cx, floorY - 3, w, "#");
-      put(cx + 1, floorY - 2, "i");
+    } else if (kind === "meander") {
+      const w = 14;
+      fill(cx, fy, w, "#");
+      fill(cx + 3, fy - 1, 3, "#");
+      fill(cx + 8, fy - 1, 4, "#");
+      fill(cx + 8, fy - 2, 2, "#");
       cx += w;
-    } else if (kind === "vent") {
-      const w = 6;
-      fill(cx + 2, Math.max(2, floorY - 5), 1, "v");
-      for (let y = Math.max(2, floorY - 5); y <= floorY - 1; y++) put(cx + 2, y, "v");
-      pit(cx + 3, 3, true);
-      put(cx, floorY - 1, pick());
-      cx += w;
-    } else if (kind === "false") {
-      const w = 8;
-      pit(cx, w, true);
-      put(cx, floorY - 1, "-".repeat(w - 1));
-      put(cx + 2, floorY - 3, "----");
-      put(cx + 4, floorY - 5, "--");
-      cx += w;
-    } else if (kind === "lockgate") {
-      const w = 8;
-      pit(cx, w, true);
-      put(cx + 1, floorY - 2, "===");
-      put(cx + 2, floorY - 3, pick());
-      put(cx + 5, floorY - 4, "==");
-      cx += w;
-    } else if (kind === "rhythm") {
+    } else if (kind === "gallery") {
+      land(2);
       const w = 12;
       pit(cx, w, true);
-      put(cx + 1, floorY - 2, "==");
-      put(cx + 5, floorY - 3, "==");
-      put(cx + 9, floorY - 2, "==");
-      if (n >= 22) put(cx + 6, floorY - 5, "--");
+      shelf(cx + 1, 2, "==");
+      shelf(cx + 5, 3, "==");
+      shelf(cx + 9, 2, "==");
       cx += w;
-    } else if (kind === "double") {
+      land(2);
+    } else if (kind === "ruin") {
+      const w = 12;
+      fill(cx, fy, w, "#");
+      pit(cx + 3, 3, true);
+      fill(cx + 7, fy - 1, 2, "#");
+      pit(cx + 9, 2, false);
+      cx += w;
+    } else if (kind === "canal") {
+      const w = 10;
+      fill(cx, fy, 3, "#");
+      fill(cx + 3, fy, 5, "~");
+      fill(cx + 3, fy + 1, 5, "~");
+      fill(cx + 8, fy, 2, "#");
+      shelf(cx + 4, 2, "==");
+      cx += w;
+    } else if (kind === "bridge") {
+      land(2);
       const w = 11;
-      pit(cx, 5, true);
-      fill(cx + 5, floorY, 2, "#");
-      put(cx + 5, floorY - 1, "--");
-      pit(cx + 7, 4, true);
+      pit(cx, w, true);
+      put(cx, fy - 1, "=".repeat(w));
+      fill(cx + 3, fy, 1, "#");
+      fill(cx + 7, fy, 1, "#");
+      if (n >= 16) {
+        put(cx + 5, fy - 1, "--");
+      }
       cx += w;
-    } else if (kind === "bounce") {
+      land(2);
+    } else if (kind === "steps") {
+      land(2);
+      const w = 8;
+      pit(cx, w, true);
+      shelf(cx, 2, "==");
+      shelf(cx + 3, 3, "==");
+      shelf(cx + 6, 2, "==");
+      cx += w;
+      land(2);
+    } else if (kind === "raised") {
+      const w = 10;
+      fill(cx, fy, w, "#");
+      fill(cx + 2, fy - 1, w - 4, "#");
+      put(cx + w - 3, fy - 2, pick());
+      cx += w;
+    } else if (kind === "sparse") {
+      land(3);
+      pit(cx, 8 + Math.min(4, Math.floor(n / 7)), true);
+      cx += 8 + Math.min(4, Math.floor(n / 7));
+      land(3);
+    } else if (kind === "belt") {
+      land(2);
+      const w = 8 + (n >= 40 ? 2 : 0);
+      pit(cx, w, true);
+      put(cx, fy - 1, "/".repeat(Math.min(5, w - 1)));
+      if (n >= 38) shelf(cx + 3, 3, "\\\\\\");
+      put(cx + w - 2, fy - 1, pick());
+      cx += w;
+      land(2);
+    } else if (kind === "springs") {
+      land(2);
+      const w = 8;
+      pit(cx, w, true);
+      put(cx + 1, fy - 1, "T");
+      shelf(cx + 4, 3, "==");
+      put(cx + 6, fy - 1, "T");
+      cx += w;
+      land(2);
+    } else if (kind === "draft") {
+      land(2);
+      const w = 7;
+      pit(cx, w, true);
+      for (let y = fy - 4; y <= fy - 1; y++) put(cx + 2, y, ":");
+      shelf(cx + 4, 3, "==");
+      cx += w;
+      land(2);
+    } else if (kind === "foldgap") {
+      land(2);
+      const w = 8;
+      pit(cx, w, true);
+      for (let y = fy - 4; y <= fy; y++) {
+        put(cx, y, "#");
+        put(cx + w - 1, y, "#");
+      }
+      shelf(cx + 1, 2, "==");
+      shelf(cx + w - 3, 3, "==");
+      cx += w;
+      land(2);
+    } else if (kind === "minus") {
+      land(2);
+      const w = 8;
+      pit(cx, w, true);
+      shelf(cx + 2, 2, "====");
+      put(cx + 3, fy - 3, "U");
+      cx += w;
+      land(2);
+    } else if (kind === "splitbelt") {
+      land(2);
+      const w = 10;
+      pit(cx, w, true);
+      put(cx, fy - 1, "////");
+      shelf(cx + 5, 2, "==");
+      put(cx + 7, fy - 1, "\\\\\\\\");
+      cx += w;
+      land(2);
+    } else if (kind === "orbit") {
+      land(2);
       const w = 9;
       pit(cx, w, true);
-      put(cx + 1, floorY - 2, "===");
-      put(cx + 1, floorY - 5, "===");
-      put(cx + 1, floorY - 8, "===");
-      put(cx + w - 3, floorY - 3, "==");
-      put(cx + w - 3, floorY - 6, "==");
+      shelf(cx + 2, 3, "====");
+      put(cx + 3, fy - 4, "L");
       cx += w;
+      land(2);
     } else if (kind === "gauntlet") {
-      const w = 12;
-      pit(cx, w, true);
-      put(cx + 2, floorY - 1, "|");
-      put(cx + 2, floorY - 2, "|");
-      put(cx + 5, floorY - 3, "====");
-      put(cx + 6, floorY - 4, pick());
-      put(cx + 9, floorY - 1, "|");
-      put(cx + 9, floorY - 2, "|");
-      put(cx + 9, floorY - 3, "|");
-      put(cx + 3, floorY - 6, "====");
+      const w = 11;
+      fill(cx, fy, w, "#");
+      put(cx + 2, fy - 1, "|");
+      put(cx + 2, fy - 2, "|");
+      put(cx + 6, fy - 1, pick());
+      put(cx + 8, fy - 1, "|");
+      put(cx + 8, fy - 2, "|");
       cx += w;
+    } else if (kind === "tideway") {
+      land(2);
+      const w = 10;
+      pit(cx, w, true);
+      put(cx, fy - 1, "\\\\\\\\");
+      shelf(cx + 4, 2, "====");
+      put(cx + 7, fy - 1, "////");
+      cx += w;
+      land(2);
     } else {
-      const w = 6;
-      pit(cx, w, true);
-      cx += w;
+      land(3);
+      pit(cx, 6, true);
+      cx += 6;
+      land(2);
     }
   }
 
-  island(8, true);
-  put(cx - 6, floorY - 1, "%");
-  put(cx - 4, floorY - 1, "i");
+  land(6);
+  put(cx - 4, fy - 1, "%");
+  put(cx - 2, fy - 1, "i");
 
-  if (n === 6) put(6, floorY - 2, "W");
-  if (n === 8) put(6, floorY - 2, "X");
-  if (n === 10) put(6, floorY - 2, "Z");
-  if (n === 12) put(6, floorY - 2, "R");
+  if (n === 6) put(6, fy - 2, "W");
+  if (n === 8) put(6, fy - 2, "X");
+  if (n === 10) put(6, fy - 2, "Z");
+  if (n === 12) put(6, fy - 2, "R");
+  if (n === 32) put(6, fy - 2, "O");
+  if (n === 40) put(6, fy - 2, "I");
 
   if (n % 3 === 0) {
-    put(6, 3, "====");
-    put(7, 2, "$");
+    put(7, fy - 4, "====");
+    put(8, fy - 5, "$");
   }
   if (n % 7 === 0) {
-    put(W - 16, 3, "====");
-    put(W - 15, 2, "$");
+    put(W - 16, fy - 4, "====");
+    put(W - 15, fy - 5, "$");
   }
 
   const end = W - 10;
-  if (cx < end - 14) {
-    const remain = end - 14 - cx;
-    pit(cx, remain, true);
-    for (let x = cx + 2; x < cx + remain - 2; x += 5 + Math.min(3, Math.floor(n / 10))) {
-      put(x, floorY - 2, "==");
-    }
+  if (cx < end - 8) {
+    fill(cx, fy, end - 8 - cx, "#");
+    cx = end - 8;
   }
-  fill(end - 12, floorY, 14, "#");
-  put(end - 8, floorY - 2, "====");
-  if (n % 5 === 0 || n === STAGE_COUNT) put(end - 6, floorY - 1, "!");
-  else put(end - 6, floorY - 1, pick());
-  put(end, floorY - 1, "P");
-  put(end - 2, floorY - 1, "i");
-  sprinkleMobs(g, n, roles, rand, floorY);
+  fill(end - 10, fy, 16, "#");
+  if (n % 5 === 0 || n === STAGE_COUNT) put(end - 5, fy - 1, "!");
+  else put(end - 5, fy - 1, pick());
+  put(end, fy - 1, "P");
+  put(end - 2, fy - 1, "i");
+  sprinkleMobs(g, n, roles, rand, fy);
   return g;
+}
+
+function buildProgressive(n: number): string[] {
+  return buildGenerated(n, false);
 }
 
 const REMAINDER_ROLES: string[][] = [
@@ -698,143 +861,7 @@ const REMAINDER_ROLES: string[][] = [
 ];
 
 function buildRemainder(n: number): string[] {
-  const rand = rng(n * 7919 + 11);
-  const tier = Math.min(REMAINDER_ROLES.length - 1, Math.floor((n - 31) / 8));
-  const roles = REMAINDER_ROLES[tier];
-  const pick = () => roles[Math.floor(rand() * roles.length)];
-  const H = 18 + Math.min(10, Math.floor((n - 30) / 3));
-  const floorY = H - 3;
-  const beats = 5 + Math.floor((n - 31) / 5);
-  const W = 32 + beats * (18 + Math.min(8, Math.floor((n - 30) / 4))) + 24;
-  const g = grid(W, H, floorY) as Grid;
-  const { put, fill } = g;
-  const pit = (x: number, w: number, spiked = true) => {
-    fill(x, floorY, w, ".");
-    if (spiked && floorY + 1 < H - 1) fill(x, floorY + 1, w, "^");
-  };
-  put(1, floorY - 1, "@");
-  put(3, floorY - 1, "i");
-  put(5, floorY - 1, "h");
-  let cx = 9;
-  const island = (w: number) => {
-    fill(cx, floorY, w, "#");
-    if (rand() < 0.5) put(cx + 1, floorY - 1, "i");
-    cx += w;
-  };
-  const catalog = ["belt", "spring", "updraft", "foldwell", "gap"];
-  if (n >= 36) catalog.push("minusguard", "split");
-  if (n >= 42) catalog.push("orbit", "gauntlet");
-  if (n >= 50) catalog.push("doublefold", "tideway");
-
-  for (let s = 0; s < beats; s++) {
-    let kind = catalog[(s * 4 + n) % catalog.length];
-    island(3);
-    if (kind === "belt") {
-      const w = 8 + (n >= 40 ? 2 : 0);
-      pit(cx, w, true);
-      put(cx, floorY - 1, "/".repeat(Math.min(5, w - 1)));
-      if (n >= 38) put(cx + 3, floorY - 3, "\\".repeat(3));
-      put(cx + w - 2, floorY - 1, pick());
-      cx += w;
-    } else if (kind === "spring") {
-      const w = 9;
-      pit(cx, w, true);
-      put(cx + 1, floorY - 1, "T");
-      put(cx + 4, floorY - 4, "==");
-      put(cx + 7, floorY - 7, "==");
-      cx += w;
-    } else if (kind === "updraft") {
-      const w = 7;
-      pit(cx, w, true);
-      for (let y = Math.max(2, floorY - 7); y <= floorY - 1; y++) put(cx + 2, y, ":");
-      put(cx + 4, floorY - 6, "==");
-      put(cx + 1, floorY - 1, pick());
-      cx += w;
-    } else if (kind === "foldwell") {
-      const w = 8;
-      pit(cx, w, true);
-      for (let y = 3; y <= floorY; y++) {
-        put(cx, y, "#");
-        put(cx + w - 1, y, "#");
-      }
-      put(cx + 1, floorY - 2, "==");
-      put(cx + w - 3, floorY - 6, "==");
-      put(cx + 2, floorY - 9, "i");
-      cx += w;
-    } else if (kind === "minusguard") {
-      const w = 8;
-      pit(cx, w, true);
-      put(cx + 2, floorY - 2, "====");
-      put(cx + 3, floorY - 3, "U");
-      put(cx + 5, floorY - 4, "==");
-      cx += w;
-    } else if (kind === "split") {
-      const w = 10;
-      pit(cx, w, true);
-      put(cx + 1, floorY - 2, "==");
-      put(cx + 1, floorY - 5, "====");
-      put(cx + 6, floorY - 2, "TT");
-      put(cx + 7, floorY - 6, pick());
-      cx += w;
-    } else if (kind === "orbit") {
-      const w = 9;
-      pit(cx, w, true);
-      put(cx + 2, floorY - 3, "====");
-      put(cx + 3, floorY - 4, "L");
-      put(cx + 6, floorY - 5, "==");
-      cx += w;
-    } else if (kind === "gauntlet") {
-      const w = 12;
-      pit(cx, w, true);
-      put(cx, floorY - 1, "////");
-      put(cx + 5, floorY - 3, "====");
-      put(cx + 6, floorY - 4, "J");
-      put(cx + 9, floorY - 1, "||||");
-      cx += w;
-    } else if (kind === "doublefold") {
-      const w = 9;
-      pit(cx, w, true);
-      for (let y = 2; y <= floorY; y++) put(cx + 1, y, "#");
-      for (let y = 4; y <= floorY; y++) put(cx + 7, y, "#");
-      put(cx + 3, floorY - 4, "N");
-      cx += w;
-    } else if (kind === "tideway") {
-      const w = 11;
-      pit(cx, w, true);
-      put(cx, floorY - 1, "\\\\\\\\");
-      put(cx + 5, floorY - 3, "====");
-      put(cx + 8, floorY - 1, "////");
-      cx += w;
-    } else {
-      const w = 6 + Math.min(3, Math.floor((n - 30) / 10));
-      pit(cx, w, true);
-      if (n >= 44) put(cx + 2, floorY - 1, "T");
-      cx += w;
-    }
-  }
-
-  island(7);
-  put(cx - 5, floorY - 1, "%");
-  if (n === 32) put(6, floorY - 2, "O");
-  if (n === 40) put(6, floorY - 2, "I");
-  if (n % 4 === 0) {
-    put(7, 3, "====");
-    put(8, 2, "$");
-  }
-  const end = W - 10;
-  if (cx < end - 14) {
-    const remain = end - 14 - cx;
-    pit(cx, remain, true);
-    for (let x = cx + 2; x < cx + remain - 2; x += 6) put(x, floorY - 2, n >= 45 ? "T" : "==");
-  }
-  fill(end - 12, floorY, 14, "#");
-  put(end - 8, floorY - 2, "====");
-  if (n % 5 === 0 || n === STAGE_COUNT) put(end - 6, floorY - 1, "!");
-  else put(end - 6, floorY - 1, pick());
-  put(end, floorY - 1, "P");
-  put(end - 2, floorY - 1, "i");
-  sprinkleMobs(g, n, roles, rand, floorY);
-  return g;
+  return buildGenerated(n, true);
 }
 
 function progressiveMeta(n: number): LevelMeta {
@@ -939,17 +966,43 @@ function progressiveMeta(n: number): LevelMeta {
 }
 
 function buildHub(): string[] {
-  return slice(`
-################################################################################
-#..............................................................................#
-#......................+.......................................................#
-#..............====............................................................#
-#..........====................................................................#
-#....e...t........r...k....n........f...d....w....x....z....l....o....i....c...#
-#@...F...i.......[....]...{....}..(...d......>......<....h....o......j.........#
-################################################################################
-################################################################################
-`);
+  const W = 102;
+  const H = 11;
+  const fy = 8;
+  const g = grid(W, H, fy) as Grid;
+  const { put, fill } = g;
+  put(2, fy - 1, "@");
+  put(4, fy - 1, "F");
+  put(5, fy - 1, "i");
+  put(7, fy - 1, "e");
+  put(9, fy - 1, "t");
+  fill(12, fy - 4, 36, "=");
+  put(13, fy - 5, "r");
+  put(16, fy - 5, "k");
+  put(19, fy - 5, "n");
+  put(22, fy - 5, "f");
+  put(25, fy - 5, "d");
+  put(28, fy - 5, "w");
+  put(31, fy - 5, "x");
+  put(34, fy - 5, "z");
+  put(37, fy - 5, "l");
+  put(40, fy - 5, "c");
+  put(21, fy - 2, "i");
+  put(29, fy - 2, "o");
+  put(18, fy - 1, "[");
+  put(26, fy - 1, "]");
+  put(34, fy - 1, "{");
+  put(42, fy - 1, "}");
+  put(50, fy - 1, "(");
+  for (let y = 1; y <= fy - 3; y++) {
+    put(60, y, "#");
+    put(64, y, "#");
+  }
+  put(62, fy - 1, "j");
+  put(76, fy - 1, ">");
+  put(92, fy - 1, "<");
+  put(88, fy - 1, "h");
+  return g;
 }
 
 const hand: Record<string, LevelMeta> = {
@@ -957,7 +1010,7 @@ const hand: Record<string, LevelMeta> = {
     id: "hub",
     name: "Lower Register Stacks",
     theme: "hub",
-    objective: "Numbered doors: first five. Continue: new ledgers through 60. Replay: last page only.",
+    objective: "Left: five closed chapters, one ledger each. Right: the rest of the book — the only door that keeps changing.",
     tasks: [
       { id: "talk-e", text: "Talk to e" },
       { id: "talk-t", text: "Learn scribing from t" },
@@ -966,7 +1019,7 @@ const hand: Record<string, LevelMeta> = {
       { id: "enter-coil", text: "Enter the Coil Yard", need: 3 },
       { id: "enter-fort", text: "Enter G's Fort", need: 4 },
       { id: "enter-ledger", text: "Enter the Null Ledger", need: 4 },
-      { id: "continue", text: "Take Continue — the only door that keeps opening new ledgers through 60", need: 5 },
+      { id: "continue", text: "Cross into the Unbound Sentence — the only door that keeps opening new ledgers", need: 5 },
     ],
     rows: buildHub(),
     index: 0,

@@ -6,7 +6,7 @@ import { Pause, Volume2, VolumeX } from "lucide-react";
 const INTRO = [
   "Calculara was a manuscript before it was an equation. Letters walked it. Words were weather.",
   "G opened the ports. Ships of digits landed overnight. The Decimal Dominion rounded magic down and filed every letter that would stand in line.",
-  "You were posted as a warning mark: a lowercase c nobody counted. Thirty ledgers close on a period. After the first five, only Continue keeps opening new pages. Replay only repeats the last.",
+  "You were posted as a warning mark: a lowercase c nobody counted. Five closed chapters wait on the left — one ledger each, never a different page. After those five, walk right into the Unbound Sentence. That gold hall is the only door that keeps opening new ledgers. Last Page only repeats.",
   "End-Mark is not the end. After the point come the operators: plus, minus, times, divide, remainder. Sixty ledgers. Willingness still turns them.",
 ];
 

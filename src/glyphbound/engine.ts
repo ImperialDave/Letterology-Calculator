@@ -262,15 +262,16 @@ export class GameEngine {
           spawnY = y;
         } else if (ch === ">" || ch === "<" || ch === "V") {
           if (id === "hub" && (ch === ">" || ch === "<")) {
+            const cont = ch === ">";
             this.pickups.push({
               kind: "door",
-              id: ch === ">" ? "continue" : "replay",
-              x: x - 20,
-              y: y - 44,
-              w: ch === ">" ? 92 : 80,
-              h: 100,
+              id: cont ? "continue" : "replay",
+              x: x - (cont ? 28 : 16),
+              y: y - (cont ? 52 : 36),
+              w: cont ? 128 : 72,
+              h: cont ? 116 : 88,
               taken: false,
-              label: ch === ">" ? "CONTINUE" : "REPLAY",
+              label: cont ? "THE REST OF THE BOOK" : "LAST PAGE",
             });
           } else {
             this.markers.push({
@@ -447,7 +448,7 @@ export class GameEngine {
         } else if (ch === "F") {
           this.pickups.push({ kind: "case", id: "font" + tx, x: x, y: y, w: TILE, h: TILE, taken: false, label: "CASE" });
         } else if (ch === "[") {
-          this.pickups.push({ kind: "door", id: "stage1", x: x - 16, y: y - 40, w: 72, h: 96, taken: false, label: "EXCH." });
+          this.pickups.push({ kind: "door", id: "stage1", x: x - 16, y: y - 40, w: 72, h: 96, taken: false, label: "EXCHANGE" });
         } else if (ch === "]") {
           this.pickups.push({ kind: "door", id: "stage2", x: x - 16, y: y - 40, w: 72, h: 96, taken: false, label: "FORT" });
         } else if (ch === "{") {
@@ -508,6 +509,13 @@ export class GameEngine {
     const p = this.player;
     p.x = atCheck ? this.checkX : this.spawnX;
     p.y = atCheck ? this.checkY : this.spawnY;
+    if (id === "hub" && this.save.progress >= 5 && !atCheck) {
+      const bound = this.pickups.find((u) => u.id === "continue");
+      if (bound) {
+        p.x = bound.x - 36;
+        p.y = bound.y + bound.h - p.h - 8;
+      }
+    }
     p.vx = 0;
     p.vy = 0;
     p.invuln = 0.6;
@@ -518,7 +526,12 @@ export class GameEngine {
     this.save.stage = id;
     if (!this.save.visited.includes(id)) this.save.visited.push(id);
     this.lastDone = new Set(this.currentTasks().filter((t) => t.done).map((t) => t.id));
-    if (id === "hub") this.say("Numbered doors are the first five. Continue is the only gate that keeps opening new ledgers through 60. Replay only repeats the last one.");
+    if (id === "hub")
+      this.say(
+        this.save.progress >= 5
+          ? "Those five doors are finished chapters. This hall is the rest of the book — the only door that keeps opening new ledgers."
+          : "Left hall: five closed chapters, one ledger each. Finish them, then the Unbound Sentence opens on the right.",
+      );
     this.persist();
     this.emit();
   }
@@ -1927,25 +1940,32 @@ export class GameEngine {
     if (id === "stage4") return "The Coil is still counted shut.";
     if (id === "stage2") return "The Fort is still counted shut.";
     if (id === "stage5") return "The Ledger is still counted shut.";
-    if (id === "continue") return "Continue opens after the first five. Then it is the only door that keeps offering new ledgers through 60.";
-    if (id === "replay") return "Replay only repeats the last page you closed. New ledgers are on Continue.";
+    if (id === "continue") return "The rest of the book opens after you close the five chapters. Then this is the only door that keeps offering new ledgers through 60.";
+    if (id === "replay") return "Last page only. It never opens a new ledger. New pages are through the Unbound Sentence.";
     return "Still counted shut.";
   }
 
   private doorPlaque(id: string): { title: string; sub: string } {
     if (id === "continue") {
-      if (this.save.progress < 5) return { title: "CONTINUE", sub: "new ledgers 6–60 · after 5" };
-      if (this.save.progress >= STAGE_COUNT) return { title: "CONTINUE", sub: "all 60 written" };
+      if (this.save.progress < 5) return { title: "THE REST OF THE BOOK", sub: "locked · finish the five closed chapters" };
+      if (this.save.progress >= STAGE_COUNT) return { title: "THE REST OF THE BOOK", sub: "all 60 ledgers written" };
       const n = Math.min(STAGE_COUNT, this.save.progress + 1);
-      return { title: "CONTINUE", sub: `next new · ${n} of 30` };
+      return { title: "THE REST OF THE BOOK", sub: `only door that keeps changing · next ${n} / 60` };
     }
     if (id === "replay") {
-      if (this.save.progress < 1) return { title: "REPLAY", sub: "last cleared only" };
+      if (this.save.progress < 1) return { title: "LAST PAGE", sub: "does not open new ledgers" };
       const last = lastClearedId(this.save.progress);
       const name = last ? LEVELS[last]?.name ?? last : "";
-      return { title: "REPLAY", sub: `last only · ${name}` };
+      return { title: "LAST PAGE", sub: `same ledger again · ${name}` };
     }
-    return { title: "", sub: "" };
+    const chapters: Record<string, { title: string; sub: string }> = {
+      stage1: { title: "I  EXCHANGE", sub: "one ledger · never changes" },
+      stage2: { title: "II  FORT", sub: "one ledger · never changes" },
+      stage3: { title: "III  PRESS", sub: "one ledger · never changes" },
+      stage4: { title: "IV  COIL", sub: "one ledger · never changes" },
+      stage5: { title: "V  LEDGER", sub: "one ledger · never changes" },
+    };
+    return chapters[id] ?? { title: "", sub: "" };
   }
 
   private scribe(down: boolean) {
@@ -2034,11 +2054,12 @@ export class GameEngine {
         else if (u.id === "continue") {
           this.nearHint =
             this.save.progress >= STAGE_COUNT
-              ? "All 30 written. Replay only repeats the last."
-              : "E  Continue — the only door that keeps opening new ledgers until 60";
+              ? "All 60 written. Last Page only repeats."
+              : "E  The Rest of the Book — the only door that keeps opening new ledgers until 60";
         } else if (u.id === "replay") {
-          this.nearHint = "E  Replay — last cleared page only. New ledgers are on Continue.";
-        } else this.nearHint = "E  enter  " + (u.label ?? "");
+          this.nearHint = "E  Last Page — same ledger again. Does not open a new one.";
+        } else
+          this.nearHint = "E  " + (u.label ?? "chapter") + " — one ledger. This door always opens the same page.";
       }
       if (u.kind === "portal" && aabb(p, padBox(u, 18, 12))) {
         this.nearHint = this.portalLocked() ? "Gate counted shut — drop the warden" : "E  enter  " + (u.label ?? "GATE");
@@ -2198,7 +2219,7 @@ export class GameEngine {
         }
         if (u.id === "continue") {
           if (this.save.progress >= STAGE_COUNT) {
-            this.say("All sixty ledgers are written. Replay only repeats the last one.");
+            this.say("All sixty ledgers are written. Last Page only repeats the same one.");
           } else this.loadLevel(nextStageId(this.save.progress));
         }
         else if (u.id === "replay") {
@@ -2556,7 +2577,7 @@ export class GameEngine {
     }
     if (id === "continue") {
       const d = this.pickups.find((u) => u.kind === "door" && u.id === "continue");
-      if (d) return { x: d.x + d.w / 2, y: d.y + 20, label: "CONTINUE" };
+      if (d) return { x: d.x + d.w / 2, y: d.y + 20, label: "THE BOOK" };
     }
     if (id === "importer") {
       const b = this.enemies.find((e) => e.kind === "importer" && e.alive);
@@ -2661,6 +2682,7 @@ export class GameEngine {
       ctx.save();
       ctx.translate(sx, sy);
       drawTiles(ctx, this.rows, this.camX, this.camY, this.time, theme, this.broken);
+      this.drawHubChrome(ctx);
       drawMarkers(ctx, this.markers, this.camX, this.camY, this.time);
       const goal = this.goal();
       if (goal) drawBeacon(ctx, goal.x, goal.y, this.camX, this.camY, this.time, goal.label);
@@ -2700,6 +2722,55 @@ export class GameEngine {
         ctx.font = "600 42px 'Cormorant Garamond', serif";
         ctx.fillText("The stroke thickens.", VIEW_W / 2, VIEW_H / 2);
       }
+    }
+    ctx.restore();
+  }
+
+  private drawHubChrome(ctx: CanvasRenderingContext2D) {
+    if (this.stage !== "hub") return;
+    const wx = (tx: number) => tx * TILE - this.camX;
+    const wy = (ty: number) => ty * TILE - this.camY;
+    ctx.save();
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#c9b896";
+    ctx.font = "700 16px 'Cormorant Garamond', serif";
+    ctx.fillText("CLOSED CHAPTERS", wx(16), wy(1) + 22);
+    ctx.fillStyle = "#8a7a62";
+    ctx.font = "600 10px 'Source Sans 3', sans-serif";
+    ctx.fillText("five doors  ·  five ledgers  ·  they never change", wx(16), wy(1) + 38);
+
+    ctx.fillStyle = "#e8d48a";
+    ctx.font = "700 16px 'Cormorant Garamond', serif";
+    ctx.fillText("THE UNBOUND SENTENCE", wx(68), wy(1) + 22);
+    ctx.fillStyle = "#b08a4a";
+    ctx.font = "600 10px 'Source Sans 3', sans-serif";
+    ctx.fillText("the only door that keeps opening new ledgers", wx(68), wy(1) + 38);
+
+    ctx.strokeStyle = "rgba(201,184,150,0.45)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(wx(60) + 8, wy(1));
+    ctx.lineTo(wx(62), wy(3));
+    ctx.lineTo(wx(64) - 8, wy(1));
+    ctx.stroke();
+    ctx.fillStyle = "#c9b896";
+    ctx.font = "600 9px 'Source Sans 3', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("WRITE →", wx(62), wy(2) + 8);
+
+    const bound = this.pickups.find((u) => u.id === "continue");
+    if (bound && this.save.progress >= 5) {
+      const n = Math.min(STAGE_COUNT, this.save.progress + 1);
+      ctx.textAlign = "center";
+      for (let i = 0; i < 7; i++) {
+        const pg = n + i;
+        if (pg > STAGE_COUNT) break;
+        ctx.globalAlpha = 0.55 - i * 0.07;
+        ctx.fillStyle = "#e8d48a";
+        ctx.font = `${11 + Math.max(0, 4 - i)}px 'Cormorant Garamond', serif`;
+        ctx.fillText(String(pg), bound.x + bound.w / 2 - this.camX + 18 + i * 16, bound.y + 28 - this.camY + i * 3);
+      }
+      ctx.globalAlpha = 1;
     }
     ctx.restore();
   }
@@ -2764,24 +2835,68 @@ export class GameEngine {
       return;
     }
     ctx.fillStyle = locked ? "rgba(122,139,150,0.28)" : `rgba(94,224,192,${0.16 + pulse})`;
-    if (u.id === "continue" && !locked) ctx.fillStyle = `rgba(232,212,138,${0.18 + pulse})`;
-    ctx.fillRect(x, y, u.w, u.h + 20);
-    ctx.strokeStyle = locked ? "#7a8b96" : u.id === "continue" ? "#e8d48a" : "#5ee0c0";
-    ctx.lineWidth = u.id === "continue" ? 2.6 : 2;
-    ctx.strokeRect(x + 2, y + 2, u.w - 4, u.h + 16);
-    ctx.beginPath();
-    ctx.moveTo(x + 8, y + 12);
-    ctx.quadraticCurveTo(x + u.w / 2, y - 8, x + u.w - 8, y + 12);
-    ctx.stroke();
+    if (u.id === "continue" && !locked) ctx.fillStyle = `rgba(232,212,138,${0.2 + pulse})`;
+    if (u.id === "replay") ctx.fillStyle = locked ? "rgba(80,70,60,0.3)" : "rgba(140,120,90,0.22)";
+    const chapter = /^stage[1-5]$/.test(u.id);
+    if (u.id === "continue") {
+      const cx = x + u.w / 2;
+      const cy = y + u.h * 0.58;
+      ctx.save();
+      for (let i = 3; i >= 0; i--) {
+        ctx.globalAlpha = locked ? 0.18 : 0.22 + pulse - i * 0.04;
+        ctx.strokeStyle = locked ? "#7a8b96" : "#e8d48a";
+        ctx.lineWidth = 2.4 - i * 0.3;
+        ctx.beginPath();
+        ctx.ellipse(cx + i * 10, cy, 28 - i * 5, 40 - i * 5, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = locked ? 0.12 : 0.28 + pulse;
+      ctx.fillStyle = locked ? "#7a8b96" : "#e8d48a";
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, 18, 28, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      if (!locked) {
+        ctx.strokeStyle = "rgba(255,236,180,0.85)";
+        ctx.lineWidth = 1.4;
+        for (let i = 0; i < 3; i++) {
+          ctx.beginPath();
+          ctx.arc(cx, cy, 8 + i * 7 + Math.sin(this.time * 3 + i) * 2, this.time, this.time + 2.4);
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+    } else if (chapter) {
+      ctx.fillStyle = locked ? "#2a2430" : "#3a3244";
+      ctx.fillRect(x + 10, y + 18, u.w - 20, u.h - 8);
+      ctx.fillStyle = locked ? "#5a4a40" : "#c9b896";
+      ctx.fillRect(x + 10, y + 18, 8, u.h - 8);
+      ctx.strokeStyle = locked ? "#7a8b96" : "#efe4c8";
+      ctx.lineWidth = 1.6;
+      ctx.strokeRect(x + 10, y + 18, u.w - 20, u.h - 8);
+      ctx.fillStyle = locked ? "#7a8b96" : "#e8d48a";
+      ctx.font = "700 16px 'Cormorant Garamond', serif";
+      ctx.textAlign = "center";
+      ctx.fillText(["I", "II", "III", "IV", "V"][Number(u.id.slice(5)) - 1] ?? "", x + u.w / 2 + 4, y + u.h * 0.62);
+    } else {
+      ctx.fillRect(x + 8, y + 16, u.w - 16, u.h);
+      ctx.strokeStyle = locked ? "#7a8b96" : "#8a7a62";
+      ctx.lineWidth = 1.8;
+      ctx.strokeRect(x + 8, y + 16, u.w - 16, u.h);
+      ctx.beginPath();
+      ctx.moveTo(x + 14, y + 28);
+      ctx.lineTo(x + u.w - 18, y + u.h + 8);
+      ctx.stroke();
+    }
     const plaque = this.doorPlaque(u.id);
     const title = plaque.title || u.label || "";
-    ctx.fillStyle = "#e8ece8";
-    ctx.font = "700 12px 'Source Sans 3', sans-serif";
+    ctx.fillStyle = u.id === "continue" ? "#e8d48a" : "#e8ece8";
+    ctx.font = u.id === "continue" ? "700 13px 'Cormorant Garamond', serif" : "700 11px 'Source Sans 3', sans-serif";
     ctx.textAlign = "center";
     ctx.fillText(title, x + u.w / 2, y - (plaque.sub ? 22 : 10));
     if (plaque.sub) {
-      ctx.fillStyle = u.id === "continue" ? "#e8d48a" : "#8ec8d4";
-      ctx.font = "600 10px 'Source Sans 3', sans-serif";
+      ctx.fillStyle = u.id === "continue" ? "#e8d48a" : chapter ? "#c9b896" : "#8ec8d4";
+      ctx.font = "600 9px 'Source Sans 3', sans-serif";
       ctx.fillText(plaque.sub, x + u.w / 2, y - 8);
     }
   }
