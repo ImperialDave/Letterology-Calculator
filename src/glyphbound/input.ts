@@ -9,13 +9,9 @@ export type Actions = {
   interact: boolean;
   pause: boolean;
   word: boolean;
-  /** Dedicated stem (wall) on mobile / when set. */
   stem: boolean;
-  /** Dedicated shelf (platform) on mobile. */
   shelf: boolean;
-  /** 1-based party slot. 0 = none. */
   swap: number;
-  /** -1 previous letter, +1 next letter, 0 = none. */
   cycle: number;
   caseShift: boolean;
 };
@@ -39,42 +35,11 @@ const empty = (): Actions => ({
 });
 
 const GAME_KEYS = new Set([
-  "Space",
-  "ArrowLeft",
-  "ArrowRight",
-  "ArrowUp",
-  "ArrowDown",
-  "KeyW",
-  "KeyA",
-  "KeyS",
-  "KeyD",
-  "KeyJ",
-  "KeyK",
-  "KeyL",
-  "KeyE",
-  "KeyQ",
-  "KeyI",
-  "KeyP",
-  "KeyM",
-  "KeyZ",
-  "KeyX",
-  "KeyR",
-  "KeyF",
-  "Tab",
-  "Backquote",
-  "BracketLeft",
-  "BracketRight",
-  "ShiftLeft",
-  "ShiftRight",
-  "Digit1",
-  "Digit2",
-  "Digit3",
-  "Digit4",
-  "Digit5",
-  "Digit6",
-  "Digit7",
-  "Digit8",
-  "Escape",
+  "Space", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown",
+  "KeyW", "KeyA", "KeyS", "KeyD", "KeyJ", "KeyK", "KeyL", "KeyE", "KeyQ",
+  "KeyI", "KeyP", "KeyM", "KeyZ", "KeyX", "KeyR", "KeyF", "Tab",
+  "Backquote", "BracketLeft", "BracketRight", "ShiftLeft", "ShiftRight",
+  "Digit1", "Digit2", "Digit3", "Digit4", "Digit5", "Digit6", "Digit7", "Digit8", "Escape",
 ]);
 
 function roleOf(e: Event): HTMLElement | null {
@@ -101,7 +66,6 @@ export class Input {
     window.addEventListener("keydown", this.onKeyDown);
     window.addEventListener("keyup", this.onKeyUp);
     window.addEventListener("blur", this.clear);
-    // Safety net: mobile browsers sometimes drop the pointer without a local up/cancel.
     window.addEventListener("pointerup", this.onWindowPtrEnd);
     window.addEventListener("pointercancel", this.onWindowPtrEnd);
     document.addEventListener("visibilitychange", this.onVis);
@@ -120,32 +84,41 @@ export class Input {
     window.removeEventListener("pointerup", this.onWindowPtrEnd);
     window.removeEventListener("pointercancel", this.onWindowPtrEnd);
     document.removeEventListener("visibilitychange", this.onVis);
-    this.canvas?.removeEventListener("pointerdown", this.onPtrDown);
-    this.canvas?.removeEventListener("pointermove", this.onPtrMove);
-    this.canvas?.removeEventListener("pointerup", this.onPtrUp);
-    this.canvas?.removeEventListener("pointercancel", this.onPtrUp);
-    this.canvas?.removeEventListener("lostpointercapture", this.onLostCapture);
+    if (this.canvas) {
+      this.canvas.removeEventListener("pointerdown", this.onPtrDown);
+      this.canvas.removeEventListener("pointermove", this.onPtrMove);
+      this.canvas.removeEventListener("pointerup", this.onPtrUp);
+      this.canvas.removeEventListener("pointercancel", this.onPtrUp);
+      this.canvas.removeEventListener("lostpointercapture", this.onLostCapture);
+    }
   }
 
   private onVis = () => {
-    if (document.hidden) this.clear();
+    if (document.visibilityState === "hidden") this.clear();
+  };
+
+  private onWindowPtrEnd = (e: PointerEvent) => {
+    if (this.pointers.has(e.pointerId)) this.endPtr(e.pointerId);
+  };
+
+  private onLostCapture = (e: Event) => {
+    const pe = e as PointerEvent;
+    if (this.pointers.has(pe.pointerId)) this.endPtr(pe.pointerId);
   };
 
   private onKeyDown = (e: KeyboardEvent) => {
     if (!this.enabled) return;
     if (GAME_KEYS.has(e.code)) e.preventDefault();
     this.keys.add(e.code);
-    this.latched.add(e.code);
   };
 
   private onKeyUp = (e: KeyboardEvent) => {
     this.keys.delete(e.code);
   };
 
-  clear = () => {
+  private clear = () => {
     this.keys.clear();
     this.forced.clear();
-    this.latched.clear();
     this.buttons.clear();
     this.pointers.clear();
     this.stick.active = false;
@@ -154,127 +127,83 @@ export class Input {
   };
 
   private onPtrDown = (e: PointerEvent) => {
-    const t = roleOf(e);
-    if (!t) return;
-    const role = t.dataset.role;
+    if (!this.enabled) return;
+    const role = roleOf(e)?.dataset.role;
     if (!role) return;
     e.preventDefault();
-    try {
-      t.setPointerCapture?.(e.pointerId);
-    } catch {
-      /* capture can fail on some mobile browsers; still track the pointer */
-    }
+    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     this.pointers.set(e.pointerId, { role });
     if (role === "stick") {
       this.stick.active = true;
       this.stick.ox = e.clientX;
       this.stick.oy = e.clientY;
-      this.stick.x = 0;
-      this.stick.y = 0;
+      this.updateStick(e.clientX, e.clientY);
     } else {
       this.buttons.add(role);
+      this.latched.add(role);
     }
   };
 
   private onPtrMove = (e: PointerEvent) => {
     const p = this.pointers.get(e.pointerId);
     if (!p) return;
-    if (p.role === "stick") this.updateStick(e);
+    if (p.role === "stick") this.updateStick(e.clientX, e.clientY);
   };
 
-  private releasePointer(pointerId: number) {
-    const p = this.pointers.get(pointerId);
+  private onPtrUp = (e: PointerEvent) => {
+    this.endPtr(e.pointerId);
+  };
+
+  private endPtr(id: number) {
+    const p = this.pointers.get(id);
     if (!p) return;
-    this.pointers.delete(pointerId);
+    this.pointers.delete(id);
     if (p.role === "stick") {
-      const still = [...this.pointers.values()].some((q) => q.role === "stick");
-      if (!still) {
-        this.stick.active = false;
-        this.stick.x = 0;
-        this.stick.y = 0;
-      }
+      this.stick.active = false;
+      this.stick.x = 0;
+      this.stick.y = 0;
     } else {
       this.buttons.delete(p.role);
     }
-  }
-
-  private onPtrUp = (e: PointerEvent) => {
-    this.releasePointer(e.pointerId);
   };
 
-  private onLostCapture = (e: PointerEvent) => {
-    this.releasePointer(e.pointerId);
+  private updateStick(cx: number, cy: number) {
+    const dx = cx - this.stick.ox;
+    const dy = cy - this.stick.oy;
+    const len = Math.hypot(dx, dy) || 1;
+    const r = this.stickRadius;
+    const clamped = Math.min(len, r) / r;
+    this.stick.x = (dx / len) * clamped;
+    this.stick.y = (dy / len) * clamped;
   };
 
-  /** Window-level safety: if the finger lifts outside the game root, still release. */
-  private onWindowPtrEnd = (e: PointerEvent) => {
-    if (!this.pointers.has(e.pointerId)) return;
-    this.releasePointer(e.pointerId);
-  };
-
-  private updateStick(e: PointerEvent) {
-    let x = (e.clientX - this.stick.ox) / this.stickRadius;
-    let y = (e.clientY - this.stick.oy) / this.stickRadius;
-    const m = Math.hypot(x, y);
-    if (m > 1) {
-      x /= m;
-      y /= m;
-    }
-    // Slightly larger dead-zone so a resting thumb does not drift into movement.
-    if (m < 0.28) {
-      x = 0;
-      y = 0;
-    }
-    this.stick.x = x;
-    this.stick.y = y;
-  }
-
-  setKeys(codes: string[]) {
-    this.forced = new Set(codes);
-  }
-
-  held(code: string) {
+  private held(code: string) {
     return this.keys.has(code) || this.forced.has(code);
   }
 
-  edge(code: string) {
-    return this.latched.has(code) || (this.held(code) && !this.prev.has(code));
+  private edge(code: string) {
+    return this.held(code) && !this.prev.has(code);
   }
 
   poll(): Actions {
-    // Defensive: if the stick claims active but no stick pointer remains, force-release.
-    // Covers rare mobile cases where up/cancel/lostcapture never arrived.
-    if (this.stick.active) {
-      const stillStick = [...this.pointers.values()].some((q) => q.role === "stick");
-      if (!stillStick) {
-        this.stick.active = false;
-        this.stick.x = 0;
-        this.stick.y = 0;
-      }
-    }
-
     const a = empty();
     let mx = 0;
-    if (this.held("KeyA") || this.held("ArrowLeft")) mx -= 1;
-    if (this.held("KeyD") || this.held("ArrowRight")) mx += 1;
-    if (this.stick.active) {
-      if (this.stick.x > 0.28) mx += 1;
-      else if (this.stick.x < -0.28) mx -= 1;
-    }
-    if (this.buttons.has("left")) mx -= 1;
-    if (this.buttons.has("right")) mx += 1;
+    if (this.held("ArrowLeft") || this.held("KeyA")) mx -= 1;
+    if (this.held("ArrowRight") || this.held("KeyD")) mx += 1;
+    if (this.stick.active) mx += this.stick.x;
     a.moveX = Math.max(-1, Math.min(1, mx));
     a.down =
-      this.held("KeyS") ||
       this.held("ArrowDown") ||
-      this.stick.y > 0.48 ||
-      this.buttons.has("down");
-    const jumpNow =
+      this.held("KeyS") ||
+      this.buttons.has("down") ||
+      (this.stick.active && this.stick.y > 0.45);
+    const stickUp = this.stick.active && this.stick.y < -0.45;
+    a.jumpHeld =
       this.held("Space") ||
       this.held("KeyW") ||
       this.held("ArrowUp") ||
-      this.buttons.has("jump");
-    a.jumpHeld = jumpNow;
+      this.buttons.has("jump") ||
+      stickUp;
     a.jump =
       this.edge("Space") ||
       this.edge("KeyW") ||
@@ -296,9 +225,6 @@ export class Input {
       this.edge("Escape") ||
       this.edge("KeyP") ||
       (this.buttons.has("pause") && !this.prevButtons.has("pause"));
-
-    // Stem / Shelf — keyboard L is stem (wall); hold down + L for shelf.
-    // Touch: dedicated Stem / Shelf roles.
     const stemTap = this.buttons.has("stem") && !this.prevButtons.has("stem");
     const shelfTap = this.buttons.has("shelf") && !this.prevButtons.has("shelf");
     const wordKey =
@@ -309,13 +235,10 @@ export class Input {
     a.shelf = shelfTap || (wordKey && a.down);
     a.word = wordKey || stemTap || shelfTap;
     if (shelfTap) a.down = true;
-
     a.caseShift =
       this.edge("ShiftLeft") ||
       this.edge("ShiftRight") ||
       (this.buttons.has("case") && !this.prevButtons.has("case"));
-
-    // Direct party slots 1–8 (keyboard + portrait touch buttons).
     for (let i = 1; i <= 8; i++) {
       const digit = `Digit${i}`;
       const role = `p${i}`;
@@ -324,9 +247,6 @@ export class Input {
         break;
       }
     }
-
-    // Cycle the cell when the roster outgrows a single number row.
-    // Tab / Q / ]  → next ·  ` / [ / R  → previous · touch: cycle / cyclePrev
     if (
       this.edge("Tab") ||
       this.edge("KeyQ") ||
@@ -343,7 +263,6 @@ export class Input {
     ) {
       a.cycle = -1;
     }
-
     this.prev = new Set([...this.keys, ...this.forced]);
     this.prevButtons = new Set(this.buttons);
     this.latched.clear();
