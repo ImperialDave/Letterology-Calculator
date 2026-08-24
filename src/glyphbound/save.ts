@@ -29,6 +29,7 @@ export const defaultSave = (): SaveData => ({
   powerups: [],
   talked: [],
   visited: [],
+  letter: "c",
 });
 
 export function loadSave(): SaveData {
@@ -40,19 +41,27 @@ export function loadSave(): SaveData {
     if (!raw) return defaultSave();
     const parsed = JSON.parse(raw) as Partial<SaveData>;
     const base = defaultSave();
+    const party = Array.isArray(parsed.party) && parsed.party.length ? parsed.party : base.party;
+    const letter =
+      parsed.letter && party.includes(parsed.letter) ? parsed.letter : party[0] ?? "c";
     const merged: SaveData = {
       ...base,
       ...parsed,
       version: VERSION,
+      party,
+      letter,
       maxShield: Math.max(3, parsed.maxShield ?? 3),
       talked: parsed.talked ?? [],
       visited: parsed.visited ?? [],
+      relics: parsed.relics ?? [],
+      words: parsed.words ?? [],
+      powerups: parsed.powerups ?? [],
       progress: Math.max(0, parsed.progress ?? 0),
     };
     if (merged.progress < 1 && merged.stage1) merged.progress = Math.max(merged.progress, 1);
+    if (merged.progress < 2 && merged.stage2) merged.progress = Math.max(merged.progress, 2);
     if (merged.progress < 3 && merged.stage3) merged.progress = Math.max(merged.progress, 3);
     if (merged.progress < 4 && merged.stage4) merged.progress = Math.max(merged.progress, 4);
-    if (merged.progress < 2 && merged.stage2) merged.progress = Math.max(merged.progress, 2);
     if (merged.progress < 5 && merged.stage5) merged.progress = Math.max(merged.progress, 5);
     return merged;
   } catch {

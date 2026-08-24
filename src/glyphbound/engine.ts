@@ -36,6 +36,7 @@ import {
   type Particle,
   type Pickup,
   type Player,
+  type RelicId,
   type SaveData,
   type Solid,
   type TaskSnap,
@@ -723,6 +724,10 @@ export class GameEngine {
     if (n === 3) this.save.stage3 = true;
     if (n === 4) this.save.stage4 = true;
     if (n === 5) this.save.stage5 = true;
+    if (n === FIRST_BOOK && !this.save.relics.includes("counter")) {
+      this.save.relics.push("counter");
+      this.say("The Counter. What strikes the ward writes back.");
+    }
     this.persist();
   }
 
@@ -1135,6 +1140,7 @@ export class GameEngine {
     const wasGround = p.grounded;
     const fall = p.vy;
     this.moveActor(p, dt, large, a.down);
+    this.ejectFromHazards();
     this.markSafeGround();
     const wallL = this.blockedAt(p.x - 3, p.y + 6, 4, p.h - 12, large);
     const wallR = this.blockedAt(p.x + p.w - 1, p.y + 6, 4, p.h - 12, large);
@@ -1336,7 +1342,9 @@ export class GameEngine {
                   : lv >= 2
                     ? "fang"
                     : "crescent";
-    const pierce = L === "s" ? Math.max(1, lv >= 3 ? 2 : 1) : L === "e" ? 0 : lv >= 4 ? 2 : lv >= 3 ? 1 : 0;
+    const pierce =
+      (L === "s" ? Math.max(1, lv >= 3 ? 2 : 1) : L === "e" ? 0 : lv >= 4 ? 2 : lv >= 3 ? 1 : 0) +
+      (this.save.relics.includes("counter") ? 1 : 0);
     const n = L === "t" || L === "e" ? 1 : L === "r" && p.capital ? 2 : lv >= 4 ? 3 : lv >= 3 ? 2 : 1;
     const spreads = n === 1 ? [0] : n === 2 ? [-0.12, 0.12] : [-0.28, 0, 0.28];
     const mouthX = p.x + p.w / 2 + p.facing * (p.w * 0.55);
@@ -1365,47 +1373,50 @@ export class GameEngine {
     const cap = p.capital;
     p.special = 0.28;
     const L = p.letter;
-    if (L === "c" && !cap) {
-      if (!p.grounded && this.airDash <= 0) {
-        p.special = 0;
-        return;
+    if (L === "c") {
+      const cage = cap && p.grounded && a.moveX === 0 && !a.down && !a.jumpHeld;
+      if (cage) {
+        this.walls.push({
+          x: p.x + (p.facing > 0 ? p.w : -46),
+          y: p.y - 10,
+          w: 46,
+          h: p.h + 20,
+          life: 2.8,
+          max: 2.8,
+          kind: "wall",
+        });
+        p.specialCd = 1.4;
+        this.audio.sfxWord();
+        this.say("CAGE");
+      } else {
+        if (!p.grounded && this.airDash <= 0) {
+          p.special = 0;
+          return;
+        }
+        let dx = a.moveX !== 0 ? Math.sign(a.moveX) : 0;
+        let dy = a.down ? 1 : a.jumpHeld ? -1 : 0;
+        if (dx === 0 && dy === 0) dx = p.facing;
+        const mag = Math.hypot(dx, dy) || 1;
+        const spd = cap ? 680 : 640;
+        this.dashVx = (dx / mag) * spd;
+        this.dashVy = (dy / mag) * spd;
+        if (dx !== 0) p.facing = dx > 0 ? 1 : -1;
+        p.vx = this.dashVx;
+        p.vy = this.dashVy;
+        p.roll = cap ? 0.22 : 0.2;
+        p.invuln = Math.max(p.invuln, 0.34);
+        p.specialCd = cap ? 0.42 : 0.38;
+        p.squash = 0.62;
+        p.stretch = 1.18;
+        p.jumpCut = true;
+        p.jumpBuf = 0;
+        if (!p.grounded) this.airDash = 0;
+        this.trauma = Math.min(1, this.trauma + 0.18);
+        this.hitstop = 0.045;
+        this.audio.sfxJump();
+        this.burst(p.x + p.w / 2, p.y + p.h / 2, "#5ee0c0", 12, "glyph");
+        this.say("DASH");
       }
-      let dx = a.moveX !== 0 ? Math.sign(a.moveX) : 0;
-      let dy = a.down ? 1 : a.jumpHeld ? -1 : 0;
-      if (dx === 0 && dy === 0) dx = p.facing;
-      const mag = Math.hypot(dx, dy) || 1;
-      const spd = 640;
-      this.dashVx = (dx / mag) * spd;
-      this.dashVy = (dy / mag) * spd;
-      if (dx !== 0) p.facing = dx > 0 ? 1 : -1;
-      p.vx = this.dashVx;
-      p.vy = this.dashVy;
-      p.roll = 0.2;
-      p.invuln = Math.max(p.invuln, 0.34);
-      p.specialCd = 0.38;
-      p.squash = 0.62;
-      p.stretch = 1.18;
-      p.jumpCut = true;
-      p.jumpBuf = 0;
-      if (!p.grounded) this.airDash = 0;
-      this.trauma = Math.min(1, this.trauma + 0.18);
-      this.hitstop = 0.045;
-      this.audio.sfxJump();
-      this.burst(p.x + p.w / 2, p.y + p.h / 2, "#5ee0c0", 12, "glyph");
-      this.say("DASH");
-    } else if (L === "c" && cap) {
-      this.walls.push({
-        x: p.x + (p.facing > 0 ? p.w : -46),
-        y: p.y - 10,
-        w: 46,
-        h: p.h + 20,
-        life: 2.8,
-        max: 2.8,
-        kind: "wall",
-      });
-      p.specialCd = 1.4;
-      this.audio.sfxWord();
-      this.say("CAGE");
     } else if (L === "s") {
       this.bullets.push({
         x: p.x + p.w / 2,
@@ -1717,6 +1728,24 @@ export class GameEngine {
       this.audio.sfxBlock();
       this.trauma = Math.min(1, this.trauma + 0.12);
       this.burst(p.x + p.w / 2, p.y + p.h / 2, "#8ec8d4", 10, "spark");
+      if (this.save.relics.includes("counter") && kind !== "hazard") {
+        const cx = p.x + p.w / 2;
+        const cy = p.y + p.h * 0.4;
+        this.bullets.push({
+          x: cx,
+          y: cy,
+          vx: (dir === 0 ? p.facing : -dir) * 320,
+          vy: -40,
+          r: 6,
+          from: "player",
+          dmg: 2,
+          life: 0.7,
+          kind: "solar",
+          alive: true,
+          pierce: 1,
+        });
+        this.burst(cx, cy, "#e8d48a", 8, "glyph");
+      }
       return;
     }
     p.hp -= this.hard ? n : n;
@@ -2546,6 +2575,48 @@ export class GameEngine {
     return false;
   }
 
+  /** Nudge out of teeth/lasers so a fall doesn't pin the curve in the hazard AABB. */
+  private ejectFromHazards() {
+    const p = this.player;
+    const large = isLarge(p.letter, p.capital);
+    for (let pass = 0; pass < 4; pass++) {
+      let hit: Solid | null = null;
+      for (const s of this.solids) {
+        if (s.type !== "spike" && s.type !== "laser") continue;
+        if (!aabb(p, s)) continue;
+        if (s.type === "spike") {
+          if (p.grounded && s.y + s.h <= p.y + p.h + 6) continue;
+          if (s.phase != null && !this.spikeHot(s)) continue;
+        }
+        if (s.type === "laser" && !this.laserHot(s)) continue;
+        hit = s;
+        break;
+      }
+      if (!hit) return;
+      const dir = p.x + p.w / 2 < hit.x + hit.w / 2 ? -1 : 1;
+      const nx = p.x + dir * 8;
+      const ny = p.y - 6;
+      if (!this.blockedAt(nx, ny, p.w, p.h, large) && !this.hazardAt(nx, ny, p.w, p.h)) {
+        p.x = nx;
+        p.y = ny;
+        p.vx = dir * 90;
+        p.vy = Math.min(p.vy, -80);
+      } else if (
+        Number.isFinite(this.lastSafeX) &&
+        this.lastSafeY < this.worldH - TILE &&
+        !this.hazardAt(this.lastSafeX, this.lastSafeY, p.w, p.h)
+      ) {
+        p.x = this.lastSafeX;
+        p.y = this.lastSafeY;
+        p.vx = 0;
+        p.vy = 0;
+        return;
+      } else {
+        return;
+      }
+    }
+  }
+
   private updateBullets(dt: number) {
     const p = this.player;
     for (const b of this.bullets) {
@@ -2811,7 +2882,34 @@ export class GameEngine {
         p.ink = Math.min(p.maxInk, p.ink + 16);
         p.hp = Math.min(p.maxHp, p.hp + 1);
         this.audio.sfxWord();
-        this.say("A hidden cache. Ink and a spare curve.");
+        const secrets = this.save.powerups.filter((id) => id.startsWith("secret-")).length;
+        if (secrets >= 3 && !this.save.relics.includes("spine")) {
+          this.save.relics.push("spine");
+          this.syncVitals();
+          this.say("The spine of the book. One more curve to carry.");
+        } else {
+          this.say("A hidden cache. Ink and a spare curve.");
+        }
+        this.persist();
+      } else if (u.kind === "relic") {
+        u.taken = true;
+        const rid = (u.id || u.label || "") as RelicId;
+        if (rid === "spine" || rid === "copper" || rid === "counter" || rid === "dropCap") {
+          if (!this.save.relics.includes(rid)) this.save.relics.push(rid);
+          if (rid === "copper") this.save.maxShield = Math.min(6, this.save.maxShield + 1);
+          if (rid === "dropCap") this.save.hasCapital = true;
+          this.syncVitals();
+          this.audio.sfxWord();
+          this.say(
+            rid === "spine"
+              ? "The spine of the book."
+              : rid === "counter"
+                ? "The Counter. The ward writes back."
+                : rid === "copper"
+                  ? "Scale plate thickens."
+                  : "A relic of the page.",
+          );
+        }
         this.persist();
       } else if (u.kind === "word" && u.label) {
         u.taken = true;

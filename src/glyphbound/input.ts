@@ -274,7 +274,7 @@ export class Input {
       this.held("KeyW") ||
       this.held("ArrowUp") ||
       this.buttons.has("jump");
-    a.jumpHeld = jumpNow;
+    a.jumpHeld = jumpNow || this.stick.y < -0.48;
     a.jump =
       this.edge("Space") ||
       this.edge("KeyW") ||

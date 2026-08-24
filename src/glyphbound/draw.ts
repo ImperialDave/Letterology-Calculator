@@ -2431,6 +2431,23 @@ export function drawPickup(
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText("$", 0, 1);
+  } else if (kind === "relic") {
+    ctx.fillStyle = "#e8d48a";
+    ctx.shadowColor = "#e8d48a";
+    ctx.shadowBlur = 14;
+    ctx.beginPath();
+    ctx.moveTo(0, -10);
+    ctx.lineTo(8, 0);
+    ctx.lineTo(0, 10);
+    ctx.lineTo(-8, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "#07080c";
+    ctx.font = "700 9px 'Cormorant Garamond', serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText((label || "RELIC").slice(0, 6), 0, 0);
   } else {
     ctx.fillStyle = "rgba(7,8,12,0.55)";
     roundRect(ctx, -16, -10, 32, 18, 6);

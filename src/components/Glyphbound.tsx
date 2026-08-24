@@ -47,7 +47,7 @@ function ControlsCard() {
             <span className="text-fg">c Dash</span>
             <span>Eight-way. Through shot and digit. Once in the air, refresh on land. Hold a direction.</span>
             <span className="text-fg">C Cage</span>
-            <span>Stem wall in front</span>
+            <span>Stand still and skill: a stem wall. Move or jump while skill: still Dash, a little harder.</span>
             <span className="text-fg">s Cut</span>
             <span>Gale blade · air hop is Space in the air</span>
             <span className="text-fg">S Scythe</span>
