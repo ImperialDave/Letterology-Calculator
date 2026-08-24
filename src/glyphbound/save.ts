@@ -14,6 +14,7 @@ export const defaultSave = (): SaveData => ({
   stage2: false,
   stage3: false,
   stage4: false,
+  stage5: false,
   hard: false,
   muted: false,
   shake: true,
