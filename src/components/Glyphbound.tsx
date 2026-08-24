@@ -23,7 +23,7 @@ function ControlsCard() {
         <span className="text-fg">J</span>
         <span>Fang shot · hold to fire</span>
         <span className="text-fg">K</span>
-        <span>Skill unique to the letter in play — Gale cut, Stone brace, Tide pulse, Ember flare, Aether dash</span>
+        <span>Skill — c dashes eight ways through shot and digit (once in air). Gale cut, Stone brace, Tide pulse, Ember flare</span>
         <span className="text-fg">L</span>
         <span>Stem wall · hold down, then L, for a Shelf</span>
         <span className="text-fg">E</span>

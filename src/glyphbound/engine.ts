@@ -109,6 +109,10 @@ export class GameEngine {
   lastSafeX = 80;
   lastSafeY = 80;
   recallCd = 0;
+  oobT = 0;
+  dashVx = 0;
+  dashVy = 0;
+  airDash = 1;
   worldW = 1000;
   worldH = 600;
   ui: (s: UiSnap) => void;
@@ -253,29 +257,45 @@ export class GameEngine {
 
   private markSafeGround() {
     const p = this.player;
-    if (!p.grounded || p.vy < -20) return;
+    if (!p.grounded || p.vy < -12 || p.roll > 0) return;
+    if (p.y + p.h > this.worldH - TILE) return;
     const large = isLarge(p.letter, p.capital);
     if (!this.blockedAt(p.x + 4, p.y + p.h, p.w - 8, 6, large)) return;
-    if (p.y + p.h > this.worldH - TILE * 1.5) return;
+    for (const s of this.solids) {
+      if ((s.type === "spike" || s.type === "sluice" || s.type === "laser") && aabb(p, s)) return;
+    }
     this.lastSafeX = p.x;
     this.lastSafeY = p.y;
   }
 
-  private watchBounds() {
+  private watchBounds(dt: number) {
     const p = this.player;
-    if (this.mode !== "play" && this.mode !== "hub") return;
+    if (this.mode !== "play" && this.mode !== "hub") {
+      this.oobT = 0;
+      return;
+    }
     if (this.recallCd > 0) return;
-    const fallen = p.y > this.lastSafeY + 150 && !p.grounded;
-    const offBottom = p.y + p.h > this.worldH - 6;
-    const offSide = p.x + p.w < -24 || p.x > this.worldW + 24;
-    if (fallen || offBottom || offSide) this.recallToMap();
+    const offX = p.x + p.w < -TILE || p.x > this.worldW + TILE;
+    const offY = p.y > this.worldH + 20 || p.y + p.h < -TILE * 2;
+    if (offX || offY) {
+      this.oobT += dt;
+      if (this.oobT > 0.2) this.recallToMap();
+    } else {
+      this.oobT = 0;
+    }
   }
 
   private recallToMap() {
     const p = this.player;
     let x = this.lastSafeX;
     let y = this.lastSafeY;
-    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+    const bad =
+      !Number.isFinite(x) ||
+      !Number.isFinite(y) ||
+      y > this.worldH - TILE ||
+      x < 0 ||
+      x > this.worldW;
+    if (bad) {
       x = this.checkX || this.spawnX;
       y = this.checkY || this.spawnY;
     }
@@ -283,18 +303,20 @@ export class GameEngine {
     p.y = y;
     p.vx = 0;
     p.vy = 0;
-    p.invuln = 1.1;
+    p.invuln = 0.9;
     p.squash = 0.82;
     p.stretch = 1.08;
-    this.recallCd = 0.55;
+    p.roll = 0;
+    this.recallCd = 0.4;
+    this.oobT = 0;
     this.settleOnFloor();
     this.lastSafeX = p.x;
     this.lastSafeY = p.y;
     this.camX = p.x - VIEW_W * 0.35;
     this.camY = p.y - VIEW_H * 0.62;
-    this.burst(p.x + p.w / 2, p.y + p.h / 2, "#e8d48a", 14, "glyph");
+    this.burst(p.x + p.w / 2, p.y + p.h / 2, "#e8d48a", 10, "glyph");
     this.audio.sfxWord();
-    this.say("The page pulls you back.");
+    this.say("Back on the page.");
   }
 
   loadLevel(id: LevelId, atCheck = false) {
@@ -600,6 +622,8 @@ export class GameEngine {
     this.lastSafeX = p.x;
     this.lastSafeY = p.y;
     this.recallCd = 0;
+    this.oobT = 0;
+    this.airDash = 1;
     this.camX = p.x - VIEW_W * 0.35;
     this.camY = p.y - VIEW_H * 0.62;
     this.mode = id === "hub" ? "hub" : "play";
@@ -896,7 +920,7 @@ export class GameEngine {
     this.followCam(dt);
     this.trauma = Math.max(0, this.trauma - dt * 1.8);
     this.recallCd = Math.max(0, this.recallCd - dt);
-    this.watchBounds();
+    this.watchBounds(dt);
     this.maybeHud();
     this.noteTasks();
   }
@@ -925,20 +949,25 @@ export class GameEngine {
     }
     const gUp = 1300;
     const gDown = 2400;
-    if (!a.jumpHeld && !p.jumpCut && p.vy < 0) {
+    const aetherDash = p.roll > 0 && p.letter === "c";
+    if (!a.jumpHeld && !p.jumpCut && p.vy < 0 && !aetherDash) {
       p.vy *= 0.52;
       p.jumpCut = true;
     }
-    p.vy += (p.vy < 0 ? gUp : gDown) * dt;
-    if (p.vy > 860) p.vy = 860;
+    if (!aetherDash) {
+      p.vy += (p.vy < 0 ? gUp : gDown) * dt;
+      if (p.vy > 860) p.vy = 860;
+    }
     if (p.letter === "s" && p.capital && a.jumpHeld && !p.grounded && p.vy > 60) {
       p.vy = 70;
     }
     if (p.grounded) p.airHop = p.letter === "s" ? 1 : 0;
+    if (p.grounded) this.airDash = 1;
     if (p.grounded) p.coyote = 0.1;
     else p.coyote -= dt;
     if (a.jump) p.jumpBuf = 0.12;
     else p.jumpBuf -= dt;
+    if (!aetherDash) {
     if (p.jumpBuf > 0 && p.coyote > 0) {
       p.vy = -kit.jump;
       p.grounded = false;
@@ -968,21 +997,47 @@ export class GameEngine {
       this.audio.sfxJump();
       this.burst(p.x + p.w / 2, p.y + p.h / 2, "#e8d48a", 6, "glyph");
     }
+    }
     if (p.roll > 0) {
       p.roll -= dt;
-      p.vx = p.facing * (p.letter === "r" ? (p.capital ? 360 : 310) : p.capital ? 250 : 270);
-      if (p.letter === "r") {
+      if (p.letter === "c") {
+        p.vx = this.dashVx;
+        p.vy = this.dashVy;
         for (const e of this.enemies) {
-          if (e.alive && aabb(p, e) && e.hurt <= 0) this.hitEnemy(e, p.capital ? 3 : 2, p.facing);
+          if (e.alive && aabb(p, e) && e.hurt <= 0) {
+            this.hitEnemy(e, 2, p.facing);
+            e.stun = Math.max(e.stun, 0.4);
+          }
         }
-        if (Math.floor(this.time * 14) !== Math.floor((this.time - dt) * 14)) {
-          this.burns.push({
-            x: p.x + 2,
-            y: p.y + p.h - 12,
-            w: p.w - 4,
-            h: 12,
-            life: p.capital ? 1.35 : 0.7,
-          });
+        for (const b of this.bullets) {
+          if (!b.alive || b.from !== "enemy") continue;
+          if (Math.hypot(b.x - (p.x + p.w / 2), b.y - (p.y + p.h / 2)) < 28) {
+            b.alive = false;
+            this.burst(b.x, b.y, "#5ee0c0", 4, "spark");
+          }
+        }
+        if (Math.floor(this.time * 18) !== Math.floor((this.time - dt) * 18)) {
+          this.burst(p.x + p.w / 2, p.y + p.h / 2, "#5ee0c0", 3, "glyph");
+        }
+        if (p.roll <= 0) {
+          p.vx *= 0.38;
+          p.vy *= 0.22;
+        }
+      } else {
+        p.vx = p.facing * (p.letter === "r" ? (p.capital ? 360 : 310) : p.capital ? 250 : 270);
+        if (p.letter === "r") {
+          for (const e of this.enemies) {
+            if (e.alive && aabb(p, e) && e.hurt <= 0) this.hitEnemy(e, p.capital ? 3 : 2, p.facing);
+          }
+          if (Math.floor(this.time * 14) !== Math.floor((this.time - dt) * 14)) {
+            this.burns.push({
+              x: p.x + 2,
+              y: p.y + p.h - 12,
+              w: p.w - 4,
+              h: 12,
+              life: p.capital ? 1.35 : 0.7,
+            });
+          }
         }
       }
     }
@@ -1244,18 +1299,38 @@ export class GameEngine {
     this.burst(mouthX, mouthY, kit.glow, 4, L === "r" ? "ember" : "spark");
   }
 
-  private castSpecial() {
+  private castSpecial(a: ReturnType<Input["poll"]>) {
     const p = this.player;
     const cap = p.capital;
     p.special = 0.28;
     const L = p.letter;
     if (L === "c" && !cap) {
-      p.roll = 0.28;
-      p.invuln = Math.max(p.invuln, 0.28);
-      p.specialCd = 0.7;
-      p.squash = 0.78;
-      p.stretch = 0.84;
+      if (!p.grounded && this.airDash <= 0) {
+        p.special = 0;
+        return;
+      }
+      let dx = a.moveX !== 0 ? Math.sign(a.moveX) : 0;
+      let dy = a.down ? 1 : a.jumpHeld ? -1 : 0;
+      if (dx === 0 && dy === 0) dx = p.facing;
+      const mag = Math.hypot(dx, dy) || 1;
+      const spd = 640;
+      this.dashVx = (dx / mag) * spd;
+      this.dashVy = (dy / mag) * spd;
+      if (dx !== 0) p.facing = dx > 0 ? 1 : -1;
+      p.vx = this.dashVx;
+      p.vy = this.dashVy;
+      p.roll = 0.2;
+      p.invuln = Math.max(p.invuln, 0.34);
+      p.specialCd = 0.38;
+      p.squash = 0.62;
+      p.stretch = 1.18;
+      p.jumpCut = true;
+      p.jumpBuf = 0;
+      if (!p.grounded) this.airDash = 0;
+      this.trauma = Math.min(1, this.trauma + 0.18);
+      this.hitstop = 0.045;
       this.audio.sfxJump();
+      this.burst(p.x + p.w / 2, p.y + p.h / 2, "#5ee0c0", 12, "glyph");
       this.say("DASH");
     } else if (L === "c" && cap) {
       this.walls.push({
@@ -1467,7 +1542,7 @@ export class GameEngine {
       this.fireShot();
     }
     if (a.special && p.specialCd <= 0 && p.roll <= 0) {
-      this.castSpecial();
+      this.castSpecial(a);
     }
     for (const s of this.solids) {
       if (s.type === "spike" && aabb(p, s) && p.invuln <= 0) this.hurt(1, p.x + p.w / 2 < s.x + s.w / 2 ? -1 : 1);

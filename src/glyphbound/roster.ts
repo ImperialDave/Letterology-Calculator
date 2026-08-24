@@ -29,7 +29,7 @@ export const KITS: Record<LetterId, LetterKit> = {
     element: "Aether",
     skill: "Dash",
     skillCap: "Cage",
-    weak: "The warning mark. First at nothing, present in everything.",
+    weak: "The warning mark. Eight-way dash, through shot and digit. Once in the air.",
     spd: 218,
     jump: 522,
     hp: 6,

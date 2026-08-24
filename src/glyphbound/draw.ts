@@ -1980,16 +1980,18 @@ export function drawPlayer(ctx: CanvasRenderingContext2D, p: Player, camX: numbe
   const cx = Math.round(p.x + p.w / 2 - camX);
   const cy = Math.round(p.y + p.h / 2 - camY);
   const motion = { vx: p.vx, vy: p.vy, grounded: p.grounded, special: p.special };
-  const ghosts = p.roll > 0 ? (p.letter === "r" ? 3 : 2) : p.letter === "s" && Math.abs(p.vx) > 180 ? 1 : 0;
+  const ghosts = p.roll > 0 ? (p.letter === "r" ? 3 : p.letter === "c" ? 5 : 2) : p.letter === "s" && Math.abs(p.vx) > 180 ? 1 : 0;
   for (let i = ghosts; i >= 1; i--) {
     ctx.save();
-    ctx.globalAlpha = p.letter === "r" ? 0.16 * i : 0.14;
+    ctx.globalAlpha = p.letter === "c" ? 0.22 - i * 0.03 : p.letter === "r" ? 0.16 * i : 0.14;
+    const ox = p.letter === "c" ? -(p.vx / 52) * i : -p.facing * (10 * i);
+    const oy = p.letter === "c" ? -(p.vy / 52) * i : p.letter === "r" ? i : 0;
     drawLetterForm(
       ctx,
       p.letter,
       p.capital,
-      cx - p.facing * (10 * i),
-      cy + (p.letter === "r" ? i : 0),
+      cx + ox,
+      cy + oy,
       p.facing,
       t + p.anim,
       p.squash * p.stretch,
