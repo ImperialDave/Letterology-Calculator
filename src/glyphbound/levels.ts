@@ -90,6 +90,12 @@ function buildExchange(): string[] {
   put(pit + 4, 10, "P");
   put(pit + 10, 10, "!");
   put(90, 1, "0");
+  put(4, 2, "====");
+  put(5, 1, "$");
+  put(pit + 14, 9, "==");
+  put(pit + 14, 8, "$");
+  put(48, 6, "5");
+  put(110, 6, "7");
   return g;
 }
 
@@ -139,6 +145,12 @@ function buildGutter(): string[] {
   put(154, 6, "+");
   put(40, 1, "0");
   put(100, 1, "0");
+  put(24, 2, "====");
+  put(25, 1, "$");
+  put(158, 5, "==");
+  put(158, 4, "$");
+  put(64, 7, "5");
+  put(122, 7, "7");
   return g;
 }
 
@@ -185,6 +197,12 @@ function buildCoil(): string[] {
   put(156, 7, "P");
   put(70, 1, "0");
   put(130, 1, "0");
+  put(100, 1, "====");
+  put(102, 1, "$");
+  put(150, 3, "====");
+  put(151, 2, "$");
+  put(40, 7, "5");
+  put(120, 7, "7");
   return g;
 }
 
@@ -193,14 +211,14 @@ export const LEVELS: Record<LevelId, LevelMeta> = {
     id: "hub",
     name: "Lower Register Stacks",
     theme: "hub",
-    objective: "Talk, then pick a door.",
+    objective: "Talk to the letters, then pick a door.",
     tasks: [
-      { id: "talk-e", text: "Hear e, the Pawned Eye" },
+      { id: "talk-e", text: "Talk to e" },
       { id: "talk-t", text: "Learn scribing from t" },
       { id: "enter-lanes", text: "Enter the Overcast Exchange" },
       { id: "enter-gutter", text: "Enter the Gutter Press", need: "stage1" },
       { id: "enter-coil", text: "Enter the Coil Yard", need: "stage3" },
-      { id: "enter-fort", text: "Enter Tetrarch's Fort", need: "stage4" },
+      { id: "enter-fort", text: "Enter G's Fort", need: "stage4" },
     ],
     rows: slice(`
 ################################################
@@ -217,13 +235,13 @@ export const LEVELS: Record<LevelId, LevelMeta> = {
     id: "stage1",
     name: "Overcast Exchange",
     theme: "street",
-    objective: "Read the street. Claim the Drop Cap. Drop into the pit.",
+    objective: "Walk the street. Get the Drop Cap. Drop into the pit.",
     tasks: [
-      { id: "talk-m", text: "Hear m, the Remainder" },
-      { id: "recruit-s", text: "Free s, the Sibilant" },
-      { id: "word-wall", text: "Inscribe WALL" },
-      { id: "drop-cap", text: "Claim the Drop Cap" },
-      { id: "dualis", text: "Round Dualis down" },
+      { id: "talk-m", text: "Talk to m" },
+      { id: "recruit-s", text: "Free s" },
+      { id: "word-wall", text: "Pick up WALL" },
+      { id: "drop-cap", text: "Get the Drop Cap" },
+      { id: "dualis", text: "Defeat Dualis" },
       { id: "gate-stacks", text: "Take the STACKS gate" },
     ],
     rows: buildExchange(),
@@ -233,11 +251,11 @@ export const LEVELS: Record<LevelId, LevelMeta> = {
     id: "stage3",
     name: "Gutter Press",
     theme: "canal",
-    objective: "Scribe the gaps. Learn RISE. Reach the press gate.",
+    objective: "Build shelves across the gaps. Learn RISE. Reach the gate.",
     tasks: [
-      { id: "talk-u", text: "Hear u, the Understroke" },
-      { id: "word-rise", text: "Inscribe RISE" },
-      { id: "cross-gutter", text: "Cross the last sluice" },
+      { id: "talk-u", text: "Talk to u" },
+      { id: "word-rise", text: "Pick up RISE" },
+      { id: "cross-gutter", text: "Cross the last canal" },
       { id: "gate-press", text: "Take the PRESS gate" },
     ],
     rows: buildGutter(),
@@ -247,10 +265,10 @@ export const LEVELS: Record<LevelId, LevelMeta> = {
     id: "stage4",
     name: "Coil Yard",
     theme: "coil",
-    objective: "Walk the vents. Dash the teeth. Learn LOCK.",
+    objective: "Use the vents. Dash the spikes. Learn LOCK.",
     tasks: [
-      { id: "talk-p", text: "Hear p, the Pilcrow" },
-      { id: "word-lock", text: "Inscribe LOCK" },
+      { id: "talk-p", text: "Talk to p" },
+      { id: "word-lock", text: "Pick up LOCK" },
       { id: "gate-coil", text: "Take the COIL gate" },
     ],
     rows: buildCoil(),
@@ -258,18 +276,18 @@ export const LEVELS: Record<LevelId, LevelMeta> = {
   },
   stage2: {
     id: "stage2",
-    name: "Tetrarch's Right Angles",
+    name: "G's Fort",
     theme: "fort",
-    objective: "Stand with b. Break Tetrarch. Take the last gate.",
+    objective: "Recruit b. Face G, who opened the ports. Take the last gate.",
     tasks: [
-      { id: "recruit-b", text: "Stand with b, the Bulwark" },
-      { id: "word-burn", text: "Inscribe BURN" },
-      { id: "tetrarch", text: "Break Tetrarch" },
+      { id: "recruit-b", text: "Recruit b" },
+      { id: "word-burn", text: "Pick up BURN" },
+      { id: "importer", text: "Defeat G" },
       { id: "gate-chapter", text: "Take the CHAPTER gate" },
     ],
     rows: slice(`
 ################################################################################################
-#................vv............................................................................#
+#.$..............vv............................................................................#
 #................vv................................b.....................R.....................#
 #.........4.............*......F..............##########............========...................#
 #...................########.........8........#........#.......................................#
@@ -277,7 +295,7 @@ export const LEVELS: Record<LevelId, LevelMeta> = {
 #.............====..#..vv..#..................#........#.........====..........................#
 #...................########..................##########............##############.............#
 ##########################################################################################.....#
-#........................................................................................#P.!..#
+#................................5.......................7...............................#P.!..#
 ################################################################################################
 `),
     exit: "win",
