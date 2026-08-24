@@ -1,4 +1,4 @@
-export type LetterId = "c" | "s" | "b";
+export type LetterId = "c" | "s" | "b" | "e" | "r" | "k" | "n" | "t";
 export type Mode =
   | "title"
   | "intro"
@@ -222,6 +222,7 @@ export interface Player {
   shieldFlash: number;
   shotLevel: number;
   shotCd: number;
+  airHop: number;
 }
 
 export interface TaskDef {
@@ -263,6 +264,7 @@ export interface SaveData {
   powerups: string[];
   talked: string[];
   visited: string[];
+  letter: LetterId;
 }
 
 export interface UiSnap {

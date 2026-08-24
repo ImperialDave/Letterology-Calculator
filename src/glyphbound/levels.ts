@@ -50,6 +50,50 @@ type Grid = string[] & {
   floorY: number;
 };
 
+function armTeeth<T extends string[]>(rows: T, floorY?: number): T {
+  const H = rows.length;
+  const W = rows[0]?.length ?? 0;
+  if (H < 3 || W < 3) return rows;
+  let fy = floorY;
+  if (fy == null || fy < 1 || fy >= H - 1) {
+    let best = 0;
+    fy = Math.max(1, H - 3);
+    for (let y = 1; y < H - 1; y++) {
+      let n = 0;
+      for (let x = 0; x < W; x++) if (rows[y][x] === "#") n++;
+      if (n > best) {
+        best = n;
+        fy = y;
+      }
+    }
+  }
+  const keepNear = (x: number, y: number) => {
+    for (let dx = -2; dx <= 2; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        const c = rows[y + dy]?.[x + dx];
+        if (c === "P" || c === "!" || c === "@") return true;
+      }
+    }
+    return false;
+  };
+  for (let y = fy + 1; y < H - 1; y++) {
+    const r = rows[y];
+    let out = "";
+    for (let x = 0; x < W; x++) {
+      const ch = r[x];
+      if (ch !== ".") {
+        out += ch;
+        continue;
+      }
+      const floor = rows[fy][x];
+      if ((floor === "#" || floor === "~") && !keepNear(x, y)) out += "^";
+      else out += ch;
+    }
+    rows[y] = out;
+  }
+  return rows;
+}
+
 function buildExchange(): string[] {
   const W = 184;
   const H = 13;
@@ -127,8 +171,8 @@ function buildExchange(): string[] {
   put(5, 2, "$");
   put(pit + 16, 10, "==");
   put(pit + 16, 9, "$");
-  put(88, 2, "0");
-  return g;
+  put(88, 2, "4");
+  return armTeeth(g, 8);
 }
 
 function buildGutter(): string[] {
@@ -153,6 +197,7 @@ function buildGutter(): string[] {
   gap(30, 11);
   put(34, 7, "%");
   put(38, 6, "====");
+  put(39, 5, "e");
   put(40, 8, "3");
   put(44, 5, "----");
   put(48, 7, "====");
@@ -202,7 +247,7 @@ function buildGutter(): string[] {
   put(25, 2, "$");
   put(164, 6, "==");
   put(164, 5, "$");
-  return g;
+  return armTeeth(g, 9);
 }
 
 function buildCoil(): string[] {
@@ -236,9 +281,11 @@ function buildCoil(): string[] {
   put(62, 8, "6");
   put(66, 7, "----");
   put(70, 5, "====");
-  put(72, 4, "0");
+  put(72, 4, "6");
 
   put(76, 8, "^^^^^^^^");
+  put(80, 6, "====");
+  put(82, 5, "r");
   put(86, 7, "----");
   put(90, 5, "====");
   put(92, 4, "3");
@@ -277,7 +324,7 @@ function buildCoil(): string[] {
   put(158, 4, "====");
   put(160, 3, "$");
   put(40, 8, "5");
-  return g;
+  return armTeeth(g, 9);
 }
 
 function buildLedger(): string[] {
@@ -293,7 +340,7 @@ function buildLedger(): string[] {
     for (let y = y0; y <= y1; y++) put(x, y, "|");
   };
 
-  put(1, 10, "@");
+  put(4, 10, "@");
   put(8, 10, "n");
   put(14, 10, "1");
   put(16, 10, "^^^");
@@ -377,14 +424,15 @@ function buildLedger(): string[] {
   put(200, 4, "====");
   put(202, 3, "i");
 
-  fill(218, 11, 5, ".");
-  fill(218, 12, 5, ".");
-  fill(218, 13, 5, ".");
-  put(220, 10, "!");
-  put(222, 14, "P");
+  for (let y = 12; y <= 14; y++) fill(1, y, 216, "#");
+  fill(218, 11, 6, ".");
+  fill(218, 12, 6, ".");
+  fill(218, 13, 6, ".");
   put(218, 13, "==");
   put(222, 12, "==");
-  return g;
+  put(222, 14, "P");
+  put(220, 10, "!");
+  return armTeeth(g, 11);
 }
 
 const ROLE_TIERS: string[][] = [
@@ -431,6 +479,15 @@ function sprinkleMobs(
     return g[y][x];
   };
   const vacant = (x: number, y: number) => cell(x, y) === ".";
+  const sameNear = (x: number, y: number, ch: string, r = 8) => {
+    for (let dx = -r; dx <= r; dx++) {
+      for (let dy = -3; dy <= 3; dy++) {
+        if (!dx && !dy) continue;
+        if (cell(x + dx, y + dy) === ch) return true;
+      }
+    }
+    return false;
+  };
   const crowded = (x: number, y: number, r = 5) => {
     for (let dx = -r; dx <= r; dx++) {
       for (let dy = -1; dy <= 1; dy++) {
@@ -440,14 +497,27 @@ function sprinkleMobs(
     return false;
   };
   const seat = (x: number, y: number, ch: string) => {
-    if (!vacant(x, y) || crowded(x, y)) return false;
+    if (!vacant(x, y) || crowded(x, y) || sameNear(x, y, ch)) return false;
     put(x, y, ch);
     return true;
   };
 
+  const walkAway = (x: number, y: number) => {
+    const pool = walkPool.length ? walkPool : roles;
+    const fresh = pool.filter((r) => !sameNear(x, y, r));
+    const src = fresh.length ? fresh : pool;
+    return src[Math.floor(rand() * src.length)];
+  };
+  const flyAway = (x: number, y: number) => {
+    const pool = flyPool.length ? flyPool : roles;
+    const fresh = pool.filter((r) => !sameNear(x, y, r));
+    const src = fresh.length ? fresh : pool;
+    return src[Math.floor(rand() * src.length)];
+  };
+
   for (let x = start; x < stop; x++) {
     if (cell(x, floorY) === "#" && vacant(x, floorY - 1) && rand() < density) {
-      if (seat(x, floorY - 1, walk())) x += 5;
+      if (seat(x, floorY - 1, walkAway(x, floorY - 1))) x += 5;
     }
   }
 
@@ -455,7 +525,7 @@ function sprinkleMobs(
     for (let x = start; x < stop; x++) {
       const below = cell(x, y + 1);
       if ((below === "=" || below === "-" || below === "T" || below === "/" || below === "\\") && vacant(x, y) && rand() < density * 0.85) {
-        if (seat(x, y, rand() < 0.45 ? fly() : walk())) x += 4;
+        if (seat(x, y, rand() < 0.45 ? flyAway(x, y) : walkAway(x, y))) x += 4;
       }
     }
   }
@@ -463,7 +533,7 @@ function sprinkleMobs(
   for (let x = start + 2; x < stop; x++) {
     const pit = cell(x, floorY) === "." || cell(x, floorY) === "~" || cell(x, floorY) === "^";
     if (pit && vacant(x, floorY - 3) && rand() < density * 0.7) {
-      if (seat(x, Math.max(2, floorY - 3 - Math.floor(rand() * 2)), fly())) x += 6;
+      if (seat(x, Math.max(2, floorY - 3 - Math.floor(rand() * 2)), flyAway(x, floorY - 3))) x += 6;
     }
   }
 
@@ -471,7 +541,7 @@ function sprinkleMobs(
   for (let i = 0; i < air; i++) {
     const x = start + Math.floor(rand() * Math.max(1, stop - start));
     const y = 2 + Math.floor(rand() * Math.max(1, floorY - 6));
-    seat(x, y, fly());
+    seat(x, y, flyAway(x, y));
   }
 }
 
@@ -481,6 +551,22 @@ function buildGenerated(n: number, rem: boolean): string[] {
     ? REMAINDER_ROLES[Math.min(REMAINDER_ROLES.length - 1, Math.floor((n - 31) / 8))]
     : ROLE_TIERS[Math.min(ROLE_TIERS.length - 1, Math.floor((n - 1) / 3))];
   const pick = () => roles[Math.floor(rand() * roles.length)];
+  const cellAt = (x: number, y: number) => {
+    if (y < 0 || y >= g.length || x < 0 || x >= W) return "#";
+    return g[y][x];
+  };
+  const pickAt = (x: number, y: number) => {
+    const used = new Set<string>();
+    for (let dx = -8; dx <= 8; dx++) {
+      for (let dy = -3; dy <= 3; dy++) {
+        const c = cellAt(x + dx, y + dy);
+        if (MOBS.includes(c)) used.add(c);
+      }
+    }
+    const pool = roles.filter((r) => !used.has(r));
+    const src = pool.length ? pool : roles;
+    return src[Math.floor(rand() * src.length)];
+  };
   const H = 13;
   const fy = 10;
   const rooms = 6 + (n % 4) + (n >= 45 ? 2 : n >= 25 ? 1 : 0);
@@ -846,7 +932,43 @@ function buildGenerated(n: number, rem: boolean): string[] {
   put(end, fy - 1, "P");
   put(end - 2, fy - 1, "i");
   sprinkleMobs(g, n, roles, rand, fy);
-  return g;
+  dedupeMobs(g, roles, rand);
+  return armTeeth(g, fy);
+}
+
+function dedupeMobs(g: Grid, roles: string[], rand: () => number) {
+  const W = g.W;
+  const list: { x: number; y: number; c: string }[] = [];
+  for (let y = 0; y < g.length; y++) {
+    for (let x = 0; x < W; x++) {
+      const c = g[y][x];
+      if (MOBS.includes(c) && c !== "!") list.push({ x, y, c });
+    }
+  }
+  const usedNear = (x: number, y: number, skip: { x: number; y: number }) => {
+    const s = new Set<string>();
+    for (const m of list) {
+      if (m.x === skip.x && m.y === skip.y) continue;
+      if (Math.abs(m.x - x) <= 8 && Math.abs(m.y - y) <= 3) s.add(m.c);
+    }
+    return s;
+  };
+  for (let i = 0; i < list.length; i++) {
+    const a = list[i];
+    for (let j = i + 1; j < list.length; j++) {
+      const b = list[j];
+      if (a.c !== b.c) continue;
+      if (Math.abs(a.x - b.x) + Math.abs(a.y - b.y) > 8) continue;
+      const near = usedNear(b.x, b.y, b);
+      const pool = roles.filter((r) => r !== b.c && !near.has(r));
+      const src = pool.length ? pool : roles.filter((r) => r !== b.c);
+      if (!src.length) continue;
+      const next = src[Math.floor(rand() * src.length)];
+      const row = g[b.y];
+      g[b.y] = row.slice(0, b.x) + next + row.slice(b.x + 1);
+      b.c = next;
+    }
+  }
 }
 
 function buildProgressive(n: number): string[] {
@@ -1002,7 +1124,7 @@ function buildHub(): string[] {
   put(76, fy - 1, ">");
   put(92, fy - 1, "<");
   put(88, fy - 1, "h");
-  return g;
+  return armTeeth(g, fy);
 }
 
 const hand: Record<string, LevelMeta> = {
@@ -1028,10 +1150,10 @@ const hand: Record<string, LevelMeta> = {
     id: "stage1",
     name: "Overcast Exchange",
     theme: "street",
-    objective: "Walk the street. Get the Drop Cap. Drop into the pit.",
+    objective: "Walk the street. Free Gale. Get the Drop Cap. Drop into the pit.",
     tasks: [
       { id: "talk-m", text: "Talk to m" },
-      { id: "recruit-s", text: "Free s" },
+      { id: "recruit-s", text: "Free s — Gale" },
       { id: "word-wall", text: "Pick up WALL" },
       { id: "drop-cap", text: "Get the Drop Cap" },
       { id: "dualis", text: "Defeat Dualis" },
@@ -1045,9 +1167,10 @@ const hand: Record<string, LevelMeta> = {
     id: "stage3",
     name: "Gutter Press",
     theme: "canal",
-    objective: "Build shelves across the gaps. Learn RISE. Reach the gate.",
+    objective: "Build shelves across the gaps. Recruit Tide. Learn RISE. Reach the gate.",
     tasks: [
       { id: "talk-u", text: "Talk to u" },
+      { id: "recruit-e", text: "Recruit e — Tide" },
       { id: "word-rise", text: "Pick up RISE" },
       { id: "cross-gutter", text: "Cross the last canal" },
       { id: "gate-press", text: "Take the PRESS gate" },
@@ -1060,9 +1183,10 @@ const hand: Record<string, LevelMeta> = {
     id: "stage4",
     name: "Coil Yard",
     theme: "coil",
-    objective: "Use the vents. Dash the spikes. Learn LOCK.",
+    objective: "Use the vents. Recruit Ember. Dash the spikes. Learn LOCK.",
     tasks: [
       { id: "talk-p", text: "Talk to p" },
+      { id: "recruit-r", text: "Recruit r — Ember" },
       { id: "word-lock", text: "Pick up LOCK" },
       { id: "gate-coil", text: "Take the COIL gate" },
     ],
@@ -1074,14 +1198,14 @@ const hand: Record<string, LevelMeta> = {
     id: "stage2",
     name: "G's Fort",
     theme: "fort",
-    objective: "Recruit b. Face G, who opened the ports. Take the CHAPTER gate.",
+    objective: "Recruit b — Stone. Face G, who opened the ports. Take the CHAPTER gate.",
     tasks: [
-      { id: "recruit-b", text: "Recruit b" },
+      { id: "recruit-b", text: "Recruit b — Stone" },
       { id: "word-burn", text: "Pick up BURN" },
       { id: "importer", text: "Defeat G" },
       { id: "gate-chapter", text: "Take the CHAPTER gate" },
     ],
-    rows: slice(`
+    rows: armTeeth(slice(`
 ################################################################################################
 #..............................................................................................#
 #.$..............vv..............|.............................................................#
@@ -1092,9 +1216,9 @@ const hand: Record<string, LevelMeta> = {
 #.............====..#..vv..#....^^^^..........#........#.........====..........................#
 #....^^.............########......5...........##########...7........##############.............#
 ##########################################################################################.....#
-#................................5.......................7...............................#P.!..#
+#................................3.......................9...............................#P.!..#
 ################################################################################################
-`),
+`)),
     exit: "hub",
     index: 2,
   },

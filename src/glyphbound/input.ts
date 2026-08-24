@@ -267,6 +267,10 @@ export class Input {
     if (this.edge("Digit2") || (this.buttons.has("p2") && !this.prevButtons.has("p2"))) a.swap = 2;
     if (this.edge("Digit3") || (this.buttons.has("p3") && !this.prevButtons.has("p3"))) a.swap = 3;
     if (this.edge("Digit4") || (this.buttons.has("p4") && !this.prevButtons.has("p4"))) a.swap = 4;
+    if (this.edge("Digit5") || (this.buttons.has("p5") && !this.prevButtons.has("p5"))) a.swap = 5;
+    if (this.edge("Digit6") || (this.buttons.has("p6") && !this.prevButtons.has("p6"))) a.swap = 6;
+    if (this.edge("Digit7") || (this.buttons.has("p7") && !this.prevButtons.has("p7"))) a.swap = 7;
+    if (this.edge("Digit8") || (this.buttons.has("p8") && !this.prevButtons.has("p8"))) a.swap = 8;
     this.prev = new Set([...this.keys, ...this.forced]);
     this.prevButtons = new Set(this.buttons);
     this.latched.clear();

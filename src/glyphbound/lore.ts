@@ -43,9 +43,9 @@ export const LORE: Record<LoreId, LoreDef> = {
     lines: [
       "Your shield blocks every hit. It comes back on its own. Do not forget that.",
       "G used to be one of us. He opened the ports and let the numbers land. He still wears a letter shape so the rest of us will hesitate.",
-      "Get the Drop Cap in the Overcast Exchange. It lets you turn into capital C. Capital letters hit harder and can break certain walls.",
-      "The first five doors on the left are closed chapters. Each one is a single ledger. It will never be a different page. After you close all five, walk right — through the columns — into the Unbound Sentence. That gold hall is the only door that keeps opening new ledgers, all the way to 60.",
-      "Talk to everyone in the Stacks. Each of us keeps a piece of the map the Dominion tried to erase.",
+      "Get the Drop Cap in the Overcast Exchange. After that, Shift capitalizes whoever is in play. Every letter in the cell has a capital: a thicker stroke, a louder skill. Capitals will not fit a vent.",
+      "The first five doors on the left are closed chapters. Each one is a single ledger. Five letters wait in those five pages: c Aether at the start, s Gale in the Exchange, b Stone in the Fort, Tide in the Press, Ember in the Coil.",
+      "Pulse is Tide. A ring that drinks ink back and stills what it touches. Capital E is a well — a shelf of water, a heart, a freeze. Canals will not take me. If I am still sitting in the Stacks, I am teaching. Over a canal, I am joining.",
     ],
   },
   t: {
@@ -63,8 +63,9 @@ export const LORE: Record<LoreId, LoreDef> = {
     glyph: "r",
     name: "r",
     lines: [
-      "I carried messages between the districts. The numbers called them errors and deleted the routes. Now I wait here.",
-      "If you reach the painted C on a high roof, stand in the bowl. That is a Case Font. You need the Drop Cap first.",
+      "I carried messages between the districts. The numbers called them errors and deleted the routes. I am Ember now. Heat is the only route they could not delete.",
+      "Flare is a burning dash. It leaves fire on the floor. Capital R is Inferno — longer, hotter, still a courier.",
+      "The Coil Yard is full of spikes. Dash them. If you reach the painted C on a high roof, stand in the bowl. That is a Case Font. You need the Drop Cap first.",
       "When a stage ends, the gate will not open while a warden still stands. Drop the warden. Then the page turns.",
     ],
   },
@@ -95,17 +96,17 @@ export const LORE: Record<LoreId, LoreDef> = {
     glyph: "s",
     name: "s",
     lines: [
-      "I am not their snake. Put me in your party. My skill cuts in a way their math does not see.",
-      "I move fast. Use me for gaps and for getting behind slow tanks.",
-      "Vents are narrow. Stay small. Capital C and b are too wide for some of the shafts deeper in.",
+      "I am not their snake. I am Gale. Put me in the cell. Cut is a wind the count cannot divide. Capital S is a scythe — two blades.",
+      "Jump again in the air. Once. Capital S can hold a glide if you keep the jump held on the way down.",
+      "I move fast. Use me for gaps and for getting behind slow tanks. Vents are mine. Capitals and b are too wide.",
     ],
   },
   b: {
     glyph: "b",
     name: "b",
     lines: [
-      "I held a door against the first landing. I will hold this one too.",
-      "Stand behind me when a boss hits hard. My brace skill puts a wall in front of us.",
+      "I held a door against the first landing. I am Stone. I will hold this one too.",
+      "Brace puts a wall in front of us. Capital B is Bulwark — and from the air, Meteor. Land on them.",
       "G still looks like a letter on purpose. Do not hesitate. He chose the ports. We choose the page.",
     ],
   },

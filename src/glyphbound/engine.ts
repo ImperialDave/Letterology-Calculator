@@ -17,6 +17,7 @@ import { AudioBus } from "./audio";
 import { Input } from "./input";
 import { lastClearedId, LEVELS, nextStageId, STAGE_COUNT, type LevelId } from "./levels";
 import { collectedLore, LORE, loreIdFromGlyph } from "./lore";
+import { KITS, RECRUIT_LETTERS } from "./roster";
 import { clearSave, defaultSave, loadSave, writeSave } from "./save";
 import {
   STEP,
@@ -51,10 +52,12 @@ function padBox(r: { x: number; y: number; w: number; h: number }, px: number, p
 }
 
 function bodySize(letter: LetterId, capital: boolean): { w: number; h: number } {
-  if (letter === "s") return { w: 26, h: 34 };
-  if (letter === "b") return { w: 36, h: 48 };
-  if (capital) return { w: 40, h: 52 };
-  return { w: 28, h: 36 };
+  const k = KITS[letter] ?? KITS.c;
+  return capital ? { w: k.capW, h: k.capH } : { w: k.w, h: k.h };
+}
+
+function isLarge(letter: LetterId, capital: boolean) {
+  return capital || KITS[letter]?.large === true;
 }
 
 export class GameEngine {
@@ -103,6 +106,9 @@ export class GameEngine {
   spawnY = 80;
   checkX = 80;
   checkY = 80;
+  lastSafeX = 80;
+  lastSafeY = 80;
+  recallCd = 0;
   worldW = 1000;
   worldH = 600;
   ui: (s: UiSnap) => void;
@@ -159,16 +165,24 @@ export class GameEngine {
 
   private syncVitals() {
     const p = this.player;
-    p.maxShield = this.save.maxShield + (p.letter === "c" && p.capital ? 1 : 0);
+    const kit = KITS[p.letter] ?? KITS.c;
+    p.maxShield = this.save.maxShield + (p.capital ? 1 : 0) - (p.letter === "s" || p.letter === "r" ? 1 : 0);
+    if (p.maxShield < 2) p.maxShield = 2;
     if (p.shield > p.maxShield) p.shield = p.maxShield;
     p.shotLevel = this.save.shotLevel;
-    p.maxInk = 40 + this.save.words.length * 8;
+    p.maxInk = 40 + this.save.words.length * 8 + (p.letter === "t" || p.letter === "e" ? 8 : 0) - (p.letter === "r" ? 8 : 0);
+    const extra = (p.capital ? 2 : 0) + (this.save.relics.includes("spine") ? 1 : 0);
+    p.maxHp = kit.hp + extra;
+    if (p.hp > p.maxHp) p.hp = p.maxHp;
   }
 
   private makePlayer(): Player {
     const cap = this.save.capital && this.save.hasCapital;
-    const sz = bodySize("c", cap);
-    const maxShield = this.save.maxShield + (cap ? 1 : 0);
+    const startLetter =
+      this.save.letter && this.save.party.includes(this.save.letter) ? this.save.letter : "c";
+    const sz = bodySize(startLetter, cap);
+    const kit = KITS[startLetter] ?? KITS.c;
+    const maxShield = this.save.maxShield + (cap ? 1 : 0) - (startLetter === "s" || startLetter === "r" ? 1 : 0);
     return {
       x: 80,
       y: 80,
@@ -176,13 +190,13 @@ export class GameEngine {
       vy: 0,
       w: sz.w,
       h: sz.h,
-      letter: "c",
+      letter: startLetter,
       capital: cap,
       facing: 1,
-      hp: this.save.hp || 6,
-      maxHp: cap || this.save.relics.includes("spine") ? 8 : 6,
+      hp: this.save.hp || kit.hp,
+      maxHp: kit.hp + (cap ? 2 : 0) + (this.save.relics.includes("spine") ? 1 : 0),
       ink: this.save.ink > 0 ? this.save.ink : 18,
-      maxInk: 40 + this.save.words.length * 8,
+      maxInk: 40 + this.save.words.length * 8 + (startLetter === "e" ? 8 : 0) - (startLetter === "r" ? 8 : 0),
       coyote: 0,
       jumpBuf: 0,
       jumpCut: false,
@@ -197,29 +211,90 @@ export class GameEngine {
       stretch: 1,
       anim: 0,
       hurtFlash: 0,
-      shield: maxShield,
-      maxShield,
+      shield: Math.max(2, maxShield),
+      maxShield: Math.max(2, maxShield),
       shieldCd: 3,
       shieldFlash: 0,
       shotLevel: this.save.shotLevel || 1,
       shotCd: 0,
+      airHop: startLetter === "s" ? 1 : 0,
     };
   }
 
   private applySize() {
     const p = this.player;
-    const sz = bodySize(p.letter, p.letter === "c" && p.capital);
+    const sz = bodySize(p.letter, p.capital);
     const feet = p.y + p.h;
     const mid = p.x + p.w / 2;
     p.w = sz.w;
     p.h = sz.h;
     p.y = feet - p.h;
     p.x = mid - p.w / 2;
-    const large = p.letter === "b" || (p.letter === "c" && p.capital);
-    if (this.solids.length && this.blockedAt(p.x, p.y - 1, p.w, p.h + 1, large)) {
-      for (let i = 0; i < 8 && this.blockedAt(p.x, p.y, p.w, p.h, large); i++) p.y += 1;
+    const large = isLarge(p.letter, p.capital);
+    if (this.solids.length && this.blockedAt(p.x, p.y, p.w, p.h, large)) {
+      for (let i = 0; i < 28 && this.blockedAt(p.x, p.y, p.w, p.h, large); i++) p.y -= 2;
     }
     this.syncVitals();
+  }
+
+  private settleOnFloor() {
+    const p = this.player;
+    if (!this.solids.length) return;
+    const large = isLarge(p.letter, p.capital);
+    for (let i = 0; i < 96; i++) {
+      if (this.blockedAt(p.x + 3, p.y + p.h, p.w - 6, 4, large)) break;
+      p.y += 2;
+      if (p.y > this.worldH) break;
+    }
+    for (let i = 0; i < 32 && this.blockedAt(p.x, p.y, p.w, p.h, large); i++) p.y -= 2;
+    if (p.x < TILE) p.x = TILE + 4;
+    if (p.x + p.w > this.worldW - TILE) p.x = this.worldW - TILE - p.w - 4;
+  }
+
+  private markSafeGround() {
+    const p = this.player;
+    if (!p.grounded || p.vy < -20) return;
+    const large = isLarge(p.letter, p.capital);
+    if (!this.blockedAt(p.x + 4, p.y + p.h, p.w - 8, 6, large)) return;
+    if (p.y + p.h > this.worldH - TILE * 1.5) return;
+    this.lastSafeX = p.x;
+    this.lastSafeY = p.y;
+  }
+
+  private watchBounds() {
+    const p = this.player;
+    if (this.mode !== "play" && this.mode !== "hub") return;
+    if (this.recallCd > 0) return;
+    const fallen = p.y > this.lastSafeY + 150 && !p.grounded;
+    const offBottom = p.y + p.h > this.worldH - 6;
+    const offSide = p.x + p.w < -24 || p.x > this.worldW + 24;
+    if (fallen || offBottom || offSide) this.recallToMap();
+  }
+
+  private recallToMap() {
+    const p = this.player;
+    let x = this.lastSafeX;
+    let y = this.lastSafeY;
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      x = this.checkX || this.spawnX;
+      y = this.checkY || this.spawnY;
+    }
+    p.x = x;
+    p.y = y;
+    p.vx = 0;
+    p.vy = 0;
+    p.invuln = 1.1;
+    p.squash = 0.82;
+    p.stretch = 1.08;
+    this.recallCd = 0.55;
+    this.settleOnFloor();
+    this.lastSafeX = p.x;
+    this.lastSafeY = p.y;
+    this.camX = p.x - VIEW_W * 0.35;
+    this.camY = p.y - VIEW_H * 0.62;
+    this.burst(p.x + p.w / 2, p.y + p.h / 2, "#e8d48a", 14, "glyph");
+    this.audio.sfxWord();
+    this.say("The page pulls you back.");
   }
 
   loadLevel(id: LevelId, atCheck = false) {
@@ -309,11 +384,12 @@ export class GameEngine {
             M: "radix",
           };
           this.enemies.push(this.spawnEnemy(ch === "!" ? this.bossKindFor(id) : map[ch], x, y));
-        } else if (ch === "s" || ch === "b") {
-          if (!this.save.party.includes(ch)) {
-            const def = LORE[ch];
+        } else if (id !== "hub" && RECRUIT_LETTERS.includes(ch as LetterId)) {
+          const rid = ch as LetterId;
+          if (!this.save.party.includes(rid)) {
+            const def = LORE[rid as keyof typeof LORE];
             this.npcs.push({
-              id: "recruit-" + ch,
+              id: "recruit-" + rid,
               glyph: def.glyph,
               name: def.name,
               x: x + 4,
@@ -324,7 +400,7 @@ export class GameEngine {
             });
             this.pickups.push({
               kind: "recruit",
-              id: ch,
+              id: rid,
               x: x + 6,
               y: y,
               w: 24,
@@ -520,8 +596,12 @@ export class GameEngine {
     p.vy = 0;
     p.invuln = 0.6;
     this.applySize();
+    this.settleOnFloor();
+    this.lastSafeX = p.x;
+    this.lastSafeY = p.y;
+    this.recallCd = 0;
     this.camX = p.x - VIEW_W * 0.35;
-    this.camY = p.y - VIEW_H * 0.6;
+    this.camY = p.y - VIEW_H * 0.62;
     this.mode = id === "hub" ? "hub" : "play";
     this.save.stage = id;
     if (!this.save.visited.includes(id)) this.save.visited.push(id);
@@ -607,41 +687,41 @@ export class GameEngine {
 
   private spawnEnemy(kind: EnemyKind, x: number, y: number): Enemy {
     const sizes: Record<EnemyKind, { w: number; h: number; hp: number; name: string }> = {
-      one: { w: 26, h: 44, hp: 3, name: "1" },
+      one: { w: 26, h: 44, hp: 2, name: "1" },
       dummy: { w: 26, h: 44, hp: 99, name: "Dummy 1" },
-      zero: { w: 36, h: 36, hp: 4, name: "0" },
-      two: { w: 38, h: 42, hp: 5, name: "2" },
-      three: { w: 30, h: 40, hp: 4, name: "3" },
-      four: { w: 40, h: 48, hp: 6, name: "4" },
-      five: { w: 42, h: 52, hp: 10, name: "5" },
-      six: { w: 34, h: 46, hp: 5, name: "6" },
-      seven: { w: 28, h: 56, hp: 6, name: "7" },
-      eight: { w: 38, h: 50, hp: 8, name: "8" },
-      nine: { w: 34, h: 40, hp: 5, name: "9" },
-      dualis: { w: 64, h: 72, hp: 28, name: "Dualis · 2" },
-      tetrarch: { w: 78, h: 88, hp: 40, name: "Tetrarch · 4" },
-      importer: { w: 70, h: 80, hp: 38, name: "G the Importer" },
-      nullis: { w: 72, h: 72, hp: 44, name: "Nullis · 0" },
-      triad: { w: 36, h: 42, hp: 6, name: "3-Splitter" },
-      nullring: { w: 42, h: 42, hp: 8, name: "0-Iris" },
-      mobius: { w: 32, h: 34, hp: 7, name: "8-Coil" },
-      summoner: { w: 38, h: 48, hp: 9, name: "6-Caller" },
-      gradient: { w: 36, h: 40, hp: 7, name: "7-Fall" },
-      crossseal: { w: 44, h: 44, hp: 9, name: "4-Seal" },
-      archivist: { w: 34, h: 46, hp: 8, name: "5-Clerk" },
-      endmark: { w: 82, h: 86, hp: 56, name: "End-Mark · 8" },
-      plus: { w: 40, h: 42, hp: 8, name: "+" },
-      minus: { w: 38, h: 28, hp: 7, name: "−" },
-      times: { w: 40, h: 40, hp: 9, name: "×" },
-      divide: { w: 36, h: 44, hp: 8, name: "÷" },
-      pi: { w: 38, h: 42, hp: 9, name: "π" },
-      radix: { w: 24, h: 28, hp: 4, name: "." },
-      summand: { w: 76, h: 80, hp: 42, name: "Summand · +" },
-      difference: { w: 74, h: 70, hp: 44, name: "Difference · −" },
-      product: { w: 78, h: 78, hp: 48, name: "Product · ×" },
-      quotient: { w: 72, h: 84, hp: 50, name: "Quotient · ÷" },
-      infinitum: { w: 86, h: 70, hp: 54, name: "Infinitum · ∞" },
-      remainder: { w: 90, h: 88, hp: 64, name: "Remainder · %" },
+      zero: { w: 36, h: 36, hp: 6, name: "0" },
+      two: { w: 38, h: 42, hp: 8, name: "2" },
+      three: { w: 30, h: 40, hp: 5, name: "3" },
+      four: { w: 40, h: 48, hp: 11, name: "4" },
+      five: { w: 42, h: 52, hp: 16, name: "5" },
+      six: { w: 34, h: 46, hp: 7, name: "6" },
+      seven: { w: 28, h: 56, hp: 5, name: "7" },
+      eight: { w: 38, h: 50, hp: 14, name: "8" },
+      nine: { w: 34, h: 40, hp: 7, name: "9" },
+      dualis: { w: 64, h: 72, hp: 36, name: "Dualis · 2" },
+      tetrarch: { w: 78, h: 88, hp: 64, name: "Tetrarch · 4" },
+      importer: { w: 70, h: 80, hp: 62, name: "G the Importer" },
+      nullis: { w: 72, h: 72, hp: 74, name: "Nullis · 0" },
+      triad: { w: 36, h: 42, hp: 8, name: "3-Splitter" },
+      nullring: { w: 42, h: 42, hp: 11, name: "0-Iris" },
+      mobius: { w: 32, h: 34, hp: 9, name: "8-Coil" },
+      summoner: { w: 38, h: 48, hp: 13, name: "6-Caller" },
+      gradient: { w: 36, h: 40, hp: 9, name: "7-Fall" },
+      crossseal: { w: 44, h: 44, hp: 12, name: "4-Seal" },
+      archivist: { w: 34, h: 46, hp: 11, name: "5-Clerk" },
+      endmark: { w: 82, h: 86, hp: 92, name: "End-Mark · 8" },
+      plus: { w: 40, h: 42, hp: 11, name: "+" },
+      minus: { w: 38, h: 28, hp: 10, name: "−" },
+      times: { w: 40, h: 40, hp: 12, name: "×" },
+      divide: { w: 36, h: 44, hp: 11, name: "÷" },
+      pi: { w: 38, h: 42, hp: 12, name: "π" },
+      radix: { w: 24, h: 28, hp: 3, name: "." },
+      summand: { w: 76, h: 80, hp: 78, name: "Summand · +" },
+      difference: { w: 74, h: 70, hp: 82, name: "Difference · −" },
+      product: { w: 78, h: 78, hp: 88, name: "Product · ×" },
+      quotient: { w: 72, h: 84, hp: 90, name: "Quotient · ÷" },
+      infinitum: { w: 86, h: 70, hp: 102, name: "Infinitum · ∞" },
+      remainder: { w: 90, h: 88, hp: 118, name: "Remainder · %" },
     };
     const s = sizes[kind];
     const hp = this.hard ? Math.ceil(s.hp * 1.35) : s.hp;
@@ -710,6 +790,7 @@ export class GameEngine {
     this.save.muted = this.audio.muted;
     this.save.hard = this.hard;
     this.save.shotLevel = p.shotLevel;
+    this.save.letter = p.letter;
     writeSave(this.save);
   }
 
@@ -814,7 +895,8 @@ export class GameEngine {
     if (this.swapCd > 0) this.swapCd -= dt;
     this.followCam(dt);
     this.trauma = Math.max(0, this.trauma - dt * 1.8);
-    if (this.player.y > this.worldH + 40) this.hurt(2, 0);
+    this.recallCd = Math.max(0, this.recallCd - dt);
+    this.watchBounds();
     this.maybeHud();
     this.noteTasks();
   }
@@ -830,8 +912,9 @@ export class GameEngine {
 
   private physicsPlayer(dt: number, a: ReturnType<Input["poll"]>) {
     const p = this.player;
-    const large = p.letter === "b" || (p.letter === "c" && p.capital);
-    const spd = p.letter === "s" ? 240 : p.letter === "b" ? 158 : p.capital ? 200 : 218;
+    const large = isLarge(p.letter, p.capital);
+    const kit = KITS[p.letter] ?? KITS.c;
+    const spd = kit.spd + (p.capital ? -12 : 0);
     if (p.roll <= 0) {
       if (a.moveX !== 0) p.facing = a.moveX > 0 ? 1 : -1;
       const target = a.moveX * spd;
@@ -848,18 +931,32 @@ export class GameEngine {
     }
     p.vy += (p.vy < 0 ? gUp : gDown) * dt;
     if (p.vy > 860) p.vy = 860;
+    if (p.letter === "s" && p.capital && a.jumpHeld && !p.grounded && p.vy > 60) {
+      p.vy = 70;
+    }
+    if (p.grounded) p.airHop = p.letter === "s" ? 1 : 0;
     if (p.grounded) p.coyote = 0.1;
     else p.coyote -= dt;
     if (a.jump) p.jumpBuf = 0.12;
     else p.jumpBuf -= dt;
     if (p.jumpBuf > 0 && p.coyote > 0) {
-      p.vy = p.letter === "b" ? -455 : -522;
+      p.vy = -kit.jump;
       p.grounded = false;
       p.coyote = 0;
       p.jumpBuf = 0;
       p.jumpCut = false;
       p.squash = 0.74;
       this.audio.sfxJump();
+    } else if (p.jumpBuf > 0 && p.letter === "s" && p.airHop > 0 && !p.grounded) {
+      p.vy = -(kit.jump * (p.capital ? 0.92 : 0.8));
+      p.airHop = 0;
+      p.jumpBuf = 0;
+      p.jumpCut = false;
+      p.squash = 0.8;
+      p.stretch = 0.84;
+      this.audio.sfxJump();
+      this.burst(p.x + p.w / 2, p.y + p.h, "#7fd0ff", 8, "glyph");
+      this.say("GALE");
     } else if (p.jumpBuf > 0 && this.save.words.includes("FOLD") && this.wallCoyote > 0 && !p.grounded) {
       p.vy = -505;
       p.vx = this.wallDir * 240;
@@ -873,7 +970,21 @@ export class GameEngine {
     }
     if (p.roll > 0) {
       p.roll -= dt;
-      p.vx = p.facing * (p.capital ? 250 : 270);
+      p.vx = p.facing * (p.letter === "r" ? (p.capital ? 360 : 310) : p.capital ? 250 : 270);
+      if (p.letter === "r") {
+        for (const e of this.enemies) {
+          if (e.alive && aabb(p, e) && e.hurt <= 0) this.hitEnemy(e, p.capital ? 3 : 2, p.facing);
+        }
+        if (Math.floor(this.time * 14) !== Math.floor((this.time - dt) * 14)) {
+          this.burns.push({
+            x: p.x + 2,
+            y: p.y + p.h - 12,
+            w: p.w - 4,
+            h: 12,
+            life: p.capital ? 1.35 : 0.7,
+          });
+        }
+      }
     }
     p.invuln = Math.max(0, p.invuln - dt);
     p.hurtFlash = Math.max(0, p.hurtFlash - dt);
@@ -892,7 +1003,7 @@ export class GameEngine {
     } else {
       p.shieldCd = 1.35;
     }
-    p.ink = Math.min(p.maxInk, p.ink + 5.5 * dt);
+    p.ink = Math.min(p.maxInk, p.ink + kit.inkRate * dt);
     const prevAnim = p.anim;
     const walkSpd = Math.abs(p.vx);
     p.anim += dt * (walkSpd > 24 ? 7.5 + Math.min(6, walkSpd / 40) : 2.6);
@@ -909,6 +1020,7 @@ export class GameEngine {
     const wasGround = p.grounded;
     const fall = p.vy;
     this.moveActor(p, dt, large, a.down);
+    this.markSafeGround();
     const wallL = this.blockedAt(p.x - 3, p.y + 6, 4, p.h - 12, large);
     const wallR = this.blockedAt(p.x + p.w - 1, p.y + 6, 4, p.h - 12, large);
     if (!p.grounded && (wallL || wallR)) {
@@ -933,6 +1045,9 @@ export class GameEngine {
       }
     }
     if (p.grounded && !wasGround) {
+      if ((p.letter === "k" || p.letter === "b") && p.capital && p.special > 0) {
+        this.playerWave(p.x + p.w / 2, p.y + p.h, p.letter === "b" ? 3 : 3);
+      }
       if (fall > 280) {
         p.squash = 1.22;
         this.audio.sfxLand();
@@ -987,11 +1102,6 @@ export class GameEngine {
     if (a.y < 0) {
       a.y = 0;
       if (a.vy < 0) a.vy = 0;
-    }
-    if (this.worldH > 0 && a.y + a.h > this.worldH) {
-      a.y = this.worldH - a.h;
-      a.vy = 0;
-      a.grounded = true;
     }
   }
 
@@ -1086,14 +1196,33 @@ export class GameEngine {
 
   private fireShot() {
     const p = this.player;
+    const kit = KITS[p.letter] ?? KITS.c;
     const lv = Math.max(1, Math.min(4, p.shotLevel));
-    const dmg = lv >= 4 ? 3 : lv >= 2 ? 2 : 1;
-    const spd = 270 + lv * 45;
-    const r = 4 + lv * 0.8;
-    const kind = lv >= 4 ? "solar" : lv >= 3 ? "venom" : lv >= 2 ? "fang" : "crescent";
-    const pierce = lv >= 4 ? 2 : lv >= 3 ? 1 : 0;
-    const n = lv >= 4 ? 3 : lv >= 3 ? 2 : 1;
-    const spreads = n === 1 ? [0] : n === 2 ? [-0.16, 0.16] : [-0.28, 0, 0.28];
+    const dmg = Math.max(1, Math.round((lv >= 4 ? 3 : lv >= 2 ? 2 : 1) * kit.shotMul));
+    const L = p.letter;
+    const spd =
+      (270 + lv * 45) *
+      (L === "s" ? 1.18 : L === "b" || L === "k" ? 0.82 : L === "r" ? 1.08 : 1);
+    const r = 4 + lv * 0.8 + (L === "b" || L === "k" ? 2 : 0);
+    const kind =
+      L === "e"
+        ? "frost"
+        : L === "r"
+          ? "ember"
+          : L === "s"
+            ? "wind"
+            : L === "t"
+              ? "nib"
+              : lv >= 4
+                ? "solar"
+                : lv >= 3
+                  ? "venom"
+                  : lv >= 2
+                    ? "fang"
+                    : "crescent";
+    const pierce = L === "s" ? Math.max(1, lv >= 3 ? 2 : 1) : L === "e" ? 0 : lv >= 4 ? 2 : lv >= 3 ? 1 : 0;
+    const n = L === "t" || L === "e" ? 1 : L === "r" && p.capital ? 2 : lv >= 4 ? 3 : lv >= 3 ? 2 : 1;
+    const spreads = n === 1 ? [0] : n === 2 ? [-0.12, 0.12] : [-0.28, 0, 0.28];
     const mouthX = p.x + p.w / 2 + p.facing * (p.w * 0.55);
     const mouthY = p.y + p.h * 0.4;
     for (const spr of spreads) {
@@ -1101,57 +1230,67 @@ export class GameEngine {
         x: mouthX,
         y: mouthY,
         vx: p.facing * spd,
-        vy: spr * spd,
+        vy: spr * spd + (L === "r" ? 40 : 0),
         r,
         from: "player",
-        dmg,
-        life: 0.85 + lv * 0.08,
+        dmg: L === "t" ? 1 : dmg,
+        life: (0.85 + lv * 0.08) * kit.shotLife,
         kind,
         alive: true,
         pierce,
       });
     }
     this.audio.sfxShot();
-    this.burst(mouthX, mouthY, lv >= 4 ? "#e8d48a" : "#5ee0c0", 4, "spark");
+    this.burst(mouthX, mouthY, kit.glow, 4, L === "r" ? "ember" : "spark");
   }
 
-  private updateCombat(dt: number, a: ReturnType<Input["poll"]>) {
+  private castSpecial() {
     const p = this.player;
-    const cd = p.letter === "b" ? 0.42 : 0.34 - Math.min(3, p.shotLevel - 1) * 0.04;
-    if ((a.attack || a.attackHeld) && p.shotCd <= 0 && p.roll <= 0) {
-      p.attack = 0.16;
-      p.shotCd = cd;
-      p.squash = 0.92;
-      this.fireShot();
-    }
-    if (a.special && p.specialCd <= 0 && p.roll <= 0) {
-      if (p.letter === "c" && !p.capital) {
-        p.roll = 0.28;
-        p.invuln = Math.max(p.invuln, 0.28);
-        p.specialCd = 0.7;
-        p.squash = 0.78;
-        p.stretch = 0.84;
-        this.audio.sfxJump();
-      } else if (p.letter === "c" && p.capital) {
-        this.walls.push({
-          x: p.x + (p.facing > 0 ? p.w : -46),
-          y: p.y - 10,
-          w: 46,
-          h: p.h + 20,
-          life: 2.8,
-          max: 2.8,
-          kind: "wall",
-        });
-        p.specialCd = 1.4;
-        this.audio.sfxWord();
-        this.say("CAGE");
-      } else if (p.letter === "s") {
+    const cap = p.capital;
+    p.special = 0.28;
+    const L = p.letter;
+    if (L === "c" && !cap) {
+      p.roll = 0.28;
+      p.invuln = Math.max(p.invuln, 0.28);
+      p.specialCd = 0.7;
+      p.squash = 0.78;
+      p.stretch = 0.84;
+      this.audio.sfxJump();
+      this.say("DASH");
+    } else if (L === "c" && cap) {
+      this.walls.push({
+        x: p.x + (p.facing > 0 ? p.w : -46),
+        y: p.y - 10,
+        w: 46,
+        h: p.h + 20,
+        life: 2.8,
+        max: 2.8,
+        kind: "wall",
+      });
+      p.specialCd = 1.4;
+      this.audio.sfxWord();
+      this.say("CAGE");
+    } else if (L === "s") {
+      this.bullets.push({
+        x: p.x + p.w / 2,
+        y: p.y + 8,
+        vx: p.facing * 360,
+        vy: cap ? -90 : 0,
+        r: cap ? 10 : 7,
+        from: "player",
+        dmg: cap ? 3 : 2,
+        life: cap ? 1.15 : 0.9,
+        kind: "wind",
+        alive: true,
+        pierce: cap ? 3 : 1,
+      });
+      if (cap) {
         this.bullets.push({
           x: p.x + p.w / 2,
-          y: p.y + 8,
+          y: p.y + 10,
           vx: p.facing * 320,
-          vy: 0,
-          r: 7,
+          vy: 100,
+          r: 8,
           from: "player",
           dmg: 2,
           life: 0.9,
@@ -1159,19 +1298,187 @@ export class GameEngine {
           alive: true,
           pierce: 1,
         });
-        p.specialCd = 0.9;
-        this.audio.sfxSlash();
-      } else if (p.letter === "b") {
-        this.walls.push({ x: p.x - 8, y: p.y + 4, w: p.w + 16, h: p.h - 4, life: 1.8, max: 1.8, kind: "wall" });
-        p.specialCd = 1.6;
-        this.audio.sfxLand();
       }
+      p.specialCd = cap ? 1.05 : 0.9;
+      this.audio.sfxSlash();
+      this.say(cap ? "SCYTHE" : "CUT");
+    } else if (L === "b") {
+      if (cap && !p.grounded) {
+        p.vy = 640;
+        p.special = 0.55;
+        p.specialCd = 1.35;
+        p.squash = 1.2;
+        this.say("METEOR");
+        this.audio.sfxLand();
+        return;
+      }
+      this.walls.push({
+        x: p.x - (cap ? 16 : 8),
+        y: p.y + (cap ? 0 : 4),
+        w: p.w + (cap ? 32 : 16),
+        h: p.h - (cap ? 0 : 4),
+        life: cap ? 2.6 : 1.8,
+        max: cap ? 2.6 : 1.8,
+        kind: "wall",
+      });
+      if (cap) this.playerWave(p.x + p.w / 2, p.y + p.h - 6, 2);
+      p.specialCd = cap ? 1.9 : 1.6;
+      this.audio.sfxLand();
+      this.say(cap ? "BULWARK" : "BRACE");
+    } else if (L === "e") {
+      const rad = cap ? 86 : 56;
+      const cx = p.x + p.w / 2;
+      const cy = p.y + p.h / 2;
+      this.burst(cx, cy, "#6ec8e8", cap ? 20 : 12, "glyph");
+      for (const e of this.enemies) {
+        if (!e.alive) continue;
+        const d = Math.hypot(e.x + e.w / 2 - cx, e.y + e.h / 2 - cy);
+        if (d < rad) {
+          this.hitEnemy(e, cap ? 2 : 1, p.facing);
+          e.stun = Math.max(e.stun, cap ? 1.4 : 0.7);
+        }
+      }
+      p.ink = Math.min(p.maxInk, p.ink + (cap ? 16 : 10));
+      if (cap && p.hp < p.maxHp) p.hp += 1;
+      this.walls.push({
+        x: p.x - (cap ? 18 : 6),
+        y: p.y + p.h - 4,
+        w: p.w + (cap ? 36 : 12),
+        h: 10,
+        life: cap ? 4.2 : 2.4,
+        max: cap ? 4.2 : 2.4,
+        kind: "plat",
+      });
+      p.specialCd = cap ? 2.3 : 1.5;
+      this.audio.sfxWord();
+      this.say(cap ? "WELL" : "PULSE");
+    } else if (L === "r") {
+      p.roll = cap ? 0.48 : 0.34;
+      p.invuln = Math.max(p.invuln, p.roll);
+      p.specialCd = cap ? 1.15 : 0.85;
+      p.squash = 0.72;
+      p.stretch = 0.9;
+      this.audio.sfxJump();
+      this.say(cap ? "INFERNO" : "FLARE");
+    } else if (L === "k") {
+      if (!p.grounded && !cap) {
+        this.say("k needs the floor.");
+        p.special = 0;
+        return;
+      }
+      if (!p.grounded && cap) {
+        p.vy = 560;
+        p.specialCd = 1.3;
+        p.special = 0.55;
+        p.squash = 1.18;
+        this.say("QUAKE");
+        this.audio.sfxLand();
+        return;
+      }
+      this.playerWave(p.x + p.w / 2, p.y + p.h - 4, cap ? 3 : 2);
+      p.specialCd = cap ? 1.5 : 1.2;
+      p.squash = 1.2;
+      this.audio.sfxLand();
+      this.say(cap ? "QUAKE" : "STOMP");
+    } else if (L === "n") {
+      let best: Enemy | null = null;
+      let bestD = 200;
+      for (const e of this.enemies) {
+        if (!e.alive) continue;
+        const dx = e.x + e.w / 2 - (p.x + p.w / 2);
+        if (dx * p.facing < 0) continue;
+        const d = Math.hypot(dx, e.y + e.h / 2 - (p.y + p.h / 2));
+        if (d < bestD) {
+          bestD = d;
+          best = e;
+        }
+      }
+      if (!best) {
+        this.say("Nothing to bind.");
+        p.special = 0;
+        return;
+      }
+      best.stun = cap ? 1.8 : 1.1;
+      this.hitEnemy(best, cap ? 3 : 2, p.facing);
+      if (cap) {
+        best.vx = -Math.sign(best.x - p.x) * 220;
+        best.vy = -80;
+      }
+      this.burst(best.x + best.w / 2, best.y, "#c46ad4", 10, "glyph");
+      p.specialCd = cap ? 2.2 : 1.8;
+      this.audio.sfxSlash();
+      this.say(cap ? "BIND" : "PIN");
+    } else if (L === "t") {
+      const w = cap ? 96 : 78;
+      this.walls.push({
+        x: p.x + (p.facing > 0 ? p.w * 0.2 : -w + p.w * 0.8),
+        y: p.y + p.h - 4,
+        w,
+        h: 12,
+        life: cap ? 6.5 : 5.2,
+        max: cap ? 6.5 : 5.2,
+        kind: "plat",
+      });
+      if (cap) {
+        this.walls.push({
+          x: p.x + (p.facing > 0 ? p.w + 8 : -18),
+          y: p.y - 12,
+          w: 16,
+          h: p.h + 28,
+          life: 5.5,
+          max: 5.5,
+          kind: "wall",
+        });
+      }
+      p.specialCd = cap ? 1.6 : 1.2;
+      this.audio.sfxWord();
+      this.say(cap ? "SET" : "COMPOSE");
+    }
+  }
+
+  private playerWave(x: number, y: number, dmg: number) {
+    this.trauma = Math.min(1, this.trauma + 0.1);
+    this.burst(x, y, "#c4b08a", 12, "dust");
+    for (const dir of [-1, 1] as const) {
+      this.bullets.push({
+        x,
+        y,
+        vx: dir * 200,
+        vy: 0,
+        r: 14,
+        from: "player",
+        dmg,
+        life: 0.7,
+        kind: "wave",
+        alive: true,
+        pierce: 2,
+      });
+    }
+  }
+
+  private updateCombat(dt: number, a: ReturnType<Input["poll"]>) {
+    const p = this.player;
+    const kit = KITS[p.letter] ?? KITS.c;
+    const cd = kit.shotCd - Math.min(3, p.shotLevel - 1) * 0.03;
+    if ((a.attack || a.attackHeld) && p.shotCd <= 0 && p.roll <= 0) {
+      p.attack = 0.16;
+      p.shotCd = Math.max(0.18, cd);
+      p.squash = 0.92;
+      this.fireShot();
+    }
+    if (a.special && p.specialCd <= 0 && p.roll <= 0) {
+      this.castSpecial();
     }
     for (const s of this.solids) {
       if (s.type === "spike" && aabb(p, s) && p.invuln <= 0) this.hurt(1, p.x + p.w / 2 < s.x + s.w / 2 ? -1 : 1);
-      if (s.type === "sluice" && aabb(p, s) && p.invuln <= 0) {
-        this.hurt(1, p.facing);
-        p.vy = Math.min(p.vy, -220);
+      if (s.type === "sluice" && aabb(p, s)) {
+        if (p.letter === "e") {
+          p.vy = Math.min(p.vy, p.capital ? 40 : 90);
+          p.grounded = true;
+        } else if (p.invuln <= 0) {
+          this.hurt(1, p.facing);
+          p.vy = Math.min(p.vy, -220);
+        }
       }
       if (s.type === "laser" && aabb(p, s) && p.invuln <= 0 && this.laserHot(s)) {
         this.hurt(1, p.x + p.w / 2 < s.x + s.w / 2 ? -1 : 1);
@@ -1184,15 +1491,15 @@ export class GameEngine {
   }
 
   private hitEnemy(e: Enemy, dmg: number, dir: number) {
-    if (e.hurt > 0 && !this.isBossKind(e.kind)) return;
+    if (e.hurt > 0) return;
     e.hp -= dmg;
-    e.hurt = 0.1;
+    e.hurt = this.isBossKind(e.kind) ? 0.18 : 0.1;
     const boss = this.isBossKind(e.kind);
     if (!boss) e.stun = 0.95;
     e.flash = Math.max(e.flash, 0.18);
     e.vx += dir * (boss ? 36 : 160);
     if (!boss) e.vy = -36;
-    e.aux = 0;
+    if (!boss) e.aux = 0;
     this.audio.sfxHit();
     this.trauma = Math.min(1, this.trauma + 0.25);
     this.hitstop = 0.05;
@@ -1445,38 +1752,61 @@ export class GameEngine {
       } else if (e.kind === "dualis") {
         if (!e.grounded) e.vy += 1600 * dt;
         e.facing = p.x > e.x ? 1 : -1;
-        e.vx = e.facing * 90;
-        if (e.phase === 0 && e.hp < e.maxHp * 0.6) {
+        if (e.phase === 0 && e.hp < e.maxHp * 0.62) {
           e.phase = 1;
           this.enemies.push(this.spawnEnemy("two", e.x - 50, e.y));
           this.say("Dualis splits.");
         }
-        this.moveActor(e, dt, false);
-        if (e.aux > 0.9) {
-          e.aux = 0;
-          this.shoot(e, e.facing, 0.1);
-          this.shoot(e, e.facing, -0.2);
+        if (e.hp < e.maxHp * 0.32 && e.phase < 2) {
+          e.phase = 2;
+          this.say("Dualis doubles.");
         }
-        if (e.grounded && Math.random() < 0.01) e.vy = -360;
+        e.vx = e.facing * (88 + e.phase * 28);
+        this.moveActor(e, dt, false);
+        if (e.aux > (e.phase >= 2 ? 0.52 : 0.85)) {
+          e.aux = 0;
+          e.aux2 = (e.aux2 + 1) % 4;
+          if (e.aux2 === 0) {
+            this.shoot(e, e.facing, 0.1);
+            this.shoot(e, e.facing, -0.25);
+            if (e.phase >= 2) this.shoot(e, -e.facing, 0.1);
+          } else if (e.aux2 === 1) {
+            e.vy = -380;
+            if (e.phase >= 1) {
+              this.mortar(e, e.facing, -0.95);
+              this.mortar(e, e.facing * 0.4, -1.15);
+            }
+          } else if (e.aux2 === 2) {
+            e.vx = e.facing * 240;
+            this.stampAt(p.x + p.w / 2, p.y + p.h - 4);
+          } else {
+            this.ringShot(e, e.phase >= 2 ? 6 : 4, 190);
+          }
+        }
+        if (e.grounded && Math.random() < 0.012) e.vy = -340;
       } else if (e.kind === "tetrarch") {
         if (!e.grounded) e.vy += 1800 * dt;
-        e.vx *= 0.9;
+        e.facing = p.x > e.x ? 1 : -1;
+        e.vx = e.facing * 28;
         this.moveActor(e, dt, true);
-        if (e.aux > 1.1) {
+        if (e.hp < e.maxHp * 0.45 && e.phase < 1) {
+          e.phase = 1;
+          this.say("The Tetrarch opens all four gates.");
+        }
+        if (e.aux > (e.phase ? 0.75 : 1.05)) {
           e.aux = 0;
-          e.phase = (e.phase + 1) % 4;
-          if (e.phase === 0) {
-            this.shoot(e, -1, 0);
-            this.shoot(e, 1, 0);
-            this.shoot(e, 0, -1);
-          } else if (e.phase === 1) {
-            e.vy = -280;
-          } else if (e.phase === 2 && e.hp < e.maxHp * 0.55 && !this.enemies.some((x) => x.kind === "four" && x.alive && x !== e)) {
+          e.aux2 = (e.aux2 + 1) % 6;
+          if (e.aux2 === 0) this.ringShot(e, 4, 200);
+          else if (e.aux2 === 1) {
+            e.vy = -320;
+            this.stampAt(p.x + p.w / 2, p.y + p.h - 4);
+          } else if (e.aux2 === 2 && e.hp < e.maxHp * 0.6 && this.enemies.filter((x) => x.kind === "four" && x.alive).length < 2) {
             this.enemies.push(this.spawnEnemy("four", e.x - 80, e.y));
             this.enemies.push(this.spawnEnemy("four", e.x + 80, e.y));
-          } else {
-            this.shoot(e, p.x < e.x ? -1 : 1, 0);
-          }
+            this.say("Four from four.");
+          } else if (e.aux2 === 3) this.shockwave(e);
+          else if (e.aux2 === 4) this.ringShot(e, e.phase ? 8 : 6, 170, e.t);
+          else this.shoot(e, p.x < e.x ? -1 : 1, 0);
         }
       } else {
         this.aiSecond(e, dt, p);
@@ -1594,27 +1924,43 @@ export class GameEngine {
     } else if (e.kind === "importer") {
       if (!e.grounded) e.vy += 1500 * dt;
       e.facing = p.x > e.x ? 1 : -1;
-      if (e.hp < e.maxHp * 0.55 && e.phase < 1) e.phase = 1;
-      if (e.hp < e.maxHp * 0.28 && e.phase < 2) e.phase = 2;
-      e.vx = e.facing * (70 + e.phase * 20);
+      if (e.hp < e.maxHp * 0.62 && e.phase < 1) {
+        e.phase = 1;
+        this.say("G opens a second port.");
+      }
+      if (e.hp < e.maxHp * 0.3 && e.phase < 2) {
+        e.phase = 2;
+        this.say("G files the room.");
+      }
+      e.vx = e.facing * (72 + e.phase * 22);
       this.moveActor(e, dt, true);
-      if (e.aux > (e.phase === 2 ? 0.7 : 1.05)) {
+      if (e.aux > (e.phase === 2 ? 0.55 : 0.92)) {
         e.aux = 0;
-        e.aux2 = (e.aux2 + 1) % 3;
+        e.aux2 = (e.aux2 + 1) % 4;
         if (e.aux2 === 0) {
           this.shoot(e, e.facing, 0);
-          this.shoot(e, e.facing, -0.25);
-          this.shoot(e, e.facing, 0.25);
-        } else if (e.aux2 === 1 && this.enemies.filter((x) => x.alive).length < 12) {
-          this.enemies.push(this.spawnEnemy(e.phase >= 1 ? "five" : "one", e.x - 40, e.y));
+          this.shoot(e, e.facing, -0.28);
+          this.shoot(e, e.facing, 0.28);
+          if (e.phase >= 2) {
+            this.shoot(e, e.facing, -0.55);
+            this.shoot(e, e.facing, 0.55);
+          }
+        } else if (e.aux2 === 1 && this.enemies.filter((x) => x.alive).length < 14) {
+          this.enemies.push(this.spawnEnemy(e.phase >= 1 ? "two" : "one", e.x - 40, e.y));
+          if (e.phase >= 2) this.enemies.push(this.spawnEnemy("one", e.x + 40, e.y));
           this.say("G opens a port.");
+        } else if (e.aux2 === 2) {
+          e.vy = -340;
+          e.vx = e.facing * 160;
+          this.stampAt(p.x + p.w / 2, p.y + p.h - 4);
         } else {
-          e.vy = -300;
-          e.vx = e.facing * 140;
+          if (e.phase >= 1) this.shockwave(e);
+          else this.shoot(e, e.facing, 0.1);
         }
       }
     } else if (e.kind === "nullis") {
       e.facing = p.x > e.x ? 1 : -1;
+      const fury = e.hp < e.maxHp * 0.4;
       if (e.phase === 1) {
         e.aux2 += dt;
         const cx = e.x + e.w / 2;
@@ -1622,88 +1968,149 @@ export class GameEngine {
         const dx = cx - (p.x + p.w / 2);
         const dy = cy - (p.y + p.h / 2);
         const d = Math.hypot(dx, dy) || 1;
-        if (d < 200) {
-          p.x += (dx / d) * 110 * dt;
-          p.y += (dy / d) * 70 * dt;
+        const pull = fury ? 150 : 110;
+        if (d < 220) {
+          p.x += (dx / d) * pull * dt;
+          p.y += (dy / d) * (pull * 0.65) * dt;
         }
-        if (e.aux2 > 1.1) {
+        if (e.aux2 > (fury ? 0.85 : 1.1)) {
           e.phase = 0;
           e.aux2 = 0;
         }
       } else {
         if (!e.grounded) e.vy += 1400 * dt;
-        e.vx = e.facing * 60;
+        e.vx = e.facing * (60 + (fury ? 30 : 0));
         this.moveActor(e, dt, true);
-        if (e.aux > 1.2) {
+        if (e.aux > (fury ? 0.7 : 1.05)) {
           e.aux = 0;
-          if (Math.random() < 0.4) {
-            e.phase = 1;
-            e.x = Math.max(40, Math.min(this.worldW - 80, p.x + (Math.random() > 0.5 ? 120 : -120)));
+          e.aux2 = (e.aux2 + 1) % 4;
+          if (e.aux2 === 0) this.ringShot(e, fury ? 8 : 4, 200);
+          else if (e.aux2 === 1) {
+            e.x = Math.max(40, Math.min(this.worldW - 80, p.x + (Math.random() > 0.5 ? 130 : -130)));
             this.burst(e.x + e.w / 2, e.y, "#7a8b96", 12, "ink");
-          } else {
-            this.shoot(e, -1, 0);
-            this.shoot(e, 1, 0);
-            this.shoot(e, 0, -1);
-            this.shoot(e, 0, 1);
-          }
+            this.mortar(e, 0.3, -0.4);
+            this.mortar(e, -0.3, -0.4);
+            this.mortar(e, 0, 0.5);
+          } else if (e.aux2 === 2) {
+            e.phase = 1;
+            this.burst(e.x + e.w / 2, e.y + e.h / 2, "#7a8b96", 10, "ink");
+          } else if (fury && this.enemies.filter((x) => x.kind === "zero" && x.alive).length < 2) {
+            this.enemies.push(this.spawnEnemy("zero", e.x - 36, e.y));
+            this.say("A zero unfiles.");
+          } else this.ringShot(e, 6, 180, e.t);
         }
       }
     } else if (e.kind === "endmark") {
       if (!e.grounded) e.vy += 1600 * dt;
       e.facing = p.x > e.x ? 1 : -1;
-      e.vx = e.facing * (e.phase >= 2 ? 120 : 80);
-      this.moveActor(e, dt, true);
-      if (e.aux > (e.phase >= 2 ? 0.65 : 1.0)) {
-        e.aux = 0;
-        this.shoot(e, e.facing, 0);
-        this.shoot(e, e.facing, -0.3);
-        if (e.phase >= 2) this.shoot(e, -e.facing, 0.15);
+      if (e.hp < e.maxHp * 0.55 && e.phase < 1) {
+        e.phase = 1;
+        this.say("The period thickens.");
       }
-      if (e.grounded && Math.random() < 0.012) e.vy = -380;
+      e.vx = e.facing * (e.phase >= 2 ? 124 : e.phase ? 96 : 78);
+      this.moveActor(e, dt, true);
+      if (e.aux > (e.phase >= 2 ? 0.5 : e.phase ? 0.72 : 0.95)) {
+        e.aux = 0;
+        e.aux2 = (e.aux2 + 1) % 4;
+        if (e.aux2 === 0) {
+          this.shoot(e, e.facing, 0);
+          this.shoot(e, e.facing, -0.32);
+          if (e.phase >= 1) this.shoot(e, e.facing, 0.32);
+        } else if (e.aux2 === 1) {
+          e.vy = -400;
+          this.stampAt(p.x + p.w / 2, p.y + p.h - 4);
+        } else if (e.aux2 === 2) {
+          if (e.phase >= 2) {
+            this.shoot(e, -e.facing, 0.15);
+            this.shockwave(e);
+          } else {
+            this.mortar(e, e.facing, -0.9);
+            this.mortar(e, -e.facing, -0.9);
+          }
+        } else this.ringShot(e, e.phase >= 2 ? 8 : 4, 185);
+      }
+      if (e.grounded && Math.random() < 0.014) e.vy = -360;
     } else if (e.kind === "plus" || e.kind === "summand") {
       if (!e.grounded) e.vy += 1600 * dt;
       e.facing = p.x > e.x ? 1 : -1;
-      e.vx = e.facing * (e.kind === "summand" ? 70 : 40);
+      e.vx = e.facing * (e.kind === "summand" ? 72 : 40);
       this.moveActor(e, dt, e.kind === "summand");
-      if (e.aux > 1.6) {
+      if (e.aux > (e.kind === "summand" ? 1.15 : 1.6)) {
         e.aux = 0;
+        e.aux2 = (e.aux2 + 1) % (e.kind === "summand" ? 4 : 2);
         for (const o of this.enemies) {
-          if (o.alive && o !== e && Math.hypot(o.x - e.x, o.y - e.y) < 140) o.hp = Math.min(o.maxHp, o.hp + 1);
+          if (o.alive && o !== e && Math.hypot(o.x - e.x, o.y - e.y) < 150) o.hp = Math.min(o.maxHp, o.hp + (e.kind === "summand" ? 2 : 1));
         }
         this.burst(e.x + e.w / 2, e.y, "#e8d48a", 8, "glyph");
-        if (e.kind === "summand") this.stampAt(p.x + p.w / 2, p.y + p.h - 4);
+        if (e.kind === "summand") {
+          if (e.aux2 === 1) this.stampAt(p.x + p.w / 2, p.y + p.h - 4);
+          else if (e.aux2 === 2) this.ringShot(e, 6, 190);
+          else if (e.aux2 === 3 && this.enemies.filter((x) => x.kind === "plus" && x.alive).length < 2) {
+            this.enemies.push(this.spawnEnemy("plus", e.x - 40, e.y));
+            this.say("Summand adds.");
+          }
+        }
       }
     } else if (e.kind === "minus" || e.kind === "difference") {
       if (!e.grounded) e.vy += 1600 * dt;
       e.facing = p.x > e.x ? 1 : -1;
-      e.vx = e.facing * (e.kind === "difference" ? 90 : 55);
+      e.vx = e.facing * (e.kind === "difference" ? 96 : 55);
       this.moveActor(e, dt, e.kind === "difference");
-      if (e.aux > 1.4) {
+      if (e.aux > (e.kind === "difference" ? 0.95 : 1.4)) {
         e.aux = 0;
+        e.aux2 = (e.aux2 + 1) % (e.kind === "difference" ? 4 : 2);
         this.shoot(e, e.facing, 0);
-        if (e.kind === "difference") this.shockwave(e);
+        if (e.kind === "difference") {
+          if (e.aux2 === 1) this.shockwave(e);
+          else if (e.aux2 === 2) {
+            e.vx = e.facing * 240;
+            this.walls = this.walls.filter((w) => {
+              if (Math.hypot(w.x - e.x, w.y - e.y) < 90) {
+                this.burst(w.x + w.w / 2, w.y, "#d45a4a", 6, "ink");
+                return false;
+              }
+              return true;
+            });
+          } else if (e.aux2 === 3) this.ringShot(e, 4, 210);
+        }
       }
     } else if (e.kind === "times" || e.kind === "product") {
       if (!e.grounded) e.vy += 1500 * dt;
       e.facing = p.x > e.x ? 1 : -1;
-      e.vx = e.facing * 35;
+      e.vx = e.facing * (e.kind === "product" ? 50 : 35);
       this.moveActor(e, dt, e.kind === "product");
-      if (e.aux > (e.kind === "product" ? 2.2 : 2.8) && this.enemies.filter((x) => x.alive).length < 14) {
+      const cap = e.kind === "product" ? 16 : 14;
+      if (e.aux > (e.kind === "product" ? 1.5 : 2.6) && this.enemies.filter((x) => x.alive).length < cap) {
         e.aux = 0;
+        e.aux2 = (e.aux2 + 1) % 3;
         this.enemies.push(this.spawnEnemy("radix", e.x + 20, e.y));
         this.burst(e.x, e.y, "#c46ad4", 8, "glyph");
+        if (e.kind === "product" && e.aux2 === 1) this.ringShot(e, 8, 175);
+        if (e.kind === "product" && e.aux2 === 2) this.enemies.push(this.spawnEnemy("times", e.x - 30, e.y));
       }
     } else if (e.kind === "divide" || e.kind === "quotient") {
       e.vx *= 0.85;
       if (!e.grounded) e.vy += 1400 * dt;
       this.moveActor(e, dt, e.kind === "quotient");
-      if (e.aux > 0.7) {
+      if (e.aux > (e.kind === "quotient" ? 0.55 : 0.7)) {
         e.aux = 0;
+        e.aux2 = (e.aux2 + 1) % 3;
         this.shoot(e, 0, 1);
         this.shoot(e, 0, -1);
         if (e.kind === "quotient") {
           this.shoot(e, 1, 0);
           this.shoot(e, -1, 0);
+          if (e.aux2 === 1) this.ringShot(e, 6, 200);
+          if (e.aux2 === 2) {
+            this.walls = this.walls.filter((w) => {
+              if (Math.hypot(w.x - e.x, w.y - e.y) < 70) {
+                this.burst(w.x, w.y, "#8ec8d4", 4, "ink");
+                return false;
+              }
+              return true;
+            });
+            this.stampAt(p.x + p.w / 2, p.y + p.h - 4);
+          }
         }
       }
     } else if (e.kind === "pi") {
@@ -1736,29 +2143,52 @@ export class GameEngine {
         e.vy = -220;
       }
     } else if (e.kind === "infinitum") {
-      e.x += Math.sin(e.t * 1.6) * 80 * dt;
-      e.y += Math.cos(e.t * 2.4) * 30 * dt;
+      e.x += Math.sin(e.t * 1.6) * 90 * dt;
+      e.y += Math.cos(e.t * 2.4) * 34 * dt;
       e.facing = p.x > e.x ? 1 : -1;
-      if (e.aux > 0.55) {
+      if (e.hp < e.maxHp * 0.5 && e.phase < 1) {
+        e.phase = 1;
+        this.say("Infinitum will not close.");
+      }
+      if (e.aux > (e.phase ? 0.38 : 0.52)) {
         e.aux = 0;
+        e.aux2 = (e.aux2 + 1) % 4;
         this.shoot(e, e.facing, 0.2);
         this.shoot(e, -e.facing, -0.2);
+        if (e.aux2 === 1) this.ringShot(e, 6, 165, e.t);
+        if (e.aux2 === 2) {
+          this.pullToward(e, p, 180, 90, dt * 40);
+          this.burst(e.x + e.w / 2, e.y, "#c46ad4", 8, "glyph");
+        }
+        if (e.aux2 === 3 && e.phase) this.ringShot(e, 10, 150, e.t * 0.5);
       }
     } else if (e.kind === "remainder") {
       if (!e.grounded) e.vy += 1500 * dt;
       e.facing = p.x > e.x ? 1 : -1;
-      e.vx = e.facing * (90 + e.phase * 20);
+      e.vx = e.facing * (90 + e.phase * 24);
       this.moveActor(e, dt, true);
-      if (e.hp < e.maxHp * 0.5 && e.phase < 1) e.phase = 1;
-      if (e.aux > (e.phase ? 0.6 : 0.95)) {
+      if (e.hp < e.maxHp * 0.55 && e.phase < 1) {
+        e.phase = 1;
+        this.say("The remainder will not file.");
+      }
+      if (e.hp < e.maxHp * 0.28 && e.phase < 2) {
+        e.phase = 2;
+        this.say("Unfiled. Uncounted.");
+      }
+      if (e.aux > (e.phase >= 2 ? 0.48 : e.phase ? 0.62 : 0.88)) {
         e.aux = 0;
-        e.aux2 = (e.aux2 + 1) % 3;
+        e.aux2 = (e.aux2 + 1) % 5;
         if (e.aux2 === 0) this.shockwave(e);
         else if (e.aux2 === 1) this.stampAt(p.x + p.w / 2, p.y + p.h - 4);
-        else {
+        else if (e.aux2 === 2) {
           this.mortar(e, e.facing, -0.8);
           this.mortar(e, -e.facing, -0.8);
-        }
+          if (e.phase) this.mortar(e, 0, -1.1);
+        } else if (e.aux2 === 3) this.ringShot(e, e.phase >= 2 ? 10 : 8, 195);
+        else if (e.phase && this.enemies.filter((x) => x.alive).length < 12) {
+          const spawn: EnemyKind[] = ["plus", "minus", "radix"];
+          this.enemies.push(this.spawnEnemy(spawn[Math.floor(Math.random() * spawn.length)], e.x - 40, e.y));
+        } else this.shoot(e, e.facing, 0.15);
       }
     } else {
       if (!e.grounded) e.vy += 1800 * dt;
@@ -1798,6 +2228,27 @@ export class GameEngine {
       alive: true,
       pierce: 0,
     });
+  }
+
+  private ringShot(e: Enemy, n: number, spd = 200, phase = 0) {
+    const cx = e.x + e.w / 2;
+    const cy = e.y + e.h / 2;
+    for (let i = 0; i < n; i++) {
+      const a = phase + (i * Math.PI * 2) / n;
+      this.bullets.push({
+        x: cx,
+        y: cy,
+        vx: Math.cos(a) * spd,
+        vy: Math.sin(a) * spd,
+        r: 5,
+        from: "enemy",
+        dmg: 1,
+        life: 2.1,
+        kind: "shot",
+        alive: true,
+        pierce: 0,
+      });
+    }
   }
 
   private shockwave(e: Enemy) {
@@ -1858,7 +2309,7 @@ export class GameEngine {
     for (const b of this.bullets) {
       if (!b.alive) continue;
       b.life -= dt;
-      if (b.kind === "mortar") b.vy += 980 * dt;
+      if (b.kind === "mortar" || b.kind === "ember") b.vy += (b.kind === "ember" ? 420 : 980) * dt;
       if (b.kind !== "stamp") {
         b.x += b.vx * dt;
         b.y += b.vy * dt;
@@ -1890,6 +2341,10 @@ export class GameEngine {
         for (const e of this.enemies) {
           if (e.alive && aabb(box, e)) {
             this.hitEnemy(e, b.dmg, b.vx > 0 ? 1 : -1);
+            if (b.kind === "frost") e.stun = Math.max(e.stun, this.player.capital ? 1.05 : 0.55);
+            if (b.kind === "ember") {
+              this.burns.push({ x: e.x + 4, y: e.y + e.h - 10, w: e.w - 8, h: 10, life: 0.8 });
+            }
             if (b.pierce > 0) b.pierce -= 1;
             else b.alive = false;
           }
@@ -1971,8 +2426,8 @@ export class GameEngine {
   private scribe(down: boolean) {
     if (this.wordCd > 0) return;
     const p = this.player;
-    const thick = this.save.words.includes("WALL") || (p.letter === "c" && p.capital);
-    const cost = 6;
+    const thick = this.save.words.includes("WALL") || p.capital || p.letter === "t";
+    const cost = p.letter === "t" ? 4 : p.letter === "r" ? 8 : 6;
     if (p.ink < cost) {
       this.say("Ink dry.");
       return;
@@ -1982,7 +2437,7 @@ export class GameEngine {
     this.audio.sfxWord();
     const life = thick ? 7.2 : 5.2;
     const maxN = thick ? 4 : 3;
-    const cap = this.save.words.includes("TIDE") ? maxN + 1 : maxN;
+    const capN = (this.save.words.includes("TIDE") ? maxN + 1 : maxN) + (p.letter === "t" ? 1 : 0);
     let c: Construct;
     if (down) {
       const w = thick ? 92 : 76;
@@ -2017,7 +2472,7 @@ export class GameEngine {
     if (this.save.words.includes("BURN")) {
       this.burns.push({ x: c.x - 6, y: c.y - 6, w: c.w + 12, h: c.h + 12, life: life * 0.9 });
     }
-    while (this.walls.length > cap) this.walls.shift();
+    while (this.walls.length > capN) this.walls.shift();
     this.burst(c.x + c.w / 2, c.y + c.h / 2, "#5ee0c0", 8, "glyph");
   }
 
@@ -2162,7 +2617,7 @@ export class GameEngine {
           if (!this.save.party.includes(L)) this.save.party.push(L);
           if (!this.save.talked.includes(L)) this.save.talked.push(L);
           this.audio.sfxPickup();
-          this.say(L + " joins the cell.");
+          this.say(L + " joins the cell. " + ((KITS[L] ?? KITS.c).element) + ".");
           this.persist();
         }
       }
@@ -2192,14 +2647,12 @@ export class GameEngine {
       this.say("The Drop Cap is still unread.");
       return;
     }
-    if (this.player.letter !== "c") {
-      this.say("Only c can shift case.");
-      return;
-    }
     this.player.capital = !this.player.capital;
+    this.save.capital = this.player.capital;
     this.applySize();
     this.audio.sfxSwap();
-    this.say(this.player.capital ? "CASE: C" : "case: c");
+    const g = this.player.letter;
+    this.say(this.player.capital ? "CASE: " + g.toUpperCase() : "case: " + g);
     this.persist();
   }
 
@@ -2248,7 +2701,7 @@ export class GameEngine {
       if (!this.save.party.includes(L)) this.save.party.push(L);
       const rec = this.pickups.find((u) => u.kind === "recruit" && u.id === L);
       if (rec) rec.taken = true;
-      this.say(L + " joins the cell.");
+      this.say(L + " joins the cell. " + ((KITS[L] ?? KITS.c).element) + ".");
     }
     this.talkingNpc = n.id;
     this.dialogueQueue = n.lines.map((text) => ({ name: n.name, text, who: n.glyph }));
@@ -2282,13 +2735,16 @@ export class GameEngine {
     const id = this.save.party[slot - 1];
     if (!id || id === this.player.letter) return;
     this.player.letter = id;
-    if (id !== "c") this.player.capital = false;
-    else this.player.capital = this.save.capital;
+    this.player.capital = this.save.hasCapital && this.save.capital;
+    this.player.airHop = id === "s" ? 1 : 0;
     this.applySize();
     this.swapCd = 0.35;
     this.player.invuln = Math.max(this.player.invuln, 0.2);
     this.audio.sfxSwap();
-    this.burst(this.player.x + this.player.w / 2, this.player.y, "#5ee0c0", 8, "glyph");
+    const glow = (KITS[id] ?? KITS.c).glow;
+    this.burst(this.player.x + this.player.w / 2, this.player.y, glow, 8, "glyph");
+    this.save.letter = id;
+    this.say((KITS[id] ?? KITS.c).element);
   }
 
   cycleWord() {
@@ -2359,6 +2815,11 @@ export class GameEngine {
     this.player.vx = 0;
     this.player.vy = 0;
     this.player.invuln = 1;
+    this.settleOnFloor();
+    this.lastSafeX = this.player.x;
+    this.lastSafeY = this.player.y;
+    this.camX = this.player.x - VIEW_W * 0.35;
+    this.camY = this.player.y - VIEW_H * 0.62;
     this.mode = this.stage === "hub" ? "hub" : "play";
     this.emit();
   }
@@ -2397,6 +2858,7 @@ export class GameEngine {
 
   private isTaskDone(id: string): boolean {
     const s = this.save;
+    if (id.startsWith("recruit-")) return s.party.includes(id.slice(8) as LetterId);
     switch (id) {
       case "talk-e":
         return s.talked.includes("e");
@@ -2422,10 +2884,6 @@ export class GameEngine {
         return s.visited.includes("stage5");
       case "continue":
         return s.progress >= 6;
-      case "recruit-s":
-        return s.party.includes("s");
-      case "recruit-b":
-        return s.party.includes("b");
       case "word-wall":
         return s.words.includes("WALL");
       case "word-burn":
@@ -2527,13 +2985,9 @@ export class GameEngine {
       const d = this.pickups.find((u) => u.kind === "door" && u.id === "stage2");
       if (d) return { x: d.x + d.w / 2, y: d.y + 20, label: "FORT" };
     }
-    if (id === "recruit-s") {
-      const r = pk("recruit", "s");
-      if (r) return { x: r.x, y: r.y, label: "s" };
-    }
-    if (id === "recruit-b") {
-      const r = pk("recruit", "b");
-      if (r) return { x: r.x, y: r.y, label: "b" };
+    if (id?.startsWith("recruit-")) {
+      const r = pk("recruit", id.slice(8));
+      if (r) return { x: r.x, y: r.y, label: id.slice(8) };
     }
     if (id === "word-wall") {
       const w = pk("word", "WALL");

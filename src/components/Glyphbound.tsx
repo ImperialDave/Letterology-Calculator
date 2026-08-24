@@ -2,11 +2,12 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import { GameEngine } from "@/glyphbound/engine";
 import type { UiSnap } from "@/glyphbound/types";
 import { Pause, Volume2, VolumeX } from "lucide-react";
+import { KITS, skillName } from "@/glyphbound/roster";
 
 const INTRO = [
   "Calculara was a manuscript before it was an equation. Letters walked it. Words were weather.",
   "G opened the ports. Ships of digits landed overnight. The Decimal Dominion rounded magic down and filed every letter that would stand in line.",
-  "You were posted as a warning mark: a lowercase c nobody counted. Five closed chapters wait on the left — one ledger each, never a different page. After those five, walk right into the Unbound Sentence. That gold hall is the only door that keeps opening new ledgers. Last Page only repeats.",
+  "Five letters, five elements. You are c, Aether. The Exchange hides Gale. The Fort holds Stone. Tide waits in the Press. Ember runs the Coil. After the Drop Cap, Shift capitalizes whoever is in play.",
   "End-Mark is not the end. After the point come the operators: plus, minus, times, divide, remainder. Sixty ledgers. Willingness still turns them.",
 ];
 
@@ -22,15 +23,15 @@ function ControlsCard() {
         <span className="text-fg">J</span>
         <span>Fang shot · hold to fire</span>
         <span className="text-fg">K</span>
-        <span>Skill (dash / cage / cut)</span>
+        <span>Skill unique to the letter in play — Gale cut, Stone brace, Tide pulse, Ember flare, Aether dash</span>
         <span className="text-fg">L</span>
         <span>Stem wall · hold down, then L, for a Shelf</span>
         <span className="text-fg">E</span>
         <span>Talk / enter · appears on touch when you can</span>
-        <span className="text-fg">1–3</span>
+        <span className="text-fg">1–8</span>
         <span>Swap letters · tap portraits</span>
         <span className="text-fg">Shift</span>
-        <span>Case shift (after Drop Cap)</span>
+        <span>Case shift any letter (after Drop Cap)</span>
         <span className="text-fg">Ward</span>
         <span>Always on · blocks every hit</span>
       </div>
@@ -305,19 +306,29 @@ export function Glyphbound() {
         <>
           <div className="pointer-events-none absolute left-4 top-4 right-4 flex items-start justify-between">
             <div className="pointer-events-auto flex flex-col gap-2">
-              <div className="flex gap-2">
-                {ui.party.map((L, i) => (
-                  <button
-                    key={L}
-                    type="button"
-                    data-role={`p${i + 1}`}
-                    className={`flex h-11 w-11 items-center justify-center rounded-md border text-lg font-display ${
-                      ui.letter === L ? "border-accent bg-elevated text-accent" : "border-border bg-surface/80 text-muted"
-                    }`}
-                  >
-                    {L === "c" && ui.capital ? "C" : L}
-                  </button>
-                ))}
+              <div className="flex max-w-[22rem] flex-wrap gap-1.5">
+                {ui.party.map((L, i) => {
+                  const kit = KITS[L] ?? KITS.c;
+                  const on = ui.letter === L;
+                  return (
+                    <button
+                      key={L}
+                      type="button"
+                      data-role={`p${i + 1}`}
+                      title={`${kit.element} · ${skillName(L, ui.capital)}`}
+                      className={`flex h-11 min-w-11 flex-col items-center justify-center rounded-md border px-1.5 font-display leading-none ${
+                        on ? "bg-elevated" : "border-border bg-surface/80 text-muted"
+                      }`}
+                      style={{
+                        color: kit.glow,
+                        borderColor: on ? kit.glow : undefined,
+                      }}
+                    >
+                      <span className="text-lg">{ui.capital ? L.toUpperCase() : L}</span>
+                      <span className="mt-0.5 text-[8px] tracking-[0.14em] uppercase opacity-80">{kit.element}</span>
+                    </button>
+                  );
+                })}
               </div>
               <div className="flex items-center gap-1 pl-1">
                 {Array.from({ length: ui.maxShield }).map((_, i) => (
@@ -353,7 +364,7 @@ export function Glyphbound() {
                   data-role="case"
                   className="flex h-11 min-w-11 items-center justify-center rounded-md border border-border bg-surface/80 px-2 font-display text-sm text-accent"
                 >
-                  {ui.capital ? "C" : "c"}
+                  {ui.capital ? ui.letter.toUpperCase() : ui.letter}
                 </button>
               )}
               <button
@@ -468,10 +479,7 @@ function interactLabel(hint: string) {
 }
 
 function skillLabel(letter: UiSnap["letter"], capital: boolean) {
-  if (letter === "s") return "Cut";
-  if (letter === "b") return "Brace";
-  if (capital) return "Cage";
-  return "Dash";
+  return skillName(letter, capital);
 }
 
 function MobilePad({

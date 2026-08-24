@@ -9,6 +9,7 @@ import {
   type Player,
   type ThemeId,
 } from "./types";
+import { KITS } from "./roster";
 
 export function roundRect(
   ctx: CanvasRenderingContext2D,
@@ -550,13 +551,15 @@ export function drawMarkers(
 }
 
 function inkPalette(letter: LetterId, capital: boolean) {
-  if (letter === "s") return { glow: "#7fd0ff", core: "#d8f4ff", deep: "#1a3a4a" };
-  if (letter === "b") return { glow: "#c4b49a", core: "#efe4c8", deep: "#2a2418" };
-  return {
-    glow: capital ? "#9af8de" : "#5ee0c0",
-    core: "#e8ece8",
-    deep: "#0c201c",
-  };
+  const k = KITS[letter] ?? KITS.c;
+  if (letter === "c") {
+    return {
+      glow: capital ? "#9af8de" : k.glow,
+      core: k.core,
+      deep: k.deep,
+    };
+  }
+  return { glow: k.glow, core: k.core, deep: k.deep };
 }
 
 function emberEye(ctx: CanvasRenderingContext2D, x: number, y: number, glow: string, t = 0, seed = 0) {
@@ -1065,49 +1068,280 @@ export function drawLetterForm(
       ctx.stroke();
     }
   } else if (letter === "s") {
-    const rec = -wind * 5 + snap * 8;
-    const tail = pose.step * 1.6 * pose.run;
-    strokeInk(ctx, pal.glow, pal.core, 3.9, () => {
-      ctx.moveTo(11, -13);
-      ctx.bezierCurveTo(-16, -17, 16 + rec, -1, -11, 5);
-      ctx.bezierCurveTo(-20, 10, 16, 17, 10, 13 + tail * 0.2);
+    const rec = -wind * 6 + snap * 10;
+    const tail = pose.step * 1.8 * pose.run;
+    const sc = capital ? 1.24 : 1;
+    ctx.save();
+    ctx.scale(sc, sc);
+    strokeInk(ctx, pal.glow, pal.core, capital ? 5.4 : 3.9, () => {
+      ctx.moveTo(12, -14);
+      ctx.bezierCurveTo(-18, -19, 18 + rec, -2, -12, 4);
+      ctx.bezierCurveTo(-22, 10, 18, 18, 11, 13 + tail * 0.25);
     });
+    ctx.strokeStyle = pal.glow;
+    ctx.globalAlpha = 0.35 + pose.run * 0.25;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(12, -14);
+    ctx.quadraticCurveTo(20 + rec * 0.4, -8 + pose.step, 18, 2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
     emberEye(ctx, 6, -10, pal.glow, t, 2);
     ctx.strokeStyle = pal.core;
     ctx.lineWidth = 1.8;
     ctx.beginPath();
     ctx.moveTo(10, 13);
-    ctx.quadraticCurveTo(15, 16 + tail, 8, 18 + tail * 0.4);
+    ctx.quadraticCurveTo(16, 17 + tail, 8, 19 + tail * 0.4);
     ctx.stroke();
+    if (capital) {
+      ctx.strokeStyle = pal.glow;
+      ctx.globalAlpha = 0.45;
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 18 + Math.sin(t * 6) * 1.5, 16, pose.lean, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
     if (pose.grounded) inkStride(ctx, pose.gait, pose.run, 16, pal.glow, pal.core);
+    else {
+      ctx.strokeStyle = pal.glow;
+      ctx.globalAlpha = 0.35;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(-10, 8);
+      ctx.quadraticCurveTo(0, 16 + pose.step, 12, 10);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
     orbitMotes(ctx, t, pal.glow, 17, pose.run);
     if (snap > 0.15) {
-      ctx.strokeStyle = "rgba(127,208,255,0.75)";
+      ctx.strokeStyle = "rgba(127,208,255,0.8)";
       ctx.lineWidth = 2.2;
       ctx.beginPath();
       ctx.moveTo(14, -4);
-      ctx.quadraticCurveTo(22 + snap * 8, 2, 28 + snap * 10, 6);
+      ctx.quadraticCurveTo(24 + snap * 10, 2, 32 + snap * 12, 6);
       ctx.stroke();
     }
-  } else {
-    const punch = snap * 4 - wind * 2;
-    strokeInk(ctx, pal.glow, pal.core, 4, () => {
-      ctx.moveTo(-11, -18);
-      ctx.lineTo(-11, 18);
-      ctx.moveTo(-11, -16);
-      ctx.arc(1 + punch, -8, 9, -Math.PI * 0.5, Math.PI * 0.5);
-      ctx.moveTo(-11, 0);
-      ctx.arc(3 + punch * 0.5, 8, 10, -Math.PI * 0.5, Math.PI * 0.5);
+    if (special > 0) {
+      ctx.strokeStyle = "rgba(127,208,255,0.45)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(8, 0, 16 + special * 30, -0.8, 0.8);
+      ctx.stroke();
+    }
+  } else if (letter === "b") {
+    const punch = snap * 5 - wind * 2;
+    const sc = capital ? 1.2 : 1;
+    ctx.save();
+    ctx.scale(sc, sc);
+    strokeInk(ctx, pal.glow, pal.core, capital ? 5.6 : 4.2, () => {
+      ctx.moveTo(-12, -19);
+      ctx.lineTo(-12, 18);
+      ctx.moveTo(-12, -17);
+      ctx.arc(2 + punch, -8, 10, -Math.PI * 0.5, Math.PI * 0.5);
+      ctx.moveTo(-12, 0);
+      ctx.arc(4 + punch * 0.5, 9, 11, -Math.PI * 0.5, Math.PI * 0.5);
     });
+    if (capital) {
+      ctx.fillStyle = pal.glow;
+      ctx.globalAlpha = 0.2;
+      ctx.fillRect(-14, -20, 6, 40);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = pal.core;
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.moveTo(-12, -20);
+      ctx.lineTo(4, -22 + Math.sin(t * 3) * 0.8);
+      ctx.stroke();
+    }
     emberEye(ctx, -4, -12, pal.glow, t, 3);
-    ctx.strokeStyle = pal.core;
-    ctx.lineWidth = 1.9;
-    ctx.beginPath();
-    ctx.moveTo(-11, 18);
-    ctx.quadraticCurveTo(-15, 20 + pose.pass * 0.6, -6, 22);
-    ctx.stroke();
+    ctx.restore();
     if (pose.grounded) inkStride(ctx, pose.gait, pose.run, 18, pal.glow, pal.core);
     orbitMotes(ctx, t, pal.glow, 18, pose.run);
+    if (special > 0) {
+      ctx.strokeStyle = "rgba(196,180,154,0.5)";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(0, 18, 24 + special * 28, 7, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  } else if (letter === "e") {
+    const sc = capital ? 1.22 : 1;
+    const drip = Math.sin(t * 3.2) * 1.4;
+    ctx.save();
+    ctx.scale(sc, sc);
+    if (capital) {
+      strokeInk(ctx, pal.glow, pal.core, 5.1, () => {
+        ctx.moveTo(13, -17);
+        ctx.lineTo(-11, -17);
+        ctx.lineTo(-11, 17);
+        ctx.lineTo(13, 17);
+        ctx.moveTo(-11, 0);
+        ctx.lineTo(9, 0 + pose.step * 0.4);
+      });
+      ctx.strokeStyle = pal.glow;
+      ctx.globalAlpha = 0.55;
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(6, 17);
+      ctx.quadraticCurveTo(8, 22 + drip, 4, 26 + drip);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    } else {
+      strokeInk(ctx, pal.glow, pal.core, 4.3, () => {
+        ctx.arc(0, 1, 13.5, 0.4, Math.PI * 2 - 0.12);
+        ctx.moveTo(-12, 1);
+        ctx.lineTo(12, 1 + pose.step * 0.7);
+      });
+      ctx.strokeStyle = pal.glow;
+      ctx.globalAlpha = 0.4;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(0, 1, 9, 0.2, Math.PI - 0.2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+    emberEye(ctx, capital ? -2 : 2, capital ? -8 : -6, pal.glow, t, 4);
+    ctx.restore();
+    if (pose.grounded) inkStride(ctx, pose.gait, pose.run, 15, pal.glow, pal.core);
+    orbitMotes(ctx, t, pal.glow, 16, pose.run);
+    if (special > 0) {
+      ctx.strokeStyle = "rgba(110,200,232,0.5)";
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.arc(0, 0, 20 + Math.sin(t * 18) * 5 + special * 24, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(0, 0, 12 + special * 16, 0.4, Math.PI - 0.4);
+      ctx.stroke();
+    }
+  } else if (letter === "r") {
+    const kick = snap * 7 + (special > 0 ? 10 : 0);
+    const sc = capital ? 1.22 : 1;
+    const flame = 3 + Math.sin(t * 14) * 1.6 + pose.run * 3;
+    ctx.save();
+    ctx.scale(sc, sc);
+    strokeInk(ctx, pal.glow, pal.core, capital ? 5.2 : 4, () => {
+      ctx.moveTo(-10, -16);
+      ctx.lineTo(-10, 16);
+      if (capital) {
+        ctx.moveTo(-10, -16);
+        ctx.arc(1, -8, 8.5, -Math.PI * 0.5, Math.PI * 0.45);
+        ctx.moveTo(-2, 0);
+        ctx.lineTo(11 + kick, 16);
+      } else {
+        ctx.moveTo(-10, -14);
+        ctx.quadraticCurveTo(9, -16, 9, -6);
+        ctx.quadraticCurveTo(7, 2, -4, 2);
+        ctx.moveTo(-2, 2);
+        ctx.lineTo(9 + kick * 0.45, 14);
+      }
+    });
+    ctx.strokeStyle = pal.glow;
+    ctx.globalAlpha = 0.7;
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.moveTo(-8, 16);
+    ctx.quadraticCurveTo(-2, 18 + flame, 6, 14 + flame * 0.4);
+    ctx.stroke();
+    ctx.globalAlpha = 0.35;
+    ctx.beginPath();
+    ctx.moveTo(-6, 16);
+    ctx.quadraticCurveTo(2, 22 + flame, 10 + kick * 0.2, 12);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    emberEye(ctx, -4, -10, pal.glow, t, 5);
+    ctx.restore();
+    if (pose.grounded) inkStride(ctx, pose.gait, pose.run, 16, pal.glow, pal.core);
+    orbitMotes(ctx, t, pal.glow, 16, pose.run);
+    if (special > 0) {
+      ctx.strokeStyle = "rgba(224,112,64,0.5)";
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.moveTo(-16, 8);
+      ctx.quadraticCurveTo(0, 18, 20, 6);
+      ctx.stroke();
+    }
+  } else if (letter === "k") {
+    const kick = snap * 7 + (special > 0 ? 10 : 0);
+    const sc = capital ? 1.18 : 1;
+    ctx.save();
+    ctx.scale(sc, sc);
+    strokeInk(ctx, pal.glow, pal.core, capital ? 5.2 : 4.1, () => {
+      ctx.moveTo(-10, -18);
+      ctx.lineTo(-10, 16);
+      ctx.moveTo(-10, 0);
+      ctx.lineTo(10 + kick, -14);
+      ctx.moveTo(-4, -4);
+      ctx.lineTo(12 + kick * 0.4, 16);
+    });
+    emberEye(ctx, -4, -12, pal.glow, t, 6);
+    ctx.restore();
+    if (pose.grounded) inkStride(ctx, pose.gait, pose.run, 17, pal.glow, pal.core);
+    orbitMotes(ctx, t, pal.glow, 17, pose.run);
+    if (special > 0) {
+      ctx.strokeStyle = "rgba(196,106,212,0.5)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(0, 16, 22 + special * 20, 6, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  } else if (letter === "n") {
+    const taut = special > 0 ? 4 : pose.step * 1.2;
+    const sc = capital ? 1.18 : 1;
+    ctx.save();
+    ctx.scale(sc, sc);
+    strokeInk(ctx, pal.glow, pal.core, capital ? 5 : 4, () => {
+      ctx.moveTo(-11, 16);
+      ctx.lineTo(-11, -16);
+      if (capital) {
+        ctx.lineTo(11 + taut, 16);
+        ctx.lineTo(11, -16);
+      } else {
+        ctx.quadraticCurveTo(-8, -18, 2, -10);
+        ctx.quadraticCurveTo(11, -4, 11, 16);
+      }
+    });
+    emberEye(ctx, -5, -10, pal.glow, t, 7);
+    ctx.restore();
+    if (pose.grounded) inkStride(ctx, pose.gait, pose.run, 16, pal.glow, pal.core);
+    orbitMotes(ctx, t, pal.glow, 16, pose.run);
+    if (snap > 0.2) {
+      ctx.strokeStyle = "rgba(142,200,212,0.7)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(12, -4);
+      ctx.lineTo(22 + snap * 10, -4);
+      ctx.stroke();
+    }
+  } else if (letter === "t") {
+    const sc = capital ? 1.2 : 1;
+    ctx.save();
+    ctx.scale(sc, sc);
+    strokeInk(ctx, pal.glow, pal.core, capital ? 5.2 : 4, () => {
+      if (capital) {
+        ctx.moveTo(-14, -16);
+        ctx.lineTo(14, -16);
+        ctx.moveTo(0, -16);
+        ctx.lineTo(0, 16);
+      } else {
+        ctx.moveTo(2, -16);
+        ctx.lineTo(2, 14);
+        ctx.quadraticCurveTo(6, 18, 10, 16);
+        ctx.moveTo(-10, -6 + pose.step);
+        ctx.lineTo(12, -6);
+      }
+    });
+    emberEye(ctx, capital ? 4 : 6, capital ? -8 : -10, pal.glow, t, 8);
+    ctx.restore();
+    if (pose.grounded) inkStride(ctx, pose.gait, pose.run, 15, pal.glow, pal.core);
+    orbitMotes(ctx, t, pal.glow, 16, pose.run);
+  } else {
+    strokeInk(ctx, pal.glow, pal.core, 4, () => {
+      ctx.arc(0, 0, 14, 0.4, Math.PI * 2 - 0.4);
+    });
+    emberEye(ctx, 2, -6, pal.glow, t, 0);
   }
   ctx.restore();
 }
@@ -1708,6 +1942,24 @@ export function drawNpcGlyph(
       ctx.arc(2, 7, 9, -Math.PI * 0.5, Math.PI * 0.5);
     });
     emberEye(ctx, -6, -12, "#c4b49a");
+  } else if (glyph === "e") {
+    strokeGlyph(ctx, "#6ec8e8", core, () => {
+      ctx.arc(0, 1, 12, 0.35, Math.PI * 2 - 0.15);
+      ctx.moveTo(-10, 1);
+      ctx.lineTo(10, 1);
+    });
+    emberEye(ctx, 2, -6, "#6ec8e8");
+  } else if (glyph === "r") {
+    strokeGlyph(ctx, "#e07040", core, () => {
+      ctx.moveTo(-10, -14);
+      ctx.lineTo(-10, 14);
+      ctx.moveTo(-10, -12);
+      ctx.quadraticCurveTo(8, -14, 8, -4);
+      ctx.quadraticCurveTo(6, 2, -4, 2);
+      ctx.moveTo(-2, 2);
+      ctx.lineTo(8, 14);
+    });
+    emberEye(ctx, -4, -8, "#e07040");
   } else {
     ctx.fillStyle = "#d8e8e0";
     ctx.font = "600 42px 'Cormorant Garamond', serif";
@@ -1728,16 +1980,30 @@ export function drawPlayer(ctx: CanvasRenderingContext2D, p: Player, camX: numbe
   const cx = Math.round(p.x + p.w / 2 - camX);
   const cy = Math.round(p.y + p.h / 2 - camY);
   const motion = { vx: p.vx, vy: p.vy, grounded: p.grounded, special: p.special };
-  if (p.roll > 0) {
+  const ghosts = p.roll > 0 ? (p.letter === "r" ? 3 : 2) : p.letter === "s" && Math.abs(p.vx) > 180 ? 1 : 0;
+  for (let i = ghosts; i >= 1; i--) {
     ctx.save();
-    ctx.globalAlpha = 0.18;
-    drawLetterForm(ctx, p.letter, p.letter === "c" && p.capital, cx - p.facing * 8, cy, p.facing, t + p.anim, p.squash * p.stretch, p.attack, 0, 0, motion);
+    ctx.globalAlpha = p.letter === "r" ? 0.16 * i : 0.14;
+    drawLetterForm(
+      ctx,
+      p.letter,
+      p.capital,
+      cx - p.facing * (10 * i),
+      cy + (p.letter === "r" ? i : 0),
+      p.facing,
+      t + p.anim,
+      p.squash * p.stretch,
+      p.attack,
+      0,
+      0,
+      motion,
+    );
     ctx.restore();
   }
   drawLetterForm(
     ctx,
     p.letter,
-    p.letter === "c" && p.capital,
+    p.capital,
     cx,
     cy,
     p.facing,
@@ -1770,7 +2036,7 @@ export function drawShot(ctx: CanvasRenderingContext2D, b: Bullet, camX: number,
     return;
   }
   if (b.kind === "wave") {
-    ctx.fillStyle = "#d45a4a";
+    ctx.fillStyle = b.from === "player" ? "#c4b08a" : "#d45a4a";
     ctx.globalAlpha = 0.7;
     ctx.beginPath();
     ctx.ellipse(0, 0, 18, 7, 0, 0, Math.PI * 2);
@@ -1789,11 +2055,19 @@ export function drawShot(ctx: CanvasRenderingContext2D, b: Bullet, camX: number,
         : "#d45a4a"
       : b.kind === "solar"
         ? "#e8d48a"
-        : b.kind === "venom"
-          ? "#7fd0ff"
-          : b.kind === "wind"
-            ? "#9ad4e0"
-            : "#5ee0c0";
+        : b.kind === "echo"
+          ? "#e8d48a"
+          : b.kind === "nib"
+            ? "#9af8de"
+            : b.kind === "venom"
+              ? "#7fd0ff"
+              : b.kind === "wind"
+                ? "#9ad4e0"
+                : b.kind === "frost"
+                  ? "#8ee0f4"
+                  : b.kind === "ember"
+                    ? "#e07040"
+                    : "#5ee0c0";
   ctx.strokeStyle = col;
   ctx.fillStyle = col;
   ctx.shadowColor = col;
@@ -1802,12 +2076,30 @@ export function drawShot(ctx: CanvasRenderingContext2D, b: Bullet, camX: number,
   ctx.beginPath();
   ctx.arc(0, 0, b.r, 0.7, Math.PI * 2 - 0.7);
   ctx.stroke();
-  if (b.kind === "fang" || b.kind === "solar" || b.kind === "venom") {
+  if (b.kind === "fang" || b.kind === "solar" || b.kind === "venom" || b.kind === "wind") {
     ctx.beginPath();
     ctx.moveTo(b.r - 1, -2.4);
     ctx.lineTo(b.r + 7, 0);
     ctx.lineTo(b.r - 1, 2.4);
     ctx.closePath();
+    ctx.fill();
+  }
+  if (b.kind === "frost") {
+    ctx.globalAlpha = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(0, -b.r - 3);
+    ctx.lineTo(2, 0);
+    ctx.lineTo(0, b.r + 3);
+    ctx.lineTo(-2, 0);
+    ctx.closePath();
+    ctx.stroke();
+  }
+  if (b.kind === "ember") {
+    ctx.globalAlpha = 0.85;
+    ctx.beginPath();
+    ctx.moveTo(-b.r, 0);
+    ctx.quadraticCurveTo(0, -b.r - 4, b.r + 4, 0);
+    ctx.quadraticCurveTo(0, b.r + 2, -b.r, 0);
     ctx.fill();
   }
   if (b.kind === "solar") {
@@ -1997,7 +2289,7 @@ export function drawHudCanvas(
   ctx.fillStyle = "#e8ece8";
   ctx.font = "600 11px 'Source Sans 3', sans-serif";
   ctx.textAlign = "left";
-  ctx.fillText(p.letter === "c" && p.capital ? "C" : p.letter, 310, 30);
+  ctx.fillText(p.capital ? p.letter.toUpperCase() : p.letter, 310, 30);
   ctx.fillStyle = "#8ec8d4";
   ctx.font = "600 9px 'Source Sans 3', sans-serif";
   ctx.fillText(`FANG ${"I".repeat(p.shotLevel)}`, 310, 44);
