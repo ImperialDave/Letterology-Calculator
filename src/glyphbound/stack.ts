@@ -132,28 +132,68 @@ function uniqueMob(rows: string[], x: number, y: number, prefer: string) {
   }
 }
 
+function placeBosses(rows: string[], n: number, fy: number) {
+  const W = rows[0]?.length ?? 0;
+  const set = (x: number, y: number, ch: string) => {
+    if (y < 0 || y >= rows.length || x < 0 || x >= W) return;
+    rows[y] = rows[y].slice(0, x) + ch + rows[y].slice(x + 1);
+  };
+  if (n < 6) return;
+  for (let y = 0; y < rows.length; y++) {
+    for (let x = 0; x < W; x++) if (rows[y][x] === "!") set(x, y, ".");
+  }
+  const isBoss = n % 5 === 0 || n === 60;
+  if (!isBoss) return;
+  let count = 1;
+  if (n % 10 === 0 || n === 55) count = 2;
+  if (n === 30 || n === 60) count = 3;
+  const seats =
+    count === 1 ? [W - 15] : count === 2 ? [Math.floor(W * 0.46), W - 15] : [Math.floor(W * 0.28), Math.floor(W * 0.55), W - 15];
+  for (const raw of seats) {
+    let x = Math.max(12, Math.min(W - 8, raw));
+    if (rows[fy]?.[x] !== "#") {
+      let found = -1;
+      for (let d = 1; d < 10; d++) {
+        if (rows[fy]?.[x + d] === "#") {
+          found = x + d;
+          break;
+        }
+        if (rows[fy]?.[x - d] === "#") {
+          found = x - d;
+          break;
+        }
+      }
+      if (found < 0) continue;
+      x = found;
+    }
+    set(x, fy - 1, "!");
+  }
+}
+
 export function installStacks() {
   for (const meta of Object.values(LEVELS)) {
     if (!meta?.rows?.length) continue;
     if (meta.id === "hub") continue;
     const rows = meta.rows.slice();
     const fy = floorY(rows);
-    if (alreadyStacked(rows, fy)) continue;
     const n = meta.index || 1;
-    const kind = KINDS[(n + meta.id.length) % KINDS.length];
-    const W = rows[0].length;
-    const start = 16 + (n % 7);
-    const gap = 18 + (n % 5);
-    let x = start;
-    let painted = 0;
-    while (x < W - 18 && painted < (n >= 30 ? 4 : 3)) {
-      if (hash(n, x, 3) < 0.72) {
-        const next = paint(rows, fy, x, KINDS[(KINDS.indexOf(kind) + painted) % KINDS.length], n);
-        if (painted === 1) uniqueMob(rows, x + 2, fy - 1, "1");
-        x = next + 4;
-        painted++;
-      } else x += gap;
+    if (!alreadyStacked(rows, fy)) {
+      const kind = KINDS[(n + meta.id.length) % KINDS.length];
+      const W = rows[0].length;
+      const start = 16 + (n % 7);
+      const gap = 18 + (n % 5);
+      let x = start;
+      let painted = 0;
+      while (x < W - 18 && painted < (n >= 30 ? 4 : 3)) {
+        if (hash(n, x, 3) < 0.72) {
+          const next = paint(rows, fy, x, KINDS[(KINDS.indexOf(kind) + painted) % KINDS.length], n);
+          if (painted === 1) uniqueMob(rows, x + 2, fy - 1, "1");
+          x = next + 4;
+          painted++;
+        } else x += gap;
+      }
     }
+    placeBosses(rows, n, fy);
     meta.rows = rows;
   }
 }
