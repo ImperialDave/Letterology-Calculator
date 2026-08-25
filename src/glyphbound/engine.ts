@@ -12,6 +12,7 @@ import {
   drawTiles,
   drawWeatherFront,
   drawGrade,
+  setFxLite,
 } from "./draw";
 import { AudioBus } from "./audio";
 import { Input } from "./input";
@@ -129,6 +130,13 @@ export class GameEngine {
   lastCheck = "";
   wallCoyote = 0;
   wallDir: 1 | -1 = 1;
+  lite = false;
+  private bufW = 0;
+  private bufH = 0;
+  private collSmall: Solid[] | null = null;
+  private collBig: Solid[] | null = null;
+  private collWalls = -1;
+  private visHidden = false;
 
   constructor(canvas: HTMLCanvasElement, ui: (s: UiSnap) => void) {
     this.canvas = canvas;
@@ -142,22 +150,39 @@ export class GameEngine {
 
   start() {
     this.running = true;
+    this.lite =
+      window.matchMedia("(pointer: coarse)").matches ||
+      Math.min(window.innerWidth, window.innerHeight) < 520;
+    setFxLite(this.lite);
     this.last = performance.now();
+    const onVis = () => {
+      this.visHidden = document.hidden;
+      if (!this.visHidden) this.last = performance.now();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    (this as unknown as { _onVis?: () => void })._onVis = onVis;
     const loop = (now: number) => {
       if (!this.running) return;
+      this.raf = requestAnimationFrame(loop);
+      if (this.visHidden) {
+        this.last = now;
+        return;
+      }
       let dt = (now - this.last) / 1000;
       this.last = now;
       if (dt > 0.1) dt = 0.1;
       this.acc += dt;
       this.time += dt;
       if (this.hitstop > 0) this.hitstop -= dt;
-      while (this.acc >= STEP) {
+      let steps = 0;
+      while (this.acc >= STEP && steps < 4) {
         this.acc -= STEP;
+        steps += 1;
         if (this.hitstop <= 0) this.step(STEP);
       }
+      if (this.acc > STEP * 2) this.acc = 0;
       this.audio.tickMusic(dt);
       this.draw();
-      this.raf = requestAnimationFrame(loop);
     };
     this.raf = requestAnimationFrame(loop);
     this.emit();
@@ -168,6 +193,8 @@ export class GameEngine {
     this.running = false;
     cancelAnimationFrame(this.raf);
     this.input.detach();
+    const onVis = (this as unknown as { _onVis?: () => void })._onVis;
+    if (onVis) document.removeEventListener("visibilitychange", onVis);
   }
 
   private syncVitals() {
@@ -887,6 +914,7 @@ export class GameEngine {
   }
 
   step(dt: number) {
+    this.bumpColliders();
     const a = this.input.poll();
     if (this.mode === "title") {
       this.titleC += dt;
@@ -997,6 +1025,12 @@ export class GameEngine {
       this.hudAcc = 0;
       this.emit();
     }
+  }
+
+  private bumpColliders() {
+    this.collSmall = null;
+    this.collBig = null;
+    this.collWalls = -1;
   }
 
   private physicsPlayer(dt: number, a: ReturnType<Input["poll"]>) {
@@ -1204,6 +1238,7 @@ export class GameEngine {
     if (a.stem) this.scribe(false);
     else if (a.shelf) this.scribe(true);
     else if (a.word) this.scribe(a.down);
+    this.bumpColliders();
   }
 
   private moveActor(
@@ -1228,6 +1263,8 @@ export class GameEngine {
   }
 
   private solidsNow(large: boolean): Solid[] {
+    const cache = large ? this.collBig : this.collSmall;
+    if (cache && this.collWalls === this.walls.length) return cache;
     const extra: Solid[] = this.walls.map((w) => ({
       x: w.x,
       y: w.y,
@@ -1235,7 +1272,7 @@ export class GameEngine {
       h: w.h,
       type: (w.kind === "plat" ? "oneway" : "solid") as Solid["type"],
     }));
-    return [...this.solids, ...extra].filter((s) => {
+    const list = this.solids.concat(extra).filter((s) => {
       if (s.type === "break" && s.broken) return false;
       if (s.type === "crumble" && s.broken) return false;
       if (s.type === "sluice") return false;
@@ -1245,6 +1282,10 @@ export class GameEngine {
       if (s.type === "vent" && !large) return false;
       return true;
     });
+    this.collWalls = this.walls.length;
+    if (large) this.collBig = list;
+    else this.collSmall = list;
+    return list;
   }
 
   private sepAxis(
@@ -3114,7 +3155,10 @@ export class GameEngine {
   }
 
   private burst(x: number, y: number, color: string, n: number, kind: Particle["kind"]) {
-    for (let i = 0; i < n; i++) {
+    const cap = this.lite ? 70 : 140;
+    if (this.particles.length > cap) return;
+    const count = this.lite ? Math.max(1, Math.ceil(n * 0.4)) : n;
+    for (let i = 0; i < count; i++) {
       this.particles.push({
         x,
         y,
@@ -3130,14 +3174,20 @@ export class GameEngine {
   }
 
   private updateParticles(dt: number) {
-    for (const q of this.particles) {
+    const cap = this.lite ? 70 : 140;
+    let w = 0;
+    const list = this.particles;
+    for (let i = 0; i < list.length; i++) {
+      const q = list[i];
       q.life -= dt;
+      if (q.life <= 0) continue;
       q.x += q.vx * dt;
       q.y += q.vy * dt;
       q.vy += 240 * dt;
+      list[w++] = q;
     }
-    if (this.particles.length > 180) this.particles.splice(0, this.particles.length - 180);
-    this.particles = this.particles.filter((q) => q.life > 0);
+    list.length = w;
+    if (list.length > cap) list.splice(0, list.length - cap);
   }
 
   private say(s: string) {
@@ -3452,12 +3502,17 @@ export class GameEngine {
 
   draw() {
     const ctx = this.ctx;
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const dprCap = this.lite ? 1.25 : 1.75;
+    const dpr = Math.min(dprCap, window.devicePixelRatio || 1);
     const cw = this.canvas.clientWidth || VIEW_W;
     const ch = this.canvas.clientHeight || VIEW_H;
-    if (this.canvas.width !== Math.floor(cw * dpr) || this.canvas.height !== Math.floor(ch * dpr)) {
-      this.canvas.width = Math.floor(cw * dpr);
-      this.canvas.height = Math.floor(ch * dpr);
+    const bw = Math.floor(cw * dpr);
+    const bh = Math.floor(ch * dpr);
+    if (this.bufW !== bw || this.bufH !== bh) {
+      this.canvas.width = bw;
+      this.canvas.height = bh;
+      this.bufW = bw;
+      this.bufH = bh;
     }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const scale = Math.min(cw / VIEW_W, ch / VIEW_H);
@@ -3473,8 +3528,8 @@ export class GameEngine {
     ctx.clip();
 
     const sh = this.save.shake ? this.trauma * this.trauma : 0;
-    const sx = (Math.random() * 2 - 1) * 10 * sh;
-    const sy = (Math.random() * 2 - 1) * 8 * sh;
+    const sx = sh ? (Math.random() * 2 - 1) * 10 * sh : 0;
+    const sy = sh ? (Math.random() * 2 - 1) * 8 * sh : 0;
     const theme = LEVELS[this.stage]?.theme ?? "hub";
     const district = LEVELS[this.stage]?.index ?? 0;
 
@@ -3495,26 +3550,39 @@ export class GameEngine {
         ctx.fillStyle = "rgba(212,90,74,0.45)";
         ctx.fillRect(b.x - this.camX, b.y - this.camY, b.w, b.h);
       }
+      const camX = this.camX;
+      const camY = this.camY;
+      const vis = (x: number, y: number, w: number, h: number) =>
+        x + w > camX - 48 && x < camX + VIEW_W + 48 && y + h > camY - 48 && y < camY + VIEW_H + 48;
       for (const n of this.npcs) {
-        drawNpcGlyph(ctx, n.glyph, n.x + n.w / 2 - this.camX, n.y + n.h / 2 - this.camY, this.time);
+        if (!vis(n.x, n.y, n.w, n.h)) continue;
+        drawNpcGlyph(ctx, n.glyph, n.x + n.w / 2 - camX, n.y + n.h / 2 - camY, this.time);
       }
       for (const u of this.pickups) {
         if (u.taken) continue;
+        if (!vis(u.x, u.y, u.w, u.h)) continue;
         if (u.kind === "door" || u.kind === "portal") this.drawGate(ctx, u);
-        else drawPickup(ctx, u.x + u.w / 2 - this.camX, u.y + u.h / 2 - this.camY, u.kind, u.label ?? "", this.time);
+        else drawPickup(ctx, u.x + u.w / 2 - camX, u.y + u.h / 2 - camY, u.kind, u.label ?? "", this.time);
       }
-      for (const e of this.enemies) if (e.alive) drawEnemy(ctx, e, this.camX, this.camY, this.time);
-      drawPlayer(ctx, this.player, this.camX, this.camY, this.time);
-      for (const b of this.bullets) drawShot(ctx, b, this.camX, this.camY);
+      for (const e of this.enemies) {
+        if (!e.alive || !vis(e.x, e.y, e.w, e.h)) continue;
+        drawEnemy(ctx, e, camX, camY, this.time);
+      }
+      drawPlayer(ctx, this.player, camX, camY, this.time);
+      for (const b of this.bullets) {
+        if (!vis(b.x - 8, b.y - 8, 16, 16)) continue;
+        drawShot(ctx, b, camX, camY);
+      }
       for (const q of this.particles) {
+        if (!vis(q.x, q.y, q.size, q.size)) continue;
         ctx.globalAlpha = q.life / q.max;
         ctx.fillStyle = q.color;
-        ctx.fillRect(q.x - this.camX, q.y - this.camY, q.size, q.size);
+        ctx.fillRect(q.x - camX, q.y - camY, q.size, q.size);
         ctx.globalAlpha = 1;
       }
       drawWeatherFront(ctx, this.camX, this.camY, this.time, district);
       ctx.restore();
-      drawGrade(ctx, district);
+      if (!this.lite) drawGrade(ctx, district);
       if (this.mode === "play" || this.mode === "hub" || this.mode === "transform") {
         drawHudCanvas(ctx, this.player, this.nearHint, this.toast);
       }

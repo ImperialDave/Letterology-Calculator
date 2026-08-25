@@ -1,6 +1,12 @@
 import { districtFor, type DistrictLook, type Mid, type Weather } from "./districts";
 import { VIEW_H, VIEW_W, type ThemeId } from "./types";
 
+/** Low-FX path for phones and small screens — fewer weather motes, no window grids. */
+export let fxLite = false;
+export function setFxLite(v: boolean) {
+  fxLite = v;
+}
+
 export function drawParallax(
   ctx: CanvasRenderingContext2D,
   camX: number,
@@ -17,9 +23,13 @@ export function drawParallax(
   fillSky(ctx, d);
   drawCelestial(ctx, d, t, camX);
   drawMid(ctx, d, camX, t, index);
-  drawWeather(ctx, d.weather, camX, t, d.accent, 0.55);
-  drawHaze(ctx, d);
-  drawDressing(ctx, d, camX, t, index);
+  if (!fxLite) {
+    drawWeather(ctx, d.weather, camX, t, d.accent, 0.55);
+    drawHaze(ctx, d);
+    drawDressing(ctx, d, camX, t, index);
+  } else {
+    drawHaze(ctx, d);
+  }
   ctx.restore();
 }
 
@@ -31,6 +41,7 @@ export function drawWeatherFront(
   index: number,
 ) {
   const d = districtFor(index);
+  if (fxLite) return;
   drawWeather(ctx, d.weather, camX, t, d.accent, 1);
 }
 
@@ -124,7 +135,7 @@ function drawWeather(ctx: CanvasRenderingContext2D, kind: Weather, camX: number,
     ctx.strokeStyle = "rgba(200,214,224,0.45)";
     ctx.lineWidth = 1.1;
     ctx.globalAlpha = 0.35 * layer;
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < (fxLite ? 18 : 50); i++) {
       const rx = ((i * 47 + t * 220 - camX * 0.5) % (w + 20)) - 10;
       const ry = ((i * 89 + t * 340) % (h + 20)) - 10;
       ctx.beginPath();
@@ -135,7 +146,7 @@ function drawWeather(ctx: CanvasRenderingContext2D, kind: Weather, camX: number,
   } else if (kind === "ash" || kind === "snow") {
     ctx.fillStyle = kind === "snow" ? "#e8ece8" : "#c4b08a";
     ctx.globalAlpha = 0.4 * layer;
-    for (let i = 0; i < 36; i++) {
+    for (let i = 0; i < (fxLite ? 14 : 36); i++) {
       const rx = ((i * 61 + t * 18 - camX * 0.2) % (w + 12)) - 6;
       const ry = ((i * 43 + t * 22) % (h + 8)) - 4;
       ctx.fillRect(rx, ry, kind === "snow" ? 2.2 : 1.6, kind === "snow" ? 2.2 : 1.6);
@@ -143,7 +154,7 @@ function drawWeather(ctx: CanvasRenderingContext2D, kind: Weather, camX: number,
   } else if (kind === "embers" || kind === "sparks") {
     ctx.fillStyle = accent;
     ctx.globalAlpha = 0.5 * layer;
-    for (let i = 0; i < 28; i++) {
+    for (let i = 0; i < (fxLite ? 10 : 28); i++) {
       const rx = ((i * 67 + t * (kind === "sparks" ? 90 : 24) - camX * 0.3) % (w + 16)) - 8;
       const ry = (h - ((i * 41 + t * (kind === "sparks" ? 70 : 40)) % h));
       ctx.fillRect(rx, ry, kind === "sparks" ? 2 : 1.6, kind === "sparks" ? 2 : 3);
@@ -205,7 +216,7 @@ function drawWeather(ctx: CanvasRenderingContext2D, kind: Weather, camX: number,
   } else if (kind === "hail") {
     ctx.fillStyle = "#e8ece8";
     ctx.globalAlpha = 0.4 * layer;
-    for (let i = 0; i < 28; i++) {
+    for (let i = 0; i < (fxLite ? 10 : 28); i++) {
       const rx = ((i * 53 + t * 180 - camX * 0.4) % (w + 16)) - 8;
       const ry = ((i * 71 + t * 260) % (h + 16)) - 8;
       ctx.fillRect(rx, ry, 2.4, 3.4);
@@ -293,11 +304,13 @@ function midCity(ctx: CanvasRenderingContext2D, d: DistrictLook, camX: number, t
     ctx.fillRect(x, base - bh, bw, bh);
     ctx.fillStyle = "rgba(200,214,224,0.08)";
     ctx.fillRect(x + 2, base - bh, 3, bh);
-    for (let wy = base - bh + 10; wy < base - 12; wy += 11) {
-      for (let wx = x + 7; wx < x + bw - 6; wx += 8) {
-        const on = ((i * 13 + wy + Math.floor(t * 0.4)) % 7) !== 0;
-        ctx.fillStyle = on ? (i % 4 === 1 ? d.accent + "73" : "rgba(170,198,210,0.28)") : "rgba(12,16,20,0.35)";
-        ctx.fillRect(wx, wy, 4, 6);
+    if (!fxLite) {
+      for (let wy = base - bh + 10; wy < base - 12; wy += 11) {
+        for (let wx = x + 7; wx < x + bw - 6; wx += 8) {
+          const on = ((i * 13 + wy + Math.floor(t * 0.4)) % 7) !== 0;
+          ctx.fillStyle = on ? (i % 4 === 1 ? d.accent + "73" : "rgba(170,198,210,0.28)") : "rgba(12,16,20,0.35)";
+          ctx.fillRect(wx, wy, 4, 6);
+        }
       }
     }
     if (i % 4 === 0) {

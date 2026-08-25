@@ -10,6 +10,7 @@ import {
   type ThemeId,
 } from "./types";
 import { KITS } from "./roster";
+import { fxLite } from "./sky";
 
 export function roundRect(
   ctx: CanvasRenderingContext2D,
@@ -29,7 +30,7 @@ export function roundRect(
   ctx.closePath();
 }
 
-export { drawParallax, drawWeatherFront, drawGrade } from "./sky";
+export { drawParallax, drawWeatherFront, drawGrade, setFxLite } from "./sky";
 
 function tileChar(rows: string[], tx: number, ty: number) {
   if (ty < 0 || ty >= rows.length || tx < 0 || tx >= rows[0].length) return "#";
@@ -68,7 +69,7 @@ export function drawTiles(
         drawCrumble(ctx, x, y, t, theme);
       } else if (ch === "~") {
         drawSluice(ctx, x, y, t, theme);
-      } else if (ch === ".") {
+      } else if (ch === "." && !fxLite) {
         const left = tileChar(rows, tx - 1, ty);
         const right = tileChar(rows, tx + 1, ty);
         const below = tileChar(rows, tx, ty + 1);
@@ -142,9 +143,11 @@ function drawBlock(
       ctx.fillStyle = "#8a7048";
       for (let i = 0; i < 4; i++) ctx.fillRect(x + 8 + i * 10, y + 3, 3, 3);
     }
-    ctx.fillStyle = "rgba(201,184,150,0.18)";
-    ctx.font = "italic 22px 'Cormorant Garamond', serif";
-    ctx.fillText(["e", "s", "r", "n", "c", "a"][stamp], x + 14, y + 32);
+    if (!fxLite) {
+      ctx.fillStyle = "rgba(201,184,150,0.18)";
+      ctx.font = "italic 22px 'Cormorant Garamond', serif";
+      ctx.fillText(["e", "s", "r", "n", "c", "a"][stamp], x + 14, y + 32);
+    }
     if (stamp === 0) {
       ctx.strokeStyle = "rgba(0,0,0,0.35)";
       ctx.beginPath();

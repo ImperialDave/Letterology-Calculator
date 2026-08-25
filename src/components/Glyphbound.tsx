@@ -378,12 +378,12 @@ export function Glyphbound() {
         <>
           <div className="pointer-events-none absolute left-4 top-4 right-4 flex items-start justify-between">
             <div className="pointer-events-auto flex flex-col gap-2">
-              <div className="flex max-w-[22rem] flex-wrap items-center gap-1.5">
+              <div className="gb-party flex max-w-[22rem] flex-wrap items-center gap-1.5">
                 {ui.party.length > 1 && (
                   <button
                     type="button"
                     data-role="cyclePrev"
-                    className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-surface/80 text-sm text-muted"
+                    className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-bg text-sm text-fg"
                     aria-label="Previous letter"
                     title="Previous letter (` / [ / R)"
                   >
@@ -399,16 +399,17 @@ export function Glyphbound() {
                       type="button"
                       data-role={`p${i + 1}`}
                       title={`${kit.element} · ${skillName(L, ui.capital)}`}
-                      className={`flex h-11 min-w-11 flex-col items-center justify-center rounded-md border px-1.5 font-display leading-none ${
-                        on ? "bg-elevated" : "border-border bg-surface/80 text-muted"
+                      className={`gb-letter flex h-11 min-w-11 flex-col items-center justify-center rounded-md px-1.5 font-display leading-none ${
+                        on ? "gb-letter-on" : ""
                       }`}
                       style={{
-                        color: kit.glow,
-                        borderColor: on ? kit.glow : undefined,
+                        boxShadow: on ? `inset 0 2px 0 ${kit.glow}` : `inset 0 0 0 1px ${kit.glow}66`,
                       }}
                     >
-                      <span className="text-lg">{ui.capital ? L.toUpperCase() : L}</span>
-                      <span className="mt-0.5 text-[8px] tracking-[0.14em] uppercase opacity-80">{kit.element}</span>
+                      <span className="text-lg font-semibold text-fg" style={{ color: kit.core }}>
+                        {ui.capital ? L.toUpperCase() : L}
+                      </span>
+                      <span className="gb-letter-name mt-0.5 text-[8px] uppercase">{kit.element}</span>
                     </button>
                   );
                 })}
@@ -416,7 +417,7 @@ export function Glyphbound() {
                   <button
                     type="button"
                     data-role="cycle"
-                    className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-surface/80 text-sm text-muted"
+                    className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-bg text-sm text-fg"
                     aria-label="Next letter"
                     title="Next letter (Tab / Q / ])"
                   >
@@ -588,8 +589,10 @@ function MobilePad({
   inputRef: RefObject<GameEngine | null>;
 }) {
   const zoneRef = useRef<HTMLDivElement>(null);
-  const [knob, setKnob] = useState({ x: 0, y: 0, on: false, ox: 0.36, oy: 0.62 });
+  const [knob, setKnob] = useState({ x: 0, y: 0, on: false, ox: 0.48, oy: 0.55 });
   const last = useRef("");
+
+  const rest = useRef({ ox: 0.48, oy: 0.55 });
 
   useEffect(() => {
     let id = 0;
@@ -597,20 +600,34 @@ function MobilePad({
       const inp = inputRef.current?.input;
       const zone = zoneRef.current;
       if (inp && zone) {
-        const r = zone.getBoundingClientRect();
-        const ox = inp.stick.active ? (inp.stick.ox - r.left) / r.width : 0.36;
-        const oy = inp.stick.active ? (inp.stick.oy - r.top) / r.height : 0.62;
-        const next = {
-          x: inp.stick.x,
-          y: inp.stick.y,
-          on: inp.stick.active,
-          ox: Math.min(0.82, Math.max(0.18, ox)),
-          oy: Math.min(0.82, Math.max(0.18, oy)),
-        };
-        const key = `${next.on}|${next.x.toFixed(2)}|${next.y.toFixed(2)}|${next.ox.toFixed(2)}|${next.oy.toFixed(2)}`;
-        if (key !== last.current) {
-          last.current = key;
-          setKnob(next);
+        const landscape =
+          window.matchMedia("(orientation: landscape) and (max-height: 560px)").matches;
+        const restOx = landscape ? 0.52 : 0.46;
+        const restOy = landscape ? 0.55 : 0.6;
+        rest.current = { ox: restOx, oy: restOy };
+        if (!inp.stick.active) {
+          const next = { x: 0, y: 0, on: false, ox: restOx, oy: restOy };
+          const key = `off|${restOx}|${restOy}`;
+          if (key !== last.current) {
+            last.current = key;
+            setKnob(next);
+          }
+        } else {
+          const r = zone.getBoundingClientRect();
+          const ox = (inp.stick.ox - r.left) / r.width;
+          const oy = (inp.stick.oy - r.top) / r.height;
+          const next = {
+            x: inp.stick.x,
+            y: inp.stick.y,
+            on: true,
+            ox: Math.min(0.82, Math.max(0.18, ox)),
+            oy: Math.min(0.82, Math.max(0.18, oy)),
+          };
+          const key = `on|${next.x.toFixed(2)}|${next.y.toFixed(2)}|${next.ox.toFixed(2)}|${next.oy.toFixed(2)}`;
+          if (key !== last.current) {
+            last.current = key;
+            setKnob(next);
+          }
         }
       }
       id = requestAnimationFrame(tick);
@@ -640,43 +657,41 @@ function MobilePad({
       <div
         ref={zoneRef}
         data-role="stick"
-        className="pointer-events-auto absolute bottom-0 left-0 h-[42%] w-[42%] max-w-64"
-        style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
+        className="gb-stick-zone pointer-events-auto"
         aria-label="Move"
       >
         <div
-          className={`absolute h-[6.6rem] w-[6.6rem] -translate-x-1/2 -translate-y-1/2 rounded-full border transition-opacity duration-150 ${
-            knob.on ? "border-fg/35 bg-elevated/45 opacity-100" : "border-fg/20 bg-elevated/25 opacity-70"
+          className={`absolute h-[6.6rem] w-[6.6rem] -translate-x-1/2 -translate-y-1/2 rounded-full border ${
+            knob.on ? "border-fg/40 bg-elevated/55 opacity-100" : "border-fg/30 bg-elevated/40 opacity-90"
           }`}
           style={{ left: `${knob.ox * 100}%`, top: `${knob.oy * 100}%` }}
         >
           <span className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_50%_40%,rgba(232,236,232,0.08),transparent_70%)]" />
           <span
-            className="pointer-events-none absolute left-1/2 top-1/2 h-11 w-11 -translate-x-1/2 -translate-y-1/2 rounded-full border border-fg/40 bg-fg/80 shadow-[0_6px_16px_rgba(0,0,0,0.35)]"
+            className="pointer-events-none absolute left-1/2 top-1/2 h-11 w-11 -translate-x-1/2 -translate-y-1/2 rounded-full border border-fg/50 bg-fg/90 shadow-[0_6px_16px_rgba(0,0,0,0.35)]"
             style={{ transform: `translate(calc(-50% + ${kx}px), calc(-50% + ${ky}px))` }}
           />
         </div>
-        <button
-          type="button"
-          data-role="down"
-          className="gb-pad-btn pointer-events-auto absolute bottom-[0.85rem] left-[6.8rem] flex h-10 w-10 items-center justify-center rounded-full border border-fg/20 bg-surface/40 text-sm text-muted"
-          aria-label="Down"
-        >
-          ↓
-        </button>
-        <button
-          type="button"
-          data-role="shelf"
-          className="gb-pad-btn pointer-events-auto absolute bottom-[4.1rem] left-[6.6rem] flex h-11 w-11 items-center justify-center rounded-full border border-accent/40 bg-surface/55 text-[10px] font-medium tracking-wide text-accent"
-        >
-          Shelf
-        </button>
+        <div className="pointer-events-auto absolute bottom-[0.7rem] right-[0.2rem] flex flex-col gap-2">
+          <button
+            type="button"
+            data-role="shelf"
+            className="gb-pad-btn flex h-11 w-11 items-center justify-center rounded-full border border-accent/50 bg-bg text-[10px] font-medium tracking-wide text-accent"
+          >
+            Shelf
+          </button>
+          <button
+            type="button"
+            data-role="down"
+            className="gb-pad-btn flex h-10 w-10 items-center justify-center rounded-full border border-fg/30 bg-bg text-sm text-fg"
+            aria-label="Down"
+          >
+            ↓
+          </button>
+        </div>
       </div>
 
-      <div
-        className="pointer-events-none absolute bottom-0 right-0 h-[11.5rem] w-[12.2rem]"
-        style={{ paddingBottom: "max(0.4rem, env(safe-area-inset-bottom))", paddingRight: "max(0.4rem, env(safe-area-inset-right))" }}
-      >
+      <div className="gb-actions">
         <button
           type="button"
           data-role="jump"
@@ -687,21 +702,21 @@ function MobilePad({
         <button
           type="button"
           data-role="attack"
-          className="gb-pad-btn pointer-events-auto absolute bottom-4 right-[5.5rem] flex h-[3.7rem] w-[3.7rem] items-center justify-center rounded-full border border-accent/45 bg-accent-dim text-[12px] font-medium text-accent"
+          className="gb-pad-btn pointer-events-auto absolute bottom-4 right-[5.5rem] flex h-[3.7rem] w-[3.7rem] items-center justify-center rounded-full border border-accent bg-accent text-[12px] font-semibold text-bg"
         >
           Fang
         </button>
         <button
           type="button"
           data-role="stem"
-          className="gb-pad-btn pointer-events-auto absolute bottom-[5.6rem] right-[5.7rem] flex h-[2.85rem] w-[2.85rem] items-center justify-center rounded-full border border-accent/35 bg-surface/55 text-[10px] font-medium tracking-wide text-accent"
+          className="gb-pad-btn pointer-events-auto absolute bottom-[5.6rem] right-[5.7rem] flex h-[2.85rem] w-[2.85rem] items-center justify-center rounded-full border border-accent/50 bg-bg text-[10px] font-semibold tracking-wide text-accent"
         >
           Stem
         </button>
         <button
           type="button"
           data-role="special"
-          className="gb-pad-btn pointer-events-auto absolute bottom-[5.7rem] right-4 flex h-[2.85rem] w-[2.85rem] items-center justify-center rounded-full border border-fg/20 bg-surface/55 text-[10px] font-medium tracking-wide text-fg"
+          className="gb-pad-btn pointer-events-auto absolute bottom-[5.7rem] right-4 flex h-[2.85rem] w-[2.85rem] items-center justify-center rounded-full border border-fg/35 bg-bg text-[10px] font-semibold tracking-wide text-fg"
         >
           {skill}
         </button>
