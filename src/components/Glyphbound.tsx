@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useRef, useState, type PointerEvent, type RefObject } from "react";
 import { GameEngine } from "@/glyphbound/engine";
 import type { UiSnap } from "@/glyphbound/types";
 import { STAGE_COUNT } from "@/glyphbound/types";
@@ -101,6 +101,20 @@ function ControlsCard() {
       </p>
     </div>
   );
+}
+
+let lastPress = 0;
+function press(fn: () => void) {
+  return {
+    onPointerUp: (e: PointerEvent) => {
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      e.stopPropagation();
+      const n = performance.now();
+      if (n - lastPress < 280) return;
+      lastPress = n;
+      fn();
+    },
+  };
 }
 
 const emptyUi = (): UiSnap => ({
@@ -224,10 +238,7 @@ export function Glyphbound() {
               type="button"
               data-ui="begin"
               className="h-12 rounded-lg bg-[#f4f0e4] text-base font-semibold text-[#121018] shadow-[0_8px_24px_rgba(0,0,0,0.45)]"
-              onPointerUp={(e) => {
-                e.stopPropagation();
-                g()?.begin();
-              }}
+              {...press(() => g()?.begin())}
             >
               Begin
             </button>
@@ -236,10 +247,7 @@ export function Glyphbound() {
                 type="button"
                 data-ui="continue"
                 className="h-12 rounded-lg border border-[#e8d48a]/50 bg-[#1a1814]/90 font-medium text-[#f4f0e4]"
-                onPointerUp={(e) => {
-                  e.stopPropagation();
-                  g()?.continueGame();
-                }}
+                {...press(() => g()?.continueGame())}
               >
                 Continue
               </button>
@@ -249,10 +257,7 @@ export function Glyphbound() {
                 type="button"
                 data-ui="hard"
                 className="h-11 flex-1 rounded-md border border-[#f4f0e4]/25 bg-[#121018]/85 text-sm text-[#f4f0e4]"
-                onPointerUp={(e) => {
-                  e.stopPropagation();
-                  g()?.toggleHard();
-                }}
+                {...press(() => g()?.toggleHard())}
               >
                 {ui.hard ? "Precision Grid on" : "Precision Grid off"}
               </button>
@@ -260,10 +265,7 @@ export function Glyphbound() {
                 type="button"
                 data-ui="mute"
                 className="h-11 flex-1 rounded-md border border-[#f4f0e4]/25 bg-[#121018]/85 text-sm text-[#f4f0e4]"
-                onPointerUp={(e) => {
-                  e.stopPropagation();
-                  g()?.toggleMute();
-                }}
+                {...press(() => g()?.toggleMute())}
               >
                 {ui.muted ? "Sound off" : "Sound on"}
               </button>
@@ -272,10 +274,7 @@ export function Glyphbound() {
               type="button"
               data-ui="controls"
               className="h-11 rounded-md border border-[#f4f0e4]/25 bg-[#121018]/85 text-sm text-[#f4f0e4]"
-              onPointerUp={(e) => {
-                e.stopPropagation();
-                setShowControls((v) => !v);
-              }}
+              {...press(() => setShowControls((v) => !v))}
             >
               {showControls ? "Hide controls" : "Controls"}
             </button>
@@ -286,10 +285,7 @@ export function Glyphbound() {
                   type="button"
                   data-ui="codex"
                   className="h-11 rounded-md border border-[#5ee0c0]/40 bg-[#10241c]/90 text-sm text-[#9af8de]"
-                  onPointerUp={(e) => {
-                    e.stopPropagation();
-                    setShowLore((v) => !v);
-                  }}
+                  {...press(() => setShowLore((v) => !v))}
                 >
                   {showLore ? "Hide codex" : `Codex · ${ui.lore.length} letter${ui.lore.length === 1 ? "" : "s"}`}
                 </button>
@@ -310,7 +306,7 @@ export function Glyphbound() {
         <div
           data-ui="intro"
           className="pointer-events-auto absolute inset-0 z-20 flex items-end justify-center bg-bg/55 px-6 pb-16"
-          onPointerUp={() => g()?.advanceIntro()}
+          {...press(() => g()?.advanceIntro())}
         >
           <div className="max-w-lg rounded-xl border border-border bg-surface/90 p-6">
             <p className="font-display text-2xl leading-snug text-fg">{INTRO[ui.introPage] ?? INTRO[INTRO.length - 1]}</p>
@@ -362,20 +358,20 @@ export function Glyphbound() {
               </div>
             )}
             <div className="mt-4 flex flex-col gap-3">
-              <button type="button" className="h-11 rounded-lg bg-fg text-bg" onPointerUp={() => g()?.resume()}>
+              <button type="button" className="h-11 rounded-lg bg-fg text-bg" {...press(() => g()?.resume())}>
                 Resume
               </button>
               <button
                 type="button"
                 className="h-11 rounded-lg border border-border"
-                onPointerUp={() => g()?.toggleMute()}
+                {...press(() => g()?.toggleMute())}
               >
                 {ui.muted ? "Unmute" : "Mute"}
               </button>
               <button
                 type="button"
                 className="h-11 rounded-lg border border-border text-muted"
-                onPointerUp={() => g()?.returnHub()}
+                {...press(() => g()?.returnHub())}
               >
                 Return to Stacks
               </button>
@@ -392,7 +388,7 @@ export function Glyphbound() {
             <button
               type="button"
               className="mt-6 h-12 w-full rounded-lg bg-fg text-bg"
-              onPointerUp={() => g()?.respawn()}
+              {...press(() => g()?.respawn())}
             >
               Wake at last Case Font
             </button>
@@ -412,7 +408,7 @@ export function Glyphbound() {
             <button
               type="button"
               className="mt-6 h-12 w-full rounded-lg bg-fg text-bg"
-              onPointerUp={() => g()?.returnHub()}
+              {...press(() => g()?.returnHub())}
             >
               Back to the Stacks
             </button>

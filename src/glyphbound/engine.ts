@@ -121,6 +121,7 @@ export class GameEngine {
   titleC = 0;
   /** Title-screen type buffer for the Chief69 unlock. */
   cheatBuf = "";
+  private uiAt = 0;
   hard = false;
   wordMenu = false;
   returnT = 0;
@@ -844,6 +845,8 @@ export class GameEngine {
   }
 
   begin() {
+    if (this.mode !== "title") return;
+    if (!this.uiOnce()) return;
     this.audio.unlock();
     this.audio.sfxUi();
     if (this.save.progress > 0 || this.save.stage1 || this.save.hasCapital) {
@@ -856,6 +859,8 @@ export class GameEngine {
   }
 
   continueGame() {
+    if (this.mode !== "title") return;
+    if (!this.uiOnce()) return;
     this.audio.unlock();
     this.audio.sfxUi();
     const id = (this.save.stage as LevelId) || "hub";
@@ -3220,6 +3225,8 @@ export class GameEngine {
   }
 
   advanceIntro() {
+    if (this.mode !== "intro") return;
+    if (!this.uiOnce(420)) return;
     this.audio.unlock();
     this.audio.sfxUi();
     this.introPage += 1;
@@ -3250,6 +3257,7 @@ export class GameEngine {
   }
 
   toggleMute() {
+    if (!this.uiOnce(240)) return;
     this.audio.setMuted(!this.audio.muted);
     this.save.muted = this.audio.muted;
     this.persist();
@@ -3257,9 +3265,17 @@ export class GameEngine {
   }
 
   toggleHard() {
+    if (!this.uiOnce(240)) return;
     this.hard = !this.hard;
     this.save.hard = this.hard;
     this.emit();
+  }
+
+  private uiOnce(ms = 320) {
+    const n = performance.now();
+    if (n - this.uiAt < ms) return false;
+    this.uiAt = n;
+    return true;
   }
 
   returnHub() {
