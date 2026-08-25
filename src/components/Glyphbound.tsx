@@ -148,6 +148,7 @@ export function Glyphbound() {
   const [showControls, setShowControls] = useState(false);
   const [showLore, setShowLore] = useState(false);
   const [openLetter, setOpenLetter] = useState<string | null>(null);
+  const [objOpen, setObjOpen] = useState(true);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -176,6 +177,10 @@ export function Glyphbound() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [ui.mode]);
+
+  useEffect(() => {
+    if (window.matchMedia("(pointer: coarse)").matches) setObjOpen(false);
+  }, []);
 
   const g = () => gameRef.current;
   const playing = ui.mode === "play" || ui.mode === "hub" || ui.mode === "transform" || ui.mode === "dialogue";
@@ -451,19 +456,38 @@ export function Glyphbound() {
                 </span>
               </div>
               {ui.tasks.length > 0 && (
-                <div className="pointer-events-none mt-1 max-w-[15rem] rounded-md bg-bg/50 px-2 py-1.5 backdrop-blur-sm">
-                  <p className="text-[9px] uppercase tracking-[0.22em] text-accent">Objectives</p>
-                  {ui.tasks.map((t) => (
-                    <p
-                      key={t.id}
-                      className={`text-[11px] leading-snug ${
-                        t.done ? "text-muted/70 line-through" : "text-fg"
-                      }`}
-                    >
-                      {t.done ? "✓" : "○"} {t.text}
+                <button
+                  type="button"
+                  className="pointer-events-auto mt-1 max-w-[min(15rem,calc(100vw-7rem))] rounded-md border border-border bg-bg/80 px-2 py-1.5 text-left backdrop-blur-sm"
+                  onPointerUp={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setObjOpen((v) => !v);
+                  }}
+                  aria-expanded={objOpen}
+                  aria-label={objOpen ? "Hide objectives" : "Show objectives"}
+                >
+                  <p className="flex items-center justify-between gap-2 text-[9px] uppercase tracking-[0.22em] text-accent">
+                    <span>Objectives</span>
+                    <span className="text-muted">{objOpen ? "▾" : "▸"}</span>
+                  </p>
+                  {objOpen ? (
+                    ui.tasks.map((t) => (
+                      <p
+                        key={t.id}
+                        className={`text-[11px] leading-snug ${
+                          t.done ? "text-muted/70 line-through" : "text-fg"
+                        }`}
+                      >
+                        {t.done ? "✓" : "○"} {t.text}
+                      </p>
+                    ))
+                  ) : (
+                    <p className="truncate text-[11px] leading-snug text-fg">
+                      {ui.tasks.find((t) => !t.done)?.text ?? "All closed"}
                     </p>
-                  ))}
-                </div>
+                  )}
+                </button>
               )}
             </div>
             <div className="pointer-events-auto flex gap-2">
