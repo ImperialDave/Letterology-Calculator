@@ -217,4 +217,5 @@ queueMicrotask(() => {
   void import("./stack").then((m) => m.installStacks());
   void import("./jumps").then((m) => m.installJumps());
   void import("./wake").then((m) => m.installWake());
+  void import("./bosses").then((m) => m.installBosses());
 });
