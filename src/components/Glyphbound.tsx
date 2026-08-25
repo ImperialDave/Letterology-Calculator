@@ -194,59 +194,88 @@ export function Glyphbound() {
     >
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 h-full w-full touch-none"
+        className="pointer-events-none absolute inset-0 z-0 h-full w-full"
         style={{ touchAction: "none" }}
       />
 
       {ui.mode === "title" && (
-        <div className="absolute inset-0 flex flex-col items-center justify-end px-6 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-[max(4rem,env(safe-area-inset-top))]">
-          <div className="mb-auto mt-8 text-center gb-motion">
-            <p className="text-sm tracking-[0.28em] text-muted uppercase">A letter rebellion</p>
-            <h1 className="mt-2 font-display text-6xl font-semibold tracking-tight text-fg md:text-7xl">
+        <div
+          data-ui="title"
+          className="pointer-events-auto absolute inset-0 z-20 flex flex-col px-5 pb-[max(1.6rem,env(safe-area-inset-bottom))] pt-[max(1.2rem,env(safe-area-inset-top))]"
+        >
+          <div className="text-center">
+            <p className="text-[11px] uppercase tracking-[0.42em] text-[#e8d48a] drop-shadow-[0_2px_10px_rgba(0,0,0,0.95)]">
+              A letter rebellion
+            </p>
+            <h1 className="mt-2 font-display text-[3.4rem] font-semibold leading-[0.9] tracking-tight text-[#f4f0e4] sm:text-7xl md:text-8xl [text-shadow:0_2px_0_#1a1208,0_10px_32px_rgba(0,0,0,0.9)]">
               Glyphbound
             </h1>
-            <p className="mt-2 font-display text-xl italic text-accent">Case of the Crescent</p>
+            <p className="mt-3 font-display text-xl italic text-[#e8d48a] [text-shadow:0_2px_14px_rgba(0,0,0,0.95)]">
+              Case of the Crescent
+            </p>
             {ui.progress > 0 && (
-              <p className="mt-3 text-sm tracking-wide text-muted">Ledger {ui.progress} of {STAGE_COUNT} closed</p>
+              <p className="mt-3 text-sm tracking-wide text-[#d8d4c8] drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
+                Ledger {ui.progress} of {STAGE_COUNT} closed
+              </p>
             )}
           </div>
-          <div className="flex w-full max-w-sm flex-col gap-3">
+          <div className="mx-auto mt-auto flex w-full max-w-sm flex-col gap-2.5">
             <button
               type="button"
-              className="h-12 rounded-lg bg-fg text-bg text-base font-medium"
-              onClick={() => g()?.begin()}
+              data-ui="begin"
+              className="h-12 rounded-lg bg-[#f4f0e4] text-base font-semibold text-[#121018] shadow-[0_8px_24px_rgba(0,0,0,0.45)]"
+              onPointerUp={(e) => {
+                e.stopPropagation();
+                g()?.begin();
+              }}
             >
               Begin
             </button>
             {ui.canContinue && (
               <button
                 type="button"
-                className="h-12 rounded-lg border border-border bg-surface text-fg"
-                onClick={() => g()?.continueGame()}
+                data-ui="continue"
+                className="h-12 rounded-lg border border-[#e8d48a]/50 bg-[#1a1814]/90 font-medium text-[#f4f0e4]"
+                onPointerUp={(e) => {
+                  e.stopPropagation();
+                  g()?.continueGame();
+                }}
               >
                 Continue
               </button>
             )}
-            <div className="flex gap-3">
+            <div className="flex gap-2.5">
               <button
                 type="button"
-                className="h-12 flex-1 rounded-md border border-border bg-elevated text-sm text-muted"
-                onClick={() => g()?.toggleHard()}
+                data-ui="hard"
+                className="h-11 flex-1 rounded-md border border-[#f4f0e4]/25 bg-[#121018]/85 text-sm text-[#f4f0e4]"
+                onPointerUp={(e) => {
+                  e.stopPropagation();
+                  g()?.toggleHard();
+                }}
               >
                 {ui.hard ? "Precision Grid on" : "Precision Grid off"}
               </button>
               <button
                 type="button"
-                className="h-12 flex-1 rounded-md border border-border bg-elevated text-sm text-muted"
-                onClick={() => g()?.toggleMute()}
+                data-ui="mute"
+                className="h-11 flex-1 rounded-md border border-[#f4f0e4]/25 bg-[#121018]/85 text-sm text-[#f4f0e4]"
+                onPointerUp={(e) => {
+                  e.stopPropagation();
+                  g()?.toggleMute();
+                }}
               >
                 {ui.muted ? "Sound off" : "Sound on"}
               </button>
             </div>
             <button
               type="button"
-              className="h-12 rounded-md border border-border bg-surface text-sm text-fg"
-              onClick={() => setShowControls((v) => !v)}
+              data-ui="controls"
+              className="h-11 rounded-md border border-[#f4f0e4]/25 bg-[#121018]/85 text-sm text-[#f4f0e4]"
+              onPointerUp={(e) => {
+                e.stopPropagation();
+                setShowControls((v) => !v);
+              }}
             >
               {showControls ? "Hide controls" : "Controls"}
             </button>
@@ -255,8 +284,12 @@ export function Glyphbound() {
               <>
                 <button
                   type="button"
-                  className="h-12 rounded-md border border-accent/40 bg-accent-dim text-sm text-accent"
-                  onClick={() => setShowLore((v) => !v)}
+                  data-ui="codex"
+                  className="h-11 rounded-md border border-[#5ee0c0]/40 bg-[#10241c]/90 text-sm text-[#9af8de]"
+                  onPointerUp={(e) => {
+                    e.stopPropagation();
+                    setShowLore((v) => !v);
+                  }}
                 >
                   {showLore ? "Hide codex" : `Codex · ${ui.lore.length} letter${ui.lore.length === 1 ? "" : "s"}`}
                 </button>
@@ -275,8 +308,9 @@ export function Glyphbound() {
 
       {ui.mode === "intro" && (
         <div
-          className="absolute inset-0 flex items-end justify-center bg-bg/55 px-6 pb-16"
-          onClick={() => g()?.advanceIntro()}
+          data-ui="intro"
+          className="pointer-events-auto absolute inset-0 z-20 flex items-end justify-center bg-bg/55 px-6 pb-16"
+          onPointerUp={() => g()?.advanceIntro()}
         >
           <div className="max-w-lg rounded-xl border border-border bg-surface/90 p-6">
             <p className="font-display text-2xl leading-snug text-fg">{INTRO[ui.introPage] ?? INTRO[INTRO.length - 1]}</p>
@@ -286,7 +320,7 @@ export function Glyphbound() {
       )}
 
       {ui.mode === "dialogue" && ui.dialogue && (
-        <div className="absolute inset-x-0 bottom-0 px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div data-ui="dialogue" className="pointer-events-auto absolute inset-x-0 bottom-0 z-20 px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <button
             type="button"
             className="mx-auto block w-full max-w-xl rounded-xl border border-border bg-surface/95 p-4 text-left"
@@ -299,7 +333,7 @@ export function Glyphbound() {
       )}
 
       {ui.mode === "pause" && (
-        <div className="absolute inset-0 flex items-center justify-center bg-bg/70 px-6">
+        <div data-ui="pause" className="pointer-events-auto absolute inset-0 z-20 flex items-center justify-center bg-bg/70 px-6">
           <div className="w-full max-w-sm max-h-[90dvh] overflow-y-auto rounded-xl border border-border bg-surface p-6">
             <h2 className="font-display text-3xl">Paused</h2>
             <p className="mt-1 text-sm text-muted">
@@ -328,20 +362,20 @@ export function Glyphbound() {
               </div>
             )}
             <div className="mt-4 flex flex-col gap-3">
-              <button type="button" className="h-11 rounded-lg bg-fg text-bg" onClick={() => g()?.resume()}>
+              <button type="button" className="h-11 rounded-lg bg-fg text-bg" onPointerUp={() => g()?.resume()}>
                 Resume
               </button>
               <button
                 type="button"
                 className="h-11 rounded-lg border border-border"
-                onClick={() => g()?.toggleMute()}
+                onPointerUp={() => g()?.toggleMute()}
               >
                 {ui.muted ? "Unmute" : "Mute"}
               </button>
               <button
                 type="button"
                 className="h-11 rounded-lg border border-border text-muted"
-                onClick={() => g()?.returnHub()}
+                onPointerUp={() => g()?.returnHub()}
               >
                 Return to Stacks
               </button>
@@ -351,14 +385,14 @@ export function Glyphbound() {
       )}
 
       {ui.mode === "dead" && (
-        <div className="absolute inset-0 flex items-center justify-center bg-bg/75 px-6">
+        <div data-ui="dead" className="pointer-events-auto absolute inset-0 z-20 flex items-center justify-center bg-bg/75 px-6">
           <div className="max-w-sm text-center">
             <h2 className="font-display text-5xl">Rounded down</h2>
             <p className="mt-3 text-muted">The census took a bite.</p>
             <button
               type="button"
               className="mt-6 h-12 w-full rounded-lg bg-fg text-bg"
-              onClick={() => g()?.respawn()}
+              onPointerUp={() => g()?.respawn()}
             >
               Wake at last Case Font
             </button>
@@ -367,7 +401,7 @@ export function Glyphbound() {
       )}
 
       {ui.mode === "win" && (
-        <div className="absolute inset-0 flex items-center justify-center bg-bg/80 px-6">
+        <div data-ui="win" className="pointer-events-auto absolute inset-0 z-20 flex items-center justify-center bg-bg/80 px-6">
           <div className="max-w-md text-center">
             <p className="text-sm uppercase tracking-[0.25em] text-accent">Remainder filed</p>
             <h2 className="mt-2 font-display text-5xl">The last sentence is yours</h2>
@@ -378,7 +412,7 @@ export function Glyphbound() {
             <button
               type="button"
               className="mt-6 h-12 w-full rounded-lg bg-fg text-bg"
-              onClick={() => g()?.returnHub()}
+              onPointerUp={() => g()?.returnHub()}
             >
               Back to the Stacks
             </button>

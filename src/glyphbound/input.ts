@@ -159,6 +159,8 @@ export class Input {
   };
 
   private blockScroll = (e: TouchEvent) => {
+    const n = e.target as HTMLElement | null;
+    if (n?.closest?.("button, a, input, textarea, [data-ui]")) return;
     e.preventDefault();
   };
 

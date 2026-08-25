@@ -3794,38 +3794,127 @@ export class GameEngine {
   }
 
   private drawTitleScene(ctx: CanvasRenderingContext2D) {
-    drawLetterForm(ctx, "c", false, VIEW_W * 0.32, VIEW_H * 0.58, 1, this.time, 1, 0, 0, 0);
+    const t = this.time;
+    const w = VIEW_W;
+    const h = VIEW_H;
+
+    const gnd = ctx.createLinearGradient(0, h * 0.56, 0, h);
+    gnd.addColorStop(0, "rgba(6,8,12,0)");
+    gnd.addColorStop(0.22, "rgba(8,10,14,0.55)");
+    gnd.addColorStop(1, "rgba(5,6,9,0.96)");
+    ctx.fillStyle = gnd;
+    ctx.fillRect(0, h * 0.54, w, h * 0.46);
+
     ctx.save();
-    ctx.globalAlpha = 0.9;
-    drawEnemy(
-      ctx,
-      {
-        kind: "four",
-        x: VIEW_W * 0.62,
-        y: VIEW_H * 0.48,
-        vx: 0,
-        vy: 0,
-        w: 48,
-        h: 56,
-        hp: 1,
-        maxHp: 1,
-        facing: -1,
-        t: this.time,
-        hurt: 0,
-        flash: 0,
-        stun: 0,
-        alive: true,
-        grounded: true,
-        phase: 0,
-        aux: 0,
-        aux2: 0,
-        armor: 0,
-        name: "",
-      },
-      0,
-      0,
-      this.time,
-    );
+    ctx.globalAlpha = 0.18;
+    ctx.strokeStyle = "#e8d48a";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, h * 0.72);
+    ctx.lineTo(w, h * 0.72);
+    ctx.stroke();
     ctx.restore();
+
+    const bolt = (Math.sin(t * 0.63) * Math.sin(t * 2.7) + Math.sin(t * 0.19)) * 0.5 + 0.5;
+    if (bolt > 0.93) {
+      ctx.fillStyle = `rgba(210,228,255,${(bolt - 0.93) * 3.2})`;
+      ctx.fillRect(0, 0, w, h);
+      ctx.save();
+      ctx.strokeStyle = "rgba(240,248,255,0.85)";
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      let lx = w * 0.62;
+      let ly = 0;
+      ctx.moveTo(lx, ly);
+      for (let i = 0; i < 6; i++) {
+        lx += (i % 2 ? -18 : 22) + Math.sin(t * 9 + i) * 8;
+        ly += h * 0.08;
+        ctx.lineTo(lx, ly);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    ctx.save();
+    ctx.globalAlpha = 0.55;
+    const rainN = this.lite ? 18 : 42;
+    ctx.strokeStyle = "rgba(180,200,214,0.45)";
+    ctx.lineWidth = 1;
+    for (let i = 0; i < rainN; i++) {
+      const rx = ((i * 97 + t * 280) % (w + 40)) - 20;
+      const ry = ((i * 53 + t * 420) % (h + 40)) - 20;
+      ctx.beginPath();
+      ctx.moveTo(rx, ry);
+      ctx.lineTo(rx - 4, ry + 16);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    const foe = (kind: Enemy["kind"], x: number, y: number, bw: number, bh: number, facing: 1 | -1): Enemy => ({
+      kind,
+      x,
+      y,
+      vx: facing * -12,
+      vy: 0,
+      w: bw,
+      h: bh,
+      hp: 1,
+      maxHp: 1,
+      facing,
+      t: t * 0.6,
+      hurt: 0,
+      flash: 0,
+      stun: 0,
+      alive: true,
+      grounded: true,
+      phase: 0,
+      aux: 0.35 + Math.sin(t * 2.2) * 0.12,
+      aux2: 0,
+      armor: 0,
+      name: "",
+    });
+
+    ctx.save();
+    ctx.globalAlpha = 0.55;
+    drawEnemy(ctx, foe("zero", w * 0.7, h * 0.18, 90, 90, -1), 0, 0, t);
+    ctx.restore();
+    drawEnemy(ctx, foe("four", w * 0.5, h * 0.3, 170, 210, -1), 0, 0, t);
+
+    const cx = w * 0.26;
+    const cy = h * 0.58 + Math.sin(t * 1.6) * 4;
+    ctx.save();
+    ctx.globalAlpha = 0.22;
+    ctx.fillStyle = "#5ee0c0";
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 54, 64, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    for (let i = 3; i >= 1; i--) {
+      ctx.save();
+      ctx.globalAlpha = 0.1 * i;
+      ctx.translate(cx - i * 14, cy);
+      ctx.scale(2.8, 2.8);
+      drawLetterForm(ctx, "c", true, 0, 0, 1, t - i * 0.08, 1, 0, 0, 0);
+      ctx.restore();
+    }
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(2.9, 2.9);
+    drawLetterForm(ctx, "c", true, 0, 0, 1, t, 1, 0.08 + Math.sin(t * 3) * 0.04, 0, 0);
+    ctx.restore();
+
+    const top = ctx.createLinearGradient(0, 0, 0, h * 0.42);
+    top.addColorStop(0, "rgba(7,8,12,0.92)");
+    top.addColorStop(0.55, "rgba(7,8,12,0.55)");
+    top.addColorStop(1, "rgba(7,8,12,0)");
+    ctx.fillStyle = top;
+    ctx.fillRect(0, 0, w, h * 0.42);
+
+    const bot = ctx.createLinearGradient(0, h * 0.5, 0, h);
+    bot.addColorStop(0, "rgba(7,8,12,0)");
+    bot.addColorStop(0.45, "rgba(7,8,12,0.55)");
+    bot.addColorStop(1, "rgba(7,8,12,0.94)");
+    ctx.fillStyle = bot;
+    ctx.fillRect(0, h * 0.5, w, h * 0.5);
   }
 }
