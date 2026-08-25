@@ -157,7 +157,10 @@ export function Glyphbound() {
     gameRef.current = game;
     game.input.attach(wrap);
     game.start();
+    const wake = () => game.audio.unlock();
+    wrap.addEventListener("pointerdown", wake);
     return () => {
+      wrap.removeEventListener("pointerdown", wake);
       game.destroy();
       gameRef.current = null;
     };
@@ -181,13 +184,17 @@ export function Glyphbound() {
   return (
     <div
       ref={wrapRef}
-      className="relative h-dvh w-full overflow-hidden bg-bg text-fg touch-none select-none"
-      style={{ touchAction: "none" }}
+      className="gb-shell relative w-full overflow-hidden bg-bg text-fg touch-none select-none"
+      style={{ touchAction: "none", WebkitUserSelect: "none" }}
     >
-      <canvas ref={canvasRef} className="absolute inset-0 h-full w-full touch-none" />
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 h-full w-full touch-none"
+        style={{ touchAction: "none" }}
+      />
 
       {ui.mode === "title" && (
-        <div className="absolute inset-0 flex flex-col items-center justify-end px-6 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-16">
+        <div className="absolute inset-0 flex flex-col items-center justify-end px-6 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-[max(4rem,env(safe-area-inset-top))]">
           <div className="mb-auto mt-8 text-center gb-motion">
             <p className="text-sm tracking-[0.28em] text-muted uppercase">A letter rebellion</p>
             <h1 className="mt-2 font-display text-6xl font-semibold tracking-tight text-fg md:text-7xl">
@@ -376,9 +383,16 @@ export function Glyphbound() {
 
       {playing && (
         <>
-          <div className="pointer-events-none absolute left-4 top-4 right-4 flex items-start justify-between">
+          <div
+            className="pointer-events-none absolute flex items-start justify-between"
+            style={{
+              left: "max(1rem, env(safe-area-inset-left))",
+              right: "max(1rem, env(safe-area-inset-right))",
+              top: "max(0.75rem, env(safe-area-inset-top))",
+            }}
+          >
             <div className="pointer-events-auto flex flex-col gap-2">
-              <div className="gb-party flex max-w-[22rem] flex-wrap items-center gap-1.5">
+              <div className="gb-party flex max-w-[min(22rem,calc(100vw-7rem))] flex-wrap items-center gap-1.5">
                 {ui.party.length > 1 && (
                   <button
                     type="button"

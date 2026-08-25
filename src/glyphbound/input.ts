@@ -101,15 +101,17 @@ export class Input {
     window.addEventListener("keydown", this.onKeyDown);
     window.addEventListener("keyup", this.onKeyUp);
     window.addEventListener("blur", this.clear);
-    // Safety net: mobile browsers sometimes drop the pointer without a local up/cancel.
     window.addEventListener("pointerup", this.onWindowPtrEnd);
     window.addEventListener("pointercancel", this.onWindowPtrEnd);
+    // iOS drops element pointermove without capture; follow the finger on the window.
+    window.addEventListener("pointermove", this.onPtrMove, { passive: false });
     document.addEventListener("visibilitychange", this.onVis);
-    el.addEventListener("pointerdown", this.onPtrDown);
-    el.addEventListener("pointermove", this.onPtrMove);
+    el.addEventListener("pointerdown", this.onPtrDown, { passive: false });
+    el.addEventListener("pointermove", this.onPtrMove, { passive: false });
     el.addEventListener("pointerup", this.onPtrUp);
     el.addEventListener("pointercancel", this.onPtrUp);
-    el.addEventListener("lostpointercapture", this.onLostCapture);
+    el.addEventListener("touchstart", this.blockScroll, { passive: false });
+    el.addEventListener("touchmove", this.blockScroll, { passive: false });
     el.addEventListener("contextmenu", (e) => e.preventDefault());
   }
 
@@ -119,11 +121,14 @@ export class Input {
     window.removeEventListener("blur", this.clear);
     window.removeEventListener("pointerup", this.onWindowPtrEnd);
     window.removeEventListener("pointercancel", this.onWindowPtrEnd);
+    window.removeEventListener("pointermove", this.onPtrMove);
     document.removeEventListener("visibilitychange", this.onVis);
     this.canvas?.removeEventListener("pointerdown", this.onPtrDown);
     this.canvas?.removeEventListener("pointermove", this.onPtrMove);
     this.canvas?.removeEventListener("pointerup", this.onPtrUp);
     this.canvas?.removeEventListener("pointercancel", this.onPtrUp);
+    this.canvas?.removeEventListener("touchstart", this.blockScroll);
+    this.canvas?.removeEventListener("touchmove", this.blockScroll);
     this.canvas?.removeEventListener("lostpointercapture", this.onLostCapture);
   }
 
@@ -151,6 +156,10 @@ export class Input {
     this.stick.active = false;
     this.stick.x = 0;
     this.stick.y = 0;
+  };
+
+  private blockScroll = (e: TouchEvent) => {
+    e.preventDefault();
   };
 
   private onPtrDown = (e: PointerEvent) => {
@@ -203,6 +212,8 @@ export class Input {
   };
 
   private onLostCapture = (e: PointerEvent) => {
+    // Safari on iPhone fires this while the thumb is still down. Keep the stick.
+    if (e.buttons) return;
     this.releasePointer(e.pointerId);
   };
 

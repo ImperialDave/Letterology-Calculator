@@ -140,7 +140,8 @@ export class GameEngine {
 
   constructor(canvas: HTMLCanvasElement, ui: (s: UiSnap) => void) {
     this.canvas = canvas;
-    const ctx = canvas.getContext("2d");
+    const ctx =
+      canvas.getContext("2d", { alpha: false }) || canvas.getContext("2d");
     if (!ctx) throw new Error("canvas");
     this.ctx = ctx;
     this.ui = ui;
@@ -152,15 +153,26 @@ export class GameEngine {
     this.running = true;
     this.lite =
       window.matchMedia("(pointer: coarse)").matches ||
-      Math.min(window.innerWidth, window.innerHeight) < 520;
+      Math.min(window.innerWidth, window.innerHeight) < 520 ||
+      /iPhone|iPod|iPad/.test(navigator.userAgent);
     setFxLite(this.lite);
     this.last = performance.now();
     const onVis = () => {
       this.visHidden = document.hidden;
-      if (!this.visHidden) this.last = performance.now();
+      if (!this.visHidden) {
+        this.last = performance.now();
+        this.audio.unlock();
+        this.bufW = 0;
+      }
     };
     document.addEventListener("visibilitychange", onVis);
     (this as unknown as { _onVis?: () => void })._onVis = onVis;
+    const onVp = () => {
+      this.bufW = 0;
+    };
+    window.visualViewport?.addEventListener("resize", onVp);
+    window.addEventListener("orientationchange", onVp);
+    (this as unknown as { _onVp?: () => void })._onVp = onVp;
     const loop = (now: number) => {
       if (!this.running) return;
       this.raf = requestAnimationFrame(loop);
@@ -195,6 +207,11 @@ export class GameEngine {
     this.input.detach();
     const onVis = (this as unknown as { _onVis?: () => void })._onVis;
     if (onVis) document.removeEventListener("visibilitychange", onVis);
+    const onVp = (this as unknown as { _onVp?: () => void })._onVp;
+    if (onVp) {
+      window.visualViewport?.removeEventListener("resize", onVp);
+      window.removeEventListener("orientationchange", onVp);
+    }
   }
 
   private syncVitals() {

@@ -10,19 +10,29 @@ export class AudioBus {
   started = false;
 
   unlock() {
-    if (!this.ctx) {
-      const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      this.ctx = new AC({ latencyHint: "interactive" });
-      this.master = this.ctx.createGain();
-      this.sfx = this.ctx.createGain();
-      this.music = this.ctx.createGain();
-      this.sfx.gain.value = 0.28;
-      this.music.gain.value = 0.16;
-      this.sfx.connect(this.master);
-      this.music.connect(this.master);
-      this.master.connect(this.ctx.destination);
+    try {
+      if (!this.ctx) {
+        const AC =
+          window.AudioContext ||
+          (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        try {
+          this.ctx = new AC({ latencyHint: "interactive" });
+        } catch {
+          this.ctx = new AC();
+        }
+        this.master = this.ctx.createGain();
+        this.sfx = this.ctx.createGain();
+        this.music = this.ctx.createGain();
+        this.sfx.gain.value = 0.28;
+        this.music.gain.value = 0.16;
+        this.sfx.connect(this.master);
+        this.music.connect(this.master);
+        this.master.connect(this.ctx.destination);
+      }
+      if (this.ctx.state === "suspended") void this.ctx.resume();
+    } catch {
+      /* private mode / old Safari */
     }
-    if (this.ctx.state === "suspended") void this.ctx.resume();
     this.started = true;
   }
 
