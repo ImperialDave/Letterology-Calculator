@@ -211,3 +211,9 @@ export function skillName(letter: LetterId, capital: boolean) {
   const k = KITS[letter] ?? KITS.c;
   return capital ? k.skillCap : k.skill;
 }
+
+// Bind after the engine and ledgers finish loading so we do not close a cycle.
+queueMicrotask(() => {
+  void import("./stack").then((m) => m.installStacks());
+  void import("./jumps").then((m) => m.installJumps());
+});
