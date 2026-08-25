@@ -400,18 +400,20 @@ export class GameEngine {
         else if (ch === "&") this.solids.push({ x: x + 6, y: y + 12, w: TILE - 12, h: TILE - 12, type: "solid" });
         else if (ch === ":") this.solids.push({ x: x + 10, y, w: 28, h: TILE, type: "fan" });
         else if (ch === "@") {
-          spawnX = x;
+          spawnX = x + 8;
           spawnY = y;
         } else if (ch === ">" || ch === "<" || ch === "V") {
           if (id === "hub" && (ch === ">" || ch === "<")) {
             const cont = ch === ">";
+            const w = cont ? 120 : 72;
+            const h = cont ? 104 : 88;
             this.pickups.push({
               kind: "door",
               id: cont ? "continue" : "replay",
-              x: x - (cont ? 28 : 16),
-              y: y - (cont ? 52 : 36),
-              w: cont ? 128 : 72,
-              h: cont ? 116 : 88,
+              x: x + (TILE - w) / 2,
+              y: y + TILE - h,
+              w,
+              h,
               taken: false,
               label: cont ? "THE REST OF THE BOOK" : "LAST PAGE",
             });
@@ -591,15 +593,15 @@ export class GameEngine {
         } else if (ch === "F") {
           this.pickups.push({ kind: "case", id: "font" + tx, x: x, y: y, w: TILE, h: TILE, taken: false, label: "CASE" });
         } else if (ch === "[") {
-          this.pickups.push({ kind: "door", id: "stage1", x: x - 16, y: y - 40, w: 72, h: 96, taken: false, label: "EXCHANGE" });
+          this.pickups.push({ kind: "door", id: "stage1", x: x - 12, y: y + TILE - 96, w: 72, h: 96, taken: false, label: "EXCHANGE" });
         } else if (ch === "]") {
-          this.pickups.push({ kind: "door", id: "stage2", x: x - 16, y: y - 40, w: 72, h: 96, taken: false, label: "FORT" });
+          this.pickups.push({ kind: "door", id: "stage2", x: x - 12, y: y + TILE - 96, w: 72, h: 96, taken: false, label: "FORT" });
         } else if (ch === "{") {
-          this.pickups.push({ kind: "door", id: "stage3", x: x - 16, y: y - 40, w: 72, h: 96, taken: false, label: "PRESS" });
+          this.pickups.push({ kind: "door", id: "stage3", x: x - 12, y: y + TILE - 96, w: 72, h: 96, taken: false, label: "PRESS" });
         } else if (ch === "}") {
-          this.pickups.push({ kind: "door", id: "stage4", x: x - 16, y: y - 40, w: 72, h: 96, taken: false, label: "COIL" });
+          this.pickups.push({ kind: "door", id: "stage4", x: x - 12, y: y + TILE - 96, w: 72, h: 96, taken: false, label: "COIL" });
         } else if (ch === "(") {
-          this.pickups.push({ kind: "door", id: "stage5", x: x - 16, y: y - 40, w: 72, h: 96, taken: false, label: "LEDGER" });
+          this.pickups.push({ kind: "door", id: "stage5", x: x - 12, y: y + TILE - 96, w: 72, h: 96, taken: false, label: "LEDGER" });
         } else if (ch === "$") {
           const pid = "secret-" + id + "-" + tx + "-" + ty;
           this.pickups.push({
@@ -636,7 +638,7 @@ export class GameEngine {
             kind: "portal",
             id: LEVELS[id]?.exit === "win" ? "win" : "hub",
             x: x - 6,
-            y: y - 40,
+            y: y + TILE - 88,
             w: 60,
             h: 88,
             taken: false,
@@ -645,8 +647,9 @@ export class GameEngine {
         }
       }
     }
+    this.bumpColliders();
     this.spawnX = spawnX;
-    this.spawnY = spawnY - 8;
+    this.spawnY = spawnY;
     this.checkX = this.save.stage === id && this.save.checkX ? this.save.checkX : this.spawnX;
     this.checkY = this.save.stage === id && this.save.checkY ? this.save.checkY : this.spawnY;
     const p = this.player;
@@ -655,8 +658,8 @@ export class GameEngine {
     if (id === "hub" && this.save.progress >= 5 && !atCheck) {
       const bound = this.pickups.find((u) => u.id === "continue");
       if (bound) {
-        p.x = bound.x - 36;
-        p.y = bound.y + bound.h - p.h - 8;
+        p.x = bound.x - p.w - 10;
+        p.y = bound.y + bound.h - p.h;
       }
     }
     p.vx = 0;
@@ -3740,24 +3743,24 @@ export class GameEngine {
       ctx.restore();
     } else if (chapter) {
       ctx.fillStyle = locked ? "#2a2430" : "#3a3244";
-      ctx.fillRect(x + 10, y + 18, u.w - 20, u.h - 8);
+      ctx.fillRect(x + 10, y + 18, u.w - 20, u.h - 18);
       ctx.fillStyle = locked ? "#5a4a40" : "#c9b896";
-      ctx.fillRect(x + 10, y + 18, 8, u.h - 8);
+      ctx.fillRect(x + 10, y + 18, 8, u.h - 18);
       ctx.strokeStyle = locked ? "#7a8b96" : "#efe4c8";
       ctx.lineWidth = 1.6;
-      ctx.strokeRect(x + 10, y + 18, u.w - 20, u.h - 8);
+      ctx.strokeRect(x + 10, y + 18, u.w - 20, u.h - 18);
       ctx.fillStyle = locked ? "#7a8b96" : "#e8d48a";
       ctx.font = "700 16px 'Cormorant Garamond', serif";
       ctx.textAlign = "center";
       ctx.fillText(["I", "II", "III", "IV", "V"][Number(u.id.slice(5)) - 1] ?? "", x + u.w / 2 + 4, y + u.h * 0.62);
     } else {
-      ctx.fillRect(x + 8, y + 16, u.w - 16, u.h);
+      ctx.fillRect(x + 8, y + 16, u.w - 16, u.h - 16);
       ctx.strokeStyle = locked ? "#7a8b96" : "#8a7a62";
       ctx.lineWidth = 1.8;
-      ctx.strokeRect(x + 8, y + 16, u.w - 16, u.h);
+      ctx.strokeRect(x + 8, y + 16, u.w - 16, u.h - 16);
       ctx.beginPath();
       ctx.moveTo(x + 14, y + 28);
-      ctx.lineTo(x + u.w - 18, y + u.h + 8);
+      ctx.lineTo(x + u.w - 18, y + u.h - 8);
       ctx.stroke();
     }
     const plaque = this.doorPlaque(u.id);
