@@ -1,4 +1,5 @@
 import { GameEngine } from "./engine";
+import { VIEW_W } from "./types";
 import type { Enemy, Player } from "./types";
 
 const BOSS = new Set([
@@ -20,6 +21,8 @@ type Eng = GameEngine & {
   enemies: Enemy[];
   walls: { x: number; y: number; w: number; h: number }[];
   trauma: number;
+  camX: number;
+  camY: number;
   updateEnemies?: (dt: number) => void;
   tickBossArena?: (e: Enemy, p: Player, dt: number) => void;
   shockwave: (e: Enemy) => void;
@@ -46,7 +49,16 @@ function state(e: Enemy) {
   return s;
 }
 
+function near(eng: Eng, e: Enemy, p: Player) {
+  const pad = 200;
+  if (typeof eng.camX === "number") {
+    return e.x + e.w > eng.camX - pad && e.x < eng.camX + VIEW_W + pad;
+  }
+  return Math.abs(e.x - p.x) < VIEW_W + pad;
+}
+
 function land(eng: Eng, e: Enemy, p: Player) {
+  if (!near(eng, e, p)) return;
   eng.shockwave?.(e);
   eng.stampAt?.(e.x + e.w / 2, e.y + e.h - 2);
   const cx = p.x + p.w / 2;
@@ -111,14 +123,16 @@ function land(eng: Eng, e: Enemy, p: Player) {
       eng.stampLine?.(cx, fy, 3, 44);
       break;
   }
-  eng.trauma = Math.min(1, (eng.trauma ?? 0) + 0.35);
+  eng.trauma = Math.min(1, (eng.trauma ?? 0) + 0.22);
 }
 
 function tick(eng: Eng, e: Enemy, p: Player, dt: number) {
+  if (!near(eng, e, p)) return;
   const s = state(e);
   s.jump = Math.max(0, s.jump - dt);
   const high = p.y + p.h < e.y - 18;
-  const far = Math.abs(p.x - e.x) > 120;
+  const dist = Math.abs(p.x - e.x);
+  const far = dist > 120 && dist < VIEW_W;
   if (e.grounded && s.jump <= 0 && (high || far)) {
     e.vy = e.kind === "endmark" || e.kind === "remainder" ? -720 : -620;
     e.vx = (p.x > e.x ? 1 : -1) * (far ? 160 : 90);
@@ -135,17 +149,36 @@ function tick(eng: Eng, e: Enemy, p: Player, dt: number) {
 }
 
 export function installBosses() {
-  const proto = GameEngine.prototype as unknown as Eng;
-  if (typeof proto.tickBossArena === "function") return;
+  const proto = GameEngine.prototype as unknown as Eng & { updateEnemies?: ((dt: number) => void) & { _gbBoss?: boolean } };
   const orig = proto.updateEnemies;
-  if (typeof orig !== "function") return;
-  proto.updateEnemies = function (this: Eng, dt: number) {
-    orig.call(this, dt);
+  if (typeof orig !== "function" || orig._gbBoss) return;
+  const wrapped = function (this: Eng, dt: number) {
     const p = this.player;
-    if (!p) return;
-    for (const e of this.enemies) {
-      if (!e.alive || !BOSS.has(e.kind)) continue;
-      tick(this, e, p, dt);
+    const slept: Enemy[] = [];
+    if (p) {
+      for (const e of this.enemies) {
+        if (!e.alive || !BOSS.has(e.kind)) continue;
+        if (near(this, e, p)) continue;
+        e.alive = false;
+        slept.push(e);
+      }
+    }
+    const trauma0 = this.trauma;
+    orig.call(this, dt);
+    for (const e of slept) {
+      e.alive = true;
+      e.vx = 0;
+      if (e.grounded) e.vy = 0;
+    }
+    const anyNear = p && this.enemies.some((e) => e.alive && BOSS.has(e.kind) && near(this, e, p));
+    if (!anyNear && this.trauma > trauma0) this.trauma = trauma0;
+    if (typeof this.tickBossArena !== "function" && p) {
+      for (const e of this.enemies) {
+        if (!e.alive || !BOSS.has(e.kind)) continue;
+        tick(this, e, p, dt);
+      }
     }
   };
+  wrapped._gbBoss = true;
+  proto.updateEnemies = wrapped;
 }
