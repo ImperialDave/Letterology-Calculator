@@ -50,7 +50,7 @@ function state(e: Enemy) {
 }
 
 function isShard(e: Enemy) {
-  return e.armor === 1 || (e.kind === "endmark" && e.phase >= 2) || (typeof e.name === "string" && e.name.includes("Arc"));
+  return (e.kind === "endmark" && e.phase >= 2) || (typeof e.name === "string" && /Arc/.test(e.name));
 }
 
 function near(eng: Eng, e: Enemy, p: Player) {
@@ -206,37 +206,37 @@ function patchReadableHits(proto: Eng) {
   }
 }
 
+function patchShardHits(proto: Eng & { hitEnemy?: (e: Enemy, dmg: number, dir: number) => void; _gbHit?: boolean }) {
+  const hit = proto.hitEnemy;
+  if (typeof hit !== "function" || proto._gbHit) return;
+  proto._gbHit = true;
+  proto.hitEnemy = function (this: Eng, e: Enemy, dmg: number, dir: number) {
+    if (e && isShard(e)) e.hurt = 0;
+    return hit.call(this, e, dmg, dir);
+  };
+}
+
 export function installBosses() {
-  const proto = GameEngine.prototype as unknown as Eng & { updateEnemies?: ((dt: number) => void) & { _gbBoss?: boolean } };
+  const proto = GameEngine.prototype as unknown as Eng & {
+    updateEnemies?: ((dt: number) => void) & { _gbBoss?: boolean };
+    hitEnemy?: (e: Enemy, dmg: number, dir: number) => void;
+    _gbHit?: boolean;
+  };
   patchReadableHits(proto);
+  patchShardHits(proto);
   const orig = proto.updateEnemies;
   if (typeof orig !== "function" || orig._gbBoss) return;
   const wrapped = function (this: Eng, dt: number) {
     const p = this.player;
     const live = typeof this.tickBossArena !== "function";
-    const slept: Enemy[] = [];
     if (p) {
       for (const e of this.enemies) {
         if (!e.alive || !BOSS.has(e.kind)) continue;
-        if (isShard(e)) {
-          e.aux = 0;
-          continue;
-        }
-        if (near(this, e, p)) continue;
-        e.hurt = Math.max(0, e.hurt - dt);
-        e.flash = Math.max(0, e.flash - dt);
-        e.stun = Math.max(0, e.stun - dt);
-        e.alive = false;
-        slept.push(e);
+        if (isShard(e) || !near(this, e, p)) e.aux = 0;
       }
     }
     const trauma0 = this.trauma;
     orig.call(this, dt);
-    for (const e of slept) {
-      e.alive = true;
-      e.vx = 0;
-      if (e.grounded) e.vy = 0;
-    }
     const anyNear = p && this.enemies.some((e) => e.alive && BOSS.has(e.kind) && !isShard(e) && near(this, e, p));
     if (!anyNear && this.trauma > trauma0) this.trauma = trauma0;
     if (p) {
