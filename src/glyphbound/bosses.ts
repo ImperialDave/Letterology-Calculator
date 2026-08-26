@@ -218,8 +218,14 @@ export function installBosses() {
     if (p) {
       for (const e of this.enemies) {
         if (!e.alive || !BOSS.has(e.kind)) continue;
-        const hide = live && isShard(e) ? true : !near(this, e, p);
-        if (!hide) continue;
+        if (isShard(e)) {
+          e.aux = 0;
+          continue;
+        }
+        if (near(this, e, p)) continue;
+        e.hurt = Math.max(0, e.hurt - dt);
+        e.flash = Math.max(0, e.flash - dt);
+        e.stun = Math.max(0, e.stun - dt);
         e.alive = false;
         slept.push(e);
       }
