@@ -84,8 +84,9 @@ function land(eng: Eng, e: Enemy, p: Player) {
       eng.pullToward?.(e, p, 240, 180, 0.2);
       break;
     case "endmark":
-      eng.stampLine?.(cx, fy, 5, 42);
-      eng.ringShot?.(e, 8, 190);
+      eng.stampAt?.(cx - 84, fy);
+      eng.stampAt?.(cx + 84, fy);
+      eng.ringShot?.(e, 4, 140);
       break;
     case "summand":
       e.hp = Math.min(e.maxHp, e.hp + 3);
@@ -148,8 +149,44 @@ function tick(eng: Eng, e: Enemy, p: Player, dt: number) {
   if (!e.grounded) s.air = true;
 }
 
+function patchReadableHits(proto: Eng) {
+  const p = proto as Eng & {
+    stampAt?: (x: number, y: number) => void;
+    stampLine?: (x: number, y: number, n?: number, gap?: number) => void;
+    ringShot?: (e: Enemy, n: number, spd: number, off?: number) => void;
+    bullets?: { kind: string; life: number; r: number }[];
+    _gbReadable?: boolean;
+  };
+  if (p._gbReadable) return;
+  p._gbReadable = true;
+  const stamp = p.stampAt;
+  if (typeof stamp === "function") {
+    p.stampAt = function (this: Eng & { bullets: { kind: string; life: number; r: number }[] }, x: number, y: number) {
+      stamp.call(this, x, y);
+      const b = this.bullets?.[this.bullets.length - 1];
+      if (b && b.kind === "stamp") {
+        b.life = Math.max(b.life, 1.35);
+        b.r = Math.min(b.r, 18);
+      }
+    };
+  }
+  const line = p.stampLine;
+  if (typeof line === "function") {
+    p.stampLine = function (this: Eng, x: number, y: number, n = 3, gap = 44) {
+      line.call(this, x, y, Math.min(n, 3), Math.max(gap, 64));
+    };
+  }
+  const ring = p.ringShot;
+  if (typeof ring === "function") {
+    p.ringShot = function (this: Eng, e: Enemy, n: number, spd: number, off?: number) {
+      ring.call(this, e, Math.min(n, 6), Math.min(spd, 155), off);
+    };
+  }
+}
+
 export function installBosses() {
   const proto = GameEngine.prototype as unknown as Eng & { updateEnemies?: ((dt: number) => void) & { _gbBoss?: boolean } };
+  patchReadableHits(proto);
   const orig = proto.updateEnemies;
   if (typeof orig !== "function" || orig._gbBoss) return;
   const wrapped = function (this: Eng, dt: number) {
