@@ -49,6 +49,10 @@ function state(e: Enemy) {
   return s;
 }
 
+function isShard(e: Enemy) {
+  return e.armor === 1 || (e.kind === "endmark" && e.phase >= 2) || (typeof e.name === "string" && e.name.includes("Arc"));
+}
+
 function near(eng: Eng, e: Enemy, p: Player) {
   const pad = 200;
   if (typeof eng.camX === "number") {
@@ -127,7 +131,25 @@ function land(eng: Eng, e: Enemy, p: Player) {
   eng.trauma = Math.min(1, (eng.trauma ?? 0) + 0.22);
 }
 
+function aiShard(eng: Eng, e: Enemy, p: Player, dt: number) {
+  e.t += dt;
+  e.aux += dt;
+  e.x += Math.sin(e.t * 1.6) * 46 * dt;
+  e.y += Math.cos(e.t * 2.2) * 22 * dt;
+  e.facing = p.x > e.x ? 1 : -1;
+  if (!e.grounded) e.vy += 900 * dt;
+  e.vx *= 0.92;
+  if (e.aux > 1.55) {
+    e.aux = 0;
+    eng.shoot?.(e, e.facing, 0.12);
+  }
+}
+
 function tick(eng: Eng, e: Enemy, p: Player, dt: number) {
+  if (isShard(e)) {
+    if (near(eng, e, p)) aiShard(eng, e, p, dt);
+    return;
+  }
   if (!near(eng, e, p)) return;
   const s = state(e);
   s.jump = Math.max(0, s.jump - dt);
@@ -191,11 +213,13 @@ export function installBosses() {
   if (typeof orig !== "function" || orig._gbBoss) return;
   const wrapped = function (this: Eng, dt: number) {
     const p = this.player;
+    const live = typeof this.tickBossArena !== "function";
     const slept: Enemy[] = [];
     if (p) {
       for (const e of this.enemies) {
         if (!e.alive || !BOSS.has(e.kind)) continue;
-        if (near(this, e, p)) continue;
+        const hide = live && isShard(e) ? true : !near(this, e, p);
+        if (!hide) continue;
         e.alive = false;
         slept.push(e);
       }
@@ -207,12 +231,16 @@ export function installBosses() {
       e.vx = 0;
       if (e.grounded) e.vy = 0;
     }
-    const anyNear = p && this.enemies.some((e) => e.alive && BOSS.has(e.kind) && near(this, e, p));
+    const anyNear = p && this.enemies.some((e) => e.alive && BOSS.has(e.kind) && !isShard(e) && near(this, e, p));
     if (!anyNear && this.trauma > trauma0) this.trauma = trauma0;
-    if (typeof this.tickBossArena !== "function" && p) {
+    if (p) {
       for (const e of this.enemies) {
         if (!e.alive || !BOSS.has(e.kind)) continue;
-        tick(this, e, p, dt);
+        if (isShard(e)) {
+          if (live && near(this, e, p)) aiShard(this, e, p, dt);
+          continue;
+        }
+        if (live) tick(this, e, p, dt);
       }
     }
   };
