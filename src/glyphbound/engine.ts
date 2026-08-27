@@ -157,6 +157,7 @@ export class GameEngine {
   private watch = 0;
   sandbox = false;
   proof = false;
+  replayMenu = false;
   debugGod = false;
   debugKit = true;
   debugWrite = false;
@@ -986,6 +987,10 @@ export class GameEngine {
         if (this.introPage > 3) this.loadLevel("hub");
         this.emit();
       }
+      return;
+    }
+    if (this.replayMenu) {
+      if (a.pause) this.closeReplay();
       return;
     }
     if (this.mode === "pause" || this.mode === "codex") {
@@ -2897,7 +2902,7 @@ export class GameEngine {
     if (id === "stage2") return "The Fort is still counted shut.";
     if (id === "stage5") return "The Ledger is still counted shut.";
     if (id === "continue") return "The rest of the book opens after you close the five chapters. Then this is the only door that keeps offering new ledgers through 60.";
-    if (id === "replay") return "Last page only. It never opens a new ledger. New pages are through the Unbound Sentence.";
+    if (id === "replay") return "Last Page opens after you close a ledger. It rereads pages you have already written.";
     return "Still counted shut.";
   }
 
@@ -2909,10 +2914,10 @@ export class GameEngine {
       return { title: "THE REST OF THE BOOK", sub: `only door that keeps changing · next ${n} / 60` };
     }
     if (id === "replay") {
-      if (this.save.progress < 1) return { title: "LAST PAGE", sub: "does not open new ledgers" };
+      if (this.save.progress < 1) return { title: "LAST PAGE", sub: "close a ledger to reread it" };
       const last = lastClearedId(this.save.progress);
       const name = last ? LEVELS[last]?.name ?? last : "";
-      return { title: "LAST PAGE", sub: `same ledger again · ${name}` };
+      return { title: "LAST PAGE", sub: `${this.save.progress} closed · last ${name}` };
     }
     if (id === "studio") return { title: "STUDIO", sub: "write a ledger · the book does not turn" };
     const chapters: Record<string, { title: string; sub: string }> = {
@@ -3016,10 +3021,13 @@ export class GameEngine {
         else if (u.id === "continue") {
           this.nearHint =
             this.save.progress >= STAGE_COUNT
-              ? "All 60 written. Last Page only repeats."
+              ? "All 60 written. Last Page rereads any closed ledger."
               : "E  The Rest of the Book — the only door that keeps opening new ledgers until 60";
         } else if (u.id === "replay") {
-          this.nearHint = "E  Last Page — same ledger again. Does not open a new one.";
+          this.nearHint =
+            this.save.progress < 1
+              ? "Last Page — close a ledger first"
+              : `E  Last Page — reread any of ${this.save.progress} closed ledger${this.save.progress === 1 ? "" : "s"}`;
         } else if (u.id === "studio") {
           this.nearHint = "E  Studio — write a ledger of your own";
         } else
@@ -3208,12 +3216,11 @@ export class GameEngine {
         }
         if (u.id === "continue") {
           if (this.save.progress >= STAGE_COUNT) {
-            this.say("All sixty ledgers are written. Last Page only repeats the same one.");
+            this.say("All sixty ledgers are written. Last Page rereads any closed ledger.");
           } else this.loadLevel(nextStageId(this.save.progress));
         }
         else if (u.id === "replay") {
-          const last = lastClearedId(this.save.progress);
-          if (last) this.loadLevel(last);
+          this.openReplay();
         } else if (u.id === "studio") {
           this.enterStudio();
         } else this.loadLevel(u.id as LevelId);
@@ -3417,6 +3424,36 @@ export class GameEngine {
 
   returnHub() {
     this.loadLevel("hub");
+  }
+
+  openReplay() {
+    if (this.doorLocked("replay") || this.save.progress < 1) {
+      this.say("Close a ledger first. Last Page only rereads.");
+      return;
+    }
+    this.replayMenu = true;
+    this.audio.sfxUi();
+    this.say("Last Page. Reread any ledger you have already closed.");
+    this.emit();
+  }
+
+  closeReplay() {
+    if (!this.replayMenu) return;
+    this.replayMenu = false;
+    this.audio.sfxUi();
+    this.emit();
+  }
+
+  replayEnter(id: string) {
+    const n = this.stageIndex(id);
+    if (n < 1 || n > this.save.progress || !LEVELS[id]) {
+      this.say("That page is still unwritten.");
+      return;
+    }
+    this.replayMenu = false;
+    this.audio.sfxTransform();
+    this.loadLevel(id as LevelId);
+    this.say("A closed page. The book does not turn.");
   }
 
   pauseGame() {
@@ -3778,6 +3815,7 @@ export class GameEngine {
       stageId: this.stage,
       proof: this.proof,
       god: this.debugGod,
+      replayOpen: this.replayMenu,
     });
   }
 

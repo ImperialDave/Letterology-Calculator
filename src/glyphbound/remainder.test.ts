@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { assembleStage } from "./assemble";
 import { chunksFor } from "./chunks";
-import { listLedgers, LEVELS } from "./levels";
+import { beatenLedgers, listLedgers, LEVELS } from "./levels";
 import { FROZEN_REMAINDER } from "./remainder-hand";
 import { REMAINDER_NAMES } from "./remainder-names";
 import { validateLevel } from "./validate-level";
@@ -44,4 +44,13 @@ test("listLedgers covers hub through 60", () => {
   assert.equal(list.length, STAGE_COUNT + 1);
   assert.equal(LEVELS.stage31.name, "Gold Orrery");
   assert.equal(LEVELS.stage40.name, "Void Point");
+});
+
+test("beatenLedgers only lists closed pages", () => {
+  assert.equal(beatenLedgers(0).length, 0);
+  const closed = beatenLedgers(34);
+  assert.equal(closed.length, 34);
+  assert.equal(closed[0]?.id, "stage1");
+  assert.equal(closed[33]?.id, "stage34");
+  assert.equal(closed.some((l) => l.index === 35), false);
 });

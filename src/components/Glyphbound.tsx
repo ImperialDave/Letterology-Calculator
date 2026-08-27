@@ -6,6 +6,7 @@ import { Pause, Volume2, VolumeX } from "lucide-react";
 import { KITS, skillName } from "@/glyphbound/roster";
 import { GlyphboundStudio } from "@/components/GlyphboundStudio";
 import { GlyphboundProof } from "@/components/GlyphboundProof";
+import { GlyphboundReplay } from "@/components/GlyphboundReplay";
 
 const INTRO = [
   "Calculara was a manuscript before it was an equation. Letters walked it. Words were weather.",
@@ -158,6 +159,7 @@ const emptyUi = (): UiSnap => ({
   stageId: "hub",
   proof: false,
   god: false,
+  replayOpen: false,
 });
 
 export function Glyphbound() {
@@ -249,6 +251,7 @@ export function Glyphbound() {
 
       {ui.mode === "studio" && <GlyphboundStudio game={g} />}
       {showProof && <GlyphboundProof game={g} onClose={() => setShowProof(false)} />}
+      {ui.replayOpen && <GlyphboundReplay game={g} progress={ui.progress} />}
 
       {ui.proof && playing && !showProof && (
         <div className="pointer-events-auto absolute left-1/2 top-2 z-30 flex -translate-x-1/2 flex-wrap items-center justify-center gap-1.5">

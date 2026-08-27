@@ -340,6 +340,7 @@ export interface UiSnap {
   stageId: string;
   proof: boolean;
   god: boolean;
+  replayOpen: boolean;
 }
 
 export const VIEW_W = 640;

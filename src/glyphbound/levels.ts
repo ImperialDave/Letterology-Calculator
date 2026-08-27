@@ -181,6 +181,11 @@ export function lastClearedId(progress: number): LevelId | null {
   return `stage${n}` as LevelId;
 }
 
+export function beatenLedgers(progress: number) {
+  const n = Math.max(0, Math.min(STAGE_COUNT, progress | 0));
+  return listLedgers().filter((l) => l.index >= 1 && l.index <= n);
+}
+
 export function listLedgers(): { id: string; name: string; index: number; theme: string }[] {
   const out: { id: string; name: string; index: number; theme: string }[] = [
     { id: "hub", name: LEVELS.hub.name, index: 0, theme: LEVELS.hub.theme },
