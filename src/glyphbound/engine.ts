@@ -17,9 +17,14 @@ import {
 import { AudioBus } from "./audio";
 import { Input } from "./input";
 import { lastClearedId, LEVELS, nextStageId, STAGE_COUNT, type LevelId } from "./levels";
-import { collectedLore, LORE, loreIdFromGlyph } from "./lore";
-import { KITS, PENTAD, RECRUIT_LETTERS } from "./roster";
+import { parseRows } from "./parse-map";
+import { CATALOG } from "./catalog";
+import { folioFromMeta, padRows, type Folio } from "./folio";
+import { blankFolio, cloneRows, folioTheme, resizeRows, sandboxSave, stampCell } from "./studio";
+import { collectedLore, loreIdFromGlyph } from "./lore";
+import { KITS, PENTAD } from "./roster";
 import { clearSave, defaultSave, loadSave, writeSave } from "./save";
+import { SolidGrid } from "./spatial";
 import {
   STEP,
   TILE,
@@ -39,6 +44,7 @@ import {
   type Player,
   type RelicId,
   type SaveData,
+  type ThemeId,
   type Solid,
   type TaskSnap,
   type UiSnap,
@@ -132,12 +138,29 @@ export class GameEngine {
   wallCoyote = 0;
   wallDir: 1 | -1 = 1;
   lite = false;
+  fps = 0;
+  frameMs = 0;
+  drawMs = 0;
+  showFps = true;
+  tick: ((now: number) => void) | null = null;
   private bufW = 0;
   private bufH = 0;
-  private collSmall: Solid[] | null = null;
-  private collBig: Solid[] | null = null;
-  private collWalls = -1;
   private visHidden = false;
+  private holdVisible = false;
+  private grid = new SolidGrid(96);
+  private fpsEma = 60;
+  private frames = 0;
+  private fpsStamp = 0;
+  private lastRaf = 0;
+  private watch = 0;
+  sandbox = false;
+  studioPlaying = false;
+  studioBrush = "#";
+  studioHover = { tx: -1, ty: -1 };
+  private campaignSave: SaveData | null = null;
+  private draft: Folio | null = null;
+  private undo: string[][] = [];
+  private themeOverride: ThemeId | null = null;
 
   constructor(canvas: HTMLCanvasElement, ui: (s: UiSnap) => void) {
     this.canvas = canvas;
@@ -158,13 +181,14 @@ export class GameEngine {
       /iPhone|iPod|iPad/.test(navigator.userAgent);
     setFxLite(this.lite);
     this.last = performance.now();
+    this.fpsStamp = this.last;
     const onVis = () => {
-      this.visHidden = document.hidden;
-      if (!this.visHidden) {
-        this.last = performance.now();
-        this.audio.unlock();
-        this.bufW = 0;
+      if (this.holdVisible) {
+        this.visHidden = false;
+        return;
       }
+      this.visHidden = document.hidden;
+      if (!this.visHidden) this.wake();
     };
     document.addEventListener("visibilitychange", onVis);
     (this as unknown as { _onVis?: () => void })._onVis = onVis;
@@ -174,44 +198,108 @@ export class GameEngine {
     window.visualViewport?.addEventListener("resize", onVp);
     window.addEventListener("orientationchange", onVp);
     (this as unknown as { _onVp?: () => void })._onVp = onVp;
+    const onShow = () => this.wake();
+    window.addEventListener("pageshow", onShow);
+    window.addEventListener("focus", onShow);
+    const onFreeze = () => {
+      if (this.holdVisible) return;
+      this.visHidden = true;
+      this.input.clear();
+    };
+    document.addEventListener("freeze", onFreeze);
+    (this as unknown as { _onShow?: () => void; _onFreeze?: () => void })._onShow = onShow;
+    (this as unknown as { _onFreeze?: () => void })._onFreeze = onFreeze;
     const loop = (now: number) => {
       if (!this.running) return;
       this.raf = requestAnimationFrame(loop);
-      if (this.visHidden) {
-        this.last = now;
-        return;
-      }
-      let dt = (now - this.last) / 1000;
-      this.last = now;
-      if (dt > 0.1) dt = 0.1;
-      this.acc += dt;
-      this.time += dt;
-      if (this.hitstop > 0) this.hitstop -= dt;
-      let steps = 0;
-      while (this.acc >= STEP && steps < 4) {
-        this.acc -= STEP;
-        steps += 1;
-        if (this.hitstop <= 0) this.step(STEP);
-      }
-      if (this.acc > STEP * 2) this.acc = 0;
-      this.audio.tickMusic(dt);
-      this.draw();
+      this.lastRaf = now;
+      this.pump(now);
     };
+    this.tick = loop;
     this.raf = requestAnimationFrame(loop);
+    this.watch = window.setInterval(() => {
+      if (!this.running || this.visHidden) return;
+      const now = performance.now();
+      if (now - this.lastRaf < 32) return;
+      this.pump(now);
+    }, 16);
     this.emit();
     this.exposeQa();
+  }
+
+  /** Resume the loop after a background tab or a headless rAF stall. */
+  wake(hold = false) {
+    if (hold) this.holdVisible = true;
+    this.visHidden = false;
+    this.last = performance.now();
+    this.acc = 0;
+    this.bufW = 0;
+    try {
+      this.audio.unlock();
+    } catch {
+      /* background audio */
+    }
+    if (!this.running || !this.tick) return;
+    cancelAnimationFrame(this.raf);
+    this.raf = requestAnimationFrame(this.tick);
+  }
+
+  pump(now = performance.now()) {
+    if (!this.running) return;
+    if (this.visHidden) {
+      this.last = now;
+      return;
+    }
+    let dt = (now - this.last) / 1000;
+    this.last = now;
+    if (dt > 0.1) dt = 0.1;
+    if (dt < 0) dt = 0;
+    this.frameMs = dt * 1000;
+    const inst = dt > 0.0005 ? 1 / dt : 60;
+    this.fpsEma = this.fpsEma * 0.9 + inst * 0.1;
+    this.frames += 1;
+    if (now - this.fpsStamp >= 250) {
+      this.fps = this.fpsEma;
+      this.fpsStamp = now;
+    }
+    this.acc += dt;
+    this.time += dt;
+    if (this.hitstop > 0) this.hitstop -= dt;
+    let steps = 0;
+    while (this.acc >= STEP && steps < 4) {
+      this.acc -= STEP;
+      steps += 1;
+      if (this.hitstop <= 0) this.step(STEP);
+    }
+    if (this.acc > STEP * 2) this.acc = 0;
+    this.audio.tickMusic(dt);
+    const d0 = performance.now();
+    this.draw();
+    this.drawMs = performance.now() - d0;
   }
 
   destroy() {
     this.running = false;
     cancelAnimationFrame(this.raf);
+    if (this.watch) {
+      clearInterval(this.watch);
+      this.watch = 0;
+    }
     this.input.detach();
-    const onVis = (this as unknown as { _onVis?: () => void })._onVis;
-    if (onVis) document.removeEventListener("visibilitychange", onVis);
-    const onVp = (this as unknown as { _onVp?: () => void })._onVp;
-    if (onVp) {
-      window.visualViewport?.removeEventListener("resize", onVp);
-      window.removeEventListener("orientationchange", onVp);
+    const extra = this as unknown as { _onVis?: () => void; _onVp?: () => void; _onShow?: () => void; _onFreeze?: () => void };
+    if (extra._onVis) document.removeEventListener("visibilitychange", extra._onVis);
+    if (extra._onVp) {
+      window.visualViewport?.removeEventListener("resize", extra._onVp);
+      window.removeEventListener("orientationchange", extra._onVp);
+    }
+    if (extra._onShow) {
+      window.removeEventListener("pageshow", extra._onShow);
+      window.removeEventListener("focus", extra._onShow);
+    }
+    if (extra._onFreeze) document.removeEventListener("freeze", extra._onFreeze);
+    const w = window as unknown as { __glyphbound?: unknown };
+    if (w.__glyphbound && (w.__glyphbound as { engine?: GameEngine }).engine === this) {
+      delete w.__glyphbound;
     }
   }
 
@@ -309,11 +397,7 @@ export class GameEngine {
     if (p.y + p.h > this.worldH - TILE) return;
     const large = isLarge(p.letter, p.capital);
     if (!this.blockedAt(p.x + 4, p.y + p.h, p.w - 8, 6, large)) return;
-    for (const s of this.solids) {
-      if (s.type === "sluice" && aabb(p, s)) return;
-      if (s.type === "laser" && aabb(p, s) && this.laserHot(s)) return;
-      if (s.type === "spike" && aabb(p, s) && this.spikeHot(s)) return;
-    }
+    if (this.hazardAt(p.x, p.y, p.w, p.h)) return;
     this.lastSafeX = p.x;
     this.lastSafeY = p.y;
   }
@@ -371,305 +455,58 @@ export class GameEngine {
 
   loadLevel(id: LevelId, atCheck = false) {
     const meta = LEVELS[id];
+    if (!meta) return;
     this.stage = id;
+    this.themeOverride = null;
     this.rows = meta.rows;
     this.objective = meta.objective;
-    this.solids = [];
-    this.enemies = [];
+    const parsed = parseRows(this.rows, {
+      id,
+      exit: meta.exit,
+      index: this.stageIndex(id),
+      isHub: id === "hub",
+      party: this.save.party,
+      words: this.save.words,
+      relics: this.save.relics,
+      hasCapital: this.save.hasCapital,
+      powerups: this.save.powerups,
+      maxShield: this.save.maxShield,
+      shotLevel: this.save.shotLevel,
+      talked: this.save.talked,
+      bossKind: this.bossKindFor(id),
+    });
+    this.solids = parsed.solids;
+    this.enemies = parsed.enemySpawns.map((s) => this.spawnEnemy(s.kind, s.x, s.y));
     this.bullets = [];
-    this.pickups = [];
-    this.npcs = [];
-    this.markers = [];
+    this.pickups = parsed.pickups;
+    if (id === "hub" && !this.pickups.some((u) => u.id === "studio")) {
+      this.pickups.push({
+        kind: "door",
+        id: "studio",
+        x: 82 * TILE - 12,
+        y: 7 * TILE + TILE - 96,
+        w: 72,
+        h: 96,
+        taken: false,
+        label: "STUDIO",
+      });
+    }
+    this.npcs = parsed.npcs;
+    this.markers = parsed.markers;
     this.walls = [];
     this.burns = [];
     this.broken = new Set();
-    this.worldW = this.rows[0].length * TILE;
-    this.worldH = this.rows.length * TILE;
-    let spawnX = 80;
-    let spawnY = 80;
-    for (let ty = 0; ty < this.rows.length; ty++) {
-      for (let tx = 0; tx < this.rows[ty].length; tx++) {
-        const ch = this.rows[ty][tx];
-        const x = tx * TILE;
-        const y = ty * TILE;
-        if (ch === "#") this.solids.push({ x, y, w: TILE, h: TILE, type: "solid" });
-        else if (ch === "=") this.solids.push({ x, y, w: TILE, h: 10, type: "oneway" });
-        else if (ch === "v") this.solids.push({ x, y, w: TILE, h: TILE, type: "vent" });
-        else if (ch === "*") this.solids.push({ x, y, w: TILE, h: TILE, type: "break" });
-        else if (ch === "^") {
-          // Some teeth pulse — retracting rhythm so the player can learn the beat.
-          const pulse = ((tx * 17 + ty * 31) % 10) < 3;
-          this.solids.push({
-            x,
-            y: y + 18,
-            w: TILE,
-            h: 22,
-            type: "spike",
-            phase: pulse ? tx * 0.41 + ty * 0.17 : undefined,
-          });
-        }
-        else if (ch === "~") this.solids.push({ x, y: y + 18, w: TILE, h: 30, type: "sluice" });
-        else if (ch === "-") this.solids.push({ x, y, w: TILE, h: 10, type: "crumble", phase: 0 });
-        else if (ch === "|") this.solids.push({ x: x + 18, y, w: 12, h: TILE, type: "laser", phase: tx * 0.37 });
-        else if (ch === "/") this.solids.push({ x, y: y + 28, w: TILE, h: 12, type: "conveyor", phase: 1 });
-        else if (ch === "\\") this.solids.push({ x, y: y + 28, w: TILE, h: 12, type: "conveyor", phase: -1 });
-        else if (ch === "T") this.solids.push({ x: x + 4, y: y + 28, w: TILE - 8, h: 12, type: "bounce" });
-        else if (ch === "_") this.solids.push({ x, y: y + 34, w: TILE, h: 6, type: "oneway" });
-        else if (ch === "&") this.solids.push({ x: x + 6, y: y + 12, w: TILE - 12, h: TILE - 12, type: "solid" });
-        else if (ch === ":") this.solids.push({ x: x + 10, y, w: 28, h: TILE, type: "fan" });
-        else if (ch === "@") {
-          spawnX = x + 8;
-          spawnY = y;
-        } else if (ch === ">" || ch === "<" || ch === "V") {
-          if (id === "hub" && (ch === ">" || ch === "<")) {
-            const cont = ch === ">";
-            const w = cont ? 120 : 72;
-            const h = cont ? 104 : 88;
-            this.pickups.push({
-              kind: "door",
-              id: cont ? "continue" : "replay",
-              x: x + (TILE - w) / 2,
-              y: y + TILE - h,
-              w,
-              h,
-              taken: false,
-              label: cont ? "THE REST OF THE BOOK" : "LAST PAGE",
-            });
-          } else {
-            this.markers.push({
-              x,
-              y,
-              dir: ch === "<" ? -1 : 1,
-              kind: ch === "V" ? "down" : "arrow",
-            });
-          }
-        } else if (ch === "!" || "1023456789ABCEYGHKQUNJLM".includes(ch)) {
-          const map: Record<string, EnemyKind> = {
-            "1": "one",
-            "0": "zero",
-            "2": "two",
-            "3": "three",
-            "4": "four",
-            "5": "five",
-            "6": "six",
-            "7": "seven",
-            "8": "eight",
-            "9": "nine",
-            A: "triad",
-            B: "nullring",
-            C: "mobius",
-            E: "summoner",
-            Y: "gradient",
-            G: "importer",
-            H: "archivist",
-            K: "crossseal",
-            Q: "plus",
-            U: "minus",
-            N: "times",
-            J: "divide",
-            L: "pi",
-            M: "radix",
-          };
-          this.enemies.push(this.spawnEnemy(ch === "!" ? this.bossKindFor(id) : map[ch], x, y));
-        } else if (id !== "hub" && RECRUIT_LETTERS.includes(ch as LetterId)) {
-          const rid = ch as LetterId;
-          if (!this.save.party.includes(rid)) {
-            const def = LORE[rid as keyof typeof LORE];
-            this.npcs.push({
-              id: "recruit-" + rid,
-              glyph: def.glyph,
-              name: def.name,
-              x: x + 4,
-              y: y - 8,
-              w: 28,
-              h: 36,
-              lines: def.lines,
-            });
-            this.pickups.push({
-              kind: "recruit",
-              id: rid,
-              x: x + 6,
-              y: y,
-              w: 24,
-              h: 28,
-              taken: false,
-              label: ch,
-            });
-          }
-        } else if (ch === "i" || ch === "h" || ch === "o") {
-          const below = ty + 1 < this.rows.length ? this.rows[ty + 1][tx] : "#";
-          const onSolid = below === "#" || below === "=" || below === "*";
-          if (!onSolid) this.spawnLoreNpc(ch, x, y);
-          else if (ch === "i") {
-            this.pickups.push({ kind: "ink", id: "i" + tx + ty, x: x + 12, y: y + 12, w: 16, h: 16, taken: false });
-          } else if (ch === "h") {
-            this.pickups.push({ kind: "heart", id: "h" + tx + ty, x: x + 12, y: y + 10, w: 16, h: 16, taken: false });
-          } else {
-            const pid = "scale-" + id + "-" + tx + "-" + ty;
-            this.pickups.push({
-              kind: "scale",
-              id: pid,
-              x: x + 8,
-              y: y + 8,
-              w: 28,
-              h: 28,
-              taken: this.save.powerups.includes(pid) || this.save.maxShield >= 5,
-              label: "SCALE",
-            });
-          }
-        } else if (/^[a-z]$/.test(ch)) {
-          this.spawnLoreNpc(ch, x, y);
-        } else if (ch === "+") {
-          const pid = "fang-" + id + "-" + tx + "-" + ty;
-          this.pickups.push({
-            kind: "fang",
-            id: pid,
-            x: x + 8,
-            y: y + 8,
-            w: 28,
-            h: 28,
-            taken: this.save.powerups.includes(pid) || this.save.shotLevel >= 4,
-            label: "FANG",
-          });
-        } else if (ch === "W") {
-          this.pickups.push({
-            kind: "word",
-            id: "WALL",
-            x: x + 4,
-            y: y + 8,
-            w: 28,
-            h: 20,
-            taken: this.save.words.includes("WALL"),
-            label: "WALL",
-          });
-        } else if (ch === "R") {
-          this.pickups.push({
-            kind: "word",
-            id: "BURN",
-            x: x + 4,
-            y: y + 8,
-            w: 28,
-            h: 20,
-            taken: this.save.words.includes("BURN"),
-            label: "BURN",
-          });
-        } else if (ch === "X") {
-          this.pickups.push({
-            kind: "word",
-            id: "RISE",
-            x: x + 4,
-            y: y + 8,
-            w: 28,
-            h: 20,
-            taken: this.save.words.includes("RISE"),
-            label: "RISE",
-          });
-        } else if (ch === "Z") {
-          this.pickups.push({
-            kind: "word",
-            id: "LOCK",
-            x: x + 4,
-            y: y + 8,
-            w: 28,
-            h: 20,
-            taken: this.save.words.includes("LOCK"),
-            label: "LOCK",
-          });
-        } else if (ch === "O") {
-          this.pickups.push({
-            kind: "word",
-            id: "FOLD",
-            x: x + 4,
-            y: y + 8,
-            w: 28,
-            h: 20,
-            taken: this.save.words.includes("FOLD"),
-            label: "FOLD",
-          });
-        } else if (ch === "I") {
-          this.pickups.push({
-            kind: "word",
-            id: "TIDE",
-            x: x + 4,
-            y: y + 8,
-            w: 28,
-            h: 20,
-            taken: this.save.words.includes("TIDE"),
-            label: "TIDE",
-          });
-        } else if (ch === "D") {
-          this.pickups.push({
-            kind: "drop",
-            id: "dropCap",
-            x: x + 4,
-            y: y,
-            w: 32,
-            h: 36,
-            taken: this.save.hasCapital,
-            label: "DROP CAP",
-          });
-        } else if (ch === "F") {
-          this.pickups.push({ kind: "case", id: "font" + tx, x: x, y: y, w: TILE, h: TILE, taken: false, label: "CASE" });
-        } else if (ch === "[") {
-          this.pickups.push({ kind: "door", id: "stage1", x: x - 12, y: y + TILE - 96, w: 72, h: 96, taken: false, label: "EXCHANGE" });
-        } else if (ch === "]") {
-          this.pickups.push({ kind: "door", id: "stage2", x: x - 12, y: y + TILE - 96, w: 72, h: 96, taken: false, label: "FORT" });
-        } else if (ch === "{") {
-          this.pickups.push({ kind: "door", id: "stage3", x: x - 12, y: y + TILE - 96, w: 72, h: 96, taken: false, label: "PRESS" });
-        } else if (ch === "}") {
-          this.pickups.push({ kind: "door", id: "stage4", x: x - 12, y: y + TILE - 96, w: 72, h: 96, taken: false, label: "COIL" });
-        } else if (ch === "(") {
-          this.pickups.push({ kind: "door", id: "stage5", x: x - 12, y: y + TILE - 96, w: 72, h: 96, taken: false, label: "LEDGER" });
-        } else if (ch === "$") {
-          const pid = "secret-" + id + "-" + tx + "-" + ty;
-          this.pickups.push({
-            kind: "secret",
-            id: pid,
-            x: x + 8,
-            y: y + 8,
-            w: 24,
-            h: 24,
-            taken: this.save.powerups.includes(pid),
-            label: "SECRET",
-          });
-        } else if (ch === "%") {
-          this.pickups.push({
-            kind: "check",
-            id: "ck-" + id + "-" + tx + "-" + ty,
-            x: x + 6,
-            y: y - 8,
-            w: 36,
-            h: 44,
-            taken: false,
-            label: "CHECK",
-          });
-        } else if (ch === "P") {
-          const n = this.stageIndex(id);
-          const labels: Record<string, string> = {
-            stage1: "STACKS",
-            stage2: "CHAPTER",
-            stage3: "PRESS",
-            stage4: "COIL",
-            stage5: "LEDGER",
-          };
-          this.pickups.push({
-            kind: "portal",
-            id: LEVELS[id]?.exit === "win" ? "win" : "hub",
-            x: x - 6,
-            y: y + TILE - 88,
-            w: 60,
-            h: 88,
-            taken: false,
-            label: LEVELS[id]?.exit === "win" ? "FINAL" : labels[id] ?? (n ? `GATE ${n}` : "GATE"),
-          });
-        }
-      }
-    }
-    this.bumpColliders();
-    this.spawnX = spawnX;
-    this.spawnY = spawnY;
+    this.worldW = parsed.worldW;
+    this.worldH = parsed.worldH;
+    this.rebuildGrid();
+    this.spawnX = parsed.spawnX;
+    this.spawnY = parsed.spawnY;
     this.checkX = this.save.stage === id && this.save.checkX ? this.save.checkX : this.spawnX;
     this.checkY = this.save.stage === id && this.save.checkY ? this.save.checkY : this.spawnY;
+    if (atCheck && this.checkX) {
+      const cut = this.checkX;
+      this.enemies = this.enemies.filter((e) => e.x + e.w * 0.5 >= cut - 16);
+    }
     const p = this.player;
     p.x = atCheck ? this.checkX : this.spawnX;
     p.y = atCheck ? this.checkY : this.spawnY;
@@ -693,8 +530,10 @@ export class GameEngine {
     this.camX = p.x - VIEW_W * 0.35;
     this.camY = p.y - VIEW_H * 0.62;
     this.mode = id === "hub" ? "hub" : "play";
-    this.save.stage = id;
-    if (!this.save.visited.includes(id)) this.save.visited.push(id);
+    if (!this.sandbox) {
+      this.save.stage = id;
+      if (!this.save.visited.includes(id)) this.save.visited.push(id);
+    }
     this.lastDone = new Set(this.currentTasks().filter((t) => t.done).map((t) => t.id));
     if (id === "hub")
       this.say(
@@ -706,22 +545,181 @@ export class GameEngine {
     this.emit();
   }
 
-  private spawnLoreNpc(ch: string, x: number, y: number) {
-    const who = loreIdFromGlyph(ch);
-    const def = LORE[who];
-    if (!def) return;
-    if (this.save.talked.includes(who)) return;
-    if (this.npcs.some((n) => n.id === who)) return;
-    this.npcs.push({
-      id: who,
-      glyph: def.glyph,
-      name: def.name,
-      x: x + 4,
-      y: y - 16,
-      w: 36,
-      h: 48,
-      lines: def.lines,
+  enterStudio(folio?: Folio) {
+    if (!this.sandbox) this.campaignSave = structuredClone(this.save);
+    this.sandbox = true;
+    this.save = sandboxSave();
+    this.save.muted = this.audio.muted;
+    this.save.hard = this.hard;
+    this.player = this.makePlayer();
+    this.draft = folio ? { ...folio, rows: padRows(folio.rows) } : blankFolio();
+    this.undo = [];
+    this.studioPlaying = false;
+    this.studioBrush = "#";
+    this.applyDraft("studio");
+    this.audio.unlock();
+    this.audio.sfxUi();
+    this.say("The desk is open. Paint the ledger. Play to walk it.");
+  }
+
+  leaveStudio() {
+    this.sandbox = false;
+    this.studioPlaying = false;
+    this.draft = null;
+    this.undo = [];
+    this.themeOverride = null;
+    if (this.campaignSave) {
+      this.save = this.campaignSave;
+      this.campaignSave = null;
+    }
+    this.player = this.makePlayer();
+    this.mode = "title";
+    this.rows = [];
+    this.emit();
+  }
+
+  studioFolio(): Folio | null {
+    if (!this.draft) return null;
+    return { ...this.draft, rows: cloneRows(this.draft.rows) };
+  }
+
+  studioSetBrush(ch: string) {
+    this.studioBrush = ch || ".";
+    this.emit();
+  }
+
+  studioSetName(name: string) {
+    if (!this.draft) return;
+    this.draft.name = name.slice(0, 48);
+    this.emit();
+  }
+
+  studioSetTheme(theme: ThemeId) {
+    if (!this.draft) return;
+    this.draft.theme = folioTheme(theme);
+    this.themeOverride = this.draft.theme;
+    this.emit();
+  }
+
+  studioResize(w: number, h: number) {
+    if (!this.draft || this.mode !== "studio") return;
+    this.pushUndo();
+    this.draft.rows = resizeRows(this.draft.rows, w, h);
+    this.applyDraft("studio");
+  }
+
+  studioStamp(tx: number, ty: number, ch = this.studioBrush) {
+    if (!this.draft || this.mode !== "studio") return false;
+    this.pushUndo();
+    if (!stampCell(this.draft.rows, tx, ty, ch)) {
+      this.undo.pop();
+      return false;
+    }
+    this.applyDraft("studio");
+    return true;
+  }
+
+  studioUndo() {
+    const prev = this.undo.pop();
+    if (!prev || !this.draft || this.mode !== "studio") return;
+    this.draft.rows = prev;
+    this.applyDraft("studio");
+  }
+
+  studioPlay() {
+    if (!this.draft) this.enterStudio();
+    if (!this.draft) return;
+    this.studioPlaying = true;
+    this.applyDraft("play");
+    this.say("Walking the draft. Esc returns to the desk.");
+  }
+
+  studioStop() {
+    if (!this.draft) return;
+    this.studioPlaying = false;
+    this.applyDraft("studio");
+  }
+
+  studioCopyStage(id: string) {
+    const meta = LEVELS[id];
+    if (!meta) return;
+    const folio = folioFromMeta(meta, "user");
+    folio.id = "folio-" + Date.now().toString(36);
+    folio.name = meta.name + " copy";
+    this.enterStudio(folio);
+  }
+
+  screenToTile(clientX: number, clientY: number) {
+    const r = this.canvas.getBoundingClientRect();
+    const cw = r.width || VIEW_W;
+    const ch = r.height || VIEW_H;
+    const scale = Math.min(cw / VIEW_W, ch / VIEW_H);
+    const ox = (cw - VIEW_W * scale) / 2;
+    const oy = (ch - VIEW_H * scale) / 2;
+    const worldX = this.camX + (clientX - r.left - ox) / scale;
+    const worldY = this.camY + (clientY - r.top - oy) / scale;
+    return { tx: Math.floor(worldX / TILE), ty: Math.floor(worldY / TILE) };
+  }
+
+  private applyDraft(mode: "studio" | "play") {
+    const folio = this.draft;
+    if (!folio) return;
+    this.themeOverride = folio.theme;
+    this.objective = folio.objective ?? "Write a ledger.";
+    this.stage = folio.id as LevelId;
+    const parsed = parseRows(folio.rows, {
+      id: folio.id,
+      exit: folio.exit === "win" ? "win" : "hub",
+      index: folio.index ?? 0,
+      isHub: false,
+      party: this.save.party,
+      words: this.save.words,
+      relics: this.save.relics,
+      hasCapital: this.save.hasCapital,
+      powerups: this.save.powerups,
+      maxShield: this.save.maxShield,
+      shotLevel: this.save.shotLevel,
+      talked: this.save.talked,
+      bossKind: this.bossKindFor(folio.index ? `stage${folio.index}` : folio.id),
     });
+    this.rows = folio.rows;
+    this.solids = parsed.solids;
+    this.enemies = parsed.enemySpawns.map((s) => this.spawnEnemy(s.kind, s.x, s.y));
+    this.bullets = [];
+    this.pickups = parsed.pickups;
+    this.npcs = parsed.npcs;
+    this.markers = parsed.markers;
+    this.walls = [];
+    this.burns = [];
+    this.broken = new Set();
+    this.worldW = parsed.worldW;
+    this.worldH = parsed.worldH;
+    this.rebuildGrid();
+    this.spawnX = parsed.spawnX;
+    this.spawnY = parsed.spawnY;
+    this.checkX = parsed.spawnX;
+    this.checkY = parsed.spawnY;
+    const p = this.player;
+    p.x = this.spawnX;
+    p.y = this.spawnY;
+    p.vx = 0;
+    p.vy = 0;
+    p.hp = p.maxHp;
+    p.invuln = 0.4;
+    this.applySize();
+    this.settleOnFloor();
+    this.lastSafeX = p.x;
+    this.lastSafeY = p.y;
+    this.camX = Math.max(0, p.x - VIEW_W * 0.35);
+    this.camY = Math.max(0, p.y - VIEW_H * 0.62);
+    this.mode = mode;
+    this.emit();
+  }
+
+  private pushUndo() {
+    if (!this.draft) return;
+    this.undo.push(cloneRows(this.draft.rows));
+    if (this.undo.length > 64) this.undo.shift();
   }
 
   private stageIndex(id: string = this.stage): number {
@@ -764,6 +762,7 @@ export class GameEngine {
   }
 
   private markProgress() {
+    if (this.sandbox) return;
     const n = this.stageIndex();
     if (n < 1) return;
     this.save.progress = Math.max(this.save.progress, n);
@@ -925,6 +924,7 @@ export class GameEngine {
   }
 
   private persist() {
+    if (this.sandbox) return;
     const p = this.player;
     this.save.hp = p.hp;
     this.save.ink = p.ink;
@@ -939,10 +939,21 @@ export class GameEngine {
   }
 
   step(dt: number) {
-    this.bumpColliders();
     const a = this.input.poll();
     if (this.mode === "title") {
       this.titleC += dt;
+      return;
+    }
+    if (this.mode === "studio") {
+      if (a.pause) {
+        this.leaveStudio();
+        return;
+      }
+      this.camX += a.moveX * 340 * dt;
+      if (a.jumpHeld) this.camY -= 280 * dt;
+      if (a.down) this.camY += 280 * dt;
+      this.camX = Math.max(0, Math.min(Math.max(0, this.worldW - VIEW_W), this.camX));
+      this.camY = Math.max(0, Math.min(Math.max(0, this.worldH - VIEW_H), this.camY));
       return;
     }
     if (this.mode === "intro") {
@@ -979,6 +990,10 @@ export class GameEngine {
       return;
     }
     if (a.pause) {
+      if (this.studioPlaying) {
+        this.studioStop();
+        return;
+      }
       this.prevMode = this.mode;
       this.mode = "pause";
       this.persist();
@@ -1050,12 +1065,6 @@ export class GameEngine {
       this.hudAcc = 0;
       this.emit();
     }
-  }
-
-  private bumpColliders() {
-    this.collSmall = null;
-    this.collBig = null;
-    this.collWalls = -1;
   }
 
   private physicsPlayer(dt: number, a: ReturnType<Input["poll"]>) {
@@ -1207,7 +1216,7 @@ export class GameEngine {
       this.wallCoyote = 0.12;
       this.wallDir = wallL ? 1 : -1;
     } else this.wallCoyote = Math.max(0, this.wallCoyote - dt);
-    for (const s of this.solids) {
+    for (const s of this.solidsNow(large, p)) {
       if (s.type === "conveyor" && p.grounded && aabb({ x: p.x, y: p.y + p.h - 8, w: p.w, h: 10 }, s)) {
         p.x += (s.phase ?? 1) * 110 * dt;
       }
@@ -1245,7 +1254,7 @@ export class GameEngine {
         }
       }
     }
-    for (const s of this.solids) {
+    for (const s of this.solidsNow(large, p)) {
       if (s.type === "crumble" && !s.broken && p.grounded && aabb({ x: p.x, y: p.y + p.h - 6, w: p.w, h: 8 }, s)) {
         s.phase = (s.phase ?? 0) + dt;
         if (s.phase > 0.38) {
@@ -1263,7 +1272,6 @@ export class GameEngine {
     if (a.stem) this.scribe(false);
     else if (a.shelf) this.scribe(true);
     else if (a.word) this.scribe(a.down);
-    this.bumpColliders();
   }
 
   private moveActor(
@@ -1285,32 +1293,63 @@ export class GameEngine {
       a.y = 0;
       if (a.vy < 0) a.vy = 0;
     }
+    const e = a as Enemy;
+    if (e.kind === "endmark" && e.phase >= 2) {
+      if (e.vy != null && e.vy > 640) e.vy = 640;
+      this.pinToFloor(a);
+    }
   }
 
-  private solidsNow(large: boolean): Solid[] {
-    const cache = large ? this.collBig : this.collSmall;
-    if (cache && this.collWalls === this.walls.length) return cache;
-    const extra: Solid[] = this.walls.map((w) => ({
+  private pinToFloor(a: { x: number; y: number; w: number; h: number; vx?: number; vy?: number; grounded?: boolean }) {
+    const maxY = this.worldH - a.h - 2;
+    if (a.y > maxY) {
+      a.y = maxY;
+      if (a.vy != null) a.vy = 0;
+      a.grounded = true;
+    }
+    let top: number | null = null;
+    const feet = a.y + a.h;
+    for (const s of this.solidsNow(true, a)) {
+      if (s.type !== "solid" && s.type !== "oneway" && s.type !== "crumble" && s.type !== "conveyor") continue;
+      if (s.broken) continue;
+      if (a.x + a.w <= s.x + 2 || a.x >= s.x + s.w - 2) continue;
+      if (feet > s.y - 6 && a.y < s.y + s.h) {
+        if (top == null || s.y < top) top = s.y;
+      }
+    }
+    if (top != null && a.y + a.h > top) {
+      a.y = top - a.h;
+      if (a.vy != null) a.vy = 0;
+      a.grounded = true;
+    }
+  }
+
+  private rebuildGrid() {
+    this.grid.rebuild(this.solids);
+  }
+
+  private wallSolids(): Solid[] {
+    return this.walls.map((w) => ({
       x: w.x,
       y: w.y,
       w: w.w,
       h: w.h,
       type: (w.kind === "plat" ? "oneway" : "solid") as Solid["type"],
     }));
-    const list = this.solids.concat(extra).filter((s) => {
-      if (s.type === "break" && s.broken) return false;
-      if (s.type === "crumble" && s.broken) return false;
-      if (s.type === "sluice") return false;
-      if (s.type === "laser") return false;
-      if (s.type === "fan") return false;
-      if (s.type === "spike") return false;
-      if (s.type === "vent" && !large) return false;
-      return true;
-    });
-    this.collWalls = this.walls.length;
-    if (large) this.collBig = list;
-    else this.collSmall = list;
-    return list;
+  }
+
+  private solidsNow(
+    large: boolean,
+    around?: { x: number; y: number; w: number; h: number },
+    kind: "walk" | "hazard" | "all" = "walk",
+  ): Solid[] {
+    const box = around ?? {
+      x: this.player.x - 80,
+      y: this.player.y - 80,
+      w: this.player.w + 160,
+      h: this.player.h + 160,
+    };
+    return this.grid.query(box, large, kind === "walk" ? this.wallSolids() : [], kind);
   }
 
   private sepAxis(
@@ -1319,7 +1358,7 @@ export class GameEngine {
     large: boolean,
     drop = false,
   ) {
-    for (const s of this.solidsNow(large)) {
+    for (const s of this.solidsNow(large, a)) {
       if (s.type === "spike") continue;
       if (!aabb(a, s)) continue;
       if (s.type === "oneway" || s.type === "crumble" || s.type === "bounce" || s.type === "conveyor") {
@@ -1375,7 +1414,7 @@ export class GameEngine {
 
   private blockedAt(x: number, y: number, w: number, h: number, large: boolean) {
     const box = { x, y, w, h };
-    for (const s of this.solidsNow(large)) {
+    for (const s of this.solidsNow(large, box)) {
       if (s.type === "spike" || s.type === "oneway") continue;
       if (aabb(box, s)) return true;
     }
@@ -1832,7 +1871,8 @@ export class GameEngine {
 
   private updateEnemies(dt: number) {
     const p = this.player;
-    for (const e of this.enemies) {
+    const list = this.enemies;
+    for (const e of list) {
       if (!e.alive) continue;
       e.t += dt;
       e.hurt = Math.max(0, e.hurt - dt);
@@ -2114,6 +2154,11 @@ export class GameEngine {
       }
       if (aabb(e, p) && p.invuln <= 0 && p.roll <= 0) this.hurt(1, p.x < e.x ? -1 : 1);
     }
+    let live = 0;
+    for (let i = 0; i < list.length; i++) {
+      if (list[i].alive) list[live++] = list[i];
+    }
+    list.length = live;
   }
 
   private aiSecond(e: Enemy, dt: number, p: Player) {
@@ -2633,7 +2678,7 @@ export class GameEngine {
 
   private hazardAt(x: number, y: number, w: number, h: number) {
     const box = { x, y, w, h };
-    for (const s of this.solids) {
+    for (const s of this.solidsNow(true, box, "hazard")) {
       if (s.type === "sluice" && aabb(box, s)) return true;
       if (s.type === "laser" && aabb(box, s) && this.laserHot(s)) return true;
       if (s.type === "spike" && aabb(box, s) && this.spikeHot(s)) return true;
@@ -2647,7 +2692,7 @@ export class GameEngine {
     const large = isLarge(p.letter, p.capital);
     for (let pass = 0; pass < 4; pass++) {
       let hit: Solid | null = null;
-      for (const s of this.solids) {
+      for (const s of this.solidsNow(large, p, "hazard")) {
         if (s.type !== "spike" && s.type !== "laser") continue;
         if (!aabb(p, s)) continue;
         if (s.type === "spike") {
@@ -2685,6 +2730,7 @@ export class GameEngine {
 
   private updateBullets(dt: number) {
     const p = this.player;
+    const cap = this.lite ? 20 : 32;
     for (const b of this.bullets) {
       if (!b.alive) continue;
       b.life -= dt;
@@ -2707,7 +2753,7 @@ export class GameEngine {
         }
         if (b.kind !== "stamp") {
           const large = p.letter === "b" || p.capital;
-          for (const s of this.solidsNow(large)) {
+          for (const s of this.solidsNow(large, box)) {
             if (s.type === "spike") continue;
             if (b.kind === "wave" && (s.type === "oneway" || s.type === "crumble" || s.y >= b.y - 2)) continue;
             if (aabb(box, s)) {
@@ -2728,7 +2774,7 @@ export class GameEngine {
             else b.alive = false;
           }
         }
-        for (const s of this.solids) {
+        for (const s of this.solidsNow(true, box, "all")) {
           if (s.type === "break" && !s.broken && (p.capital || p.letter === "b") && aabb(box, s)) {
             s.broken = true;
             const tx = Math.floor(s.x / TILE);
@@ -2745,6 +2791,8 @@ export class GameEngine {
       }
     }
     this.bullets = this.bullets.filter((b) => b.alive);
+    if (this.bullets.length > cap) this.bullets.length = cap;
+    if (this.burns.length > 10) this.burns.length = 10;
     for (const br of this.burns) {
       for (const e of this.enemies) {
         if (e.alive && aabb(e, br) && e.hurt <= 0) this.hitEnemy(e, 1, this.player.facing);
@@ -2764,6 +2812,7 @@ export class GameEngine {
     if (id === "stage5") return !this.save.stage2;
     if (id === "continue") return this.save.progress < 5;
     if (id === "replay") return this.save.progress < 1;
+    if (id === "studio") return false;
     const m = /^stage(\d+)$/.exec(id);
     if (m) return this.save.progress < Number(m[1]) - 1;
     return false;
@@ -2856,6 +2905,11 @@ export class GameEngine {
   }
 
   private enterPortal(u: Pickup) {
+    if (this.sandbox) {
+      this.say("The gate holds. Esc returns to the desk.");
+      this.studioStop();
+      return;
+    }
     if (this.portalLocked()) {
       this.say("The gate is still counted shut.");
       return;
@@ -2892,6 +2946,8 @@ export class GameEngine {
               : "E  The Rest of the Book — the only door that keeps opening new ledgers until 60";
         } else if (u.id === "replay") {
           this.nearHint = "E  Last Page — same ledger again. Does not open a new one.";
+        } else if (u.id === "studio") {
+          this.nearHint = "E  Studio — write a ledger of your own";
         } else
           this.nearHint = "E  " + (u.label ?? "chapter") + " — one ledger. This door always opens the same page.";
       }
@@ -3084,6 +3140,8 @@ export class GameEngine {
         else if (u.id === "replay") {
           const last = lastClearedId(this.save.progress);
           if (last) this.loadLevel(last);
+        } else if (u.id === "studio") {
+          this.enterStudio();
         } else this.loadLevel(u.id as LevelId);
         return true;
       }
@@ -3180,7 +3238,7 @@ export class GameEngine {
   }
 
   private burst(x: number, y: number, color: string, n: number, kind: Particle["kind"]) {
-    const cap = this.lite ? 70 : 140;
+    const cap = this.lite ? 40 : 80;
     if (this.particles.length > cap) return;
     const count = this.lite ? Math.max(1, Math.ceil(n * 0.4)) : n;
     for (let i = 0; i < count; i++) {
@@ -3199,7 +3257,7 @@ export class GameEngine {
   }
 
   private updateParticles(dt: number) {
-    const cap = this.lite ? 70 : 140;
+    const cap = this.lite ? 40 : 80;
     let w = 0;
     const list = this.particles;
     for (let i = 0; i < list.length; i++) {
@@ -3502,7 +3560,7 @@ export class GameEngine {
       boss: boss ? { name: boss.name, hp: boss.hp, max: boss.maxHp } : null,
       toast: this.toast,
       dialogue: this.dialogue,
-      stage: LEVELS[this.stage]?.name ?? "",
+      stage: this.draft?.name ?? LEVELS[this.stage]?.name ?? "",
       muted: this.audio.muted,
       shake: this.save.shake,
       hard: this.hard,
@@ -3521,7 +3579,39 @@ export class GameEngine {
       shotLevel: this.player.shotLevel,
       hint: this.nearHint,
       lore: collectedLore(this.save.talked),
+      sandbox: this.sandbox,
     });
+  }
+
+  snapshot() {
+    const alive = this.enemies.filter((e) => e.alive);
+    return {
+      stage: this.stage,
+      name: LEVELS[this.stage]?.name ?? "",
+      mode: this.mode,
+      fps: Math.round(this.fpsEma * 10) / 10,
+      frameMs: Math.round(this.frameMs * 10) / 10,
+      drawMs: Math.round(this.drawMs * 10) / 10,
+      frames: this.frames,
+      solids: this.solids.length,
+      grid: this.grid.count,
+      enemies: alive.length,
+      bullets: this.bullets.length,
+      particles: this.particles.length,
+      worldW: this.worldW,
+      worldH: this.worldH,
+      hidden: this.visHidden,
+      sandbox: this.sandbox,
+      studio: this.mode === "studio" || this.studioPlaying,
+    };
+  }
+
+  debugEnter(id: string) {
+    const level = (LEVELS[id] ? id : "hub") as LevelId;
+    this.wake(true);
+    this.mode = level === "hub" ? "hub" : "play";
+    this.loadLevel(level);
+    this.emit();
   }
 
   private exposeQa() {
@@ -3533,6 +3623,31 @@ export class GameEngine {
       getVx: () => self.player?.vx ?? 0,
       setKeys: (codes: string[]) => self.input.setKeys(codes),
       mode: () => self.mode,
+    };
+    (window as unknown as { __glyphbound: unknown }).__glyphbound = {
+      engine: self,
+      load: (id: string) => self.debugEnter(id),
+      begin: () => self.begin(),
+      snapshot: () => self.snapshot(),
+      studio: {
+        enter: (folio?: Folio) => self.enterStudio(folio),
+        leave: () => self.leaveStudio(),
+        stamp: (tx: number, ty: number, ch?: string) => self.studioStamp(tx, ty, ch),
+        play: () => self.studioPlay(),
+        stop: () => self.studioStop(),
+        folio: () => self.studioFolio(),
+        copy: (id: string) => self.studioCopyStage(id),
+        catalog: CATALOG,
+      },
+      wake: () => self.wake(true),
+      pump: (now?: number) => self.pump(now ?? performance.now()),
+      get fps() {
+        return self.fpsEma;
+      },
+      showFps: (on?: boolean) => {
+        if (typeof on === "boolean") self.showFps = on;
+        return self.showFps;
+      },
     };
   }
 
@@ -3566,8 +3681,8 @@ export class GameEngine {
     const sh = this.save.shake ? this.trauma * this.trauma : 0;
     const sx = sh ? (Math.random() * 2 - 1) * 10 * sh : 0;
     const sy = sh ? (Math.random() * 2 - 1) * 8 * sh : 0;
-    const theme = LEVELS[this.stage]?.theme ?? "hub";
-    const district = LEVELS[this.stage]?.index ?? 0;
+    const theme = this.themeOverride ?? LEVELS[this.stage]?.theme ?? "hub";
+    const district = this.draft?.index ?? LEVELS[this.stage]?.index ?? 0;
 
     if (this.mode === "title" || this.mode === "intro") {
       drawParallax(ctx, this.titleC * 40, 0, this.time, "street", 0, 0, 1);
@@ -3577,6 +3692,7 @@ export class GameEngine {
       ctx.save();
       ctx.translate(sx, sy);
       drawTiles(ctx, this.rows, this.camX, this.camY, this.time, theme, this.broken);
+      if (this.mode === "studio") this.drawStudioGrid(ctx);
       this.drawHubChrome(ctx);
       drawMarkers(ctx, this.markers, this.camX, this.camY, this.time);
       const goal = this.goal();
@@ -3631,6 +3747,56 @@ export class GameEngine {
         ctx.fillText("The stroke thickens.", VIEW_W / 2, VIEW_H / 2);
       }
     }
+    if (this.showFps) this.drawFps(ctx);
+    ctx.restore();
+  }
+
+  private drawStudioGrid(ctx: CanvasRenderingContext2D) {
+    const x0 = Math.max(0, Math.floor(this.camX / TILE));
+    const y0 = Math.max(0, Math.floor(this.camY / TILE));
+    const x1 = Math.min((this.rows[0]?.length ?? 0) - 1, Math.ceil((this.camX + VIEW_W) / TILE));
+    const y1 = Math.min(this.rows.length - 1, Math.ceil((this.camY + VIEW_H) / TILE));
+    ctx.save();
+    ctx.strokeStyle = "rgba(232,212,138,0.12)";
+    ctx.lineWidth = 1;
+    for (let ty = y0; ty <= y1; ty++) {
+      for (let tx = x0; tx <= x1; tx++) {
+        const x = tx * TILE - this.camX;
+        const y = ty * TILE - this.camY;
+        ctx.strokeRect(x + 0.5, y + 0.5, TILE - 1, TILE - 1);
+      }
+    }
+    const hx = this.studioHover.tx;
+    const hy = this.studioHover.ty;
+    if (hx >= x0 && hx <= x1 && hy >= y0 && hy <= y1) {
+      ctx.fillStyle = "rgba(94,224,192,0.22)";
+      ctx.fillRect(hx * TILE - this.camX, hy * TILE - this.camY, TILE, TILE);
+      ctx.fillStyle = "#9af8de";
+      ctx.font = "700 18px 'Cormorant Garamond', serif";
+      ctx.textAlign = "center";
+      ctx.fillText(this.studioBrush, hx * TILE - this.camX + TILE / 2, hy * TILE - this.camY + 30);
+    }
+    ctx.restore();
+  }
+
+  private drawFps(ctx: CanvasRenderingContext2D) {
+    const snap = this.snapshot();
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const dpr = Math.min(this.lite ? 1.25 : 1.75, window.devicePixelRatio || 1);
+    ctx.scale(dpr, dpr);
+    ctx.font = "600 11px ui-monospace, SFMono-Regular, Menlo, monospace";
+    const line1 = `${snap.fps.toFixed(0)} fps  ${snap.frameMs.toFixed(1)}ms  draw ${snap.drawMs.toFixed(1)}ms`;
+    const line2 = `${snap.stage}  solids ${snap.solids}  grid ${snap.grid}  mobs ${snap.enemies}  shot ${snap.bullets}`;
+    const w = Math.max(ctx.measureText(line1).width, ctx.measureText(line2).width) + 16;
+    const y = Math.max(8, (this.canvas.clientHeight || VIEW_H) - 44);
+    ctx.fillStyle = "rgba(7,8,12,0.72)";
+    ctx.fillRect(8, y, w, 36);
+    ctx.fillStyle = snap.fps < 45 ? "#d45a4a" : snap.fps < 55 ? "#e8d48a" : "#9af8de";
+    ctx.textAlign = "left";
+    ctx.fillText(line1, 16, y + 14);
+    ctx.fillStyle = "#c9b896";
+    ctx.fillText(line2, 16, y + 28);
     ctx.restore();
   }
 

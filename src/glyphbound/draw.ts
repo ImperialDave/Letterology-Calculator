@@ -41,6 +41,42 @@ function isBlock(ch: string) {
   return ch === "#" || ch === "*";
 }
 
+const TILE_CACHE = new Map<string, HTMLCanvasElement>();
+let glowTile: HTMLCanvasElement | null = null;
+
+function tileCanvas(): HTMLCanvasElement {
+  const c = document.createElement("canvas");
+  c.width = TILE;
+  c.height = TILE;
+  return c;
+}
+
+function cachedTile(key: string, paint: (g: CanvasRenderingContext2D) => void): HTMLCanvasElement {
+  let c = TILE_CACHE.get(key);
+  if (c) return c;
+  c = tileCanvas();
+  const g = c.getContext("2d");
+  if (g) paint(g);
+  TILE_CACHE.set(key, c);
+  return c;
+}
+
+function glowStamp(): HTMLCanvasElement {
+  if (glowTile) return glowTile;
+  glowTile = tileCanvas();
+  const g = glowTile.getContext("2d");
+  if (g) {
+    const lg = g.createLinearGradient(0, 0, 0, TILE);
+    lg.addColorStop(0, "rgba(232,236,240,0.08)");
+    lg.addColorStop(1, "rgba(94,224,192,0.12)");
+    g.fillStyle = lg;
+    g.fillRect(0, 0, TILE, TILE);
+    g.fillStyle = "rgba(232,236,240,0.12)";
+    g.fillRect(18, 0, 4, TILE);
+  }
+  return glowTile;
+}
+
 export function drawTiles(
   ctx: CanvasRenderingContext2D,
   rows: string[],
@@ -74,13 +110,7 @@ export function drawTiles(
         const right = tileChar(rows, tx + 1, ty);
         const below = tileChar(rows, tx, ty + 1);
         if ((left === "#" || right === "#") && below !== "#" && ty > 5) {
-          const g = ctx.createLinearGradient(x, y, x, y + TILE * 3);
-          g.addColorStop(0, "rgba(232,236,240,0.08)");
-          g.addColorStop(1, "rgba(94,224,192,0.12)");
-          ctx.fillStyle = g;
-          ctx.fillRect(x, y, TILE, TILE);
-          ctx.fillStyle = `rgba(232,236,240,${0.12 + Math.sin(t * 3 + tx) * 0.06})`;
-          ctx.fillRect(x + 18, y, 4, TILE);
+          ctx.drawImage(glowStamp(), x, y);
         }
       } else if (ch === "v") {
         drawVent(ctx, x, y, t);
@@ -127,6 +157,34 @@ function drawBlock(
   top: boolean,
 ) {
   const stamp = (tx * 13 + ty * 7) % 6;
+  const key = `${theme}|${top ? 1 : 0}|${stamp}`;
+  const sheet = cachedTile(key, (g) => paintBlock(g, 0, 0, tx, ty, theme, stamp, top));
+  ctx.drawImage(sheet, x, y);
+  if (brk) paintBreak(ctx, x, y, tx, t);
+}
+
+function paintBreak(ctx: CanvasRenderingContext2D, x: number, y: number, tx: number, t: number) {
+  ctx.strokeStyle = "#5ee0c0";
+  ctx.globalAlpha = 0.55 + Math.sin(t * 6 + tx) * 0.2;
+  ctx.strokeRect(x + 6, y + 6, TILE - 12, TILE - 12);
+  ctx.beginPath();
+  ctx.moveTo(x + 10, y + 14);
+  ctx.lineTo(x + 22, y + 28);
+  ctx.lineTo(x + 34, y + 18);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+function paintBlock(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  tx: number,
+  ty: number,
+  theme: ThemeId,
+  stamp: number,
+  top: boolean,
+) {
   if (theme === "hub") {
     ctx.fillStyle = "#2c2436";
     ctx.fillRect(x, y, TILE + 0.5, TILE + 0.5);
@@ -353,17 +411,6 @@ function drawBlock(
       ctx.quadraticCurveTo(x + 18, y + TILE + 8, x + 30, y + TILE + 4);
       ctx.stroke();
     }
-  }
-  if (brk) {
-    ctx.strokeStyle = "#5ee0c0";
-    ctx.globalAlpha = 0.55 + Math.sin(t * 6 + tx) * 0.2;
-    ctx.strokeRect(x + 6, y + 6, TILE - 12, TILE - 12);
-    ctx.beginPath();
-    ctx.moveTo(x + 10, y + 14);
-    ctx.lineTo(x + 22, y + 28);
-    ctx.lineTo(x + 34, y + 18);
-    ctx.stroke();
-    ctx.globalAlpha = 1;
   }
 }
 

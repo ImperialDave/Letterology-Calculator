@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, type PointerEvent, type RefObject } from "react";
-import { GameEngine } from "@/glyphbound/engine";
+import type { GameEngine } from "@/glyphbound/engine";
 import type { UiSnap } from "@/glyphbound/types";
 import { STAGE_COUNT } from "@/glyphbound/types";
 import { Pause, Volume2, VolumeX } from "lucide-react";
 import { KITS, skillName } from "@/glyphbound/roster";
+import { GlyphboundStudio } from "@/components/GlyphboundStudio";
 
 const INTRO = [
   "Calculara was a manuscript before it was an equation. Letters walked it. Words were weather.",
@@ -152,6 +153,7 @@ const emptyUi = (): UiSnap => ({
   shotLevel: 1,
   hint: "",
   lore: [],
+  sandbox: false,
 });
 
 export function Glyphbound() {
@@ -163,20 +165,36 @@ export function Glyphbound() {
   const [showLore, setShowLore] = useState(false);
   const [openLetter, setOpenLetter] = useState<string | null>(null);
   const [objOpen, setObjOpen] = useState(true);
+  const [perf, setPerf] = useState<{
+    fps: number;
+    frameMs: number;
+    drawMs: number;
+    stage: string;
+    solids: number;
+    grid: number;
+    enemies: number;
+    bullets: number;
+  } | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const wrap = wrapRef.current;
     if (!canvas || !wrap) return;
-    const game = new GameEngine(canvas, setUi);
-    gameRef.current = game;
-    game.input.attach(wrap);
-    game.start();
-    const wake = () => game.audio.unlock();
-    wrap.addEventListener("pointerdown", wake);
+    let dead = false;
+    let game: GameEngine | null = null;
+    const wake = () => game?.audio.unlock();
+    void import("@/glyphbound/engine").then(({ GameEngine }) => {
+      if (dead || !canvasRef.current || !wrapRef.current) return;
+      game = new GameEngine(canvasRef.current, setUi);
+      gameRef.current = game;
+      game.input.attach(wrapRef.current);
+      game.start();
+      wrapRef.current.addEventListener("pointerdown", wake);
+    });
     return () => {
+      dead = true;
       wrap.removeEventListener("pointerdown", wake);
-      game.destroy();
+      game?.destroy();
       gameRef.current = null;
     };
   }, []);
@@ -196,9 +214,21 @@ export function Glyphbound() {
     if (window.matchMedia("(pointer: coarse)").matches) setObjOpen(false);
   }, []);
 
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      const game = gameRef.current;
+      if (!game?.showFps) {
+        setPerf(null);
+        return;
+      }
+      setPerf(game.snapshot());
+    }, 250);
+    return () => window.clearInterval(id);
+  }, []);
+
   const g = () => gameRef.current;
   const playing = ui.mode === "play" || ui.mode === "hub" || ui.mode === "transform" || ui.mode === "dialogue";
-  const padOn = ui.mode === "play" || ui.mode === "hub";
+  const padOn = (ui.mode === "play" || ui.mode === "hub") && !ui.sandbox;
 
   return (
     <div
@@ -211,6 +241,36 @@ export function Glyphbound() {
         className="pointer-events-none absolute inset-0 z-0 h-full w-full"
         style={{ touchAction: "none" }}
       />
+
+      {ui.mode === "studio" && <GlyphboundStudio game={g} />}
+
+      {ui.sandbox && ui.mode === "play" && (
+        <div className="pointer-events-auto absolute left-1/2 top-3 z-30 -translate-x-1/2">
+          <button
+            type="button"
+            data-ui="studio-stop"
+            className="h-10 rounded-md border border-[#e8d48a]/50 bg-[#121018]/90 px-4 text-sm text-[#e8d48a]"
+            {...press(() => g()?.studioStop())}
+          >
+            Back to desk · Esc
+          </button>
+        </div>
+      )}
+
+      {perf && (
+        <div
+          data-ui="fps"
+          className="pointer-events-none absolute bottom-2 left-2 z-30 rounded-md px-2 py-1 font-mono text-[11px] leading-tight"
+          style={{ background: "rgba(7,8,12,0.78)" }}
+        >
+          <p style={{ color: perf.fps < 45 ? "#d45a4a" : perf.fps < 55 ? "#e8d48a" : "#9af8de" }}>
+            {perf.fps.toFixed(0)} fps  {perf.frameMs.toFixed(1)}ms  draw {perf.drawMs.toFixed(1)}ms
+          </p>
+          <p className="text-[#c9b896]">
+            {perf.stage}  solids {perf.solids}  grid {perf.grid}  mobs {perf.enemies}  shot {perf.bullets}
+          </p>
+        </div>
+      )}
 
       {ui.mode === "title" && (
         <div
@@ -270,6 +330,14 @@ export function Glyphbound() {
                 {ui.muted ? "Sound off" : "Sound on"}
               </button>
             </div>
+            <button
+              type="button"
+              data-ui="studio"
+              className="h-11 rounded-md border border-[#5ee0c0]/40 bg-[#10241c]/90 text-sm text-[#9af8de]"
+              {...press(() => g()?.enterStudio())}
+            >
+              Studio
+            </button>
             <button
               type="button"
               data-ui="controls"

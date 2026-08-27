@@ -14,7 +14,9 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview --host 0.0.0.0 --port 8080",
     "typecheck": "tsc --noEmit",
-    "test": "node --test 'scripts/**/*.test.mjs' && npx tsx --test src/lib/**/*.test.ts src/lib/letterology/*.test.ts",
+    "test": "node --test 'scripts/**/*.test.mjs' && npx tsx --test src/lib/**/*.test.ts src/lib/letterology/*.test.ts src/glyphbound/*.test.ts",
+    "profile:glyphbound": "node scripts/glyphbound-profile.mjs",
+    "studio:glyphbound": "node scripts/glyphbound-studio-smoke.mjs",
     "lint": "eslint .",
     "format": "prettier --write ."
   },

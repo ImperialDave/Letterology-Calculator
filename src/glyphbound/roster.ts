@@ -213,9 +213,11 @@ export function skillName(letter: LetterId, capital: boolean) {
 }
 
 // Bind after the engine and ledgers finish loading so we do not close a cycle.
-queueMicrotask(() => {
-  void import("./stack").then((m) => m.installStacks());
-  void import("./jumps").then((m) => m.installJumps());
-  void import("./wake").then((m) => m.installWake());
-  void import("./bosses").then((m) => m.installBosses());
-});
+if (typeof window !== "undefined") {
+  queueMicrotask(() => {
+    void import("./stack").then((m) => m.installStacks());
+    void import("./jumps").then((m) => m.installJumps());
+    void import("./wake").then((m) => m.installWake());
+    void import("./bosses").then((m) => m.installBosses());
+  });
+}

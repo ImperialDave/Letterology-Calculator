@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import "@/glyphbound/engine-perf";
 import { Glyphbound } from "@/components/Glyphbound";
 import { pageCardMeta } from "@/lib/letterology/share";
 import { VOICE } from "@/lib/letterology/voice";

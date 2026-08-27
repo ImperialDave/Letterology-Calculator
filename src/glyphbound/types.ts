@@ -9,7 +9,8 @@ export type Mode =
   | "win"
   | "transform"
   | "dialogue"
-  | "codex";
+  | "codex"
+  | "studio";
 
 export type RelicId = "dropCap" | "spine" | "copper" | "counter";
 export type WordId = "WALL" | "BURN" | "RISE" | "LOCK" | "FOLD" | "TIDE";
@@ -25,6 +26,20 @@ export type ThemeId =
   | "orbit"
   | "glacier"
   | "remainder";
+
+export const THEME_IDS: ThemeId[] = [
+  "hub",
+  "street",
+  "fort",
+  "canal",
+  "coil",
+  "vault",
+  "abyss",
+  "spire",
+  "orbit",
+  "glacier",
+  "remainder",
+];
 
 /** hub + stage1..stageN. N is STAGE_COUNT. */
 export type LevelId = "hub" | `stage${number}`;
@@ -302,6 +317,7 @@ export interface UiSnap {
   shotLevel: number;
   hint: string;
   lore: { id: string; glyph: string; name: string; lines: string[] }[];
+  sandbox: boolean;
 }
 
 export const VIEW_W = 640;
