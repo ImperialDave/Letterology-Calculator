@@ -174,6 +174,7 @@ export function installStacks() {
   for (const meta of Object.values(LEVELS)) {
     if (!meta?.rows?.length) continue;
     if (meta.id === "hub") continue;
+    if ((meta.index ?? 0) >= 6) continue;
     const rows = meta.rows.slice();
     const fy = floorY(rows);
     const n = meta.index || 1;

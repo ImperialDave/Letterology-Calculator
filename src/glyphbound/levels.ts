@@ -2,7 +2,7 @@ import type { LevelId } from "./types";
 import { STAGE_COUNT, FIRST_BOOK } from "./types";
 import { armTeeth, slice, grid, type LevelMeta, type Grid } from "./levels-story";
 import { buildExchange, buildGutter, buildCoil, buildLedger } from "./levels-chapters";
-import { progressiveMeta } from "./levels-gen";
+import { assembleStage } from "./assemble";
 
 export type { LevelId, LevelMeta };
 export type { ThemeId } from "./types";
@@ -163,7 +163,7 @@ const hand: Record<string, LevelMeta> = {
 export const LEVELS: Record<string, LevelMeta> = { ...hand };
 
 for (let n = 6; n <= STAGE_COUNT; n++) {
-  const meta = progressiveMeta(n);
+  const meta = assembleStage(n);
   LEVELS[meta.id] = meta;
 }
 

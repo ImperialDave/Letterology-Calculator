@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type PointerEvent as PE } from "react";
 import type { GameEngine } from "@/glyphbound/engine";
 import { CATALOG, type BrushGroup } from "@/glyphbound/catalog";
 import { validateFolio } from "@/glyphbound/folio";
+import { checkMap } from "@/glyphbound/validate-level";
 import { deleteFolio, loadShelf, parseImported, saveFolio } from "@/glyphbound/folios-save";
 import { LEVELS } from "@/glyphbound/levels";
 import { THEME_IDS } from "@/glyphbound/types";
@@ -23,6 +24,7 @@ export function GlyphboundStudio({ game }: { game: () => GameEngine | null }) {
   const [open, setOpen] = useState(false);
   const [msg, setMsg] = useState("");
   const [name, setName] = useState("");
+  const [checks, setChecks] = useState<{ code: string; message: string }[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
   const lastTile = useRef("x");
   const painting = useRef(false);
@@ -151,6 +153,19 @@ export function GlyphboundStudio({ game }: { game: () => GameEngine | null }) {
             onClick={() => game()?.studioPlay()}
           >
             Play
+          </button>
+          <button
+            type="button"
+            className="h-9 rounded-md border border-[#e8d48a]/40 bg-[#1a1814] px-3 text-sm text-[#e8d48a]"
+            onClick={() => {
+              const f = game()?.studioFolio();
+              if (!f) return;
+              const found = checkMap(f);
+              setChecks(found);
+              setMsg(found.length ? `${found.length} check${found.length === 1 ? "" : "s"}` : "This ledger holds.");
+            }}
+          >
+            Check
           </button>
           <button
             type="button"
@@ -284,6 +299,13 @@ export function GlyphboundStudio({ game }: { game: () => GameEngine | null }) {
         {msg && <p className="mt-1 text-[#9af8de]">{msg}</p>}
         {issues.length > 0 && (
           <p className="mt-1 text-[#e8d48a]">{issues[0].message}</p>
+        )}
+        {checks.length > 0 && (
+          <ul className="mt-1 max-h-16 overflow-y-auto text-[#e8d48a]">
+            {checks.map((c, i) => (
+              <li key={c.code + i}>{c.message}</li>
+            ))}
+          </ul>
         )}
       </div>
 
