@@ -1,5 +1,5 @@
 /**
- * Let X (and Grok) frame the playable so a feed tap can run the well
+ * Let X (and Grok) frame the playable so a feed tap can run Glyphbound
  * in-app. Do not add a default-src CSP — that would block grok.com's
  * branding injector.
  */

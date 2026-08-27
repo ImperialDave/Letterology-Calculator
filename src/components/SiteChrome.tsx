@@ -316,12 +316,6 @@ export function AppShell({
             Cheat sheet
           </Link>
           <Link
-            to="/play"
-            className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
-          >
-            The Well
-          </Link>
-          <Link
             to="/glyphbound"
             className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
           >

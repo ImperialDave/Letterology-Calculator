@@ -13,11 +13,10 @@ export function isGameFirstHost(host: string): boolean {
   return h === "grok.me" || h.endsWith(".grok.me");
 }
 
-export type GameFirstSearch = { n?: string; club?: boolean; play?: boolean };
+export type GameFirstSearch = { n?: string; club?: boolean };
 
 export function isGameFirstLocation(host: string, search: GameFirstSearch = {}): boolean {
   if (search.club || (search.n && search.n.length > 0)) return false;
-  if (search.play) return true;
   return isGameFirstHost(host);
 }
 

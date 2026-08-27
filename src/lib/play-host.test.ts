@@ -16,17 +16,16 @@ test("grok.me hosts are the X playable", () => {
   assert.equal(isGameFirstHost("localhost:8080"), false);
 });
 
-test("club readings never steal the well", () => {
+test("club readings never steal the playable", () => {
   assert.equal(isGameFirstLocation("cinderwell.grok.me", {}), true);
   assert.equal(isGameFirstLocation("cinderwell.grok.me", { club: true }), false);
   assert.equal(isGameFirstLocation("cinderwell.grok.me", { n: "lovelace" }), false);
-  assert.equal(isGameFirstLocation("www.letterology.club", { play: true }), true);
   assert.equal(isGameFirstLocation("www.letterology.club", {}), false);
 });
 
 test("forwarded hosts take the first value", () => {
   assert.equal(normalizeHost("cinderwell.grok.me, localhost"), "cinderwell.grok.me");
-  assert.equal(hostFromHref("https://cinderwell.grok.me/play"), "cinderwell.grok.me");
+  assert.equal(hostFromHref("https://cinderwell.grok.me/glyphbound"), "cinderwell.grok.me");
 });
 
 test("X may frame the playable", () => {

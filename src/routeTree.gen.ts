@@ -19,12 +19,11 @@ import { Route as CircleRouteImport } from './routes/circle'
 import { Route as ClaimRouteImport } from './routes/claim'
 import { Route as CountRouteImport } from './routes/count'
 import { Route as DoctrineRouteImport } from './routes/doctrine'
+import { Route as GlyphboundRouteImport } from './routes/glyphbound'
 import { Route as HouseRouteImport } from './routes/house'
 import { Route as KeyRouteImport } from './routes/key'
 import { Route as LettersRouteImport } from './routes/letters'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as PlayRouteImport } from './routes/play'
-import { Route as GlyphboundRouteImport } from './routes/glyphbound'
 import { Route as SheetRouteImport } from './routes/sheet'
 import { Route as StoicheiaRouteImport } from './routes/stoicheia'
 import { Route as TwoRouteImport } from './routes/two'
@@ -96,6 +95,11 @@ const DoctrineRoute = DoctrineRouteImport.update({
   path: '/doctrine',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GlyphboundRoute = GlyphboundRouteImport.update({
+  id: '/glyphbound',
+  path: '/glyphbound',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HouseRoute = HouseRouteImport.update({
   id: '/house',
   path: '/house',
@@ -114,16 +118,6 @@ const LettersRoute = LettersRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PlayRoute = PlayRouteImport.update({
-  id: '/play',
-  path: '/play',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GlyphboundRoute = GlyphboundRouteImport.update({
-  id: '/glyphbound',
-  path: '/glyphbound',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SheetRoute = SheetRouteImport.update({
@@ -238,12 +232,11 @@ export interface FileRoutesByFullPath {
   '/claim': typeof ClaimRoute
   '/count': typeof CountRoute
   '/doctrine': typeof DoctrineRoute
+  '/glyphbound': typeof GlyphboundRoute
   '/house': typeof HouseRoute
   '/key': typeof KeyRoute
   '/letters': typeof LettersRoute
   '/login': typeof LoginRoute
-  '/play': typeof PlayRoute
-  '/glyphbound': typeof GlyphboundRoute
   '/sheet': typeof SheetRoute
   '/stoicheia': typeof StoicheiaRouteWithChildren
   '/two': typeof TwoRoute
@@ -276,12 +269,11 @@ export interface FileRoutesByTo {
   '/claim': typeof ClaimRoute
   '/count': typeof CountRoute
   '/doctrine': typeof DoctrineRoute
+  '/glyphbound': typeof GlyphboundRoute
   '/house': typeof HouseRoute
   '/key': typeof KeyRoute
   '/letters': typeof LettersRoute
   '/login': typeof LoginRoute
-  '/play': typeof PlayRoute
-  '/glyphbound': typeof GlyphboundRoute
   '/sheet': typeof SheetRoute
   '/two': typeof TwoRoute
   '/why': typeof WhyRoute
@@ -314,12 +306,11 @@ export interface FileRoutesById {
   '/claim': typeof ClaimRoute
   '/count': typeof CountRoute
   '/doctrine': typeof DoctrineRoute
+  '/glyphbound': typeof GlyphboundRoute
   '/house': typeof HouseRoute
   '/key': typeof KeyRoute
   '/letters': typeof LettersRoute
   '/login': typeof LoginRoute
-  '/play': typeof PlayRoute
-  '/glyphbound': typeof GlyphboundRoute
   '/sheet': typeof SheetRoute
   '/stoicheia': typeof StoicheiaRouteWithChildren
   '/two': typeof TwoRoute
@@ -354,12 +345,11 @@ export interface FileRouteTypes {
     | '/claim'
     | '/count'
     | '/doctrine'
+    | '/glyphbound'
     | '/house'
     | '/key'
     | '/letters'
     | '/login'
-    | '/play'
-    | '/glyphbound'
     | '/sheet'
     | '/stoicheia'
     | '/two'
@@ -392,12 +382,11 @@ export interface FileRouteTypes {
     | '/claim'
     | '/count'
     | '/doctrine'
+    | '/glyphbound'
     | '/house'
     | '/key'
     | '/letters'
     | '/login'
-    | '/play'
-    | '/glyphbound'
     | '/sheet'
     | '/two'
     | '/why'
@@ -429,12 +418,11 @@ export interface FileRouteTypes {
     | '/claim'
     | '/count'
     | '/doctrine'
+    | '/glyphbound'
     | '/house'
     | '/key'
     | '/letters'
     | '/login'
-    | '/play'
-    | '/glyphbound'
     | '/sheet'
     | '/stoicheia'
     | '/two'
@@ -468,12 +456,11 @@ export interface RootRouteChildren {
   ClaimRoute: typeof ClaimRoute
   CountRoute: typeof CountRoute
   DoctrineRoute: typeof DoctrineRoute
+  GlyphboundRoute: typeof GlyphboundRoute
   HouseRoute: typeof HouseRoute
   KeyRoute: typeof KeyRoute
   LettersRoute: typeof LettersRoute
   LoginRoute: typeof LoginRoute
-  PlayRoute: typeof PlayRoute
-  GlyphboundRoute: typeof GlyphboundRoute
   SheetRoute: typeof SheetRoute
   StoicheiaRoute: typeof StoicheiaRouteWithChildren
   TwoRoute: typeof TwoRoute
@@ -558,6 +545,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DoctrineRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/glyphbound': {
+      id: '/glyphbound'
+      path: '/glyphbound'
+      fullPath: '/glyphbound'
+      preLoaderRoute: typeof GlyphboundRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/house': {
       id: '/house'
       path: '/house'
@@ -584,20 +578,6 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/play': {
-      id: '/play'
-      path: '/play'
-      fullPath: '/play'
-      preLoaderRoute: typeof PlayRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/glyphbound': {
-      id: '/glyphbound'
-      path: '/glyphbound'
-      fullPath: '/glyphbound'
-      preLoaderRoute: typeof GlyphboundRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sheet': {
@@ -784,12 +764,11 @@ const rootRouteChildren: RootRouteChildren = {
   ClaimRoute: ClaimRoute,
   CountRoute: CountRoute,
   DoctrineRoute: DoctrineRoute,
+  GlyphboundRoute: GlyphboundRoute,
   HouseRoute: HouseRoute,
   KeyRoute: KeyRoute,
   LettersRoute: LettersRoute,
   LoginRoute: LoginRoute,
-  PlayRoute: PlayRoute,
-  GlyphboundRoute: GlyphboundRoute,
   SheetRoute: SheetRoute,
   StoicheiaRoute: StoicheiaRouteWithChildren,
   TwoRoute: TwoRoute,

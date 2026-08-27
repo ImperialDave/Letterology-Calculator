@@ -68,9 +68,6 @@ export const VOICE = {
     "Type the username you use and a question. We letterize both, meet them with today’s court, and answer. Luck is willingness. The decision is yours.",
   askHint:
     "Ask in ordinary words. Should, will, how, when, who — or two options split by or. We read the letters of the matter, not the mood word.",
-  wellLede:
-    "The club keeps a well. Drill the crust, haul ore, sell it, go deeper. Three claims stay in this browser.",
-  wellHome: "The club keeps a well. A descent, not a reading.",
   glyphLede:
     "Play as the letter c against living numbers. Sixty ledgers. The rest of the book is still being written.",
   glyphHome: "The club keeps a side-scroller. Letters against numbers.",

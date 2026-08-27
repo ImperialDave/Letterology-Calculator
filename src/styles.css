@@ -278,32 +278,6 @@
   }
 }
 
-/* Cinderwell — night room. Tokens only apply inside the well. */
-[data-cinderwell] {
-  --color-bg: #100e0c;
-  --color-surface: #1a1714;
-  --color-elevated: #241f1b;
-  --color-raised: #241f1b;
-  --color-ink: #efe8dc;
-  --color-fg: #efe8dc;
-  --color-muted: #9c9184;
-  --color-subtle: #6e655c;
-  --color-primary: #c45c48;
-  --color-primary-fg: #14110f;
-  --color-border: #3a342e;
-  --color-rule: #4a3c30;
-  --color-accent: #e8e0d4;
-  --color-accent-fg: #14110f;
-  --color-copper: #c45c3a;
-  --color-fuel: #4a9b82;
-  --color-hull: #c45c48;
-  --color-cargo: #c4a574;
-  --color-danger: #c44536;
-  --shadow-panel: 0 12px 40px rgba(0, 0, 0, 0.45);
-  color: var(--color-fg);
-  background: var(--color-bg);
-}
-
 /* Glyphbound — ink room. Tokens only apply inside the scroller. */
 [data-glyphbound] {
   --color-bg: #07080c;

@@ -1,6 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Cinderwell } from "@/components/cinderwell";
 import { LatinPortrait } from "@/components/letterology/LatinPortrait";
 import { TongueStage } from "@/components/letterology/TongueStage";
 import { AppShell } from "@/components/SiteChrome";
@@ -19,14 +18,14 @@ import { VOICE } from "@/lib/letterology/voice";
 import { stoicheiaCardFile, stoicheiaNamePath } from "@/lib/stoicheia/copy";
 import { readStoicheion } from "@/lib/stoicheia/engine";
 
-type Search = { n?: string; name?: string; tongue?: "la" | "el"; club?: boolean; play?: boolean };
+type Search = { n?: string; name?: string; tongue?: "la" | "el"; club?: boolean };
 
-function wellCard() {
+function glyphCard() {
   return pageCardMeta({
-    title: "Cinderwell",
-    description: VOICE.wellLede,
+    title: "Glyphbound",
+    description: VOICE.glyphLede,
     path: "/",
-    imagePath: "/og.jpg",
+    imagePath: "/glyphbound.jpg",
   });
 }
 
@@ -36,13 +35,11 @@ export const Route = createFileRoute("/")({
     name: typeof search.name === "string" ? search.name : undefined,
     tongue: search.tongue === "el" ? "el" : search.tongue === "la" ? "la" : undefined,
     club: search.club === true || search.club === "1" || search.club === 1 ? true : undefined,
-    play: search.play === true || search.play === "1" || search.play === 1 ? true : undefined,
   }),
   loader: async ({ location }) => {
     const params = new URL(location.href, "https://www.letterology.club").searchParams;
     const n = params.get("n") ?? params.get("name") ?? undefined;
     const club = params.get("club") === "1" || params.get("club") === "true";
-    const play = params.get("play") === "1" || params.get("play") === "true";
     let host = resolvePlayHost(location.href);
     if (!host && import.meta.env.SSR) {
       try {
@@ -55,11 +52,11 @@ export const Route = createFileRoute("/")({
     return {
       n,
       tongue: params.get("tongue") === "el" ? ("el" as const) : params.get("tongue") === "la" ? ("la" as const) : undefined,
-      gameFirst: isGameFirstLocation(host, { n, club, play }),
+      gameFirst: isGameFirstLocation(host, { n, club }),
     };
   },
   head: ({ loaderData }) => {
-    if (loaderData?.gameFirst) return wellCard();
+    if (loaderData?.gameFirst) return glyphCard();
     const handle = loaderData?.n ?? "";
     const tongue = loaderData?.tongue === "el" ? "el" : "la";
     if (!handle) {
@@ -92,8 +89,16 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   const loaded = Route.useLoaderData();
-  if (loaded.gameFirst) return <Cinderwell />;
+  if (loaded.gameFirst) return <OpenGlyphbound />;
   return <ClubHome />;
+}
+
+function OpenGlyphbound() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    void navigate({ to: "/glyphbound", replace: true });
+  }, [navigate]);
+  return null;
 }
 
 function ClubHome() {
@@ -111,11 +116,11 @@ function ClubHome() {
   const door = !handle && !sitting;
 
   useEffect(() => {
-    if (!isGameFirstLocation(window.location.host, { n: handle || undefined, club: search.club, play: search.play })) {
+    if (!isGameFirstLocation(window.location.host, { n: handle || undefined, club: search.club })) {
       return;
     }
-    void navigate({ to: "/play", replace: true });
-  }, [handle, navigate, search.club, search.play]);
+    void navigate({ to: "/glyphbound", replace: true });
+  }, [handle, navigate, search.club]);
 
   useEffect(() => {
     if (handle) setValue(handle);
@@ -169,14 +174,7 @@ function ClubHome() {
             </div>
             <p className="mt-2 text-sm text-muted">{VOICE.nameFormHint}</p>
           </form>
-          <p className="mt-16 text-sm text-muted">{VOICE.wellHome}</p>
-          <Link
-            to="/play"
-            className="mt-2 inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
-          >
-            The Well
-          </Link>
-          <p className="mt-6 text-sm text-muted">{VOICE.glyphHome}</p>
+          <p className="mt-16 text-sm text-muted">{VOICE.glyphHome}</p>
           <Link
             to="/glyphbound"
             className="mt-2 inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"

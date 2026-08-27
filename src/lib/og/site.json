@@ -1,8 +1,8 @@
 {
-  "title": "Cinderwell",
+  "title": "Glyphbound",
   "type": "x:game",
   "card": "custom",
-  "color": "1a1410",
-  "description": "The well under CC33. Drill the crust, haul ore, sell it, go deeper.",
-  "image": "/og.jpg"
+  "color": "07080c",
+  "description": "Play as the letter c against living numbers. Sixty ledgers.",
+  "image": "/glyphbound.jpg"
 }
