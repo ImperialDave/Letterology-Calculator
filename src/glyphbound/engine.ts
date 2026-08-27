@@ -2444,7 +2444,8 @@ export class GameEngine {
         e.aux = 0;
         e.aux2 = (e.aux2 + 1) % (e.kind === "summand" ? 4 : 2);
         for (const o of this.enemies) {
-          if (o.alive && o !== e && Math.hypot(o.x - e.x, o.y - e.y) < 150) o.hp = Math.min(o.maxHp, o.hp + (e.kind === "summand" ? 2 : 1));
+          if (!o.alive || o === e || this.isBossKind(o.kind)) continue;
+          if (Math.hypot(o.x - e.x, o.y - e.y) < 150) o.hp = Math.min(o.maxHp, o.hp + (e.kind === "summand" ? 2 : 1));
         }
         this.burst(e.x + e.w / 2, e.y, "#e8d48a", 8, "glyph");
         if (e.kind === "summand") {

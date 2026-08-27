@@ -93,7 +93,12 @@ function land(eng: Eng, e: Enemy, p: Player) {
       eng.ringShot?.(e, 4, 140);
       break;
     case "summand":
-      e.hp = Math.min(e.maxHp, e.hp + 3);
+      // Add to nearby plus-signs, never the warden. Self-heal on every
+      // loft-jump made Circumflex unkillable.
+      for (const o of eng.enemies) {
+        if (!o.alive || o === e || o.kind !== "plus") continue;
+        if (Math.hypot(o.x - e.x, o.y - e.y) < 160) o.hp = Math.min(o.maxHp, o.hp + 1);
+      }
       eng.ringShot?.(e, 6, 185);
       break;
     case "difference":
@@ -155,12 +160,13 @@ function tick(eng: Eng, e: Enemy, p: Player, dt: number) {
   const high = p.y + p.h < e.y - 18;
   const dist = Math.abs(p.x - e.x);
   const far = dist > 120 && dist < VIEW_W;
-  if (e.grounded && s.jump <= 0 && (high || far)) {
+  if (e.grounded && s.jump <= 0 && (far || (high && dist < 90))) {
     e.vy = e.kind === "endmark" || e.kind === "remainder" ? -720 : -620;
     e.vx = (p.x > e.x ? 1 : -1) * (far ? 160 : 90);
     e.grounded = false;
     s.air = true;
-    s.jump = e.hp < e.maxHp * 0.4 ? 1.05 : 1.55;
+    const furious = e.hp < e.maxHp * 0.4;
+    s.jump = e.kind === "summand" ? (furious ? 2.2 : 2.8) : furious ? 1.05 : 1.55;
     eng.burst?.(e.x + e.w / 2, e.y + e.h, "#e8d48a", 8, "dust");
   }
   if (s.air && e.grounded) {
