@@ -1,6 +1,6 @@
 /**
  * FPS and wake patches applied to GameEngine without rewriting the 133k body.
- * Import as a side-effect from Glyphbound.tsx.
+ * Import as a side-effect from the Glyphbound route.
  */
 import { GameEngine } from "./engine";
 import type { Enemy } from "./types";
@@ -16,11 +16,14 @@ type AnyEng = GameEngine & {
   acc: number;
   visHidden: boolean;
   bufW: number;
+  checkX: number;
+  stage: string;
   audio: { unlock: () => void };
   input: { clear: () => void };
   updateEnemies: (dt: number) => void;
   updateBullets: (dt: number) => void;
   updateParticles: (dt: number) => void;
+  loadLevel: (id: string, atCheck?: boolean) => void;
   start: () => void;
   destroy: () => void;
 };
@@ -55,6 +58,17 @@ P.updateParticles = function updateParticlesPatched(this: AnyEng, dt: number) {
     if (list[i].life > 0) list[w++] = list[i];
   }
   list.length = w;
+};
+
+const prevLoad = P.loadLevel;
+P.loadLevel = function loadLevelPatched(this: AnyEng, id: string, atCheck?: boolean) {
+  prevLoad.call(this, id, atCheck);
+  if (id === "hub" || !atCheck) return;
+  const cut = this.checkX;
+  if (!cut) return;
+  const keep = this.enemies.filter((e) => e.x + e.w * 0.5 >= cut - 16);
+  this.enemies.length = 0;
+  for (const e of keep) this.enemies.push(e);
 };
 
 const prevStart = P.start;
