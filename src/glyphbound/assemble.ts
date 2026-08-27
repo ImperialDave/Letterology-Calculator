@@ -37,8 +37,10 @@ function themeFor(n: number): ThemeId {
 }
 
 function pickChunk(beat: Beat, n: number, theme: ThemeId, rand: () => number, used: Set<string>): Chunk {
-  const pool = chunksFor(beat, n, theme).filter((c) => !used.has(c.id));
-  const list = pool.length ? pool : chunksFor(beat, n, theme);
+  const all = chunksFor(beat, n, theme);
+  const themed = all.filter((c) => c.tags.includes(theme) && !used.has(c.id));
+  const unused = all.filter((c) => !used.has(c.id));
+  const list = themed.length ? themed : unused.length ? unused : all;
   const c = list[Math.floor(rand() * list.length)] ?? chunksFor(beat, n, "street")[0];
   if (!c) throw new Error(`no chunk for ${beat} @ ${n}`);
   used.add(c.id);

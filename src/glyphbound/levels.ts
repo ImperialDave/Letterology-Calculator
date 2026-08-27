@@ -53,7 +53,7 @@ const hand: Record<string, LevelMeta> = {
     id: "hub",
     name: "Lower Register Stacks",
     theme: "hub",
-    objective: "Left: five closed chapters, one ledger each. Right: the rest of the book — the only door that keeps changing.",
+    objective: "Left: five closed chapters. Right: the Unbound Sentence, and the Studio desk if you want to write your own.",
     tasks: [
       { id: "talk-e", text: "Talk to e" },
       { id: "talk-t", text: "Learn scribing from t" },

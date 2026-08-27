@@ -3,7 +3,7 @@ import test from "node:test";
 import { assembleStage } from "./assemble";
 import { blankFolio } from "./studio";
 import { checkMap, validateLevel } from "./validate-level";
-import { FIRST_BOOK, STAGE_COUNT } from "./types";
+import { STAGE_COUNT } from "./types";
 import { LEVELS } from "./levels";
 
 test("blank folio has a path from spawn to gate", () => {

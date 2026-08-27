@@ -14,6 +14,18 @@ function arena(n: number, name: string, theme: LevelMeta["theme"], boss: boolean
   fill(8, fy - 3, 5, "=");
   fill(W - 18, fy - 3, 5, "=");
   fill(22, fy - 5, 4, "=");
+  if (n === FIRST_BOOK) {
+    put(6, fy - 2, ";");
+    put(20, fy - 2, ";");
+    put(W - 12, fy - 2, ";");
+  }
+  if (n === STAGE_COUNT) {
+    put(6, fy - 2, '"');
+    put(18, fy - 4, "?");
+    put(28, fy - 2, '"');
+    put(W - 14, fy - 2, "?");
+    fill(30, fy - 3, 4, "=");
+  }
   if (boss) put(Math.floor(W / 2) - 1, fy - 1, "!");
   put(W - 5, fy - 1, "P");
   put(W - 7, fy - 1, "i");

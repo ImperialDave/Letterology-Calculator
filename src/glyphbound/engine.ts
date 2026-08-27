@@ -391,6 +391,17 @@ export class GameEngine {
     if (p.x + p.w > this.worldW - TILE) p.x = this.worldW - TILE - p.w - 4;
   }
 
+  private checkpointHolds(x: number, y: number) {
+    if (!Number.isFinite(x) || !Number.isFinite(y) || x <= 0 || y <= 0) return false;
+    if (x < TILE || y < 0 || x > this.worldW - TILE || y > this.worldH - TILE) return false;
+    if (this.hazardAt(x, y, 28, 36)) return false;
+    const nearCheck = this.pickups.some(
+      (u) => u.kind === "check" && Math.hypot(u.x - x, u.y - y) < TILE * 2.5,
+    );
+    const nearSpawn = Math.hypot(x - this.spawnX, y - this.spawnY) < TILE * 1.5;
+    return nearCheck || nearSpawn;
+  }
+
   private markSafeGround() {
     const p = this.player;
     if (!p.grounded || p.vy < -12 || p.roll > 0) return;
@@ -501,15 +512,18 @@ export class GameEngine {
     this.rebuildGrid();
     this.spawnX = parsed.spawnX;
     this.spawnY = parsed.spawnY;
-    this.checkX = this.save.stage === id && this.save.checkX ? this.save.checkX : this.spawnX;
-    this.checkY = this.save.stage === id && this.save.checkY ? this.save.checkY : this.spawnY;
-    if (atCheck && this.checkX) {
+    const savedX = this.save.stage === id ? this.save.checkX : 0;
+    const savedY = this.save.stage === id ? this.save.checkY : 0;
+    const resume = atCheck && this.checkpointHolds(savedX, savedY);
+    this.checkX = resume ? savedX : this.spawnX;
+    this.checkY = resume ? savedY : this.spawnY;
+    if (resume) {
       const cut = this.checkX;
       this.enemies = this.enemies.filter((e) => e.x + e.w * 0.5 >= cut - 16);
     }
     const p = this.player;
-    p.x = atCheck ? this.checkX : this.spawnX;
-    p.y = atCheck ? this.checkY : this.spawnY;
+    p.x = resume ? this.checkX : this.spawnX;
+    p.y = resume ? this.checkY : this.spawnY;
     if (id === "hub" && this.save.progress >= 5 && !atCheck) {
       const bound = this.pickups.find((u) => u.id === "continue");
       if (bound) {
@@ -538,8 +552,8 @@ export class GameEngine {
     if (id === "hub")
       this.say(
         this.save.progress >= 5
-          ? "Those five doors are finished chapters. This hall is the rest of the book — the only door that keeps opening new ledgers."
-          : "Left hall: five closed chapters, one ledger each. Finish them, then the Unbound Sentence opens on the right.",
+          ? "Those five doors are finished chapters. The Unbound Sentence still turns. The Studio desk, further right, writes ledgers that do not spend the book."
+          : "Left hall: five closed chapters. Right: the Unbound Sentence, and a Studio desk if you want to write your own.",
       );
     this.persist();
     this.emit();
@@ -2841,6 +2855,7 @@ export class GameEngine {
       const name = last ? LEVELS[last]?.name ?? last : "";
       return { title: "LAST PAGE", sub: `same ledger again · ${name}` };
     }
+    if (id === "studio") return { title: "STUDIO", sub: "write a ledger · the book does not turn" };
     const chapters: Record<string, { title: string; sub: string }> = {
       stage1: { title: "I  EXCHANGE", sub: "one ledger · never changes" },
       stage2: { title: "II  FORT", sub: "one ledger · never changes" },
@@ -3818,7 +3833,7 @@ export class GameEngine {
     ctx.fillText("THE UNBOUND SENTENCE", wx(68), wy(1) + 22);
     ctx.fillStyle = "#b08a4a";
     ctx.font = "600 10px 'Source Sans 3', sans-serif";
-    ctx.fillText("the only door that keeps opening new ledgers", wx(68), wy(1) + 38);
+    ctx.fillText("new ledgers, then a desk that writes its own", wx(68), wy(1) + 38);
 
     ctx.strokeStyle = "rgba(201,184,150,0.45)";
     ctx.lineWidth = 2;
@@ -3831,6 +3846,17 @@ export class GameEngine {
     ctx.font = "600 9px 'Source Sans 3', sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("WRITE →", wx(62), wy(2) + 8);
+
+    const desk = this.pickups.find((u) => u.id === "studio");
+    if (desk) {
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#9af8de";
+      ctx.font = "700 12px 'Cormorant Garamond', serif";
+      ctx.fillText("STUDIO", desk.x + desk.w / 2 - this.camX, desk.y - 10 - this.camY);
+      ctx.fillStyle = "#5ee0c0";
+      ctx.font = "600 9px 'Source Sans 3', sans-serif";
+      ctx.fillText("a desk · not a ledger", desk.x + desk.w / 2 - this.camX, desk.y - this.camY);
+    }
 
     const bound = this.pickups.find((u) => u.id === "continue");
     if (bound && this.save.progress >= 5) {
@@ -3911,6 +3937,7 @@ export class GameEngine {
     ctx.fillStyle = locked ? "rgba(122,139,150,0.28)" : `rgba(94,224,192,${0.16 + pulse})`;
     if (u.id === "continue" && !locked) ctx.fillStyle = `rgba(232,212,138,${0.2 + pulse})`;
     if (u.id === "replay") ctx.fillStyle = locked ? "rgba(80,70,60,0.3)" : "rgba(140,120,90,0.22)";
+    if (u.id === "studio") ctx.fillStyle = `rgba(94,224,192,${0.14 + pulse})`;
     const chapter = /^stage[1-5]$/.test(u.id);
     if (u.id === "continue") {
       const cx = x + u.w / 2;
@@ -3952,6 +3979,26 @@ export class GameEngine {
       ctx.font = "700 16px 'Cormorant Garamond', serif";
       ctx.textAlign = "center";
       ctx.fillText(["I", "II", "III", "IV", "V"][Number(u.id.slice(5)) - 1] ?? "", x + u.w / 2 + 4, y + u.h * 0.62);
+    } else if (u.id === "studio") {
+      const cx = x + u.w / 2;
+      const cy = y + u.h * 0.58;
+      ctx.save();
+      ctx.strokeStyle = "#5ee0c0";
+      ctx.shadowColor = "#5ee0c0";
+      ctx.shadowBlur = 12;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x + 14, y + 22, u.w - 28, u.h - 28);
+      ctx.fillStyle = `rgba(16,36,28,${0.55 + pulse})`;
+      ctx.fillRect(x + 14, y + 22, u.w - 28, u.h - 28);
+      ctx.fillStyle = "#9af8de";
+      ctx.fillRect(cx - 3, cy - 18, 6, 28);
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + 12);
+      ctx.lineTo(cx + 10, cy + 20);
+      ctx.lineTo(cx - 10, cy + 20);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
     } else {
       ctx.fillRect(x + 8, y + 16, u.w - 16, u.h - 16);
       ctx.strokeStyle = locked ? "#7a8b96" : "#8a7a62";
@@ -3964,8 +4011,8 @@ export class GameEngine {
     }
     const plaque = this.doorPlaque(u.id);
     const title = plaque.title || u.label || "";
-    ctx.fillStyle = u.id === "continue" ? "#e8d48a" : "#e8ece8";
-    ctx.font = u.id === "continue" ? "700 13px 'Cormorant Garamond', serif" : "700 11px 'Source Sans 3', sans-serif";
+    ctx.fillStyle = u.id === "continue" ? "#e8d48a" : u.id === "studio" ? "#9af8de" : "#e8ece8";
+    ctx.font = u.id === "continue" || u.id === "studio" ? "700 13px 'Cormorant Garamond', serif" : "700 11px 'Source Sans 3', sans-serif";
     ctx.textAlign = "center";
     ctx.fillText(title, x + u.w / 2, y - (plaque.sub ? 22 : 10));
     if (plaque.sub) {

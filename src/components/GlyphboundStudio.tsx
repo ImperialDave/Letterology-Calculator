@@ -133,6 +133,7 @@ export function GlyphboundStudio({ game }: { game: () => GameEngine | null }) {
             onChange={(e) => setName(e.target.value)}
             onBlur={() => game()?.studioSetName(name)}
             className="h-9 min-w-[10rem] flex-1 rounded-md border border-[#f4f0e4]/20 bg-[#121018] px-2 text-sm text-[#f4f0e4]"
+            placeholder="Name this ledger"
             aria-label="Ledger name"
           />
           <select
@@ -226,7 +227,9 @@ export function GlyphboundStudio({ game }: { game: () => GameEngine | null }) {
       <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-10 border-t border-[#e8d48a]/20 bg-[#07080c]/90 px-3 py-2 text-[11px] text-[#c9b896]">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p>
-            Left paints · right erases · Alt samples · WASD pans · Space plays · Esc leaves
+            {shelf.folios.length === 0
+              ? "A blank floor, a spawn, a gate. Paint, Check, Play. Save when it holds."
+              : "Left paints · right erases · Alt samples · WASD pans · Space plays · Esc leaves"}
             {folio ? ` · ${folio.rows[0]?.length ?? 0}×${folio.rows.length}` : ""}
             {issues.length ? ` · ${issues.length} check${issues.length === 1 ? "" : "s"}` : ""}
           </p>
@@ -312,7 +315,11 @@ export function GlyphboundStudio({ game }: { game: () => GameEngine | null }) {
       {open && (
         <div className="pointer-events-auto absolute inset-x-4 top-36 z-20 max-h-[50%] overflow-y-auto rounded-lg border border-[#e8d48a]/30 bg-[#121018]/95 p-3">
           <p className="mb-2 text-[11px] uppercase tracking-[0.2em] text-[#e8d48a]">Shelf</p>
-          {shelf.folios.length === 0 && <p className="text-sm text-[#8a7a62]">No ledgers shelved yet.</p>}
+          {shelf.folios.length === 0 && (
+            <p className="mb-2 text-sm leading-snug text-[#8a7a62]">
+              The shelf is empty. Paint this floor, Check it, Play it, then Save. Or copy a closed page below.
+            </p>
+          )}
           <ul className="flex flex-col gap-1">
             {shelf.folios.map((f) => (
               <li key={f.id} className="flex items-center gap-2">

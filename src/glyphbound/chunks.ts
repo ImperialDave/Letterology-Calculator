@@ -191,6 +191,52 @@ export const CHUNKS: Chunk[] = [
     g.put(4, FY - 1, "%");
     g.put(g.W - 4, FY - 1, "P");
   }, { w: 16 }),
+
+  make("teach-canal", "Press trench", ["teach"], ["canal", "sluice"], (g) => {
+    g.fill(6, FY, 3, ".");
+    g.fill(6, FY + 1, 3, "~");
+    g.put(7, FY - 1, "T");
+    g.put(5, FY - 2, ",");
+  }, { w: 18, min: 12, theme: "canal" }),
+  make("mix-canal", "Shelf over ink", ["mix"], ["canal", "sluice", "loft"], (g) => {
+    g.fill(6, FY, 3, ".");
+    g.fill(6, FY + 1, 3, "~");
+    g.fill(5, FY - 3, 6, "=");
+    g.put(7, FY - 1, "T");
+  }, { w: 20, min: 14, theme: "canal" }),
+  make("teach-fort", "Ash step", ["teach"], ["fort", "loft"], (g) => {
+    g.fill(6, FY - 2, 5, "=");
+    g.put(8, FY - 3, "'");
+    g.put(14, FY - 2, "'");
+  }, { w: 18, theme: "fort" }),
+  make("combat-fort", "Arch fight", ["combat"], ["fort", "loft"], (g) => {
+    g.fill(5, FY - 3, 4, "=");
+    g.put(6, FY - 4, "1");
+    g.put(14, FY - 1, "4");
+    g.put(10, FY - 2, "'");
+  }, { w: 20, min: 10, theme: "fort" }),
+  make("teach-coil", "Spark bar", ["teach"], ["coil", "laser"], (g) => {
+    g.put(8, FY - 2, "|");
+    g.put(8, FY - 3, "|");
+    g.fill(10, FY - 4, 4, "=");
+    g.put(14, FY - 1, ";");
+  }, { w: 18, min: 15, theme: "coil" }),
+  make("rest-vault", "Quiet vault", ["rest"], ["vault"], (g) => {
+    g.put(5, FY - 1, "%");
+    g.put(8, FY - 1, "i");
+    g.put(11, FY - 2, ";");
+    g.fill(13, FY - 3, 3, "=");
+  }, { w: 18, theme: "vault" }),
+  make("teach-glacier", "Ice rail", ["teach"], ["glacier", "loft"], (g) => {
+    g.fill(5, FY - 2, 8, "_");
+    g.put(14, FY - 1, "T");
+  }, { w: 20, min: 20, theme: "glacier" }),
+  make("rest-remainder", "Gold margin", ["rest"], ["remainder"], (g) => {
+    g.put(4, FY - 1, "%");
+    g.put(7, FY - 1, "i");
+    g.put(10, FY - 2, "?");
+    g.fill(12, FY - 3, 4, "=");
+  }, { w: 18, min: 31, theme: "remainder" }),
 ];
 
 export function chunksFor(beat: Beat, n: number, theme: ThemeId): Chunk[] {

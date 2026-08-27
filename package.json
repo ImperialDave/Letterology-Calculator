@@ -17,6 +17,7 @@
     "test": "node --test 'scripts/**/*.test.mjs' && npx tsx --test src/lib/**/*.test.ts src/lib/letterology/*.test.ts src/glyphbound/*.test.ts",
     "profile:glyphbound": "node scripts/glyphbound-profile.mjs",
     "studio:glyphbound": "node scripts/glyphbound-studio-smoke.mjs",
+    "walk:glyphbound": "node scripts/glyphbound-walk.mjs",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
