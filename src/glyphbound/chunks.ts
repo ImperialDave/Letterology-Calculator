@@ -1,4 +1,5 @@
 import { grid, type Grid } from "./levels-story";
+import { REMAINDER_CHUNKS } from "./remainder-chunks";
 import type { ThemeId } from "./types";
 
 export type Beat = "land" | "teach" | "mix" | "combat" | "rest" | "arena" | "gate";
@@ -299,6 +300,8 @@ export const CHUNKS: Chunk[] = [
     g.put(9, FY, "g");
     g.fill(12, FY - 3, 4, "=");
   }, { w: 20, min: 14, theme: "canal" }),
+
+  ...REMAINDER_CHUNKS,
 ];
 
 export function chunksFor(beat: Beat, n: number, theme: ThemeId): Chunk[] {

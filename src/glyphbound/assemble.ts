@@ -1,6 +1,7 @@
 import { chunksFor, type Beat, type Chunk } from "./chunks";
 import { DISTRICTS } from "./districts";
 import { FROZEN_REMAINDER } from "./remainder-hand";
+import { remainderName, remainderObjective } from "./remainder-names";
 import type { LevelId, TaskDef, ThemeId } from "./types";
 import { FIRST_BOOK, STAGE_COUNT } from "./types";
 import type { LevelMeta } from "./levels-story";
@@ -38,13 +39,58 @@ function themeFor(n: number): ThemeId {
 
 function pickChunk(beat: Beat, n: number, theme: ThemeId, rand: () => number, used: Set<string>): Chunk {
   const all = chunksFor(beat, n, theme);
-  const themed = all.filter((c) => c.tags.includes(theme) && !used.has(c.id));
+  const themed = all.filter((c) => (c.theme === theme || c.tags.includes(theme)) && !used.has(c.id));
   const unused = all.filter((c) => !used.has(c.id));
   const list = themed.length ? themed : unused.length ? unused : all;
   const c = list[Math.floor(rand() * list.length)] ?? chunksFor(beat, n, "street")[0];
   if (!c) throw new Error(`no chunk for ${beat} @ ${n}`);
   used.add(c.id);
   return c;
+}
+
+function beatsFor(n: number): Beat[] {
+  if (isBoss(n)) return n >= 45 ? ["land", "mix", "arena", "gate"] : ["land", "arena", "gate"];
+  if (n < 31) return ["land", "teach", "mix", "combat", "rest", "gate"];
+  const band = Math.min(5, Math.floor((n - 31) / 5));
+  const seqs: Beat[][] = [
+    ["land", "teach", "mix", "combat", "rest", "gate"],
+    ["land", "teach", "mix", "mix", "combat", "gate"],
+    ["land", "mix", "combat", "rest", "mix", "gate"],
+    ["land", "teach", "mix", "combat", "combat", "gate"],
+    ["land", "mix", "mix", "combat", "rest", "gate"],
+    ["land", "mix", "combat", "mix", "rest", "gate"],
+  ];
+  return seqs[band];
+}
+
+function decoFor(theme: ThemeId) {
+  if (theme === "fort") return "'";
+  if (theme === "coil") return ";";
+  if (theme === "canal") return ",";
+  if (theme === "glacier") return ";";
+  if (theme === "orbit") return ";";
+  if (theme === "remainder") return "?";
+  if (theme === "vault") return ";";
+  if (theme === "spire") return ";";
+  if (theme === "abyss") return "?";
+  return '"';
+}
+
+function dress(rows: string[], theme: ThemeId, rand: () => number) {
+  const deco = decoFor(theme);
+  const H = rows.length;
+  const W = rows[0]?.length ?? 0;
+  let placed = 0;
+  const want = 4 + Math.floor(rand() * 4);
+  for (let k = 0; k < 80 && placed < want; k++) {
+    const x = 2 + Math.floor(rand() * Math.max(1, W - 4));
+    const y = 2 + Math.floor(rand() * Math.max(1, H - 4));
+    if (rows[y][x] !== ".") continue;
+    const below = rows[y + 1]?.[x] ?? "#";
+    if (below !== "#" && below !== "=" && below !== "_" && below !== "*") continue;
+    rows[y] = rows[y].slice(0, x) + deco + rows[y].slice(x + 1);
+    placed += 1;
+  }
 }
 
 function cloneRows(rows: string[]) {
@@ -115,9 +161,7 @@ export function assembleStage(n: number): LevelMeta {
   const theme = themeFor(n);
   const rand = rng(n * 9973 + 42);
   const used = new Set<string>();
-  const beats: Beat[] = isBoss(n)
-    ? ["land", "arena", "gate"]
-    : ["land", "teach", "mix", "combat", "rest", "gate"];
+  const beats = beatsFor(n);
   const parts: string[][] = [];
   for (let i = 0; i < beats.length; i++) {
     const chunk = pickChunk(beats[i], n, theme, rand, used);
@@ -130,15 +174,10 @@ export function assembleStage(n: number): LevelMeta {
     parts.push(rows);
   }
   const rows = stitch(parts);
-  const name =
-    n === FIRST_BOOK
-      ? "The Period"
-      : n === STAGE_COUNT
-        ? "The Remainder"
-        : isBoss(n)
-          ? `Warden ${n}`
-          : `Ledger ${n}`;
-  const tasks: TaskDef[] = [{ id: `clear-${n}`, text: isBoss(n) ? "Defeat the warden" : "Reach the gate" }];
+  dress(rows, theme, rand);
+  const boss = isBoss(n);
+  const name = n >= FIRST_BOOK ? remainderName(n, boss) : boss ? `Warden ${n}` : `Ledger ${n}`;
+  const tasks: TaskDef[] = [{ id: `clear-${n}`, text: boss ? "Defeat the warden" : "Reach the gate" }];
   if (n === 6) tasks.push({ id: "word-wall", text: "Pick up WALL" });
   if (n === 8) tasks.push({ id: "word-rise", text: "Pick up RISE" });
   if (n === 10) tasks.push({ id: "word-lock", text: "Pick up LOCK" });
@@ -149,7 +188,7 @@ export function assembleStage(n: number): LevelMeta {
     id: `stage${n}` as LevelId,
     name,
     theme,
-    objective: isBoss(n) ? "Clear the warden. Take the gate." : "Cross the ledger. Reach the gate.",
+    objective: n >= FIRST_BOOK ? remainderObjective(n, boss) : boss ? "Clear the warden. Take the gate." : "Cross the ledger. Reach the gate.",
     tasks,
     rows,
     exit: n === STAGE_COUNT ? "win" : "hub",

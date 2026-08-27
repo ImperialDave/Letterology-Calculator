@@ -181,6 +181,17 @@ export function lastClearedId(progress: number): LevelId | null {
   return `stage${n}` as LevelId;
 }
 
+export function listLedgers(): { id: string; name: string; index: number; theme: string }[] {
+  const out: { id: string; name: string; index: number; theme: string }[] = [
+    { id: "hub", name: LEVELS.hub.name, index: 0, theme: LEVELS.hub.theme },
+  ];
+  for (let n = 1; n <= STAGE_COUNT; n++) {
+    const m = LEVELS[`stage${n}`];
+    if (m) out.push({ id: m.id, name: m.name, index: n, theme: m.theme });
+  }
+  return out;
+}
+
 export function tileAt(rows: string[], tx: number, ty: number): string {
   if (ty < 0 || ty >= rows.length) return "#";
   const row = rows[ty];

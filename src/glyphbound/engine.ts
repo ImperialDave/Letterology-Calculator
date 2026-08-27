@@ -156,6 +156,10 @@ export class GameEngine {
   private lastRaf = 0;
   private watch = 0;
   sandbox = false;
+  proof = false;
+  debugGod = false;
+  debugKit = true;
+  debugWrite = false;
   studioPlaying = false;
   studioBrush = "#";
   studioHover = { tx: -1, ty: -1 };
@@ -943,6 +947,7 @@ export class GameEngine {
 
   private persist() {
     if (this.sandbox) return;
+    if (this.proof && !this.debugWrite) return;
     const p = this.player;
     this.save.hp = p.hp;
     this.save.ink = p.ink;
@@ -1886,6 +1891,7 @@ export class GameEngine {
 
   private hurt(n: number, dir: number, kind: "contact" | "hazard" | "shot" = "contact") {
     const p = this.player;
+    if (this.debugGod) return;
     if (p.invuln > 0) return;
     const hazard = kind === "hazard";
     if (p.shield > 0) {
@@ -3396,6 +3402,11 @@ export class GameEngine {
     this.emit();
   }
 
+  toggleFps() {
+    this.showFps = !this.showFps;
+    this.emit();
+  }
+
   private uiOnce(ms = 320) {
     const n = performance.now();
     if (n - this.uiAt < ms) return false;
@@ -3405,6 +3416,122 @@ export class GameEngine {
 
   returnHub() {
     this.loadLevel("hub");
+  }
+
+  pauseGame() {
+    if (this.mode === "play" || this.mode === "hub") {
+      this.prevMode = this.mode;
+      this.mode = "pause";
+      this.emit();
+    }
+  }
+
+  private applyProofKit() {
+    this.save.hasCapital = true;
+    this.save.capital = true;
+    this.save.party = [...PENTAD];
+    this.save.words = ["WALL", "BURN", "RISE", "LOCK", "FOLD", "TIDE"];
+    this.save.relics = ["dropCap", "spine", "copper", "counter"];
+    this.save.shotLevel = 4;
+    this.save.maxShield = 6;
+    this.save.hp = 10;
+    this.save.ink = 80;
+    this.save.letter = "c";
+    this.save.progress = Math.max(this.save.progress, STAGE_COUNT);
+    this.save.stage1 = true;
+    this.save.stage2 = true;
+    this.save.stage3 = true;
+    this.save.stage4 = true;
+    this.save.stage5 = true;
+    this.player = this.makePlayer();
+    this.player.hp = this.player.maxHp;
+    this.player.ink = this.player.maxInk;
+    this.player.shield = this.player.maxShield;
+    this.player.shotLevel = 4;
+    this.player.capital = true;
+  }
+
+  proofEnter(id: string) {
+    if (this.sandbox || this.mode === "studio") this.leaveStudio();
+    if (!this.proof) {
+      this.campaignSave = structuredClone(this.save);
+      this.proof = true;
+    }
+    if (this.debugKit) this.applyProofKit();
+    const level = (LEVELS[id] ? id : "hub") as LevelId;
+    this.wake(true);
+    this.audio.unlock();
+    this.audio.sfxUi();
+    this.loadLevel(level);
+    this.say(this.debugWrite ? "Proof copy, writing the campaign page." : "Proof copy. Campaign page stays on the desk.");
+  }
+
+  leaveProof() {
+    this.debugGod = false;
+    this.proof = false;
+    this.studioPlaying = false;
+    this.sandbox = false;
+    if (this.campaignSave && !this.debugWrite) {
+      this.save = this.campaignSave;
+      this.campaignSave = null;
+      this.player = this.makePlayer();
+    }
+    this.mode = "title";
+    this.rows = [];
+    this.emit();
+  }
+
+  toggleGod() {
+    this.debugGod = !this.debugGod;
+    if (this.debugGod) this.player.invuln = 999;
+    else this.player.invuln = 0.2;
+    this.say(this.debugGod ? "The count cannot mark you." : "The count can mark you again.");
+    this.emit();
+  }
+
+  toggleDebugKit() {
+    this.debugKit = !this.debugKit;
+    this.say(this.debugKit ? "Full kit on jump." : "Campaign kit on jump.");
+    this.emit();
+  }
+
+  toggleDebugWrite() {
+    this.debugWrite = !this.debugWrite;
+    this.say(this.debugWrite ? "Jumps write the campaign page." : "Jumps leave the campaign page.");
+    this.emit();
+  }
+
+  proofFill() {
+    const p = this.player;
+    p.hp = p.maxHp;
+    p.ink = p.maxInk;
+    p.shield = p.maxShield;
+    p.invuln = 0.4;
+    this.say("Filled.");
+    this.emit();
+  }
+
+  proofKill(warden = false) {
+    for (const e of this.enemies) {
+      if (!e.alive) continue;
+      if (!warden && this.isBossKind(e.kind)) continue;
+      e.hp = 0;
+      e.alive = false;
+    }
+    this.say(warden ? "Court cleared." : "Digits struck.");
+    this.emit();
+  }
+
+  proofShift(dir: 1 | -1) {
+    if (this.stage === "hub") {
+      this.proofEnter(dir > 0 ? "stage1" : `stage${STAGE_COUNT}`);
+      return;
+    }
+    const n = this.stageIndex(this.stage);
+    const next = n + dir;
+    if (next < 1) this.proofEnter("hub");
+    else if (next > STAGE_COUNT) this.proofEnter("hub");
+    else this.proofEnter(`stage${next}`);
   }
 
   private currentTasks(): TaskSnap[] {
@@ -3647,6 +3774,9 @@ export class GameEngine {
       hint: this.nearHint,
       lore: collectedLore(this.save.talked),
       sandbox: this.sandbox,
+      stageId: this.stage,
+      proof: this.proof,
+      god: this.debugGod,
     });
   }
 
@@ -3705,6 +3835,15 @@ export class GameEngine {
         folio: () => self.studioFolio(),
         copy: (id: string) => self.studioCopyStage(id),
         catalog: CATALOG,
+      },
+      proof: {
+        enter: (id: string) => self.proofEnter(id),
+        leave: () => self.leaveProof(),
+        god: () => self.toggleGod(),
+        fill: () => self.proofFill(),
+        kill: (warden?: boolean) => self.proofKill(warden),
+        next: () => self.proofShift(1),
+        prev: () => self.proofShift(-1),
       },
       wake: () => self.wake(true),
       pump: (now?: number) => self.pump(now ?? performance.now()),

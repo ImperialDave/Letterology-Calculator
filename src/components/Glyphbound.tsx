@@ -5,6 +5,7 @@ import { STAGE_COUNT } from "@/glyphbound/types";
 import { Pause, Volume2, VolumeX } from "lucide-react";
 import { KITS, skillName } from "@/glyphbound/roster";
 import { GlyphboundStudio } from "@/components/GlyphboundStudio";
+import { GlyphboundProof } from "@/components/GlyphboundProof";
 
 const INTRO = [
   "Calculara was a manuscript before it was an equation. Letters walked it. Words were weather.",
@@ -154,6 +155,9 @@ const emptyUi = (): UiSnap => ({
   hint: "",
   lore: [],
   sandbox: false,
+  stageId: "hub",
+  proof: false,
+  god: false,
 });
 
 export function Glyphbound() {
@@ -162,6 +166,7 @@ export function Glyphbound() {
   const gameRef = useRef<GameEngine | null>(null);
   const [ui, setUi] = useState<UiSnap>(emptyUi);
   const [showControls, setShowControls] = useState(false);
+  const [showProof, setShowProof] = useState(false);
   const [showLore, setShowLore] = useState(false);
   const [openLetter, setOpenLetter] = useState<string | null>(null);
   const [objOpen, setObjOpen] = useState(true);
@@ -243,6 +248,34 @@ export function Glyphbound() {
       />
 
       {ui.mode === "studio" && <GlyphboundStudio game={g} />}
+      {showProof && <GlyphboundProof game={g} onClose={() => setShowProof(false)} />}
+
+      {ui.proof && playing && !showProof && (
+        <div className="pointer-events-auto absolute left-1/2 top-2 z-30 flex -translate-x-1/2 flex-wrap items-center justify-center gap-1.5">
+          <span className="rounded-md border border-accent/40 bg-surface/90 px-2 py-1 text-[11px] uppercase tracking-[0.18em] text-accent">
+            Proof{ui.god ? " · god" : ""}
+          </span>
+          <button type="button" className="h-8 rounded-md border border-border bg-surface/90 px-2 text-xs text-fg" {...press(() => g()?.proofShift(-1))}>
+            Prev
+          </button>
+          <button type="button" className="h-8 rounded-md border border-border bg-surface/90 px-2 text-xs text-fg" {...press(() => g()?.proofShift(1))}>
+            Next
+          </button>
+          <button
+            type="button"
+            className="h-8 rounded-md border border-border bg-surface/90 px-2 text-xs text-fg"
+            {...press(() => {
+              g()?.pauseGame();
+              setShowProof(true);
+            })}
+          >
+            Desk
+          </button>
+          <button type="button" className="h-8 rounded-md border border-border bg-surface/90 px-2 text-xs text-fg" {...press(() => g()?.leaveProof())}>
+            Title
+          </button>
+        </div>
+      )}
 
       {ui.sandbox && ui.mode === "play" && (
         <div className="pointer-events-auto absolute left-1/2 top-3 z-30 -translate-x-1/2">
@@ -337,6 +370,14 @@ export function Glyphbound() {
               {...press(() => g()?.enterStudio())}
             >
               Studio
+            </button>
+            <button
+              type="button"
+              data-ui="proof"
+              className="h-11 rounded-md border border-[#e8d48a]/40 bg-[#1a1410]/90 text-sm text-[#e8d48a]"
+              {...press(() => setShowProof(true)}
+            >
+              Proof desk
             </button>
             <button
               type="button"
@@ -443,6 +484,23 @@ export function Glyphbound() {
               >
                 Return to Stacks
               </button>
+              <button
+                type="button"
+                data-ui="proof"
+                className="h-11 rounded-lg border border-accent/40 text-accent"
+                {...press(() => setShowProof(true)}
+              >
+                Proof desk
+              </button>
+              {ui.proof && (
+                <button
+                  type="button"
+                  className="h-11 rounded-lg border border-border text-muted"
+                  {...press(() => g()?.leaveProof())}
+                >
+                  Leave proof · title
+                </button>
+              )}
             </div>
           </div>
         </div>

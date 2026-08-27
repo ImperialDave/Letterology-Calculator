@@ -337,6 +337,9 @@ export interface UiSnap {
   hint: string;
   lore: { id: string; glyph: string; name: string; lines: string[] }[];
   sandbox: boolean;
+  stageId: string;
+  proof: boolean;
+  god: boolean;
 }
 
 export const VIEW_W = 640;
