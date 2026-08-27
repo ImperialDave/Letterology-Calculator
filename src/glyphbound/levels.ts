@@ -1,20 +1,11 @@
-import { DISTRICTS } from "./districts";
-import type { LevelId, TaskDef, ThemeId } from "./types";
-import { FIRST_BOOK, STAGE_COUNT } from "./types";
-import {
-  armTeeth,
-  slice,
-  grid,
-  buildExchange,
-  buildGutter,
-  buildCoil,
-  buildLedger,
-  type LevelMeta,
-  type Grid,
-} from "./levels-story";
+import type { LevelId } from "./types";
+import { STAGE_COUNT, FIRST_BOOK } from "./types";
+import { armTeeth, slice, grid, type LevelMeta, type Grid } from "./levels-story";
+import { buildExchange, buildGutter, buildCoil, buildLedger } from "./levels-chapters";
 import { progressiveMeta } from "./levels-gen";
 
-export type { LevelId, ThemeId, LevelMeta };
+export type { LevelId, LevelMeta };
+export type { ThemeId } from "./types";
 export { STAGE_COUNT, FIRST_BOOK };
 
 function buildHub(): string[] {
