@@ -378,7 +378,7 @@ export function Glyphbound() {
               type="button"
               data-ui="proof"
               className="h-11 rounded-md border border-[#e8d48a]/40 bg-[#1a1410]/90 text-sm text-[#e8d48a]"
-              {...press(() => setShowProof(true)}
+              {...press(() => setShowProof(true))}
             >
               Proof desk
             </button>
@@ -491,7 +491,7 @@ export function Glyphbound() {
                 type="button"
                 data-ui="proof"
                 className="h-11 rounded-lg border border-accent/40 text-accent"
-                {...press(() => setShowProof(true)}
+                {...press(() => setShowProof(true))}
               >
                 Proof desk
               </button>
