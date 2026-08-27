@@ -99,6 +99,7 @@ function buildGenerated(n: number): string[] {
       cx += w;
     }
     land(2);
+    if (i === Math.floor(rooms / 2) - 1) put(cx - 2, fy - 1, "%");
   }
   land(6);
   put(cx - 4, fy - 1, "%");
@@ -111,8 +112,10 @@ function buildGenerated(n: number): string[] {
   if (n === 40) put(6, fy - 2, "I");
   const end = W - 10;
   fill(end - 10, fy, 16, "#");
-  if (n % 5 === 0 || n === STAGE_COUNT) put(end - 5, fy - 1, "!");
-  else put(end - 5, fy - 1, pick());
+  if (n % 5 === 0 || n === STAGE_COUNT) {
+    put(end - 5, fy - 1, "!");
+    put(end - 3, fy - 1, "%");
+  } else put(end - 5, fy - 1, pick());
   put(end, fy - 1, "P");
   put(end - 2, fy - 1, "i");
   return armTeeth(g, fy);
