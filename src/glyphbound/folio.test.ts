@@ -37,6 +37,12 @@ test("hub folio is valid and parse matches tile size", () => {
   assert.ok(parsed.solids.length > 100);
   assert.ok(parsed.pickups.some((p) => p.id === "continue"));
   assert.ok(parsed.spawnX > 0);
+  assert.ok(LEVELS.hub.rows[0].length <= 56, "hub should fit in a short hall");
+  const doors = parsed.pickups.filter((p) => p.kind === "door" && /^stage[1-5]$/.test(p.id)).sort((a, b) => a.x - b.x);
+  assert.deepEqual(
+    doors.map((d) => d.id),
+    ["stage1", "stage3", "stage4", "stage2", "stage5"],
+  );
 });
 
 test("stage1 has spawn, recruit, and dualis from !", () => {

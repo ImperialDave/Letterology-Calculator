@@ -9,42 +9,41 @@ export type { ThemeId } from "./types";
 export { STAGE_COUNT, FIRST_BOOK };
 
 function buildHub(): string[] {
-  const W = 102;
+  const W = 54;
   const H = 11;
   const fy = 8;
   const g = grid(W, H, fy) as Grid;
   const { put, fill } = g;
   put(2, fy - 1, "@");
-  put(4, fy - 1, "F");
-  put(5, fy - 1, "i");
-  put(7, fy - 1, "e");
-  put(9, fy - 1, "t");
-  fill(12, fy - 4, 36, "=");
-  put(13, fy - 5, "r");
-  put(16, fy - 5, "k");
-  put(19, fy - 5, "n");
-  put(22, fy - 5, "f");
-  put(25, fy - 5, "d");
-  put(28, fy - 5, "w");
-  put(31, fy - 5, "x");
-  put(34, fy - 5, "z");
-  put(37, fy - 5, "l");
-  put(40, fy - 5, "c");
-  put(21, fy - 2, "i");
-  put(29, fy - 2, "o");
-  put(18, fy - 1, "[");
-  put(26, fy - 1, "]");
-  put(34, fy - 1, "{");
-  put(42, fy - 1, "}");
-  put(50, fy - 1, "(");
+  put(3, fy - 1, "F");
+  put(4, fy - 1, "i");
+  put(6, fy - 1, "e");
+  put(8, fy - 1, "t");
+  // Play order, left to right: Exchange → Press → Coil → Fort → Ledger
+  put(12, fy - 1, "[");
+  put(17, fy - 1, "{");
+  put(22, fy - 1, "}");
+  put(27, fy - 1, "]");
+  put(32, fy - 1, "(");
+  fill(11, fy - 4, 24, "=");
+  put(12, fy - 5, "r");
+  put(15, fy - 5, "k");
+  put(18, fy - 5, "n");
+  put(21, fy - 5, "f");
+  put(24, fy - 5, "d");
+  put(27, fy - 5, "w");
+  put(30, fy - 5, "x");
+  put(33, fy - 5, "c");
+  put(20, fy - 2, "i");
+  put(26, fy - 2, "o");
   for (let y = 1; y <= fy - 3; y++) {
-    put(60, y, "#");
-    put(64, y, "#");
+    put(37, y, "#");
+    put(39, y, "#");
   }
-  put(62, fy - 1, "j");
-  put(76, fy - 1, ">");
-  put(92, fy - 1, "<");
-  put(88, fy - 1, "h");
+  put(38, fy - 1, "j");
+  put(42, fy - 1, ">");
+  put(49, fy - 1, "<");
+  put(47, fy - 1, "h");
   return armTeeth(g, fy);
 }
 
@@ -53,7 +52,7 @@ const hand: Record<string, LevelMeta> = {
     id: "hub",
     name: "Lower Register Stacks",
     theme: "hub",
-    objective: "Left: five closed chapters. Right: the Unbound Sentence, and the Studio desk if you want to write your own.",
+    objective: "Five chapter doors in the hall. Past the arch: the Unbound Sentence and the Studio desk.",
     tasks: [
       { id: "talk-e", text: "Talk to e" },
       { id: "talk-t", text: "Learn scribing from t" },

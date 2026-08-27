@@ -491,13 +491,14 @@ export class GameEngine {
     this.bullets = [];
     this.pickups = parsed.pickups;
     if (id === "hub" && !this.pickups.some((u) => u.id === "studio")) {
+      const cont = this.pickups.find((u) => u.id === "continue");
       this.pickups.push({
         kind: "door",
         id: "studio",
-        x: 82 * TILE - 12,
-        y: 7 * TILE + TILE - 96,
+        x: cont ? cont.x + cont.w + 10 : 44 * TILE,
+        y: cont ? cont.y + 8 : 7 * TILE + TILE - 96,
         w: 72,
-        h: 96,
+        h: 88,
         taken: false,
         label: "STUDIO",
       });
@@ -552,8 +553,8 @@ export class GameEngine {
     if (id === "hub")
       this.say(
         this.save.progress >= 5
-          ? "Those five doors are finished chapters. The Unbound Sentence still turns. The Studio desk, further right, writes ledgers that do not spend the book."
-          : "Left hall: five closed chapters. Right: the Unbound Sentence, and a Studio desk if you want to write your own.",
+          ? "Five chapters closed. Through the arch: the Unbound Sentence, then Studio."
+          : "Five doors ahead, left to right. Through the arch: the rest of the book.",
       );
     this.persist();
     this.emit();
@@ -3823,29 +3824,29 @@ export class GameEngine {
     ctx.textAlign = "left";
     ctx.fillStyle = "#c9b896";
     ctx.font = "700 16px 'Cormorant Garamond', serif";
-    ctx.fillText("CLOSED CHAPTERS", wx(16), wy(1) + 22);
+    ctx.fillText("CLOSED CHAPTERS", wx(11), wy(1) + 22);
     ctx.fillStyle = "#8a7a62";
     ctx.font = "600 10px 'Source Sans 3', sans-serif";
-    ctx.fillText("five doors  ·  five ledgers  ·  they never change", wx(16), wy(1) + 38);
+    ctx.fillText("walk them left to right  ·  they never change", wx(11), wy(1) + 38);
 
     ctx.fillStyle = "#e8d48a";
     ctx.font = "700 16px 'Cormorant Garamond', serif";
-    ctx.fillText("THE UNBOUND SENTENCE", wx(68), wy(1) + 22);
+    ctx.fillText("THE UNBOUND SENTENCE", wx(41), wy(1) + 22);
     ctx.fillStyle = "#b08a4a";
     ctx.font = "600 10px 'Source Sans 3', sans-serif";
-    ctx.fillText("new ledgers, then a desk that writes its own", wx(68), wy(1) + 38);
+    ctx.fillText("next ledger  ·  last page  ·  studio desk", wx(41), wy(1) + 38);
 
     ctx.strokeStyle = "rgba(201,184,150,0.45)";
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(wx(60) + 8, wy(1));
-    ctx.lineTo(wx(62), wy(3));
-    ctx.lineTo(wx(64) - 8, wy(1));
+    ctx.moveTo(wx(37) + 8, wy(1));
+    ctx.lineTo(wx(38), wy(3));
+    ctx.lineTo(wx(39) - 8, wy(1));
     ctx.stroke();
     ctx.fillStyle = "#c9b896";
     ctx.font = "600 9px 'Source Sans 3', sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText("WRITE →", wx(62), wy(2) + 8);
+    ctx.fillText("WRITE →", wx(38), wy(2) + 8);
 
     const desk = this.pickups.find((u) => u.id === "studio");
     if (desk) {
