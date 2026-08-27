@@ -10,6 +10,7 @@ import {
   drawPlayer,
   drawShot,
   drawTiles,
+  drawToys,
   drawWeatherFront,
   drawGrade,
   setFxLite,
@@ -24,7 +25,8 @@ import { blankFolio, cloneRows, folioTheme, resizeRows, sandboxSave, stampCell }
 import { collectedLore, loreIdFromGlyph } from "./lore";
 import { KITS, PENTAD } from "./roster";
 import { clearSave, defaultSave, loadSave, writeSave } from "./save";
-import { SolidGrid } from "./spatial";
+import { preloadArt } from "./art";
+import { isMovingSolid, SolidGrid } from "./spatial";
 import {
   STEP,
   TILE,
@@ -171,6 +173,7 @@ export class GameEngine {
     this.ui = ui;
     this.hard = this.save.hard;
     this.player = this.makePlayer();
+    preloadArt();
   }
 
   start() {
@@ -1023,6 +1026,7 @@ export class GameEngine {
       this.returnT -= dt;
       if (this.returnT <= 0) this.loadLevel("hub");
     }
+    this.tickToys(dt);
     this.physicsPlayer(dt, a);
     this.updateCombat(dt, a);
     this.updateEnemies(dt);
@@ -1247,6 +1251,11 @@ export class GameEngine {
         if (p.vy < -320) p.vy = -320;
         p.grounded = false;
       }
+      if (s.type === "geyser" && aabb(p, s) && this.geyserHot(s)) {
+        p.vy -= 2600 * dt;
+        if (p.vy < -380) p.vy = -380;
+        p.grounded = false;
+      }
     }
     if (p.grounded && !wasGround) {
       if ((p.letter === "k" || p.letter === "b") && p.capital && p.special > 0) {
@@ -1325,7 +1334,7 @@ export class GameEngine {
     let top: number | null = null;
     const feet = a.y + a.h;
     for (const s of this.solidsNow(true, a)) {
-      if (s.type !== "solid" && s.type !== "oneway" && s.type !== "crumble" && s.type !== "conveyor") continue;
+      if (s.type !== "solid" && s.type !== "oneway" && s.type !== "crumble" && s.type !== "conveyor" && s.type !== "lift" && s.type !== "blink") continue;
       if (s.broken) continue;
       if (a.x + a.w <= s.x + 2 || a.x >= s.x + s.w - 2) continue;
       if (feet > s.y - 6 && a.y < s.y + s.h) {
@@ -1340,7 +1349,43 @@ export class GameEngine {
   }
 
   private rebuildGrid() {
-    this.grid.rebuild(this.solids);
+    this.grid.rebuild(this.solids.filter((s) => !isMovingSolid(s)));
+  }
+
+  private toySolids(): Solid[] {
+    const out: Solid[] = [];
+    for (const s of this.solids) if (isMovingSolid(s) && !s.broken) out.push(s);
+    return out;
+  }
+
+  private tickToys(dt: number) {
+    const t = this.time;
+    const p = this.player;
+    for (const s of this.solids) {
+      if (s.type === "lift") {
+        const homeY = s.homeY ?? s.y;
+        const homeX = s.homeX ?? s.x;
+        const nextY = homeY - (0.5 + 0.5 * Math.sin(t * 1.05 + (s.phase ?? 0))) * TILE * 3;
+        const dy = nextY - s.y;
+        const feet = { x: p.x + 2, y: p.y + p.h - 10, w: p.w - 4, h: 14 };
+        if (p.grounded && aabb(feet, s)) p.y += dy;
+        s.x = homeX;
+        s.y = nextY;
+      } else if (s.type === "saw") {
+        const homeX = s.homeX ?? s.x;
+        s.x = homeX + Math.sin(t * 1.55 + (s.phase ?? 0)) * TILE * 2;
+        s.y = s.homeY ?? s.y;
+      } else if (s.type === "blink") {
+        const cycle = (t + (s.phase ?? 0)) % 2.6;
+        s.broken = cycle > 1.55;
+      }
+    }
+    void dt;
+  }
+
+  private geyserHot(s: Solid) {
+    const cycle = (this.time + (s.phase ?? 0)) % 2.0;
+    return cycle < 0.7;
   }
 
   private wallSolids(): Solid[] {
@@ -1364,7 +1409,8 @@ export class GameEngine {
       w: this.player.w + 160,
       h: this.player.h + 160,
     };
-    return this.grid.query(box, large, kind === "walk" ? this.wallSolids() : [], kind);
+    const extras = kind === "walk" ? [...this.wallSolids(), ...this.toySolids()] : this.toySolids();
+    return this.grid.query(box, large, extras, kind);
   }
 
   private sepAxis(
@@ -1376,7 +1422,8 @@ export class GameEngine {
     for (const s of this.solidsNow(large, a)) {
       if (s.type === "spike") continue;
       if (!aabb(a, s)) continue;
-      if (s.type === "oneway" || s.type === "crumble" || s.type === "bounce" || s.type === "conveyor") {
+      if (s.type === "saw" || s.type === "geyser") continue;
+      if (s.type === "oneway" || s.type === "crumble" || s.type === "bounce" || s.type === "conveyor" || s.type === "lift" || s.type === "blink") {
         if (axis !== "y" || a.vy < 0 || drop) continue;
         if (a.y + a.h - Math.max(8, a.vy * 0.02) > s.y + 10) continue;
       }
@@ -1430,7 +1477,7 @@ export class GameEngine {
   private blockedAt(x: number, y: number, w: number, h: number, large: boolean) {
     const box = { x, y, w, h };
     for (const s of this.solidsNow(large, box)) {
-      if (s.type === "spike" || s.type === "oneway") continue;
+      if (s.type === "spike" || s.type === "oneway" || s.type === "saw" || s.type === "geyser") continue;
       if (aabb(box, s)) return true;
     }
     return false;
@@ -1754,6 +1801,9 @@ export class GameEngine {
         }
       }
       if (s.type === "laser" && aabb(p, s) && p.invuln <= 0 && this.laserHot(s)) {
+        this.hurt(1, p.x + p.w / 2 < s.x + s.w / 2 ? -1 : 1, "hazard");
+      }
+      if (s.type === "saw" && aabb(p, s) && p.invuln <= 0) {
         this.hurt(1, p.x + p.w / 2 < s.x + s.w / 2 ? -1 : 1, "hazard");
       }
     }
@@ -2697,6 +2747,7 @@ export class GameEngine {
       if (s.type === "sluice" && aabb(box, s)) return true;
       if (s.type === "laser" && aabb(box, s) && this.laserHot(s)) return true;
       if (s.type === "spike" && aabb(box, s) && this.spikeHot(s)) return true;
+      if (s.type === "saw" && aabb(box, s)) return true;
     }
     return false;
   }
@@ -3708,6 +3759,7 @@ export class GameEngine {
       ctx.save();
       ctx.translate(sx, sy);
       drawTiles(ctx, this.rows, this.camX, this.camY, this.time, theme, this.broken);
+      drawToys(ctx, this.solids, this.camX, this.camY, this.time, theme);
       if (this.mode === "studio") this.drawStudioGrid(ctx);
       this.drawHubChrome(ctx);
       drawMarkers(ctx, this.markers, this.camX, this.camY, this.time);

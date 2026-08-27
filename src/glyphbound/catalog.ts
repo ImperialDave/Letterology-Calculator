@@ -59,11 +59,15 @@ const BRUSHES: Brush[] = [
   { ch: "^", group: "hazard", label: "Spike" },
   { ch: "~", group: "hazard", label: "Sluice" },
   { ch: "|", group: "hazard", label: "Laser" },
+  { ch: "S", group: "hazard", label: "Saw" },
 
   { ch: "/", group: "mover", label: "Belt →" },
   { ch: "\\", group: "mover", label: "Belt ←" },
   { ch: "T", group: "mover", label: "Bounce" },
   { ch: ":", group: "mover", label: "Fan" },
+  { ch: "`", group: "mover", label: "Lift" },
+  { ch: ")", group: "mover", label: "Blink" },
+  { ch: "g", group: "mover", label: "Geyser" },
 
   { ch: "'", group: "deco", label: "Torch" },
   { ch: ";", group: "deco", label: "Lantern" },

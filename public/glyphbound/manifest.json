@@ -1,0 +1,26 @@
+{
+  "pack": "glyphbound-pieces-v1",
+  "style": "gothic type-metal, gold serifs, teal ink, rain-wet stone",
+  "tiles": [
+    "solid-hub",
+    "solid-street",
+    "solid-fort",
+    "solid-canal",
+    "solid-coil",
+    "solid-vault",
+    "solid-glacier",
+    "solid-remainder",
+    "solid-abyss",
+    "solid-spire",
+    "solid-orbit"
+  ],
+  "hazards": ["spike", "saw"],
+  "movers": ["shelf", "bounce", "conveyor", "fan", "lift", "blink", "geyser"],
+  "props": ["torch", "lantern", "fort-brazier", "vault-lamp"],
+  "chars": {
+    "`": "lift",
+    ")": "blink",
+    "S": "saw",
+    "g": "geyser (floor tile; air g remains lore npc)"
+  }
+}

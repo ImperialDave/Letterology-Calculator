@@ -9,8 +9,10 @@ import {
   type Player,
   type ThemeId,
 } from "./types";
+import { blitArt } from "./art";
 import { KITS } from "./roster";
 import { fxLite } from "./sky";
+import type { Solid } from "./types";
 
 export function roundRect(
   ctx: CanvasRenderingContext2D,
@@ -141,7 +143,110 @@ export function drawTiles(
       } else if (ch === ":") {
         drawFan(ctx, x, y, t);
       }
+      // ` ) S g are drawn from solids so lifts/saws track their motion.
     }
+  }
+}
+
+export function drawToys(
+  ctx: CanvasRenderingContext2D,
+  solids: Solid[],
+  camX: number,
+  camY: number,
+  t: number,
+  theme: ThemeId,
+) {
+  for (const s of solids) {
+    if (s.broken && s.type === "blink") {
+      ctx.save();
+      ctx.globalAlpha = 0.16;
+      drawBlink(ctx, s.x - camX, s.y - camY - 28, t, theme);
+      ctx.restore();
+      continue;
+    }
+    if (s.broken) continue;
+    const x = s.x - camX;
+    const y = s.y - camY;
+    if (x + s.w < -16 || x > VIEW_W + 16 || y + s.h < -16 || y > VIEW_H + 16) continue;
+    if (s.type === "lift") drawLift(ctx, x, y, t, theme);
+    else if (s.type === "blink") drawBlink(ctx, x, y, t, theme);
+    else if (s.type === "saw") drawSaw(ctx, x, y, t);
+    else if (s.type === "geyser") drawGeyser(ctx, x, y, t, s);
+  }
+}
+
+function drawLift(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, theme: ThemeId) {
+  if (blitArt(ctx, "movers", "lift", x - 4, y - 8, TILE + 8, 24, t)) return;
+  const c = inkOf(theme);
+  ctx.fillStyle = "#1a1410";
+  ctx.fillRect(x, y, TILE, 12);
+  ctx.fillStyle = c.a;
+  ctx.fillRect(x, y, TILE, 4);
+  ctx.fillStyle = c.b;
+  ctx.fillRect(x + 2, y + 1, TILE - 4, 2);
+  ctx.fillStyle = "#5ee0c0";
+  ctx.globalAlpha = 0.45 + Math.sin(t * 4) * 0.15;
+  ctx.fillRect(x + 18, y - 6, 12, 6);
+  ctx.globalAlpha = 1;
+}
+
+function drawBlink(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, theme: ThemeId) {
+  if (blitArt(ctx, "movers", "blink", x - 4, y - 8, TILE + 8, 24, t)) return;
+  const c = inkOf(theme);
+  const pulse = 0.45 + Math.sin(t * 6) * 0.25;
+  ctx.save();
+  ctx.globalAlpha = pulse;
+  ctx.fillStyle = c.b;
+  ctx.fillRect(x + 2, y, TILE - 4, 10);
+  ctx.strokeStyle = "#5ee0c0";
+  ctx.strokeRect(x + 2, y, TILE - 4, 10);
+  ctx.restore();
+}
+
+function drawSaw(ctx: CanvasRenderingContext2D, x: number, y: number, t: number) {
+  if (blitArt(ctx, "hazards", "saw", x - 4, y - 8, TILE + 8, TILE, t)) return;
+  const cx = x + TILE / 2;
+  const cy = y + 12;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(t * 8);
+  ctx.fillStyle = "#2a1c18";
+  ctx.beginPath();
+  ctx.arc(0, 0, 16, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#d45a4a";
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a) * 12, Math.sin(a) * 12);
+    ctx.lineTo(Math.cos(a + 0.18) * 20, Math.sin(a + 0.18) * 20);
+    ctx.lineTo(Math.cos(a + 0.36) * 12, Math.sin(a + 0.36) * 12);
+    ctx.fill();
+  }
+  ctx.fillStyle = "#e8d48a";
+  ctx.beginPath();
+  ctx.arc(0, 0, 5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawGeyser(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, s: Solid) {
+  if (blitArt(ctx, "movers", "geyser", x - 8, y, TILE, TILE, t)) return;
+  const cycle = (t + (s.phase ?? 0)) % 2.0;
+  const hot = cycle < 0.7;
+  ctx.fillStyle = "#3a2a18";
+  ctx.fillRect(x + 6, y + 32, 20, 12);
+  ctx.fillStyle = "#e8d48a";
+  ctx.fillRect(x + 8, y + 34, 16, 3);
+  if (hot) {
+    const h = 20 + Math.sin(t * 18) * 6;
+    ctx.fillStyle = `rgba(94,224,192,${0.35 + Math.sin(t * 12) * 0.15})`;
+    ctx.fillRect(x + 10, y + 32 - h, 12, h);
+    ctx.fillStyle = "rgba(232,236,232,0.35)";
+    ctx.fillRect(x + 13, y + 28 - h, 6, 8);
+  } else {
+    ctx.fillStyle = "rgba(94,224,192,0.16)";
+    ctx.fillRect(x + 12, y + 18, 8, 14);
   }
 }
 
@@ -156,6 +261,14 @@ function drawBlock(
   t: number,
   top: boolean,
 ) {
+  if (blitArt(ctx, "tiles", `solid-${theme}`, x, y, TILE, TILE)) {
+    if (top) {
+      ctx.fillStyle = "rgba(232,212,138,0.28)";
+      ctx.fillRect(x, y, TILE, 4);
+    }
+    if (brk) paintBreak(ctx, x, y, tx, t);
+    return;
+  }
   const stamp = (tx * 13 + ty * 7) % 6;
   const key = `${theme}|${top ? 1 : 0}|${stamp}`;
   const sheet = cachedTile(key, (g) => paintBlock(g, 0, 0, tx, ty, theme, stamp, top));
@@ -415,6 +528,7 @@ function paintBlock(
 }
 
 function drawSerifShelf(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, theme: string) {
+  if (blitArt(ctx, "movers", "shelf", x, y, TILE, TILE, t)) return;
   const pulse = 0.7 + Math.sin(t * 3 + x * 0.02) * 0.15;
   ctx.save();
   ctx.globalAlpha = pulse;
@@ -431,6 +545,7 @@ function drawSerifShelf(ctx: CanvasRenderingContext2D, x: number, y: number, t: 
 }
 
 function drawCrumble(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, theme: string) {
+  if (blitArt(ctx, "movers", "crumble", x, y, TILE, TILE, t)) return;
   ctx.save();
   ctx.globalAlpha = 0.75 + Math.sin(t * 6 + x) * 0.1;
   ctx.fillStyle = theme === "coil" ? "#6a3a78" : "#6a5a40";
@@ -448,6 +563,7 @@ function drawCrumble(ctx: CanvasRenderingContext2D, x: number, y: number, t: num
 }
 
 function drawSluice(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, theme: string) {
+  if (blitArt(ctx, "hazards", "sluice", x, y, TILE, TILE, t)) return;
   const ink =
     theme === "coil"
       ? "196,106,212"
@@ -480,6 +596,7 @@ function drawSluice(ctx: CanvasRenderingContext2D, x: number, y: number, t: numb
 }
 
 function drawVent(ctx: CanvasRenderingContext2D, x: number, y: number, t: number) {
+  if (blitArt(ctx, "movers", "vent", x, y, TILE, TILE, t)) return;
   ctx.fillStyle = "rgba(10,20,24,0.55)";
   ctx.fillRect(x + 6, y, TILE - 12, TILE);
   ctx.strokeStyle = "rgba(94,224,192,0.45)";
@@ -503,6 +620,7 @@ function drawVent(ctx: CanvasRenderingContext2D, x: number, y: number, t: number
 }
 
 function drawLaser(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, tx: number) {
+  if (blitArt(ctx, "hazards", "laser", x, y, TILE, TILE, t)) return;
   const cycle = (t + tx * 0.37) % 1.5;
   const hot = cycle < 0.5;
   const warn = !hot && cycle > 1.22;
@@ -529,6 +647,7 @@ function drawLaser(ctx: CanvasRenderingContext2D, x: number, y: number, t: numbe
 }
 
 function drawConveyor(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, right: boolean) {
+  if (blitArt(ctx, "movers", "conveyor", x, y, TILE, TILE, t)) return;
   ctx.fillStyle = "#1a2228";
   ctx.fillRect(x, y + 28, TILE, 12);
   ctx.fillStyle = "#e8d48a";
@@ -546,6 +665,7 @@ function drawConveyor(ctx: CanvasRenderingContext2D, x: number, y: number, t: nu
 }
 
 function drawBounce(ctx: CanvasRenderingContext2D, x: number, y: number, t: number) {
+  if (blitArt(ctx, "movers", "bounce", x, y, TILE, TILE, t)) return;
   const pop = 1 + Math.sin(t * 8 + x) * 0.08;
   ctx.fillStyle = "#2a2418";
   ctx.fillRect(x + 4, y + 30, TILE - 8, 10);
@@ -558,6 +678,7 @@ function drawBounce(ctx: CanvasRenderingContext2D, x: number, y: number, t: numb
 }
 
 function drawFan(ctx: CanvasRenderingContext2D, x: number, y: number, t: number) {
+  if (blitArt(ctx, "movers", "fan", x, y, TILE, TILE, t)) return;
   ctx.save();
   ctx.globalAlpha = 0.22 + Math.sin(t * 10 + x) * 0.08;
   ctx.fillStyle = "#8ec8d4";
@@ -576,6 +697,7 @@ function drawFan(ctx: CanvasRenderingContext2D, x: number, y: number, t: number)
 }
 
 function drawSpikes(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, tx = 0, ty = 0) {
+  if (blitArt(ctx, "hazards", "spike", x, y, TILE, TILE, t)) return;
   // Match engine pulse rule: ~30% of teeth retract on a 1.8s cycle.
   const pulse = ((tx * 17 + ty * 31) % 10) < 3;
   let extend = 1;
@@ -623,6 +745,7 @@ function inkOf(theme: ThemeId) {
 }
 
 function drawRail(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, theme: ThemeId) {
+  if (blitArt(ctx, "movers", "rail", x, y, TILE, TILE, t)) return;
   const c = inkOf(theme);
   ctx.fillStyle = c.dim;
   ctx.fillRect(x, y + 34, TILE, 6);
@@ -635,6 +758,7 @@ function drawRail(ctx: CanvasRenderingContext2D, x: number, y: number, t: number
 }
 
 function drawPlinth(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, theme: ThemeId) {
+  if (blitArt(ctx, "movers", "plinth", x, y, TILE, TILE, t)) return;
   const c = inkOf(theme);
   ctx.fillStyle = c.dim;
   ctx.fillRect(x + 8, y + 18, TILE - 16, TILE - 18);
@@ -651,6 +775,8 @@ function drawPlinth(ctx: CanvasRenderingContext2D, x: number, y: number, t: numb
 }
 
 function drawTorch(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, theme: ThemeId) {
+  if (theme === "fort" && blitArt(ctx, "props", "fort-brazier", x, y, TILE, TILE, t)) return;
+  if (blitArt(ctx, "props", "torch", x, y, TILE, TILE, t)) return;
   const c = inkOf(theme);
   ctx.fillStyle = c.dim;
   ctx.fillRect(x + 21, y + 22, 6, 18);
@@ -677,6 +803,9 @@ function drawTorch(ctx: CanvasRenderingContext2D, x: number, y: number, t: numbe
 }
 
 function drawLantern(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, theme: ThemeId) {
+  if (theme === "coil" && blitArt(ctx, "props", "coil-spark", x, y, TILE, TILE, t)) return;
+  if (theme === "vault" && blitArt(ctx, "props", "vault-lamp", x, y, TILE, TILE, t)) return;
+  if (blitArt(ctx, "props", "lantern", x, y, TILE, TILE, t)) return;
   const c = inkOf(theme);
   const sway = Math.sin(t * 1.6 + x * 0.05) * 4;
   ctx.save();
@@ -697,6 +826,7 @@ function drawLantern(ctx: CanvasRenderingContext2D, x: number, y: number, t: num
 }
 
 function drawBanner(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, theme: ThemeId) {
+  if (blitArt(ctx, "props", "banner", x, y, TILE, TILE, t)) return;
   const c = inkOf(theme);
   const wave = Math.sin(t * 2 + x) * 3;
   ctx.fillStyle = c.dim;
@@ -720,6 +850,9 @@ function drawBanner(ctx: CanvasRenderingContext2D, x: number, y: number, t: numb
 }
 
 function drawDrip(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, theme: ThemeId) {
+  if (theme === "canal" && blitArt(ctx, "props", "canal-pipe", x, y, TILE, TILE, t)) return;
+  if (theme === "glacier" && blitArt(ctx, "props", "glacier-icicle", x, y, TILE, TILE, t)) return;
+  if (blitArt(ctx, "props", "drip", x, y, TILE, TILE, t)) return;
   const c = inkOf(theme);
   const fall = ((t * 40 + x * 13) % (TILE + 20)) - 4;
   ctx.fillStyle = c.a;
@@ -732,6 +865,8 @@ function drawDrip(ctx: CanvasRenderingContext2D, x: number, y: number, t: number
 }
 
 function drawShard(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, theme: ThemeId) {
+  if (theme === "remainder" && blitArt(ctx, "props", "remainder-glyph", x, y, TILE, TILE, t)) return;
+  if (blitArt(ctx, "props", "shard", x, y, TILE, TILE, t)) return;
   const c = inkOf(theme);
   ctx.save();
   ctx.translate(x + 24, y + 24);

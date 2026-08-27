@@ -75,7 +75,7 @@ test("unknown char fails validation", () => {
   const rows = padRows(blank());
   set(rows, 2, 7, "@");
   set(rows, 20, 7, "P");
-  set(rows, 10, 7, "`");
+  set(rows, 10, 7, "§");
   const folio: Folio = {
     version: 1,
     id: "user-bad",

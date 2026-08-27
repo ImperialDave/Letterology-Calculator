@@ -237,6 +237,68 @@ export const CHUNKS: Chunk[] = [
     g.put(10, FY - 2, "?");
     g.fill(12, FY - 3, 4, "=");
   }, { w: 18, min: 31, theme: "remainder" }),
+
+  make("teach-lift", "Rising desk", ["teach"], ["any", "lift"], (g) => {
+    g.fill(7, FY, 2, ".");
+    g.put(7, FY - 1, "`");
+    g.put(8, FY - 1, "`");
+    g.fill(12, FY - 4, 4, "=");
+    g.put(14, FY - 5, "i");
+  }, { w: 20, min: 10 }),
+  make("teach-blink", "Fading rule", ["teach"], ["any", "blink"], (g) => {
+    g.fill(6, FY, 4, ".");
+    g.put(7, FY - 1, ")");
+    g.put(8, FY - 1, ")");
+    g.fill(12, FY, 4, "#");
+  }, { w: 20, min: 12 }),
+  make("teach-saw", "Cutting disc", ["teach"], ["any", "saw"], (g) => {
+    g.put(8, FY - 2, "S");
+    g.fill(12, FY - 2, 4, "=");
+  }, { w: 18, min: 14 }),
+  make("teach-geyser", "Ink jet", ["teach"], ["any", "geyser"], (g) => {
+    g.fill(8, FY, 1, "g");
+    g.fill(12, FY - 4, 4, "=");
+    g.put(13, FY - 5, "i");
+  }, { w: 20, min: 12 }),
+  make("mix-blink-laser", "Bar over blink", ["mix"], ["any", "blink", "laser"], (g) => {
+    g.fill(6, FY, 4, ".");
+    g.put(7, FY - 1, ")");
+    g.put(8, FY - 1, ")");
+    g.put(8, FY - 3, "|");
+    g.put(8, FY - 4, "|");
+    g.fill(12, FY, 4, "#");
+  }, { w: 22, min: 16 }),
+  make("mix-lift-saw", "Desk past disc", ["mix"], ["any", "lift", "saw"], (g) => {
+    g.fill(6, FY, 3, ".");
+    g.put(6, FY - 1, "`");
+    g.put(7, FY - 1, "`");
+    g.put(11, FY - 2, "S");
+    g.fill(14, FY - 3, 4, "=");
+  }, { w: 22, min: 16 }),
+  make("combat-saw", "Disc court", ["combat"], ["any", "saw"], (g) => {
+    g.put(7, FY - 1, "1");
+    g.put(10, FY - 2, "S");
+    g.put(14, FY - 1, "2");
+    g.fill(8, FY - 3, 4, "=");
+  }, { w: 20, min: 14 }),
+  make("rest-geyser", "Warm jet", ["rest"], ["any", "geyser"], (g) => {
+    g.put(5, FY - 1, "%");
+    g.fill(8, FY, 1, "g");
+    g.put(12, FY - 1, "h");
+    g.fill(14, FY - 3, 3, "=");
+  }, { w: 20, min: 12 }),
+  make("teach-fort-lift", "Ash elevator", ["teach"], ["fort", "lift"], (g) => {
+    g.fill(7, FY, 2, ".");
+    g.put(7, FY - 1, "`");
+    g.put(10, FY - 2, "'");
+    g.fill(12, FY - 4, 4, "=");
+  }, { w: 20, theme: "fort" }),
+  make("mix-canal-geyser", "Jet over ink", ["mix"], ["canal", "geyser", "sluice"], (g) => {
+    g.fill(6, FY, 3, ".");
+    g.fill(6, FY + 1, 3, "~");
+    g.put(9, FY, "g");
+    g.fill(12, FY - 3, 4, "=");
+  }, { w: 20, min: 14, theme: "canal" }),
 ];
 
 export function chunksFor(beat: Beat, n: number, theme: ThemeId): Chunk[] {

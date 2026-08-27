@@ -61,7 +61,7 @@ function replaceFirst(rows: string[], from: string, to: string) {
   return false;
 }
 
-const FLOOR = "#*=_T/\\&-";
+const FLOOR = "#*=_T/\\&-`)g";
 
 function placeOnFloor(rows: string[], ch: string) {
   for (let y = rows.length - 3; y >= 1; y--) {

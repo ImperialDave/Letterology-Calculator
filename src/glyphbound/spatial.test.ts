@@ -44,6 +44,16 @@ test("broken solids drop out without a rebuild", () => {
   assert.equal(g.query({ x: 0, y: 0, w: 20, h: 20 }, true).length, 0);
 });
 
+test("saws skip walk and count as hazards", () => {
+  const g = new SolidGrid(96);
+  g.rebuild([]);
+  const saw = solid(0, 0, 48, 24, "saw");
+  const walk = g.query({ x: 0, y: 0, w: 40, h: 40 }, true, [saw], "walk");
+  assert.equal(walk.length, 0);
+  const hurt = g.query({ x: 0, y: 0, w: 40, h: 40 }, true, [saw], "hazard");
+  assert.equal(hurt.length, 1);
+});
+
 test("scribed walls arrive through the extra list", () => {
   const g = new SolidGrid(96);
   g.rebuild([solid(0, 0)]);

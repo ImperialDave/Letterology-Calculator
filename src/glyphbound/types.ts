@@ -186,14 +186,33 @@ export interface Npc {
   lines: string[];
 }
 
+export type SolidType =
+  | "solid"
+  | "oneway"
+  | "vent"
+  | "break"
+  | "spike"
+  | "laser"
+  | "sluice"
+  | "crumble"
+  | "conveyor"
+  | "bounce"
+  | "fan"
+  | "lift"
+  | "blink"
+  | "saw"
+  | "geyser";
+
 export interface Solid {
   x: number;
   y: number;
   w: number;
   h: number;
-  type: "solid" | "oneway" | "vent" | "break" | "spike" | "laser" | "sluice" | "crumble" | "conveyor" | "bounce" | "fan";
+  type: SolidType;
   broken?: boolean;
   phase?: number;
+  homeX?: number;
+  homeY?: number;
 }
 
 export interface Marker {

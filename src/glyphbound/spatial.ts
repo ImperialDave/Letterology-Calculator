@@ -1,7 +1,12 @@
 import type { Solid } from "./types";
 
-const WALK_SKIP = new Set<Solid["type"]>(["sluice", "laser", "fan", "spike"]);
-const HAZARD = new Set<Solid["type"]>(["sluice", "laser", "spike"]);
+const WALK_SKIP = new Set<Solid["type"]>(["sluice", "laser", "fan", "spike", "saw", "geyser"]);
+const HAZARD = new Set<Solid["type"]>(["sluice", "laser", "spike", "saw"]);
+const MOVING = new Set<Solid["type"]>(["lift", "saw"]);
+
+export function isMovingSolid(s: Solid) {
+  return MOVING.has(s.type);
+}
 
 export type Body = { x: number; y: number; w: number; h: number };
 export type QueryKind = "walk" | "hazard" | "all";

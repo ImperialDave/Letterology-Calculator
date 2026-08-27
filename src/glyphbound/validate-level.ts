@@ -1,10 +1,11 @@
 import { validateFolio, type Folio, type FolioIssue } from "./folio";
 
-const FLOOR = new Set("#*=_T/\\&-".split(""));
+const FLOOR = new Set("#*=_T/\\&-`)g".split(""));
 const SOLID = new Set(["#", "*", "&"]);
 const SPIKE = "^";
 const LASER = "|";
 const SLUICE = "~";
+const SAW = "S";
 
 function at(rows: string[], x: number, y: number) {
   if (y < 0 || y >= rows.length || x < 0 || x >= (rows[y]?.length ?? 0)) return "#";
@@ -20,7 +21,7 @@ function isSolid(ch: string) {
 }
 
 function isHazard(ch: string) {
-  return ch === SPIKE || ch === LASER;
+  return ch === SPIKE || ch === LASER || ch === SAW;
 }
 
 function canStand(rows: string[], x: number, y: number) {
@@ -73,7 +74,7 @@ function pitIssues(rows: string[]): FolioIssue[] {
     for (let i = x0; i < x; i++) {
       for (let dy = -2; dy <= 2; dy++) {
         const ch = at(rows, i, fy + dy);
-        if (ch === "T" || ch === "=" || ch === "_") assists += 1;
+        if (ch === "T" || ch === "=" || ch === "_" || ch === "`" || ch === ")" || ch === "g") assists += 1;
         if (ch === SLUICE) sluice = true;
       }
     }

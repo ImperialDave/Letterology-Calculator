@@ -121,7 +121,60 @@ export function parseRows(rows: string[], ctx: Partial<ParseCtx> = {}): ParsedMa
       else if (ch === "_") solids.push({ x, y: y + 34, w: TILE, h: 6, type: "oneway" });
       else if (ch === "&") solids.push({ x: x + 6, y: y + 12, w: TILE - 12, h: TILE - 12, type: "solid" });
       else if (ch === ":") solids.push({ x: x + 10, y, w: 28, h: TILE, type: "fan" });
-      else if (ch === "@") {
+      else if (ch === "`") {
+        solids.push({
+          x,
+          y: y + 28,
+          w: TILE,
+          h: 12,
+          type: "lift",
+          homeX: x,
+          homeY: y + 28,
+          phase: tx * 0.47,
+        });
+      } else if (ch === ")") {
+        solids.push({
+          x,
+          y: y + 28,
+          w: TILE,
+          h: 12,
+          type: "blink",
+          phase: tx * 0.53,
+        });
+      } else if (ch === "S") {
+        solids.push({
+          x,
+          y: y + 12,
+          w: TILE,
+          h: 24,
+          type: "saw",
+          homeX: x,
+          homeY: y + 12,
+          phase: tx * 0.71,
+        });
+      } else if (ch === "g") {
+        const left = tx > 0 ? rows[ty][tx - 1] : "#";
+        const right = tx + 1 < (rows[ty]?.length ?? 0) ? rows[ty][tx + 1] : "#";
+        const floorish =
+          left === "#" ||
+          left === "g" ||
+          left === "*" ||
+          right === "#" ||
+          right === "g" ||
+          right === "*";
+        if (floorish) {
+          solids.push({
+            x: x + 8,
+            y,
+            w: TILE - 16,
+            h: TILE,
+            type: "geyser",
+            phase: tx * 0.33,
+          });
+        } else {
+          pushNpc("g", x, y);
+        }
+      } else if (ch === "@") {
         spawnX = x + 8;
         spawnY = y;
       } else if (ch === ">" || ch === "<" || ch === "V") {
