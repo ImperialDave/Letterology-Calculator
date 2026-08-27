@@ -8,6 +8,10 @@ export class AudioBus {
   step = 0;
   acc = 0;
   started = false;
+  private voices = 0;
+  private readonly maxVoices = 8;
+  private noiseBuf: AudioBuffer | null = null;
+  private lastHit = 0;
 
   unlock() {
     try {
@@ -28,6 +32,10 @@ export class AudioBus {
         this.sfx.connect(this.master);
         this.music.connect(this.master);
         this.master.connect(this.ctx.destination);
+        const n = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.2, this.ctx.sampleRate);
+        const d = n.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+        this.noiseBuf = n;
       }
       if (this.ctx.state === "suspended") void this.ctx.resume();
     } catch {
@@ -43,6 +51,10 @@ export class AudioBus {
     }
   }
 
+  private release = () => {
+    this.voices = Math.max(0, this.voices - 1);
+  };
+
   tone(
     freq: number,
     dur: number,
@@ -52,6 +64,7 @@ export class AudioBus {
     dest: "sfx" | "music" = "sfx",
   ) {
     if (!this.ctx || !this.sfx || !this.music || this.muted) return;
+    if (this.voices >= this.maxVoices) return;
     const t = this.ctx.currentTime;
     const o = this.ctx.createOscillator();
     const g = this.ctx.createGain();
@@ -62,17 +75,25 @@ export class AudioBus {
     g.gain.exponentialRampToValueAtTime(0.001, t + dur);
     o.connect(g);
     g.connect(dest === "music" ? this.music : this.sfx);
+    o.onended = () => {
+      try {
+        o.disconnect();
+        g.disconnect();
+      } catch {
+        /* already gone */
+      }
+      this.release();
+    };
+    this.voices += 1;
     o.start(t);
     o.stop(t + dur + 0.02);
   }
 
   noise(dur: number, gain = 0.08) {
-    if (!this.ctx || !this.sfx || this.muted) return;
-    const n = this.ctx.createBuffer(1, this.ctx.sampleRate * dur, this.ctx.sampleRate);
-    const d = n.getChannelData(0);
-    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    if (!this.ctx || !this.sfx || this.muted || !this.noiseBuf) return;
+    if (this.voices >= this.maxVoices) return;
     const src = this.ctx.createBufferSource();
-    src.buffer = n;
+    src.buffer = this.noiseBuf;
     const f = this.ctx.createBiquadFilter();
     f.type = "highpass";
     f.frequency.value = 800;
@@ -83,7 +104,23 @@ export class AudioBus {
     src.connect(f);
     f.connect(g);
     g.connect(this.sfx);
-    src.start();
+    src.onended = () => {
+      try {
+        src.disconnect();
+        f.disconnect();
+        g.disconnect();
+      } catch {
+        /* already gone */
+      }
+      this.release();
+    };
+    this.voices += 1;
+    src.start(t, 0, dur);
+    try {
+      src.stop(t + dur + 0.02);
+    } catch {
+      /* ignore */
+    }
   }
 
   sfxJump() {
@@ -99,11 +136,12 @@ export class AudioBus {
   }
   sfxShot() {
     this.tone(640, 0.07, "square", 0.05, 220);
-    this.tone(980, 0.09, "triangle", 0.04, -280);
   }
   sfxHit() {
-    this.tone(160, 0.1, "square", 0.1, -80);
-    this.noise(0.1, 0.07);
+    const now = this.ctx?.currentTime ?? 0;
+    if (now - this.lastHit < 0.05) return;
+    this.lastHit = now;
+    this.tone(160, 0.08, "square", 0.08, -80);
   }
   sfxHurt() {
     this.tone(220, 0.16, "sawtooth", 0.09, -140);
@@ -111,7 +149,6 @@ export class AudioBus {
   sfxBlock() {
     this.tone(300, 0.1, "triangle", 0.08, 80);
     this.tone(180, 0.14, "sine", 0.07);
-    this.noise(0.06, 0.04);
   }
   sfxPickup() {
     this.tone(660, 0.1, "sine", 0.07, 200);
@@ -119,12 +156,10 @@ export class AudioBus {
   }
   sfxWord() {
     this.tone(520, 0.18, "triangle", 0.08, 80);
-    this.tone(780, 0.22, "sine", 0.05);
   }
   sfxTransform() {
     this.tone(196, 0.4, "sawtooth", 0.08, 220);
     this.tone(392, 0.5, "triangle", 0.06, 280);
-    this.tone(784, 0.6, "sine", 0.04, 120);
   }
   sfxDeath() {
     this.tone(110, 0.4, "sawtooth", 0.1, -70);
@@ -138,17 +173,18 @@ export class AudioBus {
 
   tickMusic(dt: number) {
     if (!this.started || this.muted || !this.musicOn) return;
-    this.acc += dt;
-    const beat = 0.22;
-    while (this.acc >= beat) {
-      this.acc -= beat;
-      this.step = (this.step + 1) % 16;
-      const bass = [110, 110, 98, 82.4, 110, 130.8, 98, 87.3];
-      const lead = [0, 330, 0, 392, 0, 262, 330, 0, 392, 0, 494, 0, 330, 262, 0, 392];
-      if (this.step % 2 === 0) this.tone(bass[(this.step / 2) | 0], 0.18, "sine", 0.05, 0, "music");
-      const n = lead[this.step];
-      if (n) this.tone(n, 0.12, "triangle", 0.035, 0, "music");
-      if (this.step % 4 === 0) this.noise(0.03, 0.02);
+    if (this.voices >= this.maxVoices - 1) {
+      this.acc = 0;
+      return;
     }
+    this.acc += dt;
+    const beat = 0.44;
+    if (this.acc < beat) return;
+    this.acc -= beat;
+    if (this.acc > beat) this.acc = 0;
+    this.step = (this.step + 1) % 8;
+    const bass = [110, 110, 98, 82.4, 110, 130.8, 98, 87.3];
+    this.tone(bass[this.step], 0.28, "sine", 0.045, 0, "music");
+    if (this.step % 2 === 0) this.tone(330, 0.1, "triangle", 0.025, 0, "music");
   }
 }
