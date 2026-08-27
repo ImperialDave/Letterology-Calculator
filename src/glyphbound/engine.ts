@@ -1781,7 +1781,7 @@ export class GameEngine {
     if (!boss) e.vy = -36;
     if (!boss) e.aux = 0;
     this.audio.sfxHit();
-    this.trauma = Math.min(1, this.trauma + 0.25);
+    if (!boss) this.trauma = Math.min(1, this.trauma + 0.25);
     this.hitstop = 0.05;
     this.burst(e.x + e.w / 2, e.y + e.h / 2, "#e8ece8", 6, "spark");
     if (e.kind === "dummy") {
@@ -2624,7 +2624,7 @@ export class GameEngine {
   }
 
   private shockwave(e: Enemy) {
-    this.trauma = Math.min(1, this.trauma + 0.12);
+    if (!this.isBossKind(e.kind)) this.trauma = Math.min(1, this.trauma + 0.12);
     this.burst(e.x + e.w / 2, e.y + e.h, "#d45a4a", 10, "dust");
     for (const dir of [-1, 1] as const) {
       this.bullets.push({

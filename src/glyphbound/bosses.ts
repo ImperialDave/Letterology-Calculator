@@ -128,7 +128,6 @@ function land(eng: Eng, e: Enemy, p: Player) {
       eng.stampLine?.(cx, fy, 3, 44);
       break;
   }
-  eng.trauma = Math.min(1, (eng.trauma ?? 0) + 0.22);
 }
 
 function aiShard(eng: Eng, e: Enemy, p: Player, dt: number) {
