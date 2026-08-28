@@ -1,20 +1,12 @@
 import { chunksFor, type Beat, type Chunk } from "./chunks";
-import { DISTRICTS } from "./districts";
 import { FROZEN_REMAINDER } from "./remainder-hand";
 import { remainderName, remainderObjective } from "./remainder-names";
+import { isBoss, recipeFor, rng, themeFor, type Recipe } from "./recipe";
+import { FY, paintPattern, pickPattern } from "./patterns";
+import { validateLevel } from "./validate-level";
 import type { LevelId, TaskDef, ThemeId } from "./types";
 import { FIRST_BOOK, STAGE_COUNT } from "./types";
 import type { LevelMeta } from "./levels-story";
-
-const ROLE_TIERS = [
-  ["1", "0"],
-  ["1", "0", "2", "3"],
-  ["1", "0", "2", "3", "5", "4"],
-  ["1", "0", "2", "3", "5", "4", "7", "6"],
-  ["1", "0", "2", "3", "5", "4", "7", "6", "8", "9"],
-  ["1", "0", "2", "5", "7", "8", "9", "A", "B"],
-  ["2", "5", "7", "8", "9", "A", "B", "C", "E", "Y"],
-];
 
 const WORDS: Record<number, string> = {
   6: "W",
@@ -24,18 +16,6 @@ const WORDS: Record<number, string> = {
   32: "O",
   40: "I",
 };
-
-function rng(seed: number) {
-  let s = seed | 0;
-  return () => {
-    s = (s * 1664525 + 1013904223) | 0;
-    return (s >>> 0) / 4294967296;
-  };
-}
-
-function themeFor(n: number): ThemeId {
-  return DISTRICTS[Math.min(DISTRICTS.length - 1, n)]?.theme ?? "street";
-}
 
 function pickChunk(beat: Beat, n: number, theme: ThemeId, rand: () => number, used: Set<string>): Chunk {
   const all = chunksFor(beat, n, theme);
@@ -48,53 +28,15 @@ function pickChunk(beat: Beat, n: number, theme: ThemeId, rand: () => number, us
   return c;
 }
 
-function beatsFor(n: number): Beat[] {
-  if (isBoss(n)) return n >= 45 ? ["land", "mix", "arena", "gate"] : ["land", "arena", "gate"];
-  if (n < 31) return ["land", "teach", "mix", "combat", "rest", "gate"];
-  const band = Math.min(5, Math.floor((n - 31) / 5));
-  const seqs: Beat[][] = [
-    ["land", "teach", "mix", "combat", "rest", "gate"],
-    ["land", "teach", "mix", "mix", "combat", "gate"],
-    ["land", "mix", "combat", "rest", "mix", "gate"],
-    ["land", "teach", "mix", "combat", "combat", "gate"],
-    ["land", "mix", "mix", "combat", "rest", "gate"],
-    ["land", "mix", "combat", "mix", "rest", "gate"],
-  ];
-  return seqs[band];
-}
-
-function decoFor(theme: ThemeId) {
-  if (theme === "fort") return "'";
-  if (theme === "coil") return ";";
-  if (theme === "canal") return ",";
-  if (theme === "glacier") return ";";
-  if (theme === "orbit") return ";";
-  if (theme === "remainder") return "?";
-  if (theme === "vault") return ";";
-  if (theme === "spire") return ";";
-  if (theme === "abyss") return "?";
-  return '"';
-}
-
-function dress(rows: string[], theme: ThemeId, rand: () => number) {
-  const deco = decoFor(theme);
-  const H = rows.length;
-  const W = rows[0]?.length ?? 0;
-  let placed = 0;
-  const want = 4 + Math.floor(rand() * 4);
-  for (let k = 0; k < 80 && placed < want; k++) {
-    const x = 2 + Math.floor(rand() * Math.max(1, W - 4));
-    const y = 2 + Math.floor(rand() * Math.max(1, H - 4));
-    if (rows[y][x] !== ".") continue;
-    const below = rows[y + 1]?.[x] ?? "#";
-    if (below !== "#" && below !== "=" && below !== "_" && below !== "*") continue;
-    rows[y] = rows[y].slice(0, x) + deco + rows[y].slice(x + 1);
-    placed += 1;
-  }
-}
-
 function cloneRows(rows: string[]) {
   return rows.map((r) => r);
+}
+
+function setCell(rows: string[], x: number, y: number, ch: string) {
+  if (y < 0 || y >= rows.length) return;
+  const row = rows[y];
+  if (x < 0 || x >= row.length) return;
+  rows[y] = row.slice(0, x) + ch + row.slice(x + 1);
 }
 
 function replaceFirst(rows: string[], from: string, to: string) {
@@ -146,37 +88,127 @@ function stitch(parts: string[][]): string[] {
   });
 }
 
-function roleFor(n: number, rand: () => number) {
-  const roles = ROLE_TIERS[Math.min(ROLE_TIERS.length - 1, Math.floor((n - 1) / 4))];
-  return roles[Math.floor(rand() * roles.length)];
+function landmarkDress(rows: string[], deco: string, rand: () => number) {
+  const H = rows.length;
+  const W = rows[0]?.length ?? 0;
+  const step = 18;
+  let placed = 0;
+  for (let x = 4; x < W - 4; x += step) {
+    const ox = x + Math.floor(rand() * 4);
+    const y = FY - 2;
+    if (y <= 0 || y >= H) continue;
+    if (rows[y][ox] !== ".") continue;
+    const below = rows[y + 1]?.[ox] ?? "#";
+    if (below !== "#" && below !== "=" && below !== "_" && below !== "*") continue;
+    const blocked = "@%P!".includes(rows[FY - 1]?.[ox] ?? "");
+    if (blocked) continue;
+    if (deco === "_") {
+      if (rows[FY - 2][ox] === ".") setCell(rows, ox, FY - 2, "_");
+    } else {
+      setCell(rows, ox, y, deco);
+    }
+    placed += 1;
+    if (placed >= Math.max(2, Math.floor(W / 20))) break;
+  }
 }
 
-function isBoss(n: number) {
-  return n % 5 === 0 || n === STAGE_COUNT;
+function mutate(rows: string[]): string[] {
+  for (let k = 0; k < 6; k++) {
+    const issues = validateLevel(rows);
+    const fatal = issues.filter((i) =>
+      ["path", "pit", "pit-wide", "laser-floor", "saw-path", "hang", "teeth", "rest-hazard", "embed"].includes(i.code),
+    );
+    if (!fatal.length) return rows;
+    for (const issue of fatal) {
+      if (issue.code === "saw-path") {
+        for (let y = 0; y < rows.length; y++) {
+          for (let x = 0; x < rows[y].length; x++) {
+            if (rows[y][x] !== "S") continue;
+            setCell(rows, x, y, ".");
+            setCell(rows, x, Math.max(1, y - 1), "S");
+          }
+        }
+      } else if (issue.code === "laser-floor") {
+        for (let y = 0; y < rows.length; y++) {
+          for (let x = 0; x < rows[y].length; x++) {
+            if (rows[y][x] !== "|") continue;
+            if (y >= FY - 1) {
+              setCell(rows, x, y, ".");
+              setCell(rows, x, Math.max(1, FY - 3), "|");
+            }
+          }
+        }
+      } else if (issue.code === "pit" || issue.code === "pit-wide") {
+        const m = issue.message.match(/(\d+)/);
+        const x0 = m ? Number(m[1]) : 8;
+        setCell(rows, x0 + 1, FY, "#");
+        setCell(rows, x0 + 1, FY - 1, "T");
+      } else if (issue.code === "path") {
+        const W = rows[0]?.length ?? 0;
+        for (let x = 2; x < W - 2; x += 6) setCell(rows, x, FY - 2, "=");
+      } else if (issue.code === "rest-hazard" || issue.code === "teeth") {
+        const x = rows.findIndex ? -1 : -1;
+        for (let y = 0; y < rows.length; y++) {
+          const i = rows[y].indexOf("%");
+          if (i < 0) continue;
+          setCell(rows, i, y + 1, "#");
+          if (rows[y][i] === "^" || rows[y][i] === "S") setCell(rows, i, y, "%");
+        }
+        void x;
+      } else if (issue.code === "hang") {
+        const mark = issue.message.startsWith("gate") ? "P" : issue.message.startsWith("spawn") ? "@" : "%";
+        for (let y = 0; y < rows.length; y++) {
+          const x = rows[y].indexOf(mark);
+          if (x < 0) continue;
+          setCell(rows, x, Math.min(rows.length - 2, y + 1), "#");
+        }
+      }
+    }
+  }
+  return rows;
+}
+
+function paintBeat(beat: Beat, recipe: Recipe, n: number, rand: () => number, used: Set<string>): string[] {
+  const width = 18 + Math.floor(rand() * 8);
+  const pit = 2 + Math.floor(rand() * 2);
+  const pattern = pickPattern(beat, recipe.featured, recipe.mix, rand, used);
+  if (pattern) {
+    used.add(pattern.id);
+    const rows = paintPattern(pattern, width, {
+      enemy: recipe.enemy,
+      deco: recipe.deco,
+      pit,
+      pocket: beat === "rest" || beat === "mix" ? recipe.pocket : "none",
+      secret: beat === "rest" && recipe.secret,
+      mix: recipe.mix,
+    });
+    return rows;
+  }
+  const chunk = pickChunk(beat, n, recipe.theme, rand, used);
+  return cloneRows(chunk.rows);
 }
 
 export function assembleStage(n: number): LevelMeta {
   const frozen = FROZEN_REMAINDER[n];
   if (frozen) return frozen;
-  const theme = themeFor(n);
   const rand = rng(n * 9973 + 42);
+  const recipe = recipeFor(n, rand);
   const used = new Set<string>();
-  const beats = beatsFor(n);
   const parts: string[][] = [];
-  for (let i = 0; i < beats.length; i++) {
-    const chunk = pickChunk(beats[i], n, theme, rand, used);
-    const rows = cloneRows(chunk.rows);
+  for (let i = 0; i < recipe.beats.length; i++) {
+    const beat = recipe.beats[i];
+    const rows = paintBeat(beat, recipe, n, rand, used);
     if (i > 0) clearChar(rows, "@");
-    if (i < beats.length - 1) clearChar(rows, "P");
-    if (beats[i] === "combat") replaceFirst(rows, "1", roleFor(n, rand));
-    if (beats[i] === "rest" && WORDS[n]) placeOnFloor(rows, WORDS[n]);
-    if (beats[i] === "land" && WORDS[n] && !beats.includes("rest")) placeOnFloor(rows, WORDS[n]);
+    if (i < recipe.beats.length - 1) clearChar(rows, "P");
+    if (beat === "combat") replaceFirst(rows, "1", recipe.enemy);
+    if (beat === "rest" && WORDS[n]) placeOnFloor(rows, WORDS[n]);
+    if (beat === "land" && WORDS[n] && !recipe.beats.includes("rest")) placeOnFloor(rows, WORDS[n]);
     parts.push(rows);
   }
-  const rows = stitch(parts);
-  dress(rows, theme, rand);
+  let rows = stitch(parts);
+  landmarkDress(rows, recipe.deco, rand);
+  rows = mutate(rows);
   const boss = isBoss(n);
-  const name = n >= FIRST_BOOK ? remainderName(n, boss) : boss ? `Warden ${n}` : `Ledger ${n}`;
   const tasks: TaskDef[] = [{ id: `clear-${n}`, text: boss ? "Defeat the warden" : "Reach the gate" }];
   if (n === 6) tasks.push({ id: "word-wall", text: "Pick up WALL" });
   if (n === 8) tasks.push({ id: "word-rise", text: "Pick up RISE" });
@@ -186,12 +218,16 @@ export function assembleStage(n: number): LevelMeta {
   if (n === 40) tasks.push({ id: "word-tide", text: "Pick up TIDE" });
   return {
     id: `stage${n}` as LevelId,
-    name,
-    theme,
+    name: n >= FIRST_BOOK ? remainderName(n, boss) : boss ? `Warden ${n}` : `Ledger ${n}`,
+    theme: themeFor(n),
     objective: n >= FIRST_BOOK ? remainderObjective(n, boss) : boss ? "Clear the warden. Take the gate." : "Cross the ledger. Reach the gate.",
     tasks,
     rows,
     exit: n === STAGE_COUNT ? "win" : "hub",
     index: n,
   };
+}
+
+export function assembleRecipe(n: number) {
+  return recipeFor(n, rng(n * 9973 + 42));
 }

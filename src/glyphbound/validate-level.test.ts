@@ -29,6 +29,24 @@ test("a ten-tile empty pit fails the jump budget", () => {
   assert.ok(codes.includes("pit") || codes.includes("pit-wide") || codes.includes("path"), codes.join(","));
 });
 
+test("laser on the walkway fails", () => {
+  const f = blankFolio({ id: "folio-laser" });
+  let fy = 0;
+  let best = 0;
+  for (let y = 1; y < f.rows.length - 1; y++) {
+    const n = [...f.rows[y]].filter((c) => c === "#").length;
+    if (n > best) {
+      best = n;
+      fy = y;
+    }
+  }
+  const row = f.rows[fy - 1].split("");
+  const x = f.rows[fy - 1].indexOf("@");
+  row[x + 4] = "|";
+  f.rows[fy - 1] = row.join("");
+  assert.ok(validateLevel(f.rows).some((i) => i.code === "laser-floor"));
+});
+
 test("spawn on spikes fails", () => {
   const f = blankFolio({ id: "folio-teeth" });
   let ax = 0;
@@ -51,7 +69,9 @@ test("assembled remainder ledgers are reachable", () => {
   const failed: string[] = [];
   for (let n = 6; n <= STAGE_COUNT; n++) {
     const meta = assembleStage(n);
-    const issues = validateLevel(meta.rows).filter((i) => i.code === "path" || i.code === "spawn" || i.code === "hang" || i.code === "embed");
+    const issues = validateLevel(meta.rows).filter((i) =>
+      ["path", "spawn", "hang", "embed", "laser-floor", "saw-path", "rest-hazard", "pit", "pit-wide"].includes(i.code),
+    );
     if (issues.length) failed.push(`stage${n}: ${issues.map((i) => i.message).join("; ")}`);
   }
   assert.equal(failed.join("\n"), "");

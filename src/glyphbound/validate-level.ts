@@ -158,6 +158,42 @@ function reachable(rows: string[]): boolean {
   return seen.has(key(gate.x, gate.y)) || seen.has(key(gate.x, gate.y - 1)) || seen.has(key(gate.x, gate.y + 1));
 }
 
+function laserFloorIssues(rows: string[]): FolioIssue[] {
+  const fy = mainFloorY(rows);
+  const W = rows[0]?.length ?? 0;
+  const issues: FolioIssue[] = [];
+  for (let x = 1; x < W - 1; x++) {
+    if (at(rows, x, fy) === LASER || at(rows, x, fy - 1) === LASER) {
+      issues.push({ code: "laser-floor", message: `laser on the walkway at ${x}` });
+    }
+  }
+  return issues;
+}
+
+function sawPathIssues(rows: string[]): FolioIssue[] {
+  const fy = mainFloorY(rows);
+  const W = rows[0]?.length ?? 0;
+  const issues: FolioIssue[] = [];
+  for (let x = 1; x < W - 1; x++) {
+    if (at(rows, x, fy - 1) === SAW) {
+      issues.push({ code: "saw-path", message: `saw blocks the walkway at ${x}` });
+    }
+  }
+  return issues;
+}
+
+function restHazardIssues(rows: string[]): FolioIssue[] {
+  const issues: FolioIssue[] = [];
+  const p = findChar(rows, "%");
+  if (!p) return issues;
+  const here = at(rows, p.x, p.y);
+  const below = at(rows, p.x, p.y + 1);
+  if (isHazard(here) || isHazard(below) || below === SAW || here === SAW) {
+    issues.push({ code: "rest-hazard", message: "checkpoint sits on a hazard" });
+  }
+  return issues;
+}
+
 /** Jump-budget and reachability checks on ASCII rows. */
 export function validateLevel(rows: string[]): FolioIssue[] {
   if (!rows.length) return [{ code: "empty", message: "no rows" }];
@@ -166,6 +202,9 @@ export function validateLevel(rows: string[]): FolioIssue[] {
   issues.push(...pointSafe(rows, "%", "checkpoint"));
   issues.push(...pointSafe(rows, "P", "gate"));
   issues.push(...pitIssues(rows));
+  issues.push(...laserFloorIssues(rows));
+  issues.push(...sawPathIssues(rows));
+  issues.push(...restHazardIssues(rows));
   const spawn = findChar(rows, "@");
   const gate = findChar(rows, "P");
   if (spawn && gate && !reachable(rows)) {
