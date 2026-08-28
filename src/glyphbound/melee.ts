@@ -60,16 +60,20 @@ const H_AIM = 0.34;
 const V_AIM = 0.42;
 const RUN_RATIO = 0.68;
 
-export const JAB_WINDOW = 0.55;
-export const TILT_HOLD = 0.18;
+export const JAB_WINDOW = 0.48;
+export const TILT_HOLD = 0.08;
 export const SMASH_CHARGE = 0.72;
+export const UAIR_BOOST = 200;
+export const UAIR_VY_CAP = -640;
+export const UTILT_HOP = -220;
+export const UPHOP_TIME = 0.28;
 
 export const MOVES: Record<MeleeMoveId, MeleeMove> = {
   jab1: {
     id: "jab1",
     name: "Jab",
-    time: 0.16,
-    hitAt: [0.32],
+    time: 0.12,
+    hitAt: [0.28],
     reach: 34,
     height: 20,
     ox: 0,
@@ -84,8 +88,8 @@ export const MOVES: Record<MeleeMoveId, MeleeMove> = {
   jab2: {
     id: "jab2",
     name: "Jab",
-    time: 0.18,
-    hitAt: [0.3],
+    time: 0.14,
+    hitAt: [0.28],
     reach: 38,
     height: 22,
     ox: 2,
@@ -100,8 +104,8 @@ export const MOVES: Record<MeleeMoveId, MeleeMove> = {
   jab3: {
     id: "jab3",
     name: "Finisher",
-    time: 0.34,
-    hitAt: [0.42],
+    time: 0.26,
+    hitAt: [0.34],
     reach: 48,
     height: 30,
     ox: 4,
@@ -117,8 +121,8 @@ export const MOVES: Record<MeleeMoveId, MeleeMove> = {
   ftilt: {
     id: "ftilt",
     name: "F-tilt",
-    time: 0.28,
-    hitAt: [0.4],
+    time: 0.22,
+    hitAt: [0.3],
     reach: 52,
     height: 28,
     ox: 2,
@@ -133,8 +137,8 @@ export const MOVES: Record<MeleeMoveId, MeleeMove> = {
   utilt: {
     id: "utilt",
     name: "Up-tilt",
-    time: 0.3,
-    hitAt: [0.36],
+    time: 0.22,
+    hitAt: [0.3],
     reach: 36,
     height: 48,
     ox: -4,
@@ -144,14 +148,14 @@ export const MOVES: Record<MeleeMoveId, MeleeMove> = {
     kbX: 36,
     kbY: -210,
     stun: 0.5,
-    selfVy: -40,
+    selfVy: UTILT_HOP,
     fx: "slash-up",
   },
   dtilt: {
     id: "dtilt",
     name: "Down-tilt",
-    time: 0.26,
-    hitAt: [0.38],
+    time: 0.2,
+    hitAt: [0.3],
     reach: 50,
     height: 18,
     ox: 0,
@@ -238,8 +242,8 @@ export const MOVES: Record<MeleeMoveId, MeleeMove> = {
   nair: {
     id: "nair",
     name: "Nair",
-    time: 0.34,
-    hitAt: [0.22, 0.52],
+    time: 0.26,
+    hitAt: [0.2, 0.48],
     reach: 40,
     height: 36,
     ox: -6,
@@ -256,8 +260,8 @@ export const MOVES: Record<MeleeMoveId, MeleeMove> = {
   fair: {
     id: "fair",
     name: "Fair",
-    time: 0.3,
-    hitAt: [0.38],
+    time: 0.24,
+    hitAt: [0.3],
     reach: 52,
     height: 28,
     ox: 4,
@@ -274,8 +278,8 @@ export const MOVES: Record<MeleeMoveId, MeleeMove> = {
   bair: {
     id: "bair",
     name: "Bair",
-    time: 0.28,
-    hitAt: [0.34],
+    time: 0.22,
+    hitAt: [0.28],
     reach: 50,
     height: 30,
     ox: 2,
@@ -292,8 +296,8 @@ export const MOVES: Record<MeleeMoveId, MeleeMove> = {
   uair: {
     id: "uair",
     name: "Uair",
-    time: 0.3,
-    hitAt: [0.36],
+    time: 0.24,
+    hitAt: [0.3],
     reach: 34,
     height: 46,
     ox: -4,
@@ -309,8 +313,8 @@ export const MOVES: Record<MeleeMoveId, MeleeMove> = {
   dair: {
     id: "dair",
     name: "Dair",
-    time: 0.36,
-    hitAt: [0.4],
+    time: 0.28,
+    hitAt: [0.32],
     reach: 28,
     height: 44,
     ox: -2,
@@ -527,9 +531,13 @@ export function moveSwingAngle(id: MeleeMoveId | "", phase: number, family: Mele
   const p = Math.max(0, Math.min(1, phase));
   const profile = SWING[id];
   if (profile) {
-    if (p < 0.42) return profile.start + (profile.strike - profile.start) * (p / 0.42);
-    if (p < 0.62) return profile.strike;
-    return profile.strike + (profile.recover - profile.strike) * ((p - 0.62) / 0.38);
+    if (p < 0.38) {
+      const t = p / 0.38;
+      const ease = 1 - (1 - t) * (1 - t);
+      return profile.start + (profile.strike - profile.start) * ease;
+    }
+    if (p < 0.58) return profile.strike;
+    return profile.strike + (profile.recover - profile.strike) * ((p - 0.58) / 0.42);
   }
   if (id === "utilt" || id === "usmash" || id === "uair") {
     if (p < 0.4) return 0.4 - p * 2.4;
@@ -579,21 +587,21 @@ export const KNOCKBACK: Record<
   MeleeMoveId,
   { angle: number; bkb: number; kbg: number; setKb?: number; sakurai?: boolean; iasa: number }
 > = {
-  jab1: { angle: 12, bkb: 50, kbg: 0, setKb: 52, sakurai: true, iasa: 0.48 },
-  jab2: { angle: 18, bkb: 64, kbg: 0, setKb: 68, sakurai: true, iasa: 0.48 },
-  jab3: { angle: 48, bkb: 240, kbg: 2.4, iasa: 0.7 },
-  ftilt: { angle: 40, bkb: 200, kbg: 2.5, iasa: 0.6 },
-  utilt: { angle: 88, bkb: 430, kbg: 3.3, iasa: 0.5 },
-  dtilt: { angle: 26, bkb: 150, kbg: 1.7, iasa: 0.52 },
-  dash: { angle: 36, bkb: 210, kbg: 2.1, iasa: 0.72 },
-  fsmash: { angle: 42, bkb: 360, kbg: 4.3, iasa: 0.82 },
-  usmash: { angle: 90, bkb: 500, kbg: 4.1, iasa: 0.8 },
-  dsmash: { angle: 32, bkb: 280, kbg: 3.1, iasa: 0.8 },
-  nair: { angle: 52, bkb: 150, kbg: 1.9, iasa: 0.46 },
-  fair: { angle: 45, bkb: 250, kbg: 2.9, iasa: 0.6 },
-  bair: { angle: 38, bkb: 290, kbg: 3.1, iasa: 0.58 },
-  uair: { angle: 82, bkb: 410, kbg: 3.5, iasa: 0.52 },
-  dair: { angle: 270, bkb: 390, kbg: 2.3, iasa: 0.68 },
+  jab1: { angle: 12, bkb: 50, kbg: 0, setKb: 52, sakurai: true, iasa: 0.34 },
+  jab2: { angle: 18, bkb: 64, kbg: 0, setKb: 68, sakurai: true, iasa: 0.34 },
+  jab3: { angle: 48, bkb: 240, kbg: 2.4, iasa: 0.56 },
+  ftilt: { angle: 40, bkb: 200, kbg: 2.5, iasa: 0.38 },
+  utilt: { angle: 88, bkb: 430, kbg: 3.3, iasa: 0.34 },
+  dtilt: { angle: 26, bkb: 150, kbg: 1.7, iasa: 0.36 },
+  dash: { angle: 36, bkb: 210, kbg: 2.1, iasa: 0.58 },
+  fsmash: { angle: 42, bkb: 360, kbg: 4.3, iasa: 0.7 },
+  usmash: { angle: 90, bkb: 500, kbg: 4.1, iasa: 0.7 },
+  dsmash: { angle: 32, bkb: 280, kbg: 3.1, iasa: 0.7 },
+  nair: { angle: 52, bkb: 150, kbg: 1.9, iasa: 0.36 },
+  fair: { angle: 45, bkb: 250, kbg: 2.9, iasa: 0.4 },
+  bair: { angle: 38, bkb: 290, kbg: 3.1, iasa: 0.4 },
+  uair: { angle: 82, bkb: 410, kbg: 3.5, iasa: 0.34 },
+  dair: { angle: 270, bkb: 390, kbg: 2.3, iasa: 0.5 },
 };
 
 export function enemyWeight(kind: string, boss: boolean): number {
@@ -641,7 +649,16 @@ export function launchHit(opts: {
   const vx = opts.dir * speed * Math.cos(rad);
   const vy = -speed * Math.sin(rad);
   const stun = Math.min(1.7, 0.11 + speed * 0.00105);
-  const hitlag = Math.min(0.1, 0.028 + speed * 0.00007);
+  const heavy =
+    opts.flourish ||
+    (opts.smashPower ?? 0) > 0 ||
+    opts.moveId === "fsmash" ||
+    opts.moveId === "usmash" ||
+    opts.moveId === "dsmash" ||
+    opts.moveId === "jab3";
+  const hitlag = heavy
+    ? Math.min(0.1, 0.028 + speed * 0.00007)
+    : Math.min(0.022, 0.012 + speed * 0.00004);
   return { vx, vy, stun, hitlag, speed };
 }
 

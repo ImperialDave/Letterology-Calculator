@@ -67,6 +67,7 @@ function ControlsCard() {
             <KeyRow keys="Hold J" text="No direction: that letter's flourish" />
             <KeyRow keys="Air + J" text="Nair, fair, bair, uair, dair · stick picks it" />
             <KeyRow keys="Combo" text="Jab → up-tilt → Space uair. Hits build percent." />
+            <KeyRow keys="↑ + J" text="Jump then up-Strike lifts higher than a jump. Up-tilt, then Space, hops into a full jump." />
           </div>
         </div>
         <div>

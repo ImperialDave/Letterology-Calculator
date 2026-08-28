@@ -274,6 +274,10 @@ export interface Player {
   shotLevel: number;
   shotCd: number;
   airHop: number;
+  /** Jump-cancel window after an up-tilt hop. */
+  upHop: number;
+  /** Rising uair already used this airtime. */
+  upBoost: boolean;
 }
 
 export interface TaskDef {

@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   MOVES,
+  TILT_HOLD,
+  UAIR_BOOST,
+  UAIR_VY_CAP,
+  UTILT_HOP,
   classifyMelee,
   comboDecay,
   dashMove,
@@ -140,6 +144,22 @@ test("s t r c have sideways weapon dashes", () => {
     assert.ok(resolveMove(id, "dash", 0).selfVx! >= 240, id);
   }
   assert.ok((dashMove("b").selfVx ?? 0) < 240);
+});
+
+test("lights are shorter and IASA comes earlier", () => {
+  assert.ok(TILT_HOLD <= 0.1);
+  assert.ok(MOVES.jab1.time <= 0.14);
+  assert.ok(MOVES.utilt.time <= 0.24);
+  assert.ok(MOVES.uair.time <= 0.26);
+  assert.ok(meleeIasaReady(0.12, 0.22, "utilt"));
+});
+
+test("up-tilt hops and uair boosts higher than a jump", () => {
+  assert.ok(UTILT_HOP <= -200);
+  assert.ok(UAIR_BOOST >= 180);
+  assert.ok(UAIR_VY_CAP <= -600);
+  const jump = 522;
+  assert.ok(Math.abs(UAIR_VY_CAP) > jump);
 });
 
 test("IASA and nair autocancel windows exist", () => {

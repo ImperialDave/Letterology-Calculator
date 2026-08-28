@@ -41,6 +41,9 @@ import {
   resolveMove,
   smashKindFromIntent,
   smashMove,
+  UAIR_BOOST,
+  UAIR_VY_CAP,
+  UPHOP_TIME,
   type MeleeMoveId,
 } from "./melee";
 import { SLOT_COUNT, activeSlot, clearSave, defaultSave, listSlots, loadSave, selectSlot, writeSave } from "./save";
@@ -406,6 +409,8 @@ export class GameEngine {
       shotLevel: this.save.shotLevel || 1,
       shotCd: 0,
       airHop: startLetter === "s" ? 1 : 0,
+      upHop: 0,
+      upBoost: false,
     };
   }
 
@@ -1198,7 +1203,8 @@ export class GameEngine {
     const gUp = 1300;
     const gDown = 2400;
     const aetherDash = p.roll > 0 && p.letter === "c";
-    if (!a.jumpHeld && !p.jumpCut && p.vy < 0 && !aetherDash) {
+    const risingUair = p.meleeMove === "uair" && p.melee > 0 && p.vy < 0;
+    if (!a.jumpHeld && !p.jumpCut && p.vy < 0 && !aetherDash && !risingUair) {
       p.vy *= 0.52;
       p.jumpCut = true;
     }
@@ -1210,20 +1216,27 @@ export class GameEngine {
     if (p.letter === "s" && p.capital && a.jumpHeld && !p.grounded && p.vy > 60) {
       p.vy = 70;
     }
-    if (p.grounded) p.airHop = p.letter === "s" ? 1 : 0;
-    if (p.grounded) this.airDash = 1;
-    if (p.grounded) p.coyote = 0.1;
-    else p.coyote -= dt;
+    if (p.grounded) {
+      p.airHop = p.letter === "s" ? 1 : 0;
+      p.upBoost = false;
+      p.upHop = 0;
+      this.airDash = 1;
+      p.coyote = 0.1;
+    } else {
+      p.coyote -= dt;
+      p.upHop = Math.max(0, p.upHop - dt);
+    }
     if (a.jump) p.jumpBuf = 0.12;
     else p.jumpBuf -= dt;
     if (p.smashKind) p.jumpBuf = 0;
     const iasa = meleeIasaReady(p.melee, p.meleeMax, p.meleeMove);
     const allowJump = p.melee <= 0 || iasa;
     if (!aetherDash) {
-    if (p.jumpBuf > 0 && p.coyote > 0 && allowJump) {
-      p.vy = -kit.jump;
+    if (p.jumpBuf > 0 && (p.coyote > 0 || p.upHop > 0) && allowJump) {
+      p.vy = Math.min(p.vy, -kit.jump);
       p.grounded = false;
       p.coyote = 0;
+      p.upHop = 0;
       p.jumpBuf = 0;
       p.jumpCut = false;
       p.squash = 0.74;
@@ -1982,7 +1995,7 @@ export class GameEngine {
         p.grounded
       ) {
         this.faceForIntent(intent, a.aimX);
-        this.startMeleeMove(intentToMove(intent, p.jabStep), 0);
+        this.startMeleeMove(intentToMove(intent, p.jabStep), 0, p.meleeCharge);
       }
       p.meleeCharge = 0;
     }
@@ -2024,14 +2037,16 @@ export class GameEngine {
     this.startMeleeMove(smashMove(kind), power);
   }
 
-  private startMeleeMove(id: MeleeMoveId, smashPower: number) {
+  private startMeleeMove(id: MeleeMoveId, smashPower: number, prepaid = 0) {
     const p = this.player;
     const move = resolveMove(p.letter, id, smashPower);
     p.meleeMove = id;
-    p.melee = move.time;
+    const hit = move.hitAt[0] ?? 0.3;
+    const skip = Math.min(Math.max(0, prepaid), move.time * hit * 0.7);
+    p.melee = move.time - skip;
     p.meleeMax = move.time;
     p.meleeHits = 0;
-    p.attack = move.time;
+    p.attack = p.melee;
     p.attackHit = false;
     p.squash = move.smash ? 0.72 : 0.88;
     p.meleeCharge = 0;
@@ -2049,6 +2064,16 @@ export class GameEngine {
     const face = move.behind ? -p.facing : p.facing;
     if (move.selfVx) p.vx += face * move.selfVx * (p.capital ? 1.12 : 1);
     if (move.selfVy) p.vy += move.selfVy;
+    if (id === "utilt") {
+      p.upHop = UPHOP_TIME;
+      p.grounded = false;
+    }
+    if (id === "uair" && !p.upBoost) {
+      p.upBoost = true;
+      p.vy -= p.capital ? UAIR_BOOST + 40 : UAIR_BOOST;
+      if (p.vy < UAIR_VY_CAP) p.vy = UAIR_VY_CAP;
+      p.jumpCut = false;
+    }
     this.audio.sfxShot();
     if (move.smash || id === "jab3" || id === "dair" || id === "dash") this.say(move.name.toUpperCase());
   }
