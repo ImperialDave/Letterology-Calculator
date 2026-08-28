@@ -3983,13 +3983,13 @@ export class GameEngine {
         x + w > camX - 48 && x < camX + VIEW_W + 48 && y + h > camY - 48 && y < camY + VIEW_H + 48;
       for (const n of this.npcs) {
         if (!vis(n.x, n.y, n.w, n.h)) continue;
-        drawNpcGlyph(ctx, n.glyph, n.x + n.w / 2 - camX, n.y + n.h / 2 - camY, this.time);
+        drawNpcGlyph(ctx, n.glyph, n.x + n.w / 2 - camX, n.y + n.h / 2 - camY, this.time, n.x);
       }
       for (const u of this.pickups) {
         if (u.taken) continue;
         if (!vis(u.x, u.y, u.w, u.h)) continue;
         if (u.kind === "door" || u.kind === "portal") this.drawGate(ctx, u);
-        else drawPickup(ctx, u.x + u.w / 2 - camX, u.y + u.h / 2 - camY, u.kind, u.label ?? "", this.time);
+        else drawPickup(ctx, u.x + u.w / 2 - camX, u.y + u.h / 2 - camY, u.kind, u.label ?? "", this.time, u.x);
       }
       for (const e of this.enemies) {
         if (!e.alive || !vis(e.x, e.y, e.w, e.h)) continue;
