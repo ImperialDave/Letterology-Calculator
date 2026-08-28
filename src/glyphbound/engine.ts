@@ -48,6 +48,7 @@ import {
   type MeleeMoveId,
 } from "./melee";
 import { commitFacing, faceToward, reverseAtLedge, tickTurnLock } from "./enemy-facing";
+import { applyJump, gravityFor, heightTo, jumpVy } from "./enemy-move";
 import { SLOT_COUNT, activeSlot, clearSave, defaultSave, listSlots, loadSave, selectSlot, writeSave } from "./save";
 import { preloadArt } from "./art";
 import { isMovingSolid, SolidGrid } from "./spatial";
@@ -2554,7 +2555,7 @@ export class GameEngine {
           if (e.aux > 1.05 && Math.abs(p.x - e.x) < 120 && Math.abs(p.y - e.y) < 70) {
             e.phase = 1;
             e.aux = 0;
-            if (p.y + 18 < e.y) e.vy = -300;
+            if (p.y + 18 < e.y) applyJump(e, jumpVy(gravityFor(e.kind), heightTo(e, p) + 12));
             this.burst(e.x + e.w / 2, e.y + e.h, "#d45a4a", 5, "dust");
           }
         }
@@ -2598,8 +2599,7 @@ export class GameEngine {
           if (e.grounded && this.atLedge(e)) reverseAtLedge(e, p);
           if (e.grounded && this.windFire(e, 2.15)) {
             e.phase = 1;
-            e.vy = -360;
-            e.grounded = false;
+            applyJump(e, jumpVy(gravityFor(e.kind), Math.max(40, heightTo(e, p) + 12)));
           }
         }
       } else if (e.kind === "three" || e.kind === "seven" || e.kind === "triad") {
@@ -2615,7 +2615,7 @@ export class GameEngine {
         this.moveActor(e, dt, large);
         if (e.grounded && this.atLedge(e)) reverseAtLedge(e, p);
         if ((e.kind === "three" || e.kind === "triad") && e.grounded && e.aux > 0.9 && Math.abs(p.x - e.x) < 220) {
-          e.vy = -440;
+          applyJump(e, jumpVy(gravityFor(e.kind), Math.max(40, heightTo(e, p) + 12)));
           e.aux = 0;
           e.phase = 1;
         }
