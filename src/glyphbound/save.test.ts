@@ -65,6 +65,17 @@ test("empty default is an empty file", () => {
   assert.equal(isEmptySave({ ...defaultSave(), visited: ["hub"] }), false);
 });
 
+test("legacy Precision Grid flag becomes Hard", () => {
+  const m = memoryStore();
+  const raw = { ...defaultSave(), hard: true, progress: 4, visited: ["hub"] };
+  delete (raw as { difficulty?: string }).difficulty;
+  delete (raw as { lives?: number }).lives;
+  m.set("glyphbound-slot-0", JSON.stringify(raw));
+  const loaded = loadSave(0);
+  assert.equal(loaded.difficulty, "hard");
+  assert.equal(loaded.lives, 3);
+});
+
 test("legacy shake false becomes shakeAmt 0", () => {
   const m = memoryStore();
   const raw = { ...defaultSave(), shake: false, progress: 1, visited: ["hub"] };

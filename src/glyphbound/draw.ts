@@ -2916,6 +2916,7 @@ export function drawHudCanvas(
   objective: string,
   toast: string,
   comboHits = 0,
+  lives = -1,
 ) {
   ctx.fillStyle = "rgba(7,8,12,0.55)";
   roundRect(ctx, 132, 14, 210, p.smashKind ? 48 : 44, 10);
@@ -2936,6 +2937,11 @@ export function drawHudCanvas(
   ctx.font = "600 11px 'Source Sans 3', sans-serif";
   ctx.textAlign = "left";
   ctx.fillText(p.capital ? p.letter.toUpperCase() : p.letter, 310, 30);
+  if (lives >= 0) {
+    ctx.fillStyle = "#e8d48a";
+    ctx.font = "700 11px 'Source Sans 3', sans-serif";
+    ctx.fillText(`×${lives}`, 328, 30);
+  }
   ctx.fillStyle = p.flourish > 0 || p.smashKind || p.melee > 0 ? "#e8c878" : "#8ec8d4";
   ctx.font = "600 9px 'Source Sans 3', sans-serif";
   const wpn = weaponFor(p.letter);

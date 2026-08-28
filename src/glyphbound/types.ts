@@ -12,6 +12,8 @@ export type Mode =
   | "codex"
   | "studio";
 
+export type Difficulty = "easy" | "hard" | "extreme";
+
 export type RelicId = "dropCap" | "spine" | "copper" | "counter";
 export type WordId = "WALL" | "BURN" | "RISE" | "LOCK" | "FOLD" | "TIDE";
 export type ThemeId =
@@ -316,7 +318,11 @@ export interface SaveData {
   stage3: boolean;
   stage4: boolean;
   stage5: boolean;
+  /** Legacy Precision Grid flag. Migrates into `difficulty`. */
   hard: boolean;
+  difficulty: Difficulty;
+  /** Remaining wakes on Hard/Extreme. Ignored on Easy. */
+  lives: number;
   muted: boolean;
   shake: boolean;
   /** 0 off · 1 low · 2 full. `shake` stays in sync (amt > 0). */
@@ -362,7 +368,9 @@ export interface UiSnap {
   musicVol: number;
   reducedMotion: boolean;
   keys: Partial<Record<string, string>>;
-  hard: boolean;
+  difficulty: Difficulty;
+  lives: number;
+  livesMax: number;
   canContinue: boolean;
   introPage: number;
   hasCapital: boolean;
@@ -395,6 +403,7 @@ export interface SlotInfo {
   letter: LetterId;
   party: number;
   updated: number;
+  difficulty: Difficulty;
 }
 
 export const VIEW_W = 800;

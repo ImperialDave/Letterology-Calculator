@@ -53,6 +53,8 @@ import { commitFacing, faceToward, reverseAtLedge, tickTurnLock } from "./enemy-
 import { applyJump, gravityFor, heightTo, jumpVy } from "./enemy-move";
 import { bindKey as bindKeyMap, type KeyAction } from "./keys";
 import { SLOT_COUNT, activeSlot, clearSave, defaultSave, listSlots, loadSave, selectSlot, writeSave } from "./save";
+import { cycleDifficulty, livesFor, scaledHp } from "./difficulty";
+import { padEnemies } from "./density";
 import { preloadArt } from "./art";
 import { isMovingSolid, SolidGrid } from "./spatial";
 import {
@@ -75,6 +77,7 @@ import {
   type Pickup,
   type Player,
   type RelicId,
+  type Difficulty,
   type SaveData,
   type ThemeId,
   type Solid,
@@ -168,7 +171,8 @@ export class GameEngine {
   /** Title-screen type buffer for the Chief69 unlock. */
   cheatBuf = "";
   private uiAt = 0;
-  hard = false;
+  difficulty: Difficulty = "easy";
+  lives = -1;
   wordMenu = false;
   returnT = 0;
   intBuf = 0;
@@ -214,7 +218,8 @@ export class GameEngine {
     if (!ctx) throw new Error("canvas");
     this.ctx = ctx;
     this.ui = ui;
-    this.hard = this.save.hard;
+    this.difficulty = this.save.difficulty ?? "easy";
+    this.lives = this.save.lives ?? livesFor(this.difficulty);
     this.player = this.makePlayer();
     preloadArt();
   }
@@ -539,7 +544,10 @@ export class GameEngine {
     this.comboTimer = 0;
     this.stage = id;
     this.themeOverride = null;
-    this.rows = meta.rows;
+    const n = this.stageIndex(id);
+    const grade = this.sandbox ? "easy" : this.save.difficulty;
+    this.rows = this.sandbox ? meta.rows : padEnemies(meta.rows, n, grade);
+    this.syncLives(id, atCheck);
     this.objective = meta.objective;
     const parsed = parseRows(this.rows, {
       id,
@@ -635,7 +643,8 @@ export class GameEngine {
     this.sandbox = true;
     this.save = sandboxSave();
     this.save.muted = this.audio.muted;
-    this.save.hard = this.hard;
+    this.save.difficulty = "easy";
+    this.save.lives = -1;
     this.player = this.makePlayer();
     this.draft = folio ? { ...folio, rows: padRows(folio.rows) } : blankFolio();
     this.undo = [];
@@ -902,7 +911,8 @@ export class GameEngine {
       remainder: { w: 90, h: 88, hp: 118, name: "Remainder · %" },
     };
     const s = sizes[kind];
-    const hp = this.hard ? Math.ceil(s.hp * 1.35) : s.hp;
+    const grade = this.sandbox ? "easy" : this.save.difficulty;
+    const hp = scaledHp(s.hp, grade, kind);
     return {
       kind,
       x,
@@ -958,7 +968,8 @@ export class GameEngine {
     const i = Math.max(0, Math.min(SLOT_COUNT - 1, slot | 0));
     this.slot = i;
     this.save = selectSlot(i);
-    this.save.hard = this.hard;
+    this.difficulty = this.save.difficulty ?? "easy";
+    this.lives = this.save.lives ?? livesFor(this.difficulty);
     this.player = this.makePlayer();
     this.applyPrefs();
     this.audio.unlock();
@@ -989,7 +1000,10 @@ export class GameEngine {
     }
     clearSave();
     this.save = defaultSave();
-    this.save.hard = this.hard;
+    this.save.difficulty = this.difficulty;
+    this.save.hard = this.difficulty !== "easy";
+    this.save.lives = livesFor(this.difficulty);
+    this.lives = this.save.lives;
     this.save.visited = ["hub"];
     this.player = this.makePlayer();
     this.mode = "intro";
@@ -1054,7 +1068,9 @@ export class GameEngine {
     this.save.checkX = this.checkX;
     this.save.checkY = this.checkY;
     this.save.muted = this.audio.muted;
-    this.save.hard = this.hard;
+    this.save.difficulty = this.save.difficulty ?? this.difficulty;
+    this.save.hard = this.save.difficulty !== "easy";
+    this.save.lives = this.lives;
     this.save.shotLevel = p.shotLevel;
     this.save.letter = p.letter;
     writeSave(this.save, this.slot);
@@ -1099,6 +1115,7 @@ export class GameEngine {
       return;
     }
     if (this.mode === "dead") {
+      if (this.lives === 0) return;
       if (a.jump || a.attack) this.respawn();
       return;
     }
@@ -2482,9 +2499,7 @@ export class GameEngine {
       this.emit();
       if (p.hp <= 0) {
         p.hp = 0;
-        this.mode = "dead";
-        this.audio.sfxDeath();
-        this.emit();
+        this.fileDeath();
       }
       return;
     }
@@ -2529,9 +2544,7 @@ export class GameEngine {
     this.rumble(110, 0.4);
     if (p.hp <= 0) {
       p.hp = 0;
-      this.mode = "dead";
-      this.audio.sfxDeath();
-      this.emit();
+      this.fileDeath();
     }
   }
 
@@ -4151,10 +4164,50 @@ export class GameEngine {
     }
   }
 
-  toggleHard() {
+  cycleDifficulty() {
     if (!this.uiOnce(240)) return;
-    this.hard = !this.hard;
-    this.save.hard = this.hard;
+    this.difficulty = cycleDifficulty(this.difficulty);
+    this.emit();
+  }
+
+  retryLedger() {
+    if (this.mode !== "dead") return;
+    this.save.checkX = 0;
+    this.save.checkY = 0;
+    const stock = this.livesStock();
+    this.lives = stock;
+    this.save.lives = stock;
+    this.loadLevel(this.stage);
+  }
+
+  private livesStock() {
+    if (this.sandbox) return -1;
+    return livesFor(this.save.difficulty ?? "easy");
+  }
+
+  private syncLives(id: string, atCheck: boolean) {
+    const stock = this.livesStock();
+    if (stock < 0) {
+      this.lives = -1;
+      this.save.lives = -1;
+      return;
+    }
+    if (id === "hub" || !atCheck) {
+      this.lives = stock;
+      this.save.lives = stock;
+    } else {
+      this.lives = typeof this.save.lives === "number" ? this.save.lives : stock;
+    }
+  }
+
+  private fileDeath() {
+    this.mode = "dead";
+    if (this.livesStock() >= 0) {
+      this.lives = Math.max(0, this.lives - 1);
+      this.save.lives = this.lives;
+      this.persist();
+    }
+    this.audio.sfxDeath();
     this.emit();
   }
 
@@ -4548,7 +4601,9 @@ export class GameEngine {
       musicVol: this.save.musicVol ?? 1,
       reducedMotion: !!this.save.reducedMotion,
       keys: this.save.keys ?? {},
-      hard: this.hard,
+      difficulty: this.mode === "title" ? this.difficulty : this.save.difficulty,
+      lives: this.lives,
+      livesMax: this.livesStock(),
       canContinue: this.save.progress > 0 || this.save.hasCapital || this.save.stage1 || this.save.party.length > 1,
       introPage: this.introPage,
       hasCapital: this.save.hasCapital,
@@ -4746,7 +4801,7 @@ export class GameEngine {
       ctx.restore();
       if (!this.lite) drawGrade(ctx, district);
       if (this.mode === "play" || this.mode === "hub" || this.mode === "transform") {
-        drawHudCanvas(ctx, this.player, this.nearHint, this.toast, this.comboHits);
+        drawHudCanvas(ctx, this.player, this.nearHint, this.toast, this.comboHits, this.lives);
       }
       if (this.mode === "transform") {
         ctx.fillStyle = `rgba(94,224,192,${0.15 + this.transformT * 0.1})`;

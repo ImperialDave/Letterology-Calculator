@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent, type RefObject } from "react";
 import type { GameEngine } from "@/glyphbound/engine";
 import type { LetterId, SlotInfo, UiSnap } from "@/glyphbound/types";
+import { gradeLabel } from "@/glyphbound/difficulty";
 import { STAGE_COUNT } from "@/glyphbound/types";
 import { LEVELS } from "@/glyphbound/levels";
 import { Pause, Volume2, VolumeX } from "lucide-react";
@@ -164,7 +165,9 @@ const emptyUi = (): UiSnap => ({
   musicVol: 1,
   reducedMotion: false,
   keys: {},
-  hard: false,
+  difficulty: "easy",
+  lives: -1,
+  livesMax: -1,
   canContinue: false,
   introPage: 0,
   hasCapital: false,
@@ -194,8 +197,9 @@ const FILE_MARK = ["I", "II", "III"];
 function fileBlurb(s: SlotInfo) {
   if (s.empty) return "No pages written.";
   const name = LEVELS[s.stage]?.name ?? (s.stage === "hub" ? "Lower Register Stacks" : "A ledger");
-  if (s.progress > 0) return `${name} · ${s.progress} closed`;
-  return name;
+  const grade = gradeLabel(s.difficulty ?? "easy");
+  if (s.progress > 0) return `${name} · ${s.progress} closed · ${grade}`;
+  return `${name} · ${grade}`;
 }
 
 export function Glyphbound() {
@@ -409,6 +413,7 @@ export function Glyphbound() {
                   letter: "c" as const,
                   party: 0,
                   updated: 0,
+                  difficulty: "easy" as const,
                 }))).map((s) => {
                   const on = s.index === ui.slot;
                   return (
@@ -454,9 +459,9 @@ export function Glyphbound() {
                 type="button"
                 data-ui="hard"
                 className="h-11 flex-1 rounded-md border border-[#f4f0e4]/25 bg-[#121018]/85 text-sm text-[#f4f0e4]"
-                {...press(() => g()?.toggleHard())}
+                {...press(() => g()?.cycleDifficulty())}
               >
-                {ui.hard ? "Precision Grid on" : "Precision Grid off"}
+                {gradeLabel(ui.difficulty ?? "easy")}
               </button>
               <button
                 type="button"
@@ -624,6 +629,7 @@ export function Glyphbound() {
                   onChange={(e) => g()?.setReducedMotion(e.target.checked)}
                 />
               </label>
+              <p className="mt-2 text-[11px] text-fg">Grade: {gradeLabel(ui.difficulty ?? "easy")}</p>
               <p className="mt-2 text-[11px] text-subtle">Pad: stick walk · A jump · X/B strike · Y fang · RB skill · Start pause</p>
               <p className="mt-3 mb-1 text-[10px] uppercase tracking-[0.2em] text-accent">Keys</p>
               <div className="grid max-h-40 gap-1 overflow-y-auto">
@@ -709,15 +715,40 @@ export function Glyphbound() {
       {ui.mode === "dead" && (
         <div data-ui="dead" className="pointer-events-auto absolute inset-0 z-20 flex items-center justify-center bg-bg/75 px-6">
           <div className="max-w-sm text-center">
-            <h2 className="font-display text-5xl">Rounded down</h2>
-            <p className="mt-3 text-muted">The census took a bite.</p>
-            <button
-              type="button"
-              className="mt-6 h-12 w-full rounded-lg bg-fg text-bg"
-              {...press(() => g()?.respawn())}
-            >
-              Wake at last Case Font
-            </button>
+            {ui.lives === 0 ? (
+              <>
+                <h2 className="font-display text-5xl">Filed away</h2>
+                <p className="mt-3 text-muted">The census closed this page.</p>
+                <button
+                  type="button"
+                  className="mt-6 h-12 w-full rounded-lg bg-fg text-bg"
+                  {...press(() => g()?.retryLedger())}
+                >
+                  Retry ledger
+                </button>
+                <button
+                  type="button"
+                  className="mt-3 h-12 w-full rounded-lg border border-border bg-surface text-fg"
+                  {...press(() => g()?.returnHub())}
+                >
+                  Back to the Stacks
+                </button>
+              </>
+            ) : (
+              <>
+                <h2 className="font-display text-5xl">Rounded down</h2>
+                <p className="mt-3 text-muted">
+                  {ui.livesMax >= 0 ? `${ui.lives} remaining.` : "The census took a bite."}
+                </p>
+                <button
+                  type="button"
+                  className="mt-6 h-12 w-full rounded-lg bg-fg text-bg"
+                  {...press(() => g()?.respawn())}
+                >
+                  Wake at last Case Font
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

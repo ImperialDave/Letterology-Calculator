@@ -1,5 +1,7 @@
 /** Remainder density floors. Glyphbound Doctrine: .grok/skills/glyphbound-ledgers/SKILL.md */
-import { isBoss } from "./recipe";
+import { enemyMul } from "./difficulty";
+import { isBoss, rng } from "./recipe";
+import type { Difficulty } from "./types";
 
 const FLOOR = "#*=_T/\\&-`)g";
 const RESERVED = "@%P!";
@@ -385,4 +387,35 @@ export function fillDensity(
     }
   }
   return rows;
+}
+
+/** Clone Easy rows and stamp extra digits for Hard/Extreme. Does not add hazards. */
+export function padEnemies(rows: string[], n: number, difficulty: Difficulty): string[] {
+  const out = rows.map((r) => r);
+  if (difficulty === "easy" || n < 1) return out;
+  const fy = mainFloorY(out);
+  const W = out[0]?.length ?? 0;
+  const skip = reservedCols(out, fy);
+  const pack = packFor(n);
+  const need = Math.ceil(densityFloors(n, W).enemies * enemyMul(difficulty));
+  const rand = rng(n * 9973 + (difficulty === "extreme" ? 93 : 91));
+  const pick = (list: string[]) => list[Math.floor(rand() * list.length)] ?? list[0];
+  const place = (x: number, y: number) => {
+    if (skip.has(x)) return false;
+    if (at(out, x, y) !== ".") return false;
+    const below = at(out, x, y + 1);
+    if (!FLOOR.includes(below) && below !== "=" && below !== "_") return false;
+    setCell(out, x, y, pick(pack));
+    skip.add(x);
+    skip.add(x - 1);
+    skip.add(x + 1);
+    return true;
+  };
+  for (let k = 0; k < 160; k++) {
+    if (tally(out).enemies >= need) break;
+    const x = 8 + Math.floor(rand() * Math.max(1, W - 16));
+    const y = rand() < 0.3 && fy - 4 > 1 ? fy - 4 : fy - 1;
+    place(x, y);
+  }
+  return out;
 }

@@ -1,3 +1,4 @@
+import { livesFor, parseDifficulty } from "./difficulty";
 import type { LetterId, SaveData, SlotInfo } from "./types";
 
 const VERSION = 3;
@@ -25,6 +26,8 @@ export const defaultSave = (): SaveData => ({
   stage4: false,
   stage5: false,
   hard: false,
+  difficulty: "easy",
+  lives: -1,
   muted: false,
   shake: true,
   shakeAmt: 2,
@@ -169,6 +172,12 @@ function parseSave(raw: string | null): SaveData {
       musicVol: clamp01(parsed.musicVol ?? 1),
       reducedMotion: parsed.reducedMotion ?? prefersReducedMotion(),
       keys: parsed.keys && typeof parsed.keys === "object" ? parsed.keys : {},
+      difficulty: parseDifficulty(parsed.difficulty, parsed.hard),
+      lives:
+        "lives" in parsed && typeof parsed.lives === "number"
+          ? parsed.lives
+          : livesFor(parseDifficulty(parsed.difficulty, parsed.hard)),
+      hard: parseDifficulty(parsed.difficulty, parsed.hard) !== "easy",
     };
     if (merged.progress < 1 && merged.stage1) merged.progress = Math.max(merged.progress, 1);
     if (merged.progress < 2 && merged.stage2) merged.progress = Math.max(merged.progress, 2);
@@ -183,7 +192,7 @@ function parseSave(raw: string | null): SaveData {
 
 function infoFrom(index: number, data: SaveData | null, updated: number): SlotInfo {
   if (!data || isEmptySave(data)) {
-    return { index, empty: true, progress: 0, stage: "hub", letter: "c", party: 0, updated: 0 };
+    return { index, empty: true, progress: 0, stage: "hub", letter: "c", party: 0, updated: 0, difficulty: "easy" };
   }
   return {
     index,
@@ -193,6 +202,7 @@ function infoFrom(index: number, data: SaveData | null, updated: number): SlotIn
     letter: data.letter,
     party: data.party.length,
     updated,
+    difficulty: data.difficulty ?? "easy",
   };
 }
 
