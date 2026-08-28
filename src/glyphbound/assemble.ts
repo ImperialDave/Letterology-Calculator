@@ -3,6 +3,7 @@ import { FROZEN_REMAINDER } from "./remainder-hand";
 import { remainderName, remainderObjective } from "./remainder-names";
 import { isBoss, recipeFor, rng, themeFor, type Recipe } from "./recipe";
 import { FY, paintPattern, pickPattern } from "./patterns";
+import { fillDensity } from "./density";
 import { validateLevel } from "./validate-level";
 import type { LevelId, TaskDef, ThemeId } from "./types";
 import { FIRST_BOOK, STAGE_COUNT } from "./types";
@@ -169,7 +170,7 @@ function mutate(rows: string[]): string[] {
 }
 
 function paintBeat(beat: Beat, recipe: Recipe, n: number, rand: () => number, used: Set<string>): string[] {
-  const width = 18 + Math.floor(rand() * 8);
+  const width = n >= 30 ? 24 + Math.floor(rand() * 6) : 18 + Math.floor(rand() * 8);
   const pit = 2 + Math.floor(rand() * 2);
   const pattern = pickPattern(beat, recipe.featured, recipe.mix, rand, used, recipe.theme);
   if (pattern) {
@@ -207,6 +208,7 @@ export function assembleStage(n: number): LevelMeta {
   }
   let rows = stitch(parts);
   landmarkDress(rows, recipe.deco, rand);
+  if (n >= 30) fillDensity(rows, { n, deco: recipe.deco, rand, fy: FY, featured: recipe.featured });
   rows = mutate(rows);
   const boss = isBoss(n);
   const tasks: TaskDef[] = [{ id: `clear-${n}`, text: boss ? "Defeat the warden" : "Reach the gate" }];

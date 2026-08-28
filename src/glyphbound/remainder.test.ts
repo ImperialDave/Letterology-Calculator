@@ -6,6 +6,7 @@ import { pickPattern } from "./patterns";
 import { isBoss, verbsFor } from "./recipe";
 import { beatenLedgers, listLedgers, LEVELS } from "./levels";
 import { FROZEN_REMAINDER } from "./remainder-hand";
+import { densityFloors, tally } from "./density";
 import { REMAINDER_NAMES, REMAINDER_OBJECTIVES } from "./remainder-names";
 import { validateLevel } from "./validate-level";
 import { FIRST_BOOK, STAGE_COUNT } from "./types";
@@ -131,6 +132,24 @@ test("remainder 31-60 objectives name the room", () => {
     assert.ok(REMAINDER_OBJECTIVES[n], `objective ${n}`);
     assert.notEqual(assembleStage(n).objective, "Cross this remainder. Reach the gate.", `stage${n}`);
   }
+});
+
+test("remainder 30-60 meet Glyphbound Doctrine density floors", () => {
+  const failed: string[] = [];
+  for (let n = 30; n <= STAGE_COUNT; n++) {
+    const meta = assembleStage(n);
+    const d = tally(meta.rows);
+    const f = densityFloors(n, d.W);
+    const bits: string[] = [];
+    if (d.enemies < f.enemies) bits.push(`enemies ${d.enemies}<${f.enemies}`);
+    if (d.hazards < f.hazards) bits.push(`hazards ${d.hazards}<${f.hazards}`);
+    if (d.movers < f.movers) bits.push(`movers ${d.movers}<${f.movers}`);
+    if (d.deco < f.deco) bits.push(`deco ${d.deco}<${f.deco}`);
+    if (d.shelves < f.shelves) bits.push(`shelves ${d.shelves}<${f.shelves}`);
+    if (d.pickups < f.pickups) bits.push(`pickups ${d.pickups}<${f.pickups}`);
+    if (bits.length) failed.push(`stage${n} W=${d.W} ${bits.join("; ")}`);
+  }
+  assert.equal(failed.join("\n"), "");
 });
 
 test("pickPattern prefers the act's themed room", () => {

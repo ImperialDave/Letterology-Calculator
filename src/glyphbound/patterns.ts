@@ -50,9 +50,11 @@ export const PATTERNS: Pattern[] = [
     paint(g, ctx) {
       g.put(2, FY - 1, "@");
       g.put(4, FY - 1, "i");
-      plantDeco(g, ctx, 7);
-      if (ctx.deco === "_") g.fill(8, FY - 2, 5, "_");
-      else g.fill(10, FY - 3, 4, "=");
+      g.put(6, FY - 1, "i");
+      plantDeco(g, ctx, 8);
+      if (ctx.deco === "_") g.fill(10, FY - 2, 6, "_");
+      else g.fill(10, FY - 3, 5, "=");
+      plantDeco(g, ctx, 14);
     },
   },
   {
@@ -213,9 +215,12 @@ export const PATTERNS: Pattern[] = [
     beats: ["combat"],
     verbs: [],
     paint(g, ctx) {
-      g.put(8, FY - 1, ctx.enemy || "1");
-      g.fill(4, FY - 2, 3, "=");
-      plantDeco(g, ctx, 12);
+      g.put(6, FY - 1, ctx.enemy || "1");
+      g.put(9, FY - 1, "0");
+      g.put(12, FY - 1, ctx.enemy || "2");
+      g.fill(4, FY - 3, 4, "=");
+      g.put(5, FY - 4, "3");
+      plantDeco(g, ctx, 15);
     },
   },
   {
@@ -223,9 +228,12 @@ export const PATTERNS: Pattern[] = [
     beats: ["combat"],
     verbs: [],
     paint(g, ctx) {
-      g.fill(5, FY - 3, 4, "=");
+      g.fill(5, FY - 3, 5, "=");
       g.put(6, FY - 4, ctx.enemy || "1");
-      g.put(14, FY - 1, "0");
+      g.put(8, FY - 4, "0");
+      g.put(14, FY - 1, "2");
+      g.put(16, FY - 1, "5");
+      plantDeco(g, ctx, 18);
     },
   },
   {
@@ -233,9 +241,12 @@ export const PATTERNS: Pattern[] = [
     beats: ["combat"],
     verbs: ["S"],
     paint(g, ctx) {
-      g.put(6, FY - 1, ctx.enemy || "1");
-      g.put(10, FY - 2, "S");
-      g.fill(12, FY - 3, 4, "=");
+      g.put(5, FY - 1, ctx.enemy || "1");
+      g.put(8, FY - 1, "0");
+      g.put(11, FY - 2, "S");
+      g.fill(13, FY - 3, 4, "=");
+      g.put(14, FY - 4, "7");
+      plantDeco(g, ctx, 18);
     },
   },
   {
@@ -244,9 +255,11 @@ export const PATTERNS: Pattern[] = [
     verbs: [],
     paint(g, ctx) {
       g.put(5, FY - 1, "%");
-      g.put(8, FY - 1, "i");
+      g.put(7, FY - 1, "i");
+      g.put(9, FY - 1, "i");
       g.put(11, FY - 1, "h");
-      plantDeco(g, ctx, 14);
+      plantDeco(g, ctx, 13);
+      plantDeco(g, ctx, 16);
       plantPocket(g, ctx, 12);
     },
   },
@@ -379,8 +392,10 @@ export const PATTERNS: Pattern[] = [
     themes: ["orbit", "spire", "abyss"],
     paint(g, ctx) {
       g.fill(5, FY - 3, 5, "=");
-      g.put(7, FY - 4, ctx.enemy || "1");
-      plantDeco(g, ctx, 12);
+      g.put(6, FY - 4, ctx.enemy || "1");
+      g.put(8, FY - 4, "0");
+      g.put(14, FY - 1, "2");
+      plantDeco(g, ctx, 16);
     },
   },
   {

@@ -24,7 +24,7 @@ ASCII `rows` are the collision map. `TILE=48`. Do not infer collision from art. 
 
 | | May randomize | Must not |
 |---|---|---|
-| Mario | featured verb from the **unlock schedule**, mix partner, enemy from `ROLE_TIERS`, width 18–28 | skip teach; two combats with no rest (except late gauntlet); three toys in one room |
+| Mario | featured verb from the **unlock schedule**, mix partner, enemy from `ROLE_TIERS`, width 18–28 (Remainder beats 24–30) | skip teach; two combats with no rest (except Remainder 45–60 after a check); three *new* toys in one room |
 | Persia | phase/offset, pit 2–4, crumble 3–6 | laser on walkway floor (`FY-1` or `FY`); `S` as the only floor cell; commit with no landing in view |
 | Metroid | optional loft/`$`/vent pocket; landmark deco from the district | secret on the only path to `P`; landmark-free 80-tile hall |
 
@@ -36,13 +36,31 @@ District landmarks: fort `'` · coil/orbit/vault/spire `;` · canal `,` · remai
 
 `land → teach → mix → combat → rest → gate`
 
-- **Teach:** one featured killer/mover, solid landings both sides, no extra toy.
+- **Teach:** one featured killer/mover, solid landings both sides, no extra *new* toy.
 - **Mix:** featured + one known verb.
-- **Combat:** one digit (two if width ≥ 22). Enemy is a moving block. `!` only in arena/frozen.
+- **Combat (6–29):** one digit (two if width ≥ 22). Enemy is a moving block.
+- **Combat (Remainder 30–60):** a **pack of 3–5** digits; **two packs** per stage with rest between. `!` only in arena/frozen bosses.
 - **Rest:** `%` and `i`/`h`. No `S`/`^` underfoot.
 - **Pocket:** loft that drops back to floor. Not required for BFS.
 
 Tell before commit: laser visible off-phase; blink has a wait-spot on `#`; geyser replaces floor with `#` neighbors; saw hangs at `FY-2`.
+
+## Remainder density (30–60)
+
+Late ledgers are **crowded rooms**, not empty halls. Teach still one featured verb; the rest of the stage repeats known verbs, enemy packs, traps, lofts, and district deco. Do not ship a 70-tile hall with one `1`.
+
+Floors for width `W` (see `src/glyphbound/density.ts`):
+
+| Kind | Minimum |
+|---|---|
+| Enemies (`0-9A-Y`) | `max(10, W/10)` non-boss; bosses `max(5, W/18)` plus `!` |
+| Obstacles (spikes, lasers, saws, sluice) | `max(8, W/12)` — spikes in pits (`fy+1`) or 2-tile jumps, never under `@ % P` |
+| Movers (bounce, crumble, belts, lift, blink, geyser, fan) | `max(8, W/12)` — reuse known verbs; never three *new* toys in one room |
+| Landmarks (`' ; " , ?`) | `max(12, W/8)` |
+| Loft tiles (`= _ * &`) | `max(32, W/3)` across **at least two** y-levels |
+| Ink / heart / extra | `max(4, W/24)` pickups |
+
+Spikes live in toothed pits or as 2-tile jumps. Lasers off the walkway. Saws at `FY-2`. Two combat packs with rest between (gauntlet 45–60 may stack after a check). Author through denser patterns, `fillDensity`, or a frozen painter that already meets the floors.
 
 ## Authoring
 

@@ -65,7 +65,11 @@ function pick<T>(rand: () => number, list: T[]): T {
 }
 
 function beatOptions(n: number): Beat[][] {
-  if (isBoss(n)) return n >= 45 ? [["land", "mix", "arena", "gate"]] : [["land", "arena", "gate"]];
+  if (isBoss(n)) {
+    return n >= 45
+      ? [["land", "mix", "combat", "rest", "arena", "gate"]]
+      : [["land", "teach", "combat", "rest", "arena", "gate"]];
+  }
   if (n < 31) {
     return [
       ["land", "teach", "mix", "combat", "rest", "gate"],
@@ -75,28 +79,28 @@ function beatOptions(n: number): Beat[][] {
   const band = Math.min(5, Math.floor((n - 31) / 5));
   const seqs: Beat[][] = [
     [
-      ["land", "teach", "mix", "combat", "rest", "gate"],
-      ["land", "teach", "mix", "rest", "combat", "gate"],
+      ["land", "teach", "mix", "combat", "rest", "combat", "gate"],
+      ["land", "teach", "combat", "rest", "mix", "combat", "gate"],
     ],
     [
-      ["land", "teach", "mix", "combat", "rest", "gate"],
-      ["land", "teach", "mix", "mix", "rest", "gate"],
+      ["land", "teach", "mix", "combat", "rest", "combat", "gate"],
+      ["land", "teach", "mix", "combat", "rest", "mix", "gate"],
     ],
     [
-      ["land", "teach", "mix", "combat", "rest", "gate"],
-      ["land", "mix", "combat", "rest", "gate"],
+      ["land", "teach", "mix", "combat", "rest", "combat", "gate"],
+      ["land", "mix", "combat", "rest", "combat", "gate"],
     ],
     [
-      ["land", "teach", "mix", "combat", "rest", "gate"],
-      ["land", "teach", "combat", "rest", "mix", "gate"],
+      ["land", "teach", "mix", "combat", "rest", "combat", "gate"],
+      ["land", "teach", "combat", "rest", "mix", "combat", "gate"],
     ],
     [
-      ["land", "teach", "mix", "combat", "rest", "gate"],
-      ["land", "mix", "combat", "mix", "rest", "gate"],
+      ["land", "teach", "mix", "combat", "rest", "combat", "gate"],
+      ["land", "mix", "combat", "rest", "mix", "combat", "gate"],
     ],
     [
-      ["land", "mix", "combat", "mix", "rest", "gate"],
-      ["land", "teach", "mix", "combat", "rest", "gate"],
+      ["land", "mix", "combat", "rest", "mix", "combat", "gate"],
+      ["land", "teach", "mix", "combat", "rest", "combat", "gate"],
     ],
   ];
   return seqs[band];
