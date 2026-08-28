@@ -241,6 +241,7 @@ export interface Player {
   jumpCut: boolean;
   grounded: boolean;
   invuln: number;
+  hazardCd: number;
   attack: number;
   attackHit: boolean;
   special: number;
@@ -348,4 +349,6 @@ export const VIEW_H = 360;
 export const TILE = 48;
 /** Spike, laser, saw, and sluice hits. Digit contact stays 1. */
 export const HAZARD_DAMAGE = 2;
+/** Seconds between hazard HP ticks so a pin does not melt the party. */
+export const HAZARD_COOLDOWN = 0.5;
 export const STEP = 1 / 60;

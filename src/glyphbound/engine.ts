@@ -31,6 +31,7 @@ import {
   STEP,
   TILE,
   HAZARD_DAMAGE,
+  HAZARD_COOLDOWN,
   VIEW_H,
   VIEW_W,
   FIRST_BOOK,
@@ -351,6 +352,7 @@ export class GameEngine {
       jumpCut: false,
       grounded: false,
       invuln: 0,
+      hazardCd: 0,
       attack: 0,
       attackHit: false,
       special: 0,
@@ -1205,6 +1207,7 @@ export class GameEngine {
       }
     }
     p.invuln = Math.max(0, p.invuln - dt);
+    p.hazardCd = Math.max(0, p.hazardCd - dt);
     p.hurtFlash = Math.max(0, p.hurtFlash - dt);
     p.attack = Math.max(0, p.attack - dt);
     p.special = Math.max(0, p.special - dt);
@@ -1238,6 +1241,7 @@ export class GameEngine {
     const wasGround = p.grounded;
     const fall = p.vy;
     this.moveActor(p, dt, large, a.down);
+    this.touchHazards();
     this.ejectFromHazards();
     this.markSafeGround();
     const wallL = this.blockedAt(p.x - 3, p.y + 6, 4, p.h - 12, large);
@@ -1794,29 +1798,37 @@ export class GameEngine {
     if (a.special && p.specialCd <= 0 && p.roll <= 0) {
       this.castSpecial(a);
     }
-    for (const s of this.solids) {
-      if (s.type === "spike" && aabb(p, s) && p.invuln <= 0) {
-        // Standing on floor above teeth: ignore. Falling into pits still hurts.
-        if (p.grounded && s.y + s.h <= p.y + p.h + 6) continue;
-        // Retracting teeth only bite while extended.
+  }
+
+  /** True when walking the slab above packed basement teeth — those do not count as a touch. */
+  private floorAboveTeeth(p: Player, s: Solid) {
+    return s.type === "spike" && p.grounded && s.y + s.h <= p.y + p.h + 6;
+  }
+
+  /** Apply spike/laser/saw/sluice HP after movement, before eject. */
+  private touchHazards() {
+    const p = this.player;
+    if (this.debugGod) return;
+    if (p.hazardCd > 0) return;
+    const large = isLarge(p.letter, p.capital);
+    for (const s of this.solidsNow(large, p, "hazard")) {
+      if (!aabb(p, s)) continue;
+      if (s.type === "spike") {
+        if (this.floorAboveTeeth(p, s)) continue;
         if (s.phase != null && !this.spikeHot(s)) continue;
-        this.hurt(HAZARD_DAMAGE, p.x + p.w / 2 < s.x + s.w / 2 ? -1 : 1, "hazard");
-      }
-      if (s.type === "sluice" && aabb(p, s)) {
+      } else if (s.type === "laser") {
+        if (!this.laserHot(s)) continue;
+      } else if (s.type === "sluice") {
         if (p.letter === "e") {
           p.vy = Math.min(p.vy, p.capital ? 40 : 90);
           p.grounded = true;
-        } else if (p.invuln <= 0) {
-          this.hurt(HAZARD_DAMAGE, p.facing, "hazard");
-          p.vy = Math.min(p.vy, -240);
+          continue;
         }
-      }
-      if (s.type === "laser" && aabb(p, s) && p.invuln <= 0 && this.laserHot(s)) {
-        this.hurt(HAZARD_DAMAGE, p.x + p.w / 2 < s.x + s.w / 2 ? -1 : 1, "hazard");
-      }
-      if (s.type === "saw" && aabb(p, s) && p.invuln <= 0) {
-        this.hurt(HAZARD_DAMAGE, p.x + p.w / 2 < s.x + s.w / 2 ? -1 : 1, "hazard");
-      }
+      } else if (s.type !== "saw") continue;
+      const dir = p.x + p.w / 2 < s.x + s.w / 2 ? -1 : 1;
+      this.hurt(HAZARD_DAMAGE, s.type === "sluice" ? p.facing : dir, "hazard");
+      if (s.type === "sluice") p.vy = Math.min(p.vy, -240);
+      return;
     }
   }
 
@@ -1898,19 +1910,35 @@ export class GameEngine {
   private hurt(n: number, dir: number, kind: "contact" | "hazard" | "shot" = "contact") {
     const p = this.player;
     if (this.debugGod) return;
-    if (p.invuln > 0) return;
     const hazard = kind === "hazard";
+    if (hazard) {
+      if (p.hazardCd > 0) return;
+      p.hp -= n;
+      p.hazardCd = HAZARD_COOLDOWN;
+      p.hurtFlash = 0.4;
+      p.vx = dir * 220;
+      p.vy = -220;
+      this.audio.sfxHurt();
+      this.trauma = Math.min(1, this.trauma + 0.55);
+      if (p.hp <= 0) {
+        p.hp = 0;
+        this.mode = "dead";
+        this.audio.sfxDeath();
+        this.emit();
+      }
+      return;
+    }
+    if (p.invuln > 0) return;
     if (p.shield > 0) {
       p.shield -= 1;
       p.shieldFlash = 0.4;
-      p.invuln = hazard ? 0.95 : 0.85;
-      p.vx = dir * (hazard ? 120 : 40);
-      if (hazard) p.vy = Math.min(p.vy, -180);
+      p.invuln = 0.85;
+      p.vx = dir * 40;
       p.shieldCd = 1.1;
       this.audio.sfxBlock();
       this.trauma = Math.min(1, this.trauma + 0.12);
       this.burst(p.x + p.w / 2, p.y + p.h / 2, "#8ec8d4", 10, "spark");
-      if (this.save.relics.includes("counter") && kind !== "hazard") {
+      if (this.save.relics.includes("counter")) {
         const cx = p.x + p.w / 2;
         const cy = p.y + p.h * 0.4;
         this.bullets.push({
@@ -1930,14 +1958,14 @@ export class GameEngine {
       }
       return;
     }
-    p.hp -= this.hard ? n : n;
-    p.invuln = hazard ? 1.15 : 1.05;
+    p.hp -= n;
+    p.invuln = 1.05;
     p.hurtFlash = 0.4;
-    p.vx = dir * (hazard ? 220 : 160);
-    p.vy = hazard ? -220 : -140;
+    p.vx = dir * 160;
+    p.vy = -140;
     p.shieldCd = 1.8;
     this.audio.sfxHurt();
-    this.trauma = Math.min(1, this.trauma + (hazard ? 0.55 : 0.45));
+    this.trauma = Math.min(1, this.trauma + 0.45);
     if (p.hp <= 0) {
       p.hp = 0;
       this.mode = "dead";
@@ -2775,7 +2803,7 @@ export class GameEngine {
         if (s.type !== "spike" && s.type !== "laser") continue;
         if (!aabb(p, s)) continue;
         if (s.type === "spike") {
-          if (p.grounded && s.y + s.h <= p.y + p.h + 6) continue;
+          if (this.floorAboveTeeth(p, s)) continue;
           if (s.phase != null && !this.spikeHot(s)) continue;
         }
         if (s.type === "laser" && !this.laserHot(s)) continue;
