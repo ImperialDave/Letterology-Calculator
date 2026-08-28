@@ -45,6 +45,18 @@ District landmarks: fort `'` · coil/orbit/vault/spire `;` · canal `,` · remai
 
 Tell before commit: laser visible off-phase; blink has a wait-spot on `#`; geyser replaces floor with `#` neighbors; saw hangs at `FY-2`.
 
+## Basement
+
+Rows below the main floor are **ground or lethal wells**, never a hallway. `grid()` packs `fy+1 … H-2` with `#`. `armTeeth` then:
+
+- Under solid floor: keep the slab (`#`).
+- Under a pit: teeth `^` at `fy+1` (canal may use `~`); deeper empty cells stay `#` or `^`.
+- No walkable `.` run along `H-2` from spawn-x to gate-x.
+
+Optional Metroid undercroft is a short pocket (≤6 tiles) with a vent from above — never a skip.
+
+Hazard hits (spike, laser, saw, sluice) deal **2** HP (`HAZARD_DAMAGE`). Digit contact stays 1.
+
 ## Remainder density (30–60)
 
 Late ledgers are **crowded rooms**, not empty halls. Teach still one featured verb; the rest of the stage repeats known verbs, enemy packs, traps, lofts, and district deco. Do not ship a 70-tile hall with one `1`.

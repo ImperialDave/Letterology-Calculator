@@ -7,7 +7,7 @@ import { fillDensity } from "./density";
 import { validateLevel } from "./validate-level";
 import type { LevelId, TaskDef, ThemeId } from "./types";
 import { FIRST_BOOK, STAGE_COUNT } from "./types";
-import type { LevelMeta } from "./levels-story";
+import { sealBasement, type LevelMeta } from "./levels-story";
 
 const WORDS: Record<number, string> = {
   6: "W",
@@ -210,6 +210,7 @@ export function assembleStage(n: number): LevelMeta {
   landmarkDress(rows, recipe.deco, rand);
   if (n >= 30) fillDensity(rows, { n, deco: recipe.deco, rand, fy: FY, featured: recipe.featured });
   rows = mutate(rows);
+  sealBasement(rows, FY);
   const boss = isBoss(n);
   const tasks: TaskDef[] = [{ id: `clear-${n}`, text: boss ? "Defeat the warden" : "Reach the gate" }];
   if (n === 6) tasks.push({ id: "word-wall", text: "Pick up WALL" });

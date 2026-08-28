@@ -26,7 +26,7 @@ export function blankFolio(partial: Partial<Folio> = {}): Folio {
   const h = 12;
   const fy = 9;
   const rows = Array.from({ length: h }, (_, y) => {
-    if (y === 0 || y === h - 1 || y === fy) return "#".repeat(w);
+    if (y === 0 || y === h - 1 || y === fy || y > fy) return "#".repeat(w);
     return "#" + ".".repeat(w - 2) + "#";
   });
   const put = (x: number, y: number, ch: string) => {

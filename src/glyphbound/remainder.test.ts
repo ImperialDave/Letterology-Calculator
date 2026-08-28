@@ -9,7 +9,7 @@ import { FROZEN_REMAINDER } from "./remainder-hand";
 import { densityFloors, tally } from "./density";
 import { REMAINDER_NAMES, REMAINDER_OBJECTIVES } from "./remainder-names";
 import { validateLevel } from "./validate-level";
-import { FIRST_BOOK, STAGE_COUNT } from "./types";
+import { FIRST_BOOK, HAZARD_DAMAGE, STAGE_COUNT } from "./types";
 
 test("remainder ledgers have unique names", () => {
   const names = new Set<string>();
@@ -150,6 +150,10 @@ test("remainder 30-60 meet Glyphbound Doctrine density floors", () => {
     if (bits.length) failed.push(`stage${n} W=${d.W} ${bits.join("; ")}`);
   }
   assert.equal(failed.join("\n"), "");
+});
+
+test("hazard obstacles deal double damage", () => {
+  assert.equal(HAZARD_DAMAGE, 2);
 });
 
 test("pickPattern prefers the act's themed room", () => {

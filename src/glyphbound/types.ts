@@ -346,4 +346,6 @@ export interface UiSnap {
 export const VIEW_W = 640;
 export const VIEW_H = 360;
 export const TILE = 48;
+/** Spike, laser, saw, and sluice hits. Digit contact stays 1. */
+export const HAZARD_DAMAGE = 2;
 export const STEP = 1 / 60;

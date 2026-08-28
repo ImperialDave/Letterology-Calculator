@@ -34,6 +34,7 @@ export function grid(W: number, H: number, floorY: number): string[] {
   };
   const fill = (x: number, y: number, n: number, ch: string) => put(x, y, ch.repeat(n));
   fill(0, floorY, W, "#");
+  for (let y = floorY + 1; y < H - 1; y++) fill(0, y, W, "#");
   return Object.assign(rows, { put, fill, W, H, floorY });
 }
 
@@ -156,7 +157,34 @@ export function armTeeth<T extends string[]>(rows: T, floorY?: number): T {
     }
     x = x2;
   }
+  sealBasement(rows, fy);
   dressDecor(rows, fy);
+  return rows;
+}
+
+/** Pack rows below the walkway so they cannot be used as a skip hallway. */
+export function sealBasement<T extends string[]>(rows: T, fy: number): T {
+  const H = rows.length;
+  const W = rows[0]?.length ?? 0;
+  const set = (x: number, y: number, ch: string) => {
+    if (y < 0 || y >= H || x < 0 || x >= W) return;
+    const r = rows[y];
+    rows[y] = r.slice(0, x) + ch + r.slice(x + 1);
+  };
+  for (let x = 1; x < W - 1; x++) {
+    const floor = rows[fy]?.[x] ?? "#";
+    const pit = floor === "." || floor === "^";
+    for (let y = fy + 1; y < H - 1; y++) {
+      const here = rows[y]?.[x] ?? "#";
+      if (here !== "." && here !== "#") continue;
+      if (!pit) {
+        if (here === ".") set(x, y, "#");
+        continue;
+      }
+      if (y === fy + 1 && (here === "." || here === "#")) set(x, y, "^");
+      else if (here === ".") set(x, y, "#");
+    }
+  }
   return rows;
 }
 

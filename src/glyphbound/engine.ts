@@ -30,6 +30,7 @@ import { isMovingSolid, SolidGrid } from "./spatial";
 import {
   STEP,
   TILE,
+  HAZARD_DAMAGE,
   VIEW_H,
   VIEW_W,
   FIRST_BOOK,
@@ -1799,22 +1800,22 @@ export class GameEngine {
         if (p.grounded && s.y + s.h <= p.y + p.h + 6) continue;
         // Retracting teeth only bite while extended.
         if (s.phase != null && !this.spikeHot(s)) continue;
-        this.hurt(1, p.x + p.w / 2 < s.x + s.w / 2 ? -1 : 1, "hazard");
+        this.hurt(HAZARD_DAMAGE, p.x + p.w / 2 < s.x + s.w / 2 ? -1 : 1, "hazard");
       }
       if (s.type === "sluice" && aabb(p, s)) {
         if (p.letter === "e") {
           p.vy = Math.min(p.vy, p.capital ? 40 : 90);
           p.grounded = true;
         } else if (p.invuln <= 0) {
-          this.hurt(1, p.facing, "hazard");
+          this.hurt(HAZARD_DAMAGE, p.facing, "hazard");
           p.vy = Math.min(p.vy, -240);
         }
       }
       if (s.type === "laser" && aabb(p, s) && p.invuln <= 0 && this.laserHot(s)) {
-        this.hurt(1, p.x + p.w / 2 < s.x + s.w / 2 ? -1 : 1, "hazard");
+        this.hurt(HAZARD_DAMAGE, p.x + p.w / 2 < s.x + s.w / 2 ? -1 : 1, "hazard");
       }
       if (s.type === "saw" && aabb(p, s) && p.invuln <= 0) {
-        this.hurt(1, p.x + p.w / 2 < s.x + s.w / 2 ? -1 : 1, "hazard");
+        this.hurt(HAZARD_DAMAGE, p.x + p.w / 2 < s.x + s.w / 2 ? -1 : 1, "hazard");
       }
     }
   }

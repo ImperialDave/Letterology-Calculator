@@ -77,6 +77,27 @@ test("assembled remainder ledgers are reachable", () => {
   assert.equal(failed.join("\n"), "");
 });
 
+test("assembled ledgers have no undercroft skip hallway", () => {
+  const failed: string[] = [];
+  for (let n = 1; n <= STAGE_COUNT; n++) {
+    const rows = LEVELS[`stage${n}`].rows;
+    const crawl = rows[rows.length - 2] ?? "";
+    let run = 0;
+    let best = 0;
+    for (const ch of crawl) {
+      if (ch === ".") {
+        run += 1;
+        if (run > best) best = run;
+      } else run = 0;
+    }
+    if (best >= 8) failed.push(`stage${n} crawl run ${best}`);
+  }
+  const hub = LEVELS.hub.rows[LEVELS.hub.rows.length - 2] ?? "";
+  const hubDots = [...hub].filter((c) => c === ".").length;
+  if (hubDots >= 8) failed.push(`hub crawl dots ${hubDots}`);
+  assert.equal(failed.join("\n"), "");
+});
+
 test("LEVELS stage30 is The Period with End-Mark and a gate", () => {
   assert.equal(LEVELS.stage30.name, "The Period");
   assert.ok(LEVELS.stage30.rows.some((r) => r.includes("!")));
