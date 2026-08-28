@@ -77,6 +77,15 @@ test("assembled remainder ledgers are reachable", () => {
   assert.equal(failed.join("\n"), "");
 });
 
+test("every campaign gate is reachable from spawn", () => {
+  const failed: string[] = [];
+  for (let n = 1; n <= STAGE_COUNT; n++) {
+    const issues = validateLevel(LEVELS[`stage${n}`].rows).filter((i) => i.code === "path" || i.code === "buried" || i.code === "hang");
+    if (issues.length) failed.push(`stage${n}: ${issues.map((i) => i.message).join("; ")}`);
+  }
+  assert.equal(failed.join("\n"), "");
+});
+
 test("assembled ledgers have no undercroft skip hallway", () => {
   const failed: string[] = [];
   for (let n = 1; n <= STAGE_COUNT; n++) {

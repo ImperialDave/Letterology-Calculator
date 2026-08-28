@@ -25,12 +25,14 @@ function isHazard(ch: string) {
 }
 
 function canStand(rows: string[], x: number, y: number) {
-  const here = at(rows, x, y);
-  const below = at(rows, x, y + 1);
-  if (isHazard(here)) return false;
+  let here = at(rows, x, y);
+  let below = at(rows, x, y + 1);
+  if (here === "v" || here === "|") here = ".";
+  if (below === "v" || below === "|") below = at(rows, x, y + 2);
+  if (here === SPIKE || here === SAW) return false;
   if (isSolid(here)) return false;
   if (isFloor(here) && here !== "#" && here !== "*" && here !== "&") return true;
-  if (isHazard(below)) return false;
+  if (below === SPIKE || below === SAW) return false;
   return isFloor(below) || below === SLUICE;
 }
 

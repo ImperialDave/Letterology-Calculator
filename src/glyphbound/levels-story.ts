@@ -159,6 +159,7 @@ export function armTeeth<T extends string[]>(rows: T, floorY?: number): T {
   }
   sealBasement(rows, fy);
   dressDecor(rows, fy);
+  ensurePortalAccess(rows);
   return rows;
 }
 
@@ -247,6 +248,111 @@ export function sealBasement<T extends string[]>(rows: T, fy: number): T {
     }
   }
   hoistFromBasement(rows, fy);
+  ensurePortalAccess(rows);
+  return rows;
+}
+
+const KEEP_PAD = "@%P!ih$+";
+const FLOOR_CH = "#*=_T/\\&-`)g";
+
+function atCell(rows: string[], x: number, y: number) {
+  if (y < 0 || y >= rows.length || x < 0 || x >= (rows[y]?.length ?? 0)) return "#";
+  return rows[y][x];
+}
+
+function standable(rows: string[], x: number, y: number) {
+  let here = atCell(rows, x, y);
+  let below = atCell(rows, x, y + 1);
+  if (here === "v" || here === "|") here = ".";
+  if (below === "v" || below === "|") below = atCell(rows, x, y + 2);
+  if (here === "#" || here === "*" || here === "&") return false;
+  if (here === "^" || here === "S") return false;
+  if (FLOOR_CH.includes(here) && here !== "#" && here !== "*" && here !== "&") return true;
+  if (below === "^" || below === "S") return false;
+  return FLOOR_CH.includes(below) || below === "~";
+}
+
+/** Keep a walkable street to the gate and a clear pad around P. */
+export function ensurePortalAccess<T extends string[]>(rows: T): T {
+  const H = rows.length;
+  const W = rows[0]?.length ?? 0;
+  const set = (x: number, y: number, ch: string) => {
+    if (y < 0 || y >= H || x < 0 || x >= W) return;
+    const r = rows[y];
+    rows[y] = r.slice(0, x) + ch + r.slice(x + 1);
+  };
+  const spawn = findMarks(rows, "@")[0];
+  let gate = findMarks(rows, "P")[0];
+  if (!spawn || !gate) return rows;
+  let stand = spawn.y;
+  for (let y = spawn.y; y < H - 1; y++) {
+    if (standable(rows, spawn.x, y)) {
+      stand = y;
+      break;
+    }
+  }
+  if (!standable(rows, spawn.x, spawn.y)) {
+    const fy = Math.min(H - 2, spawn.y + 1);
+    if (!KEEP_PAD.includes(atCell(rows, spawn.x, fy))) set(spawn.x, fy, "#");
+    stand = spawn.y;
+  }
+  if (gate.y !== stand) {
+    set(gate.x, gate.y, "#");
+    let gx = gate.x;
+    if (atCell(rows, gx, stand) === "#" || KEEP_PAD.includes(atCell(rows, gx, stand))) {
+      for (let x = W - 5; x >= 8; x--) {
+        if (!KEEP_PAD.includes(atCell(rows, x, stand)) && atCell(rows, x, stand) !== "#") {
+          gx = x;
+          break;
+        }
+      }
+    }
+    set(gx, stand, "P");
+    gate = { x: gx, y: stand };
+  }
+  const lo = Math.max(1, Math.min(spawn.x, gate.x));
+  const hi = Math.min(W - 2, Math.max(spawn.x, gate.x));
+  for (let x = lo + 1; x < hi; x++) {
+    const ch = atCell(rows, x, stand);
+    if (ch === "&" || ch === "*" || ch === "^" || ch === "S") set(x, stand, ".");
+    if (ch === "#" && x > 2 && x < W - 3) {
+      set(x, stand, ".");
+      if (stand + 1 < H - 1 && !KEEP_PAD.includes(atCell(rows, x, stand + 1))) set(x, stand + 1, "#");
+    }
+  }
+  let x = lo;
+  while (x <= hi) {
+    const ground = atCell(rows, x, stand + 1);
+    if (FLOOR_CH.includes(ground) && ground !== ".") {
+      x += 1;
+      continue;
+    }
+    let x2 = x;
+    while (x2 <= hi && (!FLOOR_CH.includes(atCell(rows, x2, stand + 1)) || atCell(rows, x2, stand + 1) === ".")) x2 += 1;
+    if (x2 - x > 3) {
+      for (let i = x; i < x2; i++) {
+        if (!KEEP_PAD.includes(atCell(rows, i, stand + 1))) set(i, stand + 1, "#");
+        if (atCell(rows, i, stand) === "^") set(i, stand, ".");
+      }
+    }
+    x = Math.max(x2, x + 1);
+  }
+  const pad0 = Math.max(1, gate.x - 6);
+  const pad1 = Math.min(W - 2, gate.x + 1);
+  for (let px = pad0; px <= pad1; px++) {
+    const ch = atCell(rows, px, stand);
+    if (!KEEP_PAD.includes(ch) && ch !== ".") set(px, stand, ".");
+    if (stand + 1 < H - 1 && !KEEP_PAD.includes(atCell(rows, px, stand + 1))) set(px, stand + 1, "#");
+  }
+  if (atCell(rows, gate.x, stand) !== "P") set(gate.x, stand, "P");
+  for (const hit of findMarks(rows, "!")) {
+    if (hit.y === stand) continue;
+    if (hit.y > stand + 1 || hit.y < stand - 1) {
+      set(hit.x, hit.y, "#");
+      const bx = Math.max(pad0, gate.x - 4);
+      if (atCell(rows, bx, stand) === ".") set(bx, stand, "!");
+    }
+  }
   return rows;
 }
 
@@ -257,17 +363,24 @@ export function dressDecor(rows: string[], fy: number) {
     const n = Math.imul(x + 3, 374761) ^ Math.imul(y + 7, 668265) ^ Math.imul(s + fy, 127);
     return ((n >>> 0) % 1000) / 1000;
   };
+  const skip = new Set<number>();
+  for (const ch of "@%P!") {
+    for (const hit of findMarks(rows, ch)) {
+      for (let d = -6; d <= 6; d++) skip.add(hit.x + d);
+    }
+  }
   const set = (x: number, y: number, ch: string) => {
     if (y < 1 || y >= H - 1 || x < 1 || x >= W - 1) return;
+    if (skip.has(x)) return;
     if (rows[y][x] !== ".") return;
     rows[y] = rows[y].slice(0, x) + ch + rows[y].slice(x + 1);
   };
   for (let x = 2; x < W - 2; x++) {
+    if (skip.has(x)) continue;
     const aboveFloor = fy - 1;
     if (aboveFloor > 1 && rows[fy][x] === "#" && rows[aboveFloor][x] === ".") {
-      const wall = rows[aboveFloor][x - 1] === "#" || rows[aboveFloor][x + 1] === "#";
-      if (wall && hash(x, aboveFloor, 1) < 0.16) set(x, aboveFloor, "'");
-      else if (hash(x, aboveFloor, 2) < 0.07) set(x, aboveFloor, "&");
+      if (hash(x, aboveFloor, 1) < 0.12 && fy - 2 > 1 && rows[fy - 2][x] === ".") set(x, fy - 2, "'");
+      else if (hash(x, aboveFloor, 2) < 0.06 && fy - 2 > 1 && rows[fy - 2][x] === ".") set(x, fy - 2, "&");
     }
     if (fy - 2 > 1 && rows[fy][x] === "#" && rows[fy - 2][x] === "." && hash(x, fy - 2, 3) < 0.05) {
       set(x, fy - 2, "?");

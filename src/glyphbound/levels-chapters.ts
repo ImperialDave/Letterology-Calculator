@@ -6,8 +6,6 @@ export function buildExchange(): string[] {
   const g = grid(W, H, 8) as Grid;
   const { put, fill } = g;
   const pit = 156;
-  const pitW = 4;
-  fill(pit, 8, pitW, ".");
   put(1, 7, "@");
   put(12, 7, "m");
   put(8, 6, "==");
@@ -37,7 +35,7 @@ export function buildExchange(): string[] {
   put(102, 3, "*");
   put(104, 4, "a");
   put(106, 7, "7");
-  put(110, 7, "^^^^");
+  put(110, 7, "^^");
   put(96, 2, "0");
   put(116, 2, "====");
   put(118, 1, "i");
@@ -46,7 +44,7 @@ export function buildExchange(): string[] {
   put(128, 7, "1");
   put(132, 7, "2");
   put(134, 6, "%");
-  put(136, 7, "^^^^^");
+  put(136, 7, "^^");
   put(142, 7, "h");
   put(128, 4, "========");
   put(130, 3, "4");
@@ -61,8 +59,6 @@ export function buildExchange(): string[] {
   put(pit - 8, 5, "6");
   put(pit - 6, 5, "D");
   put(pit - 2, 6, "%");
-  put(pit + 1, 7, "^^");
-  put(pit + 10, 6, "o");
   put(W - 10, 7, "!");
   put(W - 4, 7, "P");
   put(4, 3, "====");
