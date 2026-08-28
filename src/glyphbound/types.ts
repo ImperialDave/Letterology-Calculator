@@ -344,6 +344,18 @@ export interface UiSnap {
   proof: boolean;
   god: boolean;
   replayOpen: boolean;
+  slot: number;
+  slots: SlotInfo[];
+}
+
+export interface SlotInfo {
+  index: number;
+  empty: boolean;
+  progress: number;
+  stage: string;
+  letter: LetterId;
+  party: number;
+  updated: number;
 }
 
 export const VIEW_W = 640;

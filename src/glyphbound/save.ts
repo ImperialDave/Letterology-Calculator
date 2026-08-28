@@ -1,7 +1,15 @@
-import type { SaveData } from "./types";
+import type { LetterId, SaveData, SlotInfo } from "./types";
 
-const KEY = "glyphbound-save-v3";
 const VERSION = 3;
+const KEY = "glyphbound-save-v3";
+const INDEX_KEY = "glyphbound-slots-v1";
+export const SLOT_COUNT = 3;
+
+interface SlotIndex {
+  version: number;
+  active: number;
+  updated: number[];
+}
 
 export const defaultSave = (): SaveData => ({
   version: VERSION,
@@ -32,13 +40,88 @@ export const defaultSave = (): SaveData => ({
   letter: "c",
 });
 
-export function loadSave(): SaveData {
+export function isEmptySave(data: SaveData) {
+  return (
+    data.progress <= 0 &&
+    !data.hasCapital &&
+    !data.stage1 &&
+    data.party.length <= 1 &&
+    (data.visited?.length ?? 0) === 0 &&
+    (data.talked?.length ?? 0) === 0
+  );
+}
+
+function slotKey(i: number) {
+  return `glyphbound-slot-${i}`;
+}
+
+function store() {
   try {
-    const raw =
-      localStorage.getItem(KEY) ??
-      localStorage.getItem("glyphbound-save-v2") ??
-      localStorage.getItem("glyphbound-save-v1");
-    if (!raw) return defaultSave();
+    if (typeof localStorage === "undefined") return null;
+    return localStorage;
+  } catch {
+    return null;
+  }
+}
+
+function readIndex(): SlotIndex {
+  const ls = store();
+  const fallback: SlotIndex = { version: 1, active: 0, updated: [0, 0, 0] };
+  if (!ls) return fallback;
+  try {
+    const raw = ls.getItem(INDEX_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<SlotIndex>;
+      const active = Math.max(0, Math.min(SLOT_COUNT - 1, parsed.active ?? 0));
+      const updated = Array.from({ length: SLOT_COUNT }, (_, i) => parsed.updated?.[i] ?? 0);
+      return { version: 1, active, updated };
+    }
+  } catch {
+    /* */
+  }
+  migrateLegacy(ls);
+  try {
+    const again = ls.getItem(INDEX_KEY);
+    if (again) {
+      const parsed = JSON.parse(again) as Partial<SlotIndex>;
+      const active = Math.max(0, Math.min(SLOT_COUNT - 1, parsed.active ?? 0));
+      const updated = Array.from({ length: SLOT_COUNT }, (_, i) => parsed.updated?.[i] ?? 0);
+      return { version: 1, active, updated };
+    }
+  } catch {
+    /* */
+  }
+  return fallback;
+}
+
+function writeIndex(idx: SlotIndex) {
+  const ls = store();
+  if (!ls) return;
+  try {
+    ls.setItem(INDEX_KEY, JSON.stringify(idx));
+  } catch {
+    /* */
+  }
+}
+
+function migrateLegacy(ls: Storage) {
+  try {
+    if (ls.getItem(INDEX_KEY) || ls.getItem(slotKey(0))) return;
+    const legacy = ls.getItem(KEY) ?? ls.getItem("glyphbound-save-v2") ?? ls.getItem("glyphbound-save-v1");
+    const idx: SlotIndex = { version: 1, active: 0, updated: [0, 0, 0] };
+    if (legacy) {
+      ls.setItem(slotKey(0), legacy);
+      idx.updated[0] = Date.now();
+    }
+    ls.setItem(INDEX_KEY, JSON.stringify(idx));
+  } catch {
+    /* */
+  }
+}
+
+function parseSave(raw: string | null): SaveData {
+  if (!raw) return defaultSave();
+  try {
     const parsed = JSON.parse(raw) as Partial<SaveData>;
     const base = defaultSave();
     const party = Array.isArray(parsed.party) && parsed.party.length ? parsed.party : base.party;
@@ -69,20 +152,88 @@ export function loadSave(): SaveData {
   }
 }
 
-export function writeSave(data: SaveData) {
+function infoFrom(index: number, data: SaveData | null, updated: number): SlotInfo {
+  if (!data || isEmptySave(data)) {
+    return { index, empty: true, progress: 0, stage: "hub", letter: "c", party: 0, updated: 0 };
+  }
+  return {
+    index,
+    empty: false,
+    progress: data.progress,
+    stage: data.stage || "hub",
+    letter: data.letter,
+    party: data.party.length,
+    updated,
+  };
+}
+
+export function activeSlot() {
+  return readIndex().active;
+}
+
+export function listSlots(): SlotInfo[] {
+  const ls = store();
+  const idx = readIndex();
+  return Array.from({ length: SLOT_COUNT }, (_, i) => {
+    const raw = ls?.getItem(slotKey(i)) ?? (i === 0 && !ls?.getItem(INDEX_KEY) ? ls?.getItem(KEY) : null);
+    return infoFrom(i, raw ? parseSave(raw) : null, idx.updated[i] ?? 0);
+  });
+}
+
+export function loadSave(slot?: number): SaveData {
+  const ls = store();
+  const idx = readIndex();
+  const i = slot ?? idx.active;
+  const raw = ls?.getItem(slotKey(i)) ?? (i === 0 ? ls?.getItem(KEY) : null);
+  return parseSave(raw ?? null);
+}
+
+export function writeSave(data: SaveData, slot?: number) {
+  const ls = store();
+  if (!ls) return;
+  const idx = readIndex();
+  const i = slot ?? idx.active;
+  const now = Date.now();
+  idx.active = i;
+  idx.updated[i] = now;
   try {
-    localStorage.setItem(KEY, JSON.stringify({ ...data, version: VERSION }));
+    const payload = JSON.stringify({ ...data, version: VERSION });
+    ls.setItem(slotKey(i), payload);
+    ls.setItem(KEY, payload);
+    writeIndex(idx);
   } catch {
     /* private mode */
   }
 }
 
-export function clearSave() {
+export function selectSlot(slot: number) {
+  const i = Math.max(0, Math.min(SLOT_COUNT - 1, slot | 0));
+  const idx = readIndex();
+  idx.active = i;
+  writeIndex(idx);
+  return loadSave(i);
+}
+
+export function clearSlot(slot: number) {
+  const ls = store();
+  const i = Math.max(0, Math.min(SLOT_COUNT - 1, slot | 0));
+  const idx = readIndex();
+  idx.updated[i] = 0;
+  if (idx.active === i) idx.active = i;
   try {
-    localStorage.removeItem(KEY);
-    localStorage.removeItem("glyphbound-save-v2");
-    localStorage.removeItem("glyphbound-save-v1");
+    ls?.removeItem(slotKey(i));
+    if (i === idx.active) {
+      ls?.removeItem(KEY);
+      ls?.removeItem("glyphbound-save-v2");
+      ls?.removeItem("glyphbound-save-v1");
+    }
+    writeIndex(idx);
   } catch {
     /* */
   }
+}
+
+/** Wipe the active file only. Other slots stay. */
+export function clearSave() {
+  clearSlot(activeSlot());
 }

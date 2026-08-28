@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type PointerEvent, type RefObject } from "react";
 import type { GameEngine } from "@/glyphbound/engine";
-import type { UiSnap } from "@/glyphbound/types";
+import type { SlotInfo, UiSnap } from "@/glyphbound/types";
 import { STAGE_COUNT } from "@/glyphbound/types";
+import { LEVELS } from "@/glyphbound/levels";
 import { Pause, Volume2, VolumeX } from "lucide-react";
 import { KITS, skillName } from "@/glyphbound/roster";
 import { GlyphboundStudio } from "@/components/GlyphboundStudio";
@@ -160,7 +161,18 @@ const emptyUi = (): UiSnap => ({
   proof: false,
   god: false,
   replayOpen: false,
+  slot: 0,
+  slots: [],
 });
+
+const FILE_MARK = ["I", "II", "III"];
+
+function fileBlurb(s: SlotInfo) {
+  if (s.empty) return "No pages written.";
+  const name = LEVELS[s.stage]?.name ?? (s.stage === "hub" ? "Lower Register Stacks" : "A ledger");
+  if (s.progress > 0) return `${name} · ${s.progress} closed`;
+  return name;
+}
 
 export function Glyphbound() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -168,6 +180,7 @@ export function Glyphbound() {
   const gameRef = useRef<GameEngine | null>(null);
   const [ui, setUi] = useState<UiSnap>(emptyUi);
   const [showControls, setShowControls] = useState(false);
+  const [wipe, setWipe] = useState<{ slot: number; inGame: boolean } | null>(null);
   const [showProof, setShowProof] = useState(false);
   const [showLore, setShowLore] = useState(false);
   const [openLetter, setOpenLetter] = useState<string | null>(null);
@@ -325,29 +338,62 @@ export function Glyphbound() {
             </p>
             {ui.progress > 0 && (
               <p className="mt-3 text-sm tracking-wide text-[#d8d4c8] drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
-                Ledger {ui.progress} of {STAGE_COUNT} closed
+                File {FILE_MARK[ui.slot] ?? ui.slot + 1} · Ledger {ui.progress} of {STAGE_COUNT} closed
               </p>
             )}
           </div>
           <div className="mx-auto mt-auto flex w-full max-w-sm flex-col gap-2.5">
-            <button
-              type="button"
-              data-ui="begin"
-              className="h-12 rounded-lg bg-[#f4f0e4] text-base font-semibold text-[#121018] shadow-[0_8px_24px_rgba(0,0,0,0.45)]"
-              {...press(() => g()?.begin())}
-            >
-              Begin
-            </button>
-            {ui.canContinue && (
-              <button
-                type="button"
-                data-ui="continue"
-                className="h-12 rounded-lg border border-[#e8d48a]/50 bg-[#1a1814]/90 font-medium text-[#f4f0e4]"
-                {...press(() => g()?.continueGame())}
-              >
-                Continue
-              </button>
-            )}
+            <div className="rounded-xl border border-[#e8d48a]/25 bg-[#121018]/80 p-2.5">
+              <p className="mb-2 px-1 text-[10px] uppercase tracking-[0.2em] text-[#e8d48a]">Files</p>
+              <div className="flex flex-col gap-2">
+                {(ui.slots.length ? ui.slots : [0, 1, 2].map((index) => ({
+                  index,
+                  empty: true,
+                  progress: 0,
+                  stage: "hub",
+                  letter: "c" as const,
+                  party: 0,
+                  updated: 0,
+                }))).map((s) => {
+                  const on = s.index === ui.slot;
+                  return (
+                    <div
+                      key={s.index}
+                      className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 ${
+                        on ? "border-[#e8d48a]/70 bg-[#1a1814]" : "border-[#f4f0e4]/15 bg-[#0c0a10]/80"
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        data-ui={`file-${s.index}`}
+                        className="min-w-0 flex-1 text-left"
+                        {...press(() => (s.empty ? g()?.newGame(s.index) : g()?.openSlot(s.index)))}
+                      >
+                        <p className="text-sm font-semibold text-[#f4f0e4]">File {FILE_MARK[s.index] ?? s.index + 1}</p>
+                        <p className="truncate text-xs text-[#c9b896]">{fileBlurb(s)}</p>
+                      </button>
+                      {s.empty ? (
+                        <button
+                          type="button"
+                          className="h-10 shrink-0 rounded-md bg-[#f4f0e4] px-3 text-sm font-semibold text-[#121018]"
+                          {...press(() => g()?.newGame(s.index))}
+                        >
+                          New
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="h-10 shrink-0 rounded-md border border-[#f4f0e4]/30 px-3 text-sm text-[#f4f0e4]"
+                          {...press(() => setWipe({ slot: s.index, inGame: false }))}
+                        >
+                          New
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
             <div className="flex gap-2.5">
               <button
                 type="button"
@@ -486,6 +532,20 @@ export function Glyphbound() {
                 {...press(() => g()?.returnHub())}
               >
                 Return to Stacks
+              </button>
+              <button
+                type="button"
+                className="h-11 rounded-lg border border-border text-muted"
+                {...press(() => g()?.toTitle())}
+              >
+                Title · files
+              </button>
+              <button
+                type="button"
+                className="h-11 rounded-lg border border-accent/40 text-accent"
+                {...press(() => setWipe({ slot: ui.slot, inGame: true }))}
+              >
+                New game
               </button>
               <button
                 type="button"
@@ -706,6 +766,37 @@ export function Glyphbound() {
       )}
 
       {padOn && <MobilePad hint={ui.hint} letter={ui.letter} capital={ui.capital} inputRef={gameRef} />}
+
+      {wipe && (
+        <div className="pointer-events-auto absolute inset-0 z-40 flex items-center justify-center bg-bg/80 px-6">
+          <div className="w-full max-w-sm rounded-xl border border-border bg-surface p-5">
+            <h2 className="font-display text-2xl text-fg">Start a new game?</h2>
+            <p className="mt-2 text-sm text-muted">
+              File {FILE_MARK[wipe.slot] ?? wipe.slot + 1} will be rewritten from the first page. Other files stay.
+            </p>
+            <div className="mt-4 flex flex-col gap-2">
+              <button
+                type="button"
+                className="h-11 rounded-lg bg-fg text-bg"
+                {...press(() => {
+                  const ask = wipe;
+                  setWipe(null);
+                  g()?.newGame(ask.slot);
+                })}
+              >
+                New game
+              </button>
+              <button
+                type="button"
+                className="h-11 rounded-lg border border-border text-muted"
+                {...press(() => setWipe(null))}
+              >
+                Keep this file
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

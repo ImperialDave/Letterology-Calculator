@@ -26,7 +26,7 @@ import { blankFolio, cloneRows, folioTheme, resizeRows, sandboxSave, stampCell }
 import { collectedLore, loreIdFromGlyph } from "./lore";
 import { KITS, PENTAD } from "./roster";
 import { shotCostFor, weaponFor } from "./weapons";
-import { clearSave, defaultSave, loadSave, writeSave } from "./save";
+import { SLOT_COUNT, activeSlot, clearSave, defaultSave, listSlots, loadSave, selectSlot, writeSave } from "./save";
 import { preloadArt } from "./art";
 import { isMovingSolid, SolidGrid } from "./spatial";
 import {
@@ -80,6 +80,7 @@ export class GameEngine {
   input = new Input();
   audio = new AudioBus();
   save: SaveData = loadSave();
+  slot = activeSlot();
   mode: Mode = "title";
   prevMode: Mode = "title";
   acc = 0;
@@ -897,15 +898,48 @@ export class GameEngine {
     this.loadLevel(LEVELS[id] ? id : "hub", true);
   }
 
-  newGame() {
+  chooseSlot(slot: number) {
+    if (this.mode !== "title") return;
+    const i = Math.max(0, Math.min(SLOT_COUNT - 1, slot | 0));
+    this.slot = i;
+    this.save = selectSlot(i);
+    this.save.hard = this.hard;
+    this.player = this.makePlayer();
     this.audio.unlock();
+    this.audio.sfxUi();
+    this.emit();
+  }
+
+  openSlot(slot: number) {
+    this.chooseSlot(slot);
+    if (this.save.progress > 0 || this.save.hasCapital || this.save.stage1) this.continueGame();
+    else this.newGame(slot);
+  }
+
+  toTitle() {
+    if (this.sandbox) this.leaveStudio();
+    this.persist();
+    this.mode = "title";
+    this.cheatBuf = "";
+    this.emit();
+  }
+
+  newGame(slot?: number) {
+    this.audio.unlock();
+    this.audio.sfxUi();
+    if (slot != null) {
+      this.slot = Math.max(0, Math.min(SLOT_COUNT - 1, slot | 0));
+      selectSlot(this.slot);
+    }
     clearSave();
     this.save = defaultSave();
     this.save.hard = this.hard;
+    this.save.visited = ["hub"];
     this.player = this.makePlayer();
     this.mode = "intro";
     this.introPage = 0;
     this.cheatBuf = "";
+    writeSave(this.save, this.slot);
     this.emit();
   }
 
@@ -947,7 +981,7 @@ export class GameEngine {
     this.player.shield = this.player.maxShield;
     this.player.shotLevel = 3;
     this.player.capital = true;
-    writeSave(this.save);
+    writeSave(this.save, this.slot);
     this.audio.unlock();
     this.audio.sfxUi();
     this.say("The ledgers open. Every page already written.");
@@ -967,7 +1001,7 @@ export class GameEngine {
     this.save.hard = this.hard;
     this.save.shotLevel = p.shotLevel;
     this.save.letter = p.letter;
-    writeSave(this.save);
+    writeSave(this.save, this.slot);
   }
 
   step(dt: number) {
@@ -3929,6 +3963,8 @@ export class GameEngine {
       proof: this.proof,
       god: this.debugGod,
       replayOpen: this.replayMenu,
+      slot: this.slot,
+      slots: listSlots(),
     });
   }
 
