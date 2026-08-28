@@ -70,7 +70,7 @@ test("assembled remainder ledgers are reachable", () => {
   for (let n = 6; n <= STAGE_COUNT; n++) {
     const meta = assembleStage(n);
     const issues = validateLevel(meta.rows).filter((i) =>
-      ["path", "spawn", "hang", "embed", "laser-floor", "saw-path", "rest-hazard", "pit", "pit-wide"].includes(i.code),
+      ["path", "spawn", "hang", "embed", "buried", "laser-floor", "saw-path", "rest-hazard", "pit", "pit-wide"].includes(i.code),
     );
     if (issues.length) failed.push(`stage${n}: ${issues.map((i) => i.message).join("; ")}`);
   }
@@ -96,6 +96,48 @@ test("assembled ledgers have no undercroft skip hallway", () => {
   const hubDots = [...hub].filter((c) => c === ".").length;
   if (hubDots >= 8) failed.push(`hub crawl dots ${hubDots}`);
   assert.equal(failed.join("\n"), "");
+});
+
+test("campaign gates stand on the walkway, not in the basement", () => {
+  const failed: string[] = [];
+  for (let n = 1; n <= STAGE_COUNT; n++) {
+    const rows = LEVELS[`stage${n}`].rows;
+    let sy = -1;
+    let gy = -1;
+    for (let y = 0; y < rows.length; y++) {
+      if (sy < 0 && rows[y].includes("@")) sy = y;
+      if (gy < 0 && rows[y].includes("P")) gy = y;
+    }
+    if (sy < 0 || gy < 0) failed.push(`stage${n} missing @ or P`);
+    else if (gy > sy + 1) failed.push(`stage${n} gate y=${gy} below spawn y=${sy}`);
+    if (validateLevel(rows).some((i) => i.code === "buried")) failed.push(`stage${n} buried`);
+  }
+  assert.equal(failed.join("\n"), "");
+});
+
+test("a gate in the basement fails buried", () => {
+  const f = blankFolio({ id: "folio-buried" });
+  let ax = 0;
+  let ay = 0;
+  for (let y = 0; y < f.rows.length; y++) {
+    const x = f.rows[y].indexOf("@");
+    if (x >= 0) {
+      ax = x;
+      ay = y;
+      break;
+    }
+  }
+  const old = f.rows[ay].indexOf("P");
+  if (old >= 0) {
+    const row = f.rows[ay].split("");
+    row[old] = ".";
+    f.rows[ay] = row.join("");
+  }
+  const by = Math.min(f.rows.length - 2, ay + 3);
+  const row = f.rows[by].split("");
+  row[Math.min(row.length - 2, ax + 8)] = "P";
+  f.rows[by] = row.join("");
+  assert.ok(validateLevel(f.rows).some((i) => i.code === "buried"));
 });
 
 test("LEVELS stage30 is The Period with End-Mark and a gate", () => {

@@ -18,7 +18,7 @@ ASCII `rows` are the collision map. `TILE=48`. Do not infer collision from art. 
 - `c`/`s` clear **2 tiles** up, about **4 tiles** across with a run.
 - `b` clears **1 tile** up.
 - Pit **> 4** needs `T` `=` `_` `` ` `` `)` `g` or sluice. Pit **> 7** needs two assists.
-- Spawn `@`, check `%`, gate `P`: floor within 2 tiles, never on `^` or `S`.
+- Spawn `@`, check `%`, gate `P`: floor within 2 tiles, never on `^` or `S`. Gate `P` stands on the walkway (`@` row) — never in the basement slab.
 
 ## RNG may / may not
 

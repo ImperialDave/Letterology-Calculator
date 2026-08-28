@@ -201,12 +201,15 @@ export function validateLevel(rows: string[]): FolioIssue[] {
   issues.push(...pointSafe(rows, "@", "spawn"));
   issues.push(...pointSafe(rows, "%", "checkpoint"));
   issues.push(...pointSafe(rows, "P", "gate"));
+  const spawn = findChar(rows, "@");
+  const gate = findChar(rows, "P");
+  if (spawn && gate && gate.y > spawn.y + 1) {
+    issues.push({ code: "buried", message: "gate is below the walkway" });
+  }
   issues.push(...pitIssues(rows));
   issues.push(...laserFloorIssues(rows));
   issues.push(...sawPathIssues(rows));
   issues.push(...restHazardIssues(rows));
-  const spawn = findChar(rows, "@");
-  const gate = findChar(rows, "P");
   if (spawn && gate && !reachable(rows)) {
     issues.push({ code: "path", message: "no walk/jump path from spawn to gate" });
   }

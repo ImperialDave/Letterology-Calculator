@@ -74,7 +74,7 @@ test("showpiece remainder stages are frozen with their featured toy", () => {
     assert.ok(meta, `frozen ${n}`);
     const glyph = FEATURED[n];
     if (glyph) assert.ok(meta.rows.some((r) => r.includes(glyph)), `stage${n} missing ${glyph}`);
-    const codes = ["path", "spawn", "hang", "embed", "laser-floor", "saw-path", "rest-hazard", "pit", "pit-wide"];
+    const codes = ["path", "spawn", "hang", "embed", "buried", "laser-floor", "saw-path", "rest-hazard", "pit", "pit-wide"];
     const issues = validateLevel(meta.rows).filter((i) => codes.includes(i.code));
     assert.equal(issues.map((i) => i.message).join("; "), "", `stage${n}`);
   }
@@ -101,7 +101,7 @@ test("listLedgers covers hub through 60", () => {
 
 test("assembled remainder ledgers pass jump and fairness laws", () => {
   const failed: string[] = [];
-  const codes = ["path", "spawn", "hang", "embed", "laser-floor", "saw-path", "rest-hazard", "pit", "pit-wide"];
+  const codes = ["path", "spawn", "hang", "embed", "buried", "laser-floor", "saw-path", "rest-hazard", "pit", "pit-wide"];
   for (let n = 6; n <= STAGE_COUNT; n++) {
     const meta = assembleStage(n);
     const issues = validateLevel(meta.rows).filter((i) => codes.includes(i.code));

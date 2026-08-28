@@ -6,9 +6,8 @@ export function buildExchange(): string[] {
   const g = grid(W, H, 8) as Grid;
   const { put, fill } = g;
   const pit = 156;
-  const pitW = 20;
+  const pitW = 4;
   fill(pit, 8, pitW, ".");
-  fill(pit, 10, pitW, ".");
   put(1, 7, "@");
   put(12, 7, "m");
   put(8, 6, "==");
@@ -62,15 +61,14 @@ export function buildExchange(): string[] {
   put(pit - 8, 5, "6");
   put(pit - 6, 5, "D");
   put(pit - 2, 6, "%");
-  put(pit + 2, 7, "^^^");
-  put(pit + 6, 7, "VV");
+  put(pit + 1, 7, "^^");
   put(pit + 10, 6, "o");
-  put(pit + 6, 11, "P");
-  put(pit + 12, 11, "!");
+  put(W - 10, 7, "!");
+  put(W - 4, 7, "P");
   put(4, 3, "====");
   put(5, 2, "$");
-  put(pit + 16, 10, "==");
-  put(pit + 16, 9, "$");
+  put(166, 6, "====");
+  put(168, 5, "$");
   put(88, 2, "4");
   return armTeeth(g, 8);
 }
@@ -306,12 +304,7 @@ export function buildLedger(): string[] {
   put(200, 4, "====");
   put(202, 3, "i");
   for (let y = 12; y <= 14; y++) fill(1, y, 216, "#");
-  fill(218, 11, 6, ".");
-  fill(218, 12, 6, ".");
-  fill(218, 13, 6, ".");
-  put(218, 13, "==");
-  put(222, 12, "==");
-  put(222, 14, "P");
-  put(220, 10, "!");
+  put(W - 8, 10, "!");
+  put(W - 4, 10, "P");
   return armTeeth(g, 11);
 }

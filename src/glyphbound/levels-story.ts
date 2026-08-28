@@ -162,6 +162,67 @@ export function armTeeth<T extends string[]>(rows: T, floorY?: number): T {
   return rows;
 }
 
+const WALK_MARKS = "@%P!";
+const SLAB = "#";
+
+function findMarks(rows: string[], ch: string) {
+  const hits: Array<{ x: number; y: number }> = [];
+  for (let y = 0; y < rows.length; y++) {
+    for (let x = 0; x < (rows[y]?.length ?? 0); x++) {
+      if (rows[y][x] === ch) hits.push({ x, y });
+    }
+  }
+  return hits;
+}
+
+/** Lift spawn, gate, check, and warden out of the packed basement onto the walkway. */
+export function hoistFromBasement<T extends string[]>(rows: T, fy: number): T {
+  const H = rows.length;
+  const W = rows[0]?.length ?? 0;
+  const set = (x: number, y: number, ch: string) => {
+    if (y < 0 || y >= H || x < 0 || x >= W) return;
+    const r = rows[y];
+    rows[y] = r.slice(0, x) + ch + r.slice(x + 1);
+  };
+  const spawn = findMarks(rows, "@")[0];
+  const walk = spawn?.y ?? Math.max(1, fy - 1);
+  const floorY = walk + 1 < H - 1 ? walk + 1 : fy;
+  const FLOOR = "#*=_T/\\&-`)g";
+  const takeCol = (preferRight: boolean) => {
+    const xs: number[] = [];
+    if (preferRight) {
+      for (let x = W - 5; x >= 8; x--) xs.push(x);
+    } else {
+      for (let x = 8; x <= W - 5; x++) xs.push(x);
+    }
+    for (const x of xs) {
+      if (WALK_MARKS.includes(rows[walk]?.[x] ?? SLAB)) continue;
+      const below = rows[floorY]?.[x] ?? SLAB;
+      if ((rows[walk]?.[x] === "." || rows[walk]?.[x] === ",") && FLOOR.includes(below) && below !== ".") {
+        return x;
+      }
+    }
+    for (const x of xs) {
+      if (WALK_MARKS.includes(rows[walk]?.[x] ?? SLAB)) continue;
+      if (rows[walk]?.[x] === "." ) {
+        set(x, floorY, "#");
+        return x;
+      }
+    }
+    return Math.max(2, W - 4);
+  };
+  for (const ch of ["P", "!", "%"] as const) {
+    for (const hit of findMarks(rows, ch)) {
+      if (hit.y <= walk + 1) continue;
+      set(hit.x, hit.y, SLAB);
+      const x = ch === "P" || ch === "!" ? takeCol(true) : takeCol(false);
+      set(x, walk, ch);
+      if (!FLOOR.includes(rows[floorY]?.[x] ?? "")) set(x, floorY, "#");
+    }
+  }
+  return rows;
+}
+
 /** Pack rows below the walkway so they cannot be used as a skip hallway. */
 export function sealBasement<T extends string[]>(rows: T, fy: number): T {
   const H = rows.length;
@@ -185,6 +246,7 @@ export function sealBasement<T extends string[]>(rows: T, fy: number): T {
       else if (here === ".") set(x, y, "#");
     }
   }
+  hoistFromBasement(rows, fy);
   return rows;
 }
 
