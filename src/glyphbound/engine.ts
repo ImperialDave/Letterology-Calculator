@@ -30,9 +30,13 @@ import {
   JAB_WINDOW,
   TILT_HOLD,
   classifyMelee,
+  enemyWeight,
   intentToMove,
   isAerial,
   isJab,
+  launchHit,
+  meleeIasaReady,
+  nairAutocancel,
   nextJab,
   resolveMove,
   smashKindFromIntent,
@@ -137,6 +141,8 @@ export class GameEngine {
   lastSafeX = 80;
   lastSafeY = 80;
   inkWarn = 0;
+  comboHits = 0;
+  comboTimer = 0;
   recallCd = 0;
   oobT = 0;
   dashVx = 0;
@@ -509,6 +515,8 @@ export class GameEngine {
   loadLevel(id: LevelId, atCheck = false) {
     const meta = LEVELS[id];
     if (!meta) return;
+    this.comboHits = 0;
+    this.comboTimer = 0;
     this.stage = id;
     this.themeOverride = null;
     this.rows = meta.rows;
@@ -890,6 +898,7 @@ export class GameEngine {
       hurt: 0,
       flash: 0,
       stun: 0,
+      percent: 0,
       alive: true,
       grounded: false,
       phase: 0,
@@ -1194,7 +1203,8 @@ export class GameEngine {
     }
     if (!aetherDash) {
       p.vy += (p.vy < 0 ? gUp : gDown) * dt;
-      if (p.vy > 860) p.vy = 860;
+      if (!p.grounded && a.aimY >= 1 && p.vy > 28) p.vy = Math.max(p.vy, 680);
+      if (p.vy > 980) p.vy = 980;
     }
     if (p.letter === "s" && p.capital && a.jumpHeld && !p.grounded && p.vy > 60) {
       p.vy = 70;
@@ -1205,8 +1215,11 @@ export class GameEngine {
     else p.coyote -= dt;
     if (a.jump) p.jumpBuf = 0.12;
     else p.jumpBuf -= dt;
+    if (p.smashKind) p.jumpBuf = 0;
+    const iasa = meleeIasaReady(p.melee, p.meleeMax, p.meleeMove);
+    const allowJump = p.melee <= 0 || iasa;
     if (!aetherDash) {
-    if (p.jumpBuf > 0 && p.coyote > 0) {
+    if (p.jumpBuf > 0 && p.coyote > 0 && allowJump) {
       p.vy = -kit.jump;
       p.grounded = false;
       p.coyote = 0;
@@ -1214,7 +1227,7 @@ export class GameEngine {
       p.jumpCut = false;
       p.squash = 0.74;
       this.audio.sfxJump();
-    } else if (p.jumpBuf > 0 && p.letter === "s" && p.airHop > 0 && !p.grounded) {
+    } else if (p.jumpBuf > 0 && p.letter === "s" && p.airHop > 0 && !p.grounded && allowJump) {
       p.vy = -(kit.jump * (p.capital ? 0.92 : 0.8));
       p.airHop = 0;
       p.jumpBuf = 0;
@@ -1224,7 +1237,7 @@ export class GameEngine {
       this.audio.sfxJump();
       this.burst(p.x + p.w / 2, p.y + p.h, "#7fd0ff", 8, "glyph");
       this.say("GALE");
-    } else if (p.jumpBuf > 0 && this.save.words.includes("FOLD") && this.wallCoyote > 0 && !p.grounded) {
+    } else if (p.jumpBuf > 0 && this.save.words.includes("FOLD") && this.wallCoyote > 0 && !p.grounded && allowJump) {
       p.vy = -505;
       p.vx = this.wallDir * 240;
       p.facing = this.wallDir;
@@ -1878,9 +1891,31 @@ export class GameEngine {
 
   private updateCombat(dt: number, a: ReturnType<Input["poll"]>) {
     const p = this.player;
+    this.comboTimer = Math.max(0, this.comboTimer - dt);
+    if (this.comboTimer <= 0 && !this.enemies.some((e) => e.alive && e.stun > 0)) {
+      if (this.comboHits >= 4) this.say(this.comboHits + " HIT COMBO");
+      this.comboHits = 0;
+    }
     if (p.grounded && isAerial(p.meleeMove as MeleeMoveId) && p.melee > 0) {
-      p.melee = Math.min(p.melee, 0.1);
-      p.attack = p.melee;
+      const phase = 1 - p.melee / Math.max(0.001, p.meleeMax);
+      if (p.meleeMove === "nair" && nairAutocancel(phase)) {
+        p.melee = 0;
+        p.attack = 0;
+      } else {
+        p.melee = Math.min(p.melee, 0.1);
+        p.attack = p.melee;
+      }
+      p.meleeCharge = 0;
+    }
+    const iasa = meleeIasaReady(p.melee, p.meleeMax, p.meleeMove);
+    if (iasa && a.attack && p.flourish <= 0 && p.roll <= 0 && p.melee > 0) {
+      p.melee = 0;
+      p.attack = 0;
+      const intent = this.meleeIntent(a);
+      this.faceForIntent(intent, a.aimX);
+      if (!p.grounded) this.startMeleeMove(intentToMove(intent, 0), 0);
+      else if (intent === "dash") this.startMeleeMove("dash", 0);
+      else this.startMeleeMove(intentToMove(intent, p.jabStep), 0);
       p.meleeCharge = 0;
     }
     if (p.flourish > 0) this.tickFlourish();
@@ -2079,7 +2114,7 @@ export class GameEngine {
         if (!e.alive) continue;
         if (e.hurt > 0 && tick === 0) continue;
         if (!aabb(box, e)) continue;
-        this.hitEnemy(e, dmg, p.facing);
+        this.hitEnemy(e, dmg, p.facing, { flourish: true });
         if ((p.letter === "k" || p.letter === "n") && e.alive && !this.isBossKind(e.kind)) {
           e.stun = Math.max(e.stun, 1.35);
         }
@@ -2142,7 +2177,7 @@ export class GameEngine {
         if (!e.alive) continue;
         if (e.hurt > 0 && tick === 0) continue;
         if (!aabb(box, e)) continue;
-        this.hitEnemy(e, dmg, face, { x: move.kbX, y: move.kbY, stun: move.stun });
+        this.hitEnemy(e, dmg, face, { moveId: id });
         hit = true;
       }
     }
@@ -2222,22 +2257,53 @@ export class GameEngine {
     return cycle < 1.0;
   }
 
-  private hitEnemy(e: Enemy, dmg: number, dir: number, kb?: { x?: number; y?: number; stun?: number }) {
+  private hitEnemy(
+    e: Enemy,
+    dmg: number,
+    dir: number,
+    kb?: { x?: number; y?: number; stun?: number; moveId?: MeleeMoveId; flourish?: boolean },
+  ) {
     if (e.hurt > 0) return;
     e.hp -= dmg;
-    e.hurt = this.isBossKind(e.kind) ? 0.18 : 0.1;
+    e.percent = (e.percent ?? 0) + dmg * 9;
+    e.hurt = this.isBossKind(e.kind) ? 0.18 : 0.08;
     const boss = this.isBossKind(e.kind);
-    const kx = kb?.x ?? 160;
-    const ky = kb?.y ?? -36;
-    if (!boss) e.stun = kb?.stun ?? 0.95;
+    const live = this.enemies.some((x) => x.alive && x.stun > 0 && x !== e);
+    if (this.comboTimer > 0 || live) this.comboHits += 1;
+    else this.comboHits = 1;
+    this.comboTimer = 0.8;
+    if (kb?.x != null && !kb.moveId && !kb.flourish) {
+      const kx = kb.x;
+      const ky = kb.y ?? -36;
+      if (!boss) e.stun = kb.stun ?? 0.95;
+      e.vx += dir * (boss ? Math.min(48, kx * 0.22) : kx);
+      if (!boss) e.vy = ky;
+    } else {
+      const launch = launchHit({
+        moveId: kb?.moveId,
+        percent: e.percent,
+        weight: enemyWeight(e.kind, boss),
+        dir,
+        comboHits: this.comboHits,
+        smashPower: kb?.moveId && resolveMove(this.player.letter, kb.moveId, this.player.smashPower).smash ? this.player.smashPower : 0,
+        flourish: kb?.flourish,
+      });
+      if (boss) {
+        e.vx += launch.vx * 0.2;
+        e.vy += launch.vy * 0.16;
+      } else {
+        e.vx = launch.vx;
+        e.vy = launch.vy;
+        e.stun = launch.stun;
+      }
+      this.hitstop = launch.hitlag;
+    }
     e.flash = Math.max(e.flash, 0.18);
-    e.vx += dir * (boss ? Math.min(48, kx * 0.22) : kx);
-    if (!boss) e.vy = ky;
     if (!boss) e.aux = 0;
     this.audio.sfxHit();
-    if (!boss) this.trauma = Math.min(1, this.trauma + 0.25);
-    this.hitstop = 0.05;
-    this.burst(e.x + e.w / 2, e.y + e.h / 2, "#e8ece8", 6, "spark");
+    if (!boss) this.trauma = Math.min(1, this.trauma + (this.comboHits >= 4 ? 0.32 : 0.22));
+    if (this.hitstop < 0.04) this.hitstop = 0.04;
+    this.burst(e.x + e.w / 2, e.y + e.h / 2, "#e8ece8", this.comboHits >= 3 ? 10 : 6, "spark");
     if (e.kind === "dummy") {
       e.hp = e.maxHp;
       return;
@@ -2378,9 +2444,17 @@ export class GameEngine {
       e.flash = Math.max(0, e.flash - dt);
       e.stun = Math.max(0, e.stun - dt);
       if (e.stun > 0 && !this.isBossKind(e.kind)) {
-        e.vx *= Math.max(0, 1 - 8 * dt);
-        if (!e.grounded) e.vy += 1800 * dt;
+        const wasAir = !e.grounded;
+        const prevVy = e.vy;
+        if (!e.grounded) e.vy += 1700 * dt;
+        else e.vx *= Math.max(0, 1 - 12 * dt);
         this.moveActor(e, dt, false);
+        if (wasAir && e.grounded && prevVy > 200) {
+          e.vy = -Math.min(340, prevVy * 0.58);
+          e.grounded = false;
+          e.stun = Math.max(e.stun, 0.3);
+          this.burst(e.x + e.w / 2, e.y + e.h, "#c4b08a", 8, "dust");
+        }
         continue;
       }
       e.stun = 0;
@@ -4420,7 +4494,7 @@ export class GameEngine {
       ctx.restore();
       if (!this.lite) drawGrade(ctx, district);
       if (this.mode === "play" || this.mode === "hub" || this.mode === "transform") {
-        drawHudCanvas(ctx, this.player, this.nearHint, this.toast);
+        drawHudCanvas(ctx, this.player, this.nearHint, this.toast, this.comboHits);
       }
       if (this.mode === "transform") {
         ctx.fillStyle = `rgba(94,224,192,${0.15 + this.transformT * 0.1})`;
@@ -4763,6 +4837,7 @@ export class GameEngine {
       hurt: 0,
       flash: 0,
       stun: 0,
+      percent: 0,
       alive: true,
       grounded: true,
       phase: 0,

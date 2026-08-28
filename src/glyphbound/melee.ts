@@ -471,3 +471,85 @@ export function smashWindAngle(kind: SmashKind | "", family: MeleeFamily, power:
   if (family === "smash") return -1.7 - w * 0.35;
   return -1.15 - w * 0.4;
 }
+
+/** Smash-style launch: angle 0 = forward, 90 = up, 270 = spike. */
+export const KNOCKBACK: Record<
+  MeleeMoveId,
+  { angle: number; bkb: number; kbg: number; setKb?: number; sakurai?: boolean; iasa: number }
+> = {
+  jab1: { angle: 12, bkb: 50, kbg: 0, setKb: 52, sakurai: true, iasa: 0.48 },
+  jab2: { angle: 18, bkb: 64, kbg: 0, setKb: 68, sakurai: true, iasa: 0.48 },
+  jab3: { angle: 48, bkb: 240, kbg: 2.4, iasa: 0.7 },
+  ftilt: { angle: 40, bkb: 200, kbg: 2.5, iasa: 0.6 },
+  utilt: { angle: 88, bkb: 430, kbg: 3.3, iasa: 0.5 },
+  dtilt: { angle: 26, bkb: 150, kbg: 1.7, iasa: 0.52 },
+  dash: { angle: 36, bkb: 210, kbg: 2.1, iasa: 0.72 },
+  fsmash: { angle: 42, bkb: 360, kbg: 4.3, iasa: 0.82 },
+  usmash: { angle: 90, bkb: 500, kbg: 4.1, iasa: 0.8 },
+  dsmash: { angle: 32, bkb: 280, kbg: 3.1, iasa: 0.8 },
+  nair: { angle: 52, bkb: 150, kbg: 1.9, iasa: 0.46 },
+  fair: { angle: 45, bkb: 250, kbg: 2.9, iasa: 0.6 },
+  bair: { angle: 38, bkb: 290, kbg: 3.1, iasa: 0.58 },
+  uair: { angle: 82, bkb: 410, kbg: 3.5, iasa: 0.52 },
+  dair: { angle: 270, bkb: 390, kbg: 2.3, iasa: 0.68 },
+};
+
+export function enemyWeight(kind: string, boss: boolean): number {
+  if (boss) return 1.9;
+  if (kind === "one" || kind === "zero" || kind === "radix" || kind === "dummy") return 0.8;
+  if (kind === "eight" || kind === "nine" || kind === "times") return 1.22;
+  return 1;
+}
+
+export function comboDecay(hits: number): number {
+  return 1 + Math.max(0, hits - 3) * 0.15;
+}
+
+export function launchHit(opts: {
+  moveId?: MeleeMoveId | "";
+  percent: number;
+  weight: number;
+  dir: number;
+  comboHits: number;
+  smashPower?: number;
+  flourish?: boolean;
+}): { vx: number; vy: number; stun: number; hitlag: number; speed: number } {
+  let angle = 42;
+  let bkb = 170;
+  let kbg = 2;
+  let setKb: number | undefined;
+  let sakurai = false;
+  if (opts.flourish) {
+    angle = 52;
+    bkb = 270;
+    kbg = 2.7;
+  } else if (opts.moveId && KNOCKBACK[opts.moveId]) {
+    const k = KNOCKBACK[opts.moveId];
+    angle = k.angle;
+    bkb = k.bkb;
+    kbg = k.kbg;
+    setKb = k.setKb;
+    sakurai = !!k.sakurai;
+  }
+  const charge = 1 + Math.max(0, opts.smashPower ?? 0) * 0.85;
+  let speed = setKb != null ? setKb * charge : (bkb + Math.max(0, opts.percent) * kbg) * charge;
+  speed = (speed / Math.max(0.55, opts.weight)) * comboDecay(opts.comboHits);
+  let rad = (angle * Math.PI) / 180;
+  if (sakurai && speed < 150) rad = (10 * Math.PI) / 180;
+  const vx = opts.dir * speed * Math.cos(rad);
+  const vy = -speed * Math.sin(rad);
+  const stun = Math.min(1.7, 0.11 + speed * 0.00105);
+  const hitlag = Math.min(0.1, 0.028 + speed * 0.00007);
+  return { vx, vy, stun, hitlag, speed };
+}
+
+export function meleeIasaReady(melee: number, meleeMax: number, moveId: string): boolean {
+  if (melee <= 0 || meleeMax <= 0) return false;
+  const spec = KNOCKBACK[moveId as MeleeMoveId];
+  const phase = 1 - melee / meleeMax;
+  return phase >= (spec?.iasa ?? 0.7);
+}
+
+export function nairAutocancel(phase: number): boolean {
+  return phase < 0.16 || phase > 0.84;
+}

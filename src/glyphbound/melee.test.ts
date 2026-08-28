@@ -3,8 +3,13 @@ import test from "node:test";
 import {
   MOVES,
   classifyMelee,
+  comboDecay,
+  enemyWeight,
   intentToMove,
   isAerial,
+  launchHit,
+  meleeIasaReady,
+  nairAutocancel,
   nextJab,
   resolveMove,
   smashKindFromIntent,
@@ -90,4 +95,43 @@ test("every letter scales the same smash kit", () => {
     assert.ok(fin.dmg >= jab.dmg, id);
     assert.ok(resolveMove(id, "dair", 0).spike);
   }
+});
+
+test("percent grows knockback the way Smash does", () => {
+  const low = launchHit({ moveId: "utilt", percent: 0, weight: 1, dir: 1, comboHits: 1 });
+  const high = launchHit({ moveId: "utilt", percent: 80, weight: 1, dir: 1, comboHits: 1 });
+  assert.ok(high.speed > low.speed * 1.4);
+  assert.ok(high.stun > low.stun);
+  assert.ok(low.vy < -200, "up-tilt launches");
+});
+
+test("jabs stay close so they link", () => {
+  const jab = launchHit({ moveId: "jab1", percent: 0, weight: 1, dir: 1, comboHits: 1 });
+  const utilt = launchHit({ moveId: "utilt", percent: 20, weight: 1, dir: 1, comboHits: 2 });
+  assert.ok(Math.abs(jab.vx) < 120);
+  assert.ok(utilt.stun > jab.stun);
+  assert.ok(utilt.vy < jab.vy);
+});
+
+test("dair spikes and light enemies fly farther", () => {
+  const dair = launchHit({ moveId: "dair", percent: 30, weight: 1, dir: 1, comboHits: 1 });
+  assert.ok(dair.vy > 200, "spike is downward");
+  const light = launchHit({ moveId: "fair", percent: 40, weight: enemyWeight("one", false), dir: 1, comboHits: 1 });
+  const heavy = launchHit({ moveId: "fair", percent: 40, weight: enemyWeight("eight", false), dir: 1, comboHits: 1 });
+  assert.ok(light.speed > heavy.speed);
+});
+
+test("combo decay pops them out after a string", () => {
+  assert.ok(comboDecay(6) > comboDecay(2));
+  const early = launchHit({ moveId: "nair", percent: 20, weight: 1, dir: 1, comboHits: 2 });
+  const late = launchHit({ moveId: "nair", percent: 20, weight: 1, dir: 1, comboHits: 7 });
+  assert.ok(late.speed > early.speed);
+});
+
+test("IASA and nair autocancel windows exist", () => {
+  assert.equal(meleeIasaReady(0.14, 0.3, "utilt"), true);
+  assert.equal(meleeIasaReady(0.28, 0.3, "utilt"), false);
+  assert.equal(nairAutocancel(0.1), true);
+  assert.equal(nairAutocancel(0.5), false);
+  assert.equal(nairAutocancel(0.9), true);
 });

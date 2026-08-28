@@ -132,6 +132,8 @@ export interface Enemy {
   hurt: number;
   flash: number;
   stun: number;
+  /** Smash-style damage percent; grows knockback. */
+  percent: number;
   alive: boolean;
   grounded: boolean;
   phase: number;

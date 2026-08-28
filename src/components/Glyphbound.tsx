@@ -53,6 +53,8 @@ function ControlsCard() {
             <span>No direction: that letter's flourish</span>
             <span className="text-fg">Air + J</span>
             <span>Nair · fair · bair · uair · dair · stick/arrows pick the aerial</span>
+            <span className="text-fg">Combo</span>
+            <span>Hitstun scales with percent. Jab → up-tilt → jump uair. Down in air fast-falls. Late nair autocancels.</span>
             <span className="text-fg">F H</span>
             <span>Fang · ink-heavy ranged · never the same key as strike</span>
             <span className="text-fg">Flourish</span>

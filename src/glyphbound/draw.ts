@@ -2840,6 +2840,7 @@ export function drawHudCanvas(
   p: Player,
   objective: string,
   toast: string,
+  comboHits = 0,
 ) {
   ctx.fillStyle = "rgba(7,8,12,0.55)";
   roundRect(ctx, 132, 14, 210, p.smashKind ? 48 : 44, 10);
@@ -2891,5 +2892,22 @@ export function drawHudCanvas(
     ctx.fillStyle = "#e8ece8";
     ctx.font = "600 16px 'Cormorant Garamond', serif";
     ctx.fillText(toast, VIEW_W / 2, 72);
+  }
+  if (comboHits >= 2) {
+    ctx.save();
+    ctx.textAlign = "right";
+    const pulse = 1 + Math.min(0.12, (comboHits - 2) * 0.02);
+    ctx.translate(VIEW_W - 18, 86);
+    ctx.scale(pulse, pulse);
+    ctx.fillStyle = "rgba(7,8,12,0.45)";
+    roundRect(ctx, -92, -22, 92, 36, 8);
+    ctx.fill();
+    ctx.fillStyle = "#e8c878";
+    ctx.font = "700 22px 'Source Sans 3', sans-serif";
+    ctx.fillText(String(comboHits), -8, 0);
+    ctx.fillStyle = "#e8ece8";
+    ctx.font = "600 10px 'Source Sans 3', sans-serif";
+    ctx.fillText(comboHits >= 5 ? "COMBO" : "HIT", -8, 14);
+    ctx.restore();
   }
 }
