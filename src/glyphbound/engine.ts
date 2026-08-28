@@ -1913,13 +1913,27 @@ export class GameEngine {
     const hazard = kind === "hazard";
     if (hazard) {
       if (p.hazardCd > 0) return;
-      p.hp -= n;
       p.hazardCd = HAZARD_COOLDOWN;
-      p.hurtFlash = 0.4;
       p.vx = dir * 220;
       p.vy = -220;
-      this.audio.sfxHurt();
-      this.trauma = Math.min(1, this.trauma + 0.55);
+      let dmg = n;
+      if (p.shield > 0) {
+        const soak = Math.min(p.shield, dmg);
+        p.shield -= soak;
+        dmg -= soak;
+        p.shieldFlash = 0.4;
+        p.shieldCd = 1.1;
+        this.audio.sfxBlock();
+        this.trauma = Math.min(1, this.trauma + 0.18);
+        this.burst(p.x + p.w / 2, p.y + p.h / 2, "#8ec8d4", 10, "spark");
+      }
+      if (dmg > 0) {
+        p.hp -= dmg;
+        p.hurtFlash = 0.4;
+        this.audio.sfxHurt();
+        this.trauma = Math.min(1, this.trauma + 0.55);
+      }
+      this.emit();
       if (p.hp <= 0) {
         p.hp = 0;
         this.mode = "dead";

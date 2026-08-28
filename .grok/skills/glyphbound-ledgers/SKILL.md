@@ -55,7 +55,7 @@ Rows below the main floor are **ground or lethal wells**, never a hallway. `grid
 
 Optional Metroid undercroft is a short pocket (≤6 tiles) with a vent from above — never a skip.
 
-Hazard hits (spike, laser, saw, sluice) always deal **2** HP (`HAZARD_DAMAGE`) on touch. Shield does not eat them. Cooldown **0.5s** (`HAZARD_COOLDOWN`) so a pin does not melt the party. Digit contact stays 1. Walking the floor still ignores teeth packed in the slab underneath.
+Hazard hits (spike, laser, saw, sluice) deal **2** (`HAZARD_DAMAGE`) on touch. **Shield soaks first** (2 points per hit, same as HP); leftover after the shield is gone goes to HP. Cooldown **0.5s** (`HAZARD_COOLDOWN`). Digit contact stays 1. Walking the floor still ignores teeth packed in the slab underneath.
 
 ## Remainder density (30–60)
 
