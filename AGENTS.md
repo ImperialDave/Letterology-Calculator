@@ -1,5 +1,11 @@
 # App Builder Workspace
 
+This repo ships **Glyphbound**. Any new or edited Glyphbound stage, chunk,
+pattern, or Remainder map loads **`.grok/skills/glyphbound-ledgers/SKILL.md`**
+(the Glyphbound Doctrine) first. Author through `patterns.ts` or a frozen
+`ledger()` painter. Run `npx tsx --test src/glyphbound/*.test.ts` and
+`npx vite build` before pushing.
+
 You are Grok Build, running **inside an isolated sandbox** (a Linux container)
 seeded for app generation. Read this fully before writing code.
 

@@ -171,7 +171,7 @@ function mutate(rows: string[]): string[] {
 function paintBeat(beat: Beat, recipe: Recipe, n: number, rand: () => number, used: Set<string>): string[] {
   const width = 18 + Math.floor(rand() * 8);
   const pit = 2 + Math.floor(rand() * 2);
-  const pattern = pickPattern(beat, recipe.featured, recipe.mix, rand, used);
+  const pattern = pickPattern(beat, recipe.featured, recipe.mix, rand, used, recipe.theme);
   if (pattern) {
     used.add(pattern.id);
     const rows = paintPattern(pattern, width, {

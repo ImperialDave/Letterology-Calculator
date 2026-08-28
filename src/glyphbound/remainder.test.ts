@@ -2,10 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { assembleRecipe, assembleStage } from "./assemble";
 import { chunksFor } from "./chunks";
-import { verbsFor } from "./recipe";
+import { pickPattern } from "./patterns";
+import { isBoss, verbsFor } from "./recipe";
 import { beatenLedgers, listLedgers, LEVELS } from "./levels";
 import { FROZEN_REMAINDER } from "./remainder-hand";
-import { REMAINDER_NAMES } from "./remainder-names";
+import { REMAINDER_NAMES, REMAINDER_OBJECTIVES } from "./remainder-names";
 import { validateLevel } from "./validate-level";
 import { FIRST_BOOK, STAGE_COUNT } from "./types";
 
@@ -19,14 +20,50 @@ test("remainder ledgers have unique names", () => {
   }
 });
 
+const SHOWPIECES = [31, 32, 33, 34, 36, 38, 42, 44, 48, 51, 54, 57, 59];
+const BOSSES = [30, 35, 40, 45, 50, 55, 60];
+const FEATURED: Record<number, string> = {
+  31: "`",
+  32: ")",
+  33: "T",
+  34: "g",
+  35: "`",
+  36: ")",
+  38: "`",
+  40: ")",
+  42: "g",
+  44: "|",
+  45: "S",
+  48: "S",
+  50: ")",
+  51: "$",
+  54: "v",
+  55: "S",
+  57: "|",
+  59: ")",
+  60: "`",
+};
+
 test("keystone remainder stages are frozen and reachable", () => {
-  for (const n of [30, 35, 40, 45, 50, 55, 60]) {
+  for (const n of BOSSES) {
     const meta = FROZEN_REMAINDER[n];
     assert.ok(meta, `frozen ${n}`);
     const issues = validateLevel(meta.rows).filter((i) => i.code === "path" || i.code === "spawn" || i.code === "hang" || i.code === "embed");
     assert.equal(issues.join("; "), "", `stage${n}`);
     if (n === 60) assert.equal(meta.exit, "win");
     assert.ok(meta.rows.some((r) => r.includes("!")));
+  }
+});
+
+test("showpiece remainder stages are frozen with their featured toy", () => {
+  for (const n of [...SHOWPIECES, ...BOSSES.filter((b) => b >= 31)]) {
+    const meta = FROZEN_REMAINDER[n];
+    assert.ok(meta, `frozen ${n}`);
+    const glyph = FEATURED[n];
+    if (glyph) assert.ok(meta.rows.some((r) => r.includes(glyph)), `stage${n} missing ${glyph}`);
+    const codes = ["path", "spawn", "hang", "embed", "laser-floor", "saw-path", "rest-hazard", "pit", "pit-wide"];
+    const issues = validateLevel(meta.rows).filter((i) => codes.includes(i.code));
+    assert.equal(issues.map((i) => i.message).join("; "), "", `stage${n}`);
   }
 });
 
@@ -71,6 +108,38 @@ test("two remainder ledgers do not clone the same map", () => {
   const a = assembleStage(31).rows.join("\n");
   const b = assembleStage(32).rows.join("\n");
   assert.notEqual(a, b);
+});
+
+test("adjacent remainder ledgers 31-60 do not clone a neighbor", () => {
+  for (let n = 31; n < STAGE_COUNT; n++) {
+    const a = assembleStage(n).rows.join("\n");
+    const b = assembleStage(n + 1).rows.join("\n");
+    assert.notEqual(a, b, `${n} vs ${n + 1}`);
+  }
+});
+
+test("non-boss remainder stages have no warden mark", () => {
+  for (let n = 31; n <= STAGE_COUNT; n++) {
+    if (isBoss(n)) continue;
+    const rows = assembleStage(n).rows.join("");
+    assert.equal(rows.includes("!"), false, `stage${n}`);
+  }
+});
+
+test("remainder 31-60 objectives name the room", () => {
+  for (let n = 31; n <= STAGE_COUNT; n++) {
+    assert.ok(REMAINDER_OBJECTIVES[n], `objective ${n}`);
+    assert.notEqual(assembleStage(n).objective, "Cross this remainder. Reach the gate.", `stage${n}`);
+  }
+});
+
+test("pickPattern prefers the act's themed room", () => {
+  const orbit = pickPattern("teach", "`", ")", () => 0, new Set(), "orbit");
+  assert.equal(orbit?.id, "orbit-rings");
+  const ice = pickPattern("teach", "`", ")", () => 0, new Set(), "glacier");
+  assert.equal(ice?.id, "ice-rail-run");
+  const script = pickPattern("teach", "g", "`", () => 0, new Set(), "remainder");
+  assert.equal(script?.id, "script-trench");
 });
 
 test("beatenLedgers only lists closed pages", () => {

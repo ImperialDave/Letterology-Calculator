@@ -1,14 +1,15 @@
 ---
 name: glyphbound-ledgers
 description: >
-  Doctrine and generator laws for Glyphbound side-scroller ledgers: Mario
-  teach-then-mix rhythm, Prince of Persia read-then-commit timing, Metroid
-  optional pockets. Use when building, editing, assembling, or validating
-  Glyphbound levels, chunks, Remainder stages, Studio maps, or ASCII
-  tilemaps. Also /glyphbound-ledgers.
+  The Glyphbound Doctrine — laws for building and editing Glyphbound
+  side-scroller ledgers: Mario teach-then-mix, Prince of Persia
+  read-then-commit, Metroid optional pockets. Load whenever creating,
+  assembling, validating, or enhancing Glyphbound levels, chunks,
+  Remainder stages 6–60, Studio maps, or ASCII tilemaps.
+  Also /glyphbound-ledgers and /glyphbound-doctrine.
 ---
 
-# Glyphbound ledgers
+# Glyphbound Doctrine
 
 ASCII `rows` are the collision map. `TILE=48`. Do not infer collision from art. Do not gate `P` on a letter or word the party does not have.
 
