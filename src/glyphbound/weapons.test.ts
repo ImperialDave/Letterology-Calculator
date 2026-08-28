@@ -26,3 +26,30 @@ test("fang shots spend a large ink burst and ink refills slowly", () => {
     assert.ok(shotCostFor(id) > KITS[id].inkRate * 4, id);
   }
 });
+
+test("each letter has a unique flourish", () => {
+  const names = new Set<string>();
+  for (const id of ALL) {
+    const fl = weaponFor(id).flourish;
+    assert.ok(fl.name.length > 1, id);
+    assert.equal(names.has(fl.name), false, fl.name);
+    names.add(fl.name);
+    assert.ok(fl.time > weaponFor(id).time, id);
+    assert.ok(fl.hitAt.length >= 1);
+    assert.ok(fl.fx.startsWith("flourish-"));
+  }
+});
+
+test("scythe grip is on the haft, not the blade", () => {
+  const pose = weaponFor("s").pose;
+  assert.ok(pose.gripX >= 0.14 && pose.gripX <= 0.22, "grip should sit on the left-side haft");
+  assert.ok(pose.gripY >= 0.64 && pose.gripY <= 0.76, "grip should sit on the wooden shaft above the pommel");
+});
+
+test("thrust weapons grip the butt so the head sits forward", () => {
+  for (const id of ["e", "n", "t"] as LetterId[]) {
+    const pose = weaponFor(id).pose;
+    assert.ok(pose.gripX <= 0.16, id);
+    assert.ok(pose.gripY >= 0.4 && pose.gripY <= 0.6, id);
+  }
+});

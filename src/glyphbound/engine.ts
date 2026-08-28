@@ -361,6 +361,11 @@ export class GameEngine {
       attackHit: false,
       melee: 0,
       meleeMax: 0,
+      meleeCharge: 0,
+      flourish: 0,
+      flourishMax: 0,
+      flourishCd: 0,
+      flourishHits: 0,
       special: 0,
       specialCd: 0,
       roll: 0,
@@ -1250,6 +1255,8 @@ export class GameEngine {
     p.hurtFlash = Math.max(0, p.hurtFlash - dt);
     p.attack = Math.max(0, p.attack - dt);
     p.melee = Math.max(0, p.melee - dt);
+    p.flourish = Math.max(0, p.flourish - dt);
+    p.flourishCd = Math.max(0, p.flourishCd - dt);
     p.special = Math.max(0, p.special - dt);
     p.specialCd = Math.max(0, p.specialCd - dt);
     p.shotCd = Math.max(0, p.shotCd - dt);
@@ -1828,12 +1835,27 @@ export class GameEngine {
   private updateCombat(dt: number, a: ReturnType<Input["poll"]>) {
     const p = this.player;
     const wpn = weaponFor(p.letter);
-    if (p.melee > 0 && !p.attackHit) {
+    if (p.flourish > 0) this.tickFlourish();
+    else if (p.melee > 0 && !p.attackHit) {
       const spent = 1 - p.melee / Math.max(0.001, p.meleeMax);
       if (spent >= wpn.hitAt) this.meleeStrike();
     }
-    if (a.attack && p.melee <= 0 && p.roll <= 0) this.startMelee();
-    if (a.attackHeld && !a.attack && p.melee <= 0 && p.shotCd <= 0 && p.roll <= 0) {
+    if (a.attackHeld && p.roll <= 0) {
+      p.meleeCharge += dt;
+      if (p.flourish <= 0 && p.melee <= 0 && p.meleeCharge > 0) {
+        p.squash = 0.9 - Math.min(0.12, p.meleeCharge * 0.55);
+      }
+      if (p.meleeCharge >= 0.18 && p.flourish <= 0 && p.flourishCd <= 0 && p.melee <= 0) {
+        this.startFlourish();
+        p.meleeCharge = 0;
+      }
+    } else {
+      if (p.meleeCharge > 0 && p.meleeCharge < 0.18 && p.melee <= 0 && p.flourish <= 0 && p.roll <= 0) {
+        this.startMelee();
+      }
+      p.meleeCharge = 0;
+    }
+    if ((a.fang || a.fangHeld) && p.flourish <= 0 && p.melee <= 0 && p.shotCd <= 0 && p.roll <= 0) {
       this.tryFang();
     }
     if (a.special && p.specialCd <= 0 && p.roll <= 0) {
@@ -1850,6 +1872,83 @@ export class GameEngine {
     p.attackHit = false;
     p.squash = 0.88;
     this.audio.sfxShot();
+  }
+
+  private startFlourish() {
+    const p = this.player;
+    const fl = weaponFor(p.letter).flourish;
+    p.flourish = fl.time;
+    p.flourishMax = fl.time;
+    p.flourishHits = 0;
+    p.flourishCd = fl.cd;
+    p.attack = fl.time;
+    p.attackHit = false;
+    p.squash = 0.76;
+    if (p.letter === "r") {
+      p.vx += p.facing * (p.capital ? 320 : 240);
+      p.vy = Math.min(p.vy, -50);
+    } else if (p.letter === "b" || p.letter === "k") {
+      p.vy = Math.min(p.vy, p.grounded ? -160 : -70);
+    } else if (p.letter === "s") {
+      p.vx += p.facing * 90;
+    }
+    this.audio.sfxShot();
+    this.say(fl.name.toUpperCase());
+  }
+
+  private tickFlourish() {
+    const p = this.player;
+    const fl = weaponFor(p.letter).flourish;
+    const phase = 1 - p.flourish / Math.max(0.001, p.flourishMax);
+    while (p.flourishHits < fl.hitAt.length && phase >= fl.hitAt[p.flourishHits]) {
+      this.flourishStrike(p.flourishHits);
+      p.flourishHits += 1;
+    }
+  }
+
+  private flourishStrike(tick: number) {
+    const p = this.player;
+    const fl = weaponFor(p.letter).flourish;
+    const reach = fl.reach;
+    const dmg = fl.dmg + (p.capital ? 1 : 0);
+    const boxes = fl.bothSides
+      ? [
+          { x: p.x + p.w / 2, y: p.y, w: reach, h: fl.height },
+          { x: p.x + p.w / 2 - reach, y: p.y, w: reach, h: fl.height },
+        ]
+      : [
+          {
+            x: p.facing > 0 ? p.x + p.w * 0.35 : p.x - reach + p.w * 0.65,
+            y: p.y + (p.letter === "b" || p.letter === "k" ? p.h * 0.3 : p.h * 0.06),
+            w: reach,
+            h: fl.height,
+          },
+        ];
+    let hit = false;
+    for (const box of boxes) {
+      for (const e of this.enemies) {
+        if (!e.alive) continue;
+        if (e.hurt > 0 && tick === 0) continue;
+        if (!aabb(box, e)) continue;
+        this.hitEnemy(e, dmg, p.facing);
+        if ((p.letter === "k" || p.letter === "n") && e.alive && !this.isBossKind(e.kind)) {
+          e.stun = Math.max(e.stun, 1.35);
+        }
+        hit = true;
+      }
+    }
+    const kit = KITS[p.letter] ?? KITS.c;
+    this.burst(
+      p.x + p.w / 2 + p.facing * (reach * 0.4),
+      p.y + p.h * 0.45,
+      kit.glow,
+      hit ? 14 : 7,
+      p.letter === "r" ? "ember" : "spark",
+    );
+    if (hit) {
+      this.trauma = Math.min(1, this.trauma + 0.16);
+      this.hitstop = 0.055;
+    }
   }
 
   private meleeStrike() {
@@ -3429,6 +3528,8 @@ export class GameEngine {
     this.player.melee = 0;
     this.player.attack = 0;
     this.player.attackHit = false;
+    this.player.flourish = 0;
+    this.player.meleeCharge = 0;
     this.applySize();
     this.swapCd = 0.35;
     this.player.invuln = Math.max(this.player.invuln, 0.2);

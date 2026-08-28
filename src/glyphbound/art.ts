@@ -70,6 +70,11 @@ export const ART_MANIFEST: ArtEntry[] = [
   { kind: "fx", name: "slash-thrust", cols: 2, rows: 2 },
   { kind: "fx", name: "slash-ember", cols: 2, rows: 2 },
   { kind: "fx", name: "impact-hit", cols: 2, rows: 2 },
+  { kind: "fx", name: "flourish-ring", cols: 2, rows: 2 },
+  { kind: "fx", name: "flourish-reaper", cols: 2, rows: 2 },
+  { kind: "fx", name: "flourish-slam", cols: 2, rows: 2 },
+  { kind: "fx", name: "flourish-thrust", cols: 2, rows: 2 },
+  { kind: "fx", name: "flourish-ember", cols: 2, rows: 2 },
 ];
 
 const byKey = new Map<string, ArtEntry>();

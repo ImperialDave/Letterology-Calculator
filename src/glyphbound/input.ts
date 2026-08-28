@@ -5,6 +5,8 @@ export type Actions = {
   jumpHeld: boolean;
   attack: boolean;
   attackHeld: boolean;
+  fang: boolean;
+  fangHeld: boolean;
   special: boolean;
   interact: boolean;
   pause: boolean;
@@ -27,6 +29,8 @@ const empty = (): Actions => ({
   jumpHeld: false,
   attack: false,
   attackHeld: false,
+  fang: false,
+  fangHeld: false,
   special: false,
   interact: false,
   pause: false,
@@ -60,6 +64,7 @@ const GAME_KEYS = new Set([
   "KeyX",
   "KeyR",
   "KeyF",
+  "KeyH",
   "Tab",
   "Backquote",
   "BracketLeft",
@@ -298,6 +303,11 @@ export class Input {
       this.edge("KeyJ") ||
       this.edge("KeyZ") ||
       (this.buttons.has("attack") && !this.prevButtons.has("attack"));
+    a.fangHeld = this.held("KeyF") || this.held("KeyH") || this.buttons.has("fang");
+    a.fang =
+      this.edge("KeyF") ||
+      this.edge("KeyH") ||
+      (this.buttons.has("fang") && !this.prevButtons.has("fang"));
     a.special =
       this.edge("KeyK") ||
       this.edge("KeyX") ||
@@ -340,11 +350,11 @@ export class Input {
 
     // Cycle the cell when the roster outgrows a single number row.
     // Tab / Q / ]  → next ·  ` / [ / R  → previous · touch: cycle / cyclePrev
+    // F is Fang, never cycle.
     if (
       this.edge("Tab") ||
       this.edge("KeyQ") ||
       this.edge("BracketRight") ||
-      this.edge("KeyF") ||
       (this.buttons.has("cycle") && !this.prevButtons.has("cycle"))
     ) {
       a.cycle = 1;

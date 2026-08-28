@@ -246,6 +246,11 @@ export interface Player {
   attackHit: boolean;
   melee: number;
   meleeMax: number;
+  meleeCharge: number;
+  flourish: number;
+  flourishMax: number;
+  flourishCd: number;
+  flourishHits: number;
   special: number;
   specialCd: number;
   roll: number;

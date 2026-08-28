@@ -11,7 +11,7 @@ import {
 } from "./types";
 import { blitArt } from "./art";
 import { KITS } from "./roster";
-import { meleeAngle, meleePhase, weaponFor, type MeleeFamily } from "./weapons";
+import { flourishPhase, meleeAngle, meleePhase, weaponFor, type MeleeFamily } from "./weapons";
 import { fxLite } from "./sky";
 import type { Solid } from "./types";
 
@@ -2437,45 +2437,66 @@ function drawCodeWeapon(ctx: CanvasRenderingContext2D, family: MeleeFamily, glow
 function drawMelee(ctx: CanvasRenderingContext2D, p: Player, cx: number, cy: number, t: number) {
   const wpn = weaponFor(p.letter);
   const pal = inkPalette(p.letter, p.capital);
-  const phase = meleePhase(p.attack, p.letter);
-  const idle = p.melee <= 0 && p.attack <= 0;
-  const ang = meleeAngle(phase, wpn.family, idle);
+  const flourishing = p.flourish > 0;
+  const phase = flourishing ? flourishPhase(p.flourish, p.flourishMax) : meleePhase(p.attack, p.letter);
+  const idle = p.melee <= 0 && p.flourish <= 0 && p.attack <= 0;
+  const wind = idle ? Math.min(1, p.meleeCharge / 0.18) : 0;
+  const ang =
+    meleeAngle(phase, wpn.family, idle, flourishing) +
+    (idle ? wpn.pose.rest : 0) -
+    wind * 0.55;
+  const pose = wpn.pose;
   ctx.save();
   ctx.translate(cx, cy);
   ctx.scale(p.facing, 1);
-  ctx.translate(p.w * 0.12, p.h * 0.02);
+  ctx.translate(p.w * 0.18, p.h * 0.06);
   ctx.rotate(ang);
-  const swing = !idle && phase > 0.28 && phase < 0.72;
-  if (swing) {
+  if (pose.flipX) ctx.scale(-1, 1);
+  const pulse = flourishing ? 1 + Math.sin(phase * Math.PI) * 0.16 : 1;
+  const dw = pose.drawW * pulse;
+  const dh = pose.drawH * pulse;
+  ctx.translate(-pose.gripX * dw, -pose.gripY * dh);
+  const swing = !idle && phase > 0.18 && phase < 0.88;
+  if (swing || flourishing) {
     ctx.save();
-    ctx.globalAlpha = 0.22;
-    ctx.rotate(-0.35);
-    drawCodeWeapon(ctx, wpn.family, pal.glow, pal.core, 1);
+    ctx.globalAlpha = flourishing ? 0.32 : 0.2;
+    ctx.rotate(flourishing ? -0.55 : -0.32);
+    drawCodeWeapon(ctx, wpn.family, pal.glow, pal.core, flourishing ? 1.15 : 1);
     ctx.restore();
   }
-  const sprite = blitArt(ctx, "weapons", p.letter, -6, -22, 56, 48, 0);
-  if (!sprite) drawCodeWeapon(ctx, wpn.family, pal.glow, pal.core, 1);
+  if (flourishing) {
+    ctx.shadowColor = pal.glow;
+    ctx.shadowBlur = 14;
+  }
+  const sprite = blitArt(ctx, "weapons", p.letter, 0, 0, dw, dh, 0);
+  if (!sprite) {
+    ctx.translate(pose.gripX * dw, pose.gripY * dh);
+    drawCodeWeapon(ctx, wpn.family, pal.glow, pal.core, 1);
+  }
   ctx.restore();
-  if (swing) {
-    const fx = `slash-${wpn.family}`;
+  if (swing || flourishing) {
+    const fxName = flourishing ? wpn.flourish.fx : `slash-${wpn.family}`;
     const frame = Math.min(3, Math.floor(phase * 4));
-    const ox = cx + p.facing * (18 + wpn.reach * 0.18);
-    const oy = cy - 6;
+    const ox = cx + p.facing * (flourishing ? 8 + wpn.flourish.reach * 0.12 : 18 + wpn.reach * 0.18);
+    const oy = cy - (flourishing ? 10 : 6);
+    const fw = flourishing ? 96 : 72;
+    const fh = flourishing ? 72 : 52;
     ctx.save();
     ctx.translate(ox, oy);
     ctx.scale(p.facing, 1);
-    const used = blitArt(ctx, "fx", fx, -28, -24, 72, 52, t, frame);
+    const used = blitArt(ctx, "fx", fxName, -fw / 2, -fh / 2, fw, fh, t, frame);
     if (!used) {
       ctx.strokeStyle = pal.glow;
-      ctx.globalAlpha = 0.55;
-      ctx.lineWidth = 3;
+      ctx.globalAlpha = flourishing ? 0.7 : 0.55;
+      ctx.lineWidth = flourishing ? 4 : 3;
       ctx.beginPath();
-      ctx.arc(4, 4, 22 + phase * 8, -0.9, 0.8);
+      if (flourishing && wpn.flourish.bothSides) ctx.arc(0, 4, 26 + phase * 14, 0, Math.PI * 2);
+      else ctx.arc(4, 4, 22 + phase * 8, -0.9, 0.8);
       ctx.stroke();
     }
     ctx.restore();
-    if (p.attackHit && p.melee > wpn.time * 0.35) {
-      blitArt(ctx, "fx", "impact-hit", ox - 16, oy - 16, 36, 36, t, frame);
+    if ((p.attackHit || p.flourishHits > 0) && (p.melee > 0 || p.flourish > 0)) {
+      blitArt(ctx, "fx", "impact-hit", ox - 18, oy - 18, 40, 40, t, frame);
     }
   }
 }
@@ -2815,9 +2836,14 @@ export function drawHudCanvas(
   ctx.font = "600 11px 'Source Sans 3', sans-serif";
   ctx.textAlign = "left";
   ctx.fillText(p.capital ? p.letter.toUpperCase() : p.letter, 310, 30);
-  ctx.fillStyle = "#8ec8d4";
+  ctx.fillStyle = p.flourish > 0 ? "#e8c878" : "#8ec8d4";
   ctx.font = "600 9px 'Source Sans 3', sans-serif";
-  ctx.fillText(weaponFor(p.letter).name.toUpperCase(), 310, 44);
+  const wpn = weaponFor(p.letter);
+  ctx.fillText((p.flourish > 0 ? wpn.flourish.name : wpn.name).toUpperCase(), 310, 44);
+  if (p.flourishCd <= 0 && p.flourish <= 0) {
+    ctx.fillStyle = "#e8c878";
+    ctx.fillRect(302, 38, 5, 5);
+  }
   ctx.fillStyle = "rgba(232,236,232,0.85)";
   ctx.font = "500 13px 'Source Sans 3', sans-serif";
   if (objective) ctx.fillText(objective, 16, VIEW_H - 18);
