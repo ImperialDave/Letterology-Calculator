@@ -1,5 +1,9 @@
 export type Actions = {
   moveX: number;
+  /** Stick / arrows for melee aim. -1 left, +1 right. */
+  aimX: number;
+  /** Stick / arrows for melee aim. -1 up, +1 down. */
+  aimY: number;
   down: boolean;
   jump: boolean;
   jumpHeld: boolean;
@@ -24,6 +28,8 @@ export type Actions = {
 
 const empty = (): Actions => ({
   moveX: 0,
+  aimX: 0,
+  aimY: 0,
   down: false,
   jump: false,
   jumpHeld: false,
@@ -287,18 +293,31 @@ export class Input {
       this.held("ArrowDown") ||
       this.stick.y > 0.48 ||
       this.buttons.has("down");
-    const jumpNow =
-      this.held("Space") ||
-      this.held("KeyW") ||
-      this.held("ArrowUp") ||
-      this.buttons.has("jump");
-    a.jumpHeld = jumpNow || this.stick.y < -0.48;
+    const upKey = this.held("KeyW") || this.held("ArrowUp");
+    const attackHeld = this.held("KeyJ") || this.held("KeyZ") || this.buttons.has("attack");
+    let aimX = mx;
+    if (this.stick.active && Math.abs(this.stick.x) > 0.28) aimX = this.stick.x;
+    a.aimX = Math.max(-1, Math.min(1, aimX));
+    if (this.stick.active && Math.abs(this.stick.y) > 0.4) {
+      a.aimY = this.stick.y > 0 ? 1 : -1;
+    } else if (a.down && !upKey) {
+      a.aimY = 1;
+    } else if (upKey && !a.down) {
+      a.aimY = -1;
+    } else {
+      a.aimY = 0;
+    }
+    const jumpBtn =
+      this.held("Space") || this.buttons.has("jump");
+    // W / ArrowUp / stick-up aim the melee kit. Space and the Jump pad still hop.
+    // Holding Strike plus up is an up-tilt / up-smash, not a jump.
+    const tapJump = (upKey || this.stick.y < -0.48) && !attackHeld;
+    a.jumpHeld = jumpBtn || tapJump;
     a.jump =
       this.edge("Space") ||
-      this.edge("KeyW") ||
-      this.edge("ArrowUp") ||
-      (this.buttons.has("jump") && !this.prevButtons.has("jump"));
-    a.attackHeld = this.held("KeyJ") || this.held("KeyZ") || this.buttons.has("attack");
+      (this.buttons.has("jump") && !this.prevButtons.has("jump")) ||
+      (!attackHeld && (this.edge("KeyW") || this.edge("ArrowUp")));
+    a.attackHeld = attackHeld;
     a.attack =
       this.edge("KeyJ") ||
       this.edge("KeyZ") ||

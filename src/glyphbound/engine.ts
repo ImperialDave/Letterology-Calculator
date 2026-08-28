@@ -26,6 +26,19 @@ import { blankFolio, cloneRows, folioTheme, resizeRows, sandboxSave, stampCell }
 import { collectedLore, loreIdFromGlyph } from "./lore";
 import { KITS, PENTAD } from "./roster";
 import { shotCostFor, weaponFor } from "./weapons";
+import {
+  JAB_WINDOW,
+  TILT_HOLD,
+  classifyMelee,
+  intentToMove,
+  isAerial,
+  isJab,
+  nextJab,
+  resolveMove,
+  smashKindFromIntent,
+  smashMove,
+  type MeleeMoveId,
+} from "./melee";
 import { SLOT_COUNT, activeSlot, clearSave, defaultSave, listSlots, loadSave, selectSlot, writeSave } from "./save";
 import { preloadArt } from "./art";
 import { isMovingSolid, SolidGrid } from "./spatial";
@@ -362,6 +375,13 @@ export class GameEngine {
       melee: 0,
       meleeMax: 0,
       meleeCharge: 0,
+      meleeMove: "",
+      meleeHits: 0,
+      jabStep: 0,
+      jabQueue: false,
+      jabWindow: 0,
+      smashKind: "",
+      smashPower: 0,
       flourish: 0,
       flourishMax: 0,
       flourishCd: 0,
@@ -1149,12 +1169,21 @@ export class GameEngine {
     const kit = KITS[p.letter] ?? KITS.c;
     const spd = kit.spd + (p.capital ? -12 : 0);
     if (p.roll <= 0) {
-      if (a.moveX !== 0) p.facing = a.moveX > 0 ? 1 : -1;
-      const target = a.moveX * spd;
+      const lockFace =
+        p.smashKind !== "" ||
+        (p.melee > 0 &&
+          (p.meleeMove === "bair" ||
+            p.meleeMove === "fsmash" ||
+            p.meleeMove === "usmash" ||
+            p.meleeMove === "dsmash" ||
+            p.meleeMove === "dash"));
+      if (a.moveX !== 0 && !lockFace) p.facing = a.moveX > 0 ? 1 : -1;
+      const smashHold = p.smashKind !== "";
+      const target = smashHold ? 0 : a.moveX * spd;
       const reversing = a.moveX !== 0 && p.vx * a.moveX < 0;
-      const rate = p.grounded ? (reversing ? 32 : 22) : reversing ? 14 : 10;
+      const rate = smashHold ? 18 : p.grounded ? (reversing ? 32 : 22) : reversing ? 14 : 10;
       p.vx += (target - p.vx) * (1 - Math.exp(-rate * dt));
-      if (a.moveX === 0 && Math.abs(p.vx) < 6) p.vx = 0;
+      if ((a.moveX === 0 || smashHold) && Math.abs(p.vx) < 6) p.vx = 0;
     }
     const gUp = 1300;
     const gDown = 2400;
@@ -1255,6 +1284,8 @@ export class GameEngine {
     p.hurtFlash = Math.max(0, p.hurtFlash - dt);
     p.attack = Math.max(0, p.attack - dt);
     p.melee = Math.max(0, p.melee - dt);
+    p.jabWindow = Math.max(0, p.jabWindow - dt);
+    if (p.melee <= 0 && p.meleeMove && !isJab(p.meleeMove as MeleeMoveId)) p.meleeMove = "";
     p.flourish = Math.max(0, p.flourish - dt);
     p.flourishCd = Math.max(0, p.flourishCd - dt);
     p.special = Math.max(0, p.special - dt);
@@ -1832,30 +1863,107 @@ export class GameEngine {
     }
   }
 
+  private meleeIntent(a: ReturnType<Input["poll"]>) {
+    const p = this.player;
+    const kit = KITS[p.letter] ?? KITS.c;
+    return classifyMelee({
+      grounded: p.grounded,
+      facing: p.facing,
+      vx: p.vx,
+      spd: kit.spd,
+      aimX: a.aimX,
+      aimY: a.aimY,
+    });
+  }
+
   private updateCombat(dt: number, a: ReturnType<Input["poll"]>) {
     const p = this.player;
-    const wpn = weaponFor(p.letter);
-    if (p.flourish > 0) this.tickFlourish();
-    else if (p.melee > 0 && !p.attackHit) {
-      const spent = 1 - p.melee / Math.max(0.001, p.meleeMax);
-      if (spent >= wpn.hitAt) this.meleeStrike();
+    if (p.grounded && isAerial(p.meleeMove as MeleeMoveId) && p.melee > 0) {
+      p.melee = Math.min(p.melee, 0.1);
+      p.attack = p.melee;
+      p.meleeCharge = 0;
     }
-    if (a.attackHeld && p.roll <= 0) {
-      p.meleeCharge += dt;
-      if (p.flourish <= 0 && p.melee <= 0 && p.meleeCharge > 0) {
-        p.squash = 0.9 - Math.min(0.12, p.meleeCharge * 0.55);
-      }
-      if (p.meleeCharge >= 0.18 && p.flourish <= 0 && p.flourishCd <= 0 && p.melee <= 0) {
-        this.startFlourish();
-        p.meleeCharge = 0;
+    if (p.flourish > 0) this.tickFlourish();
+    else if (p.melee > 0) this.tickMelee();
+    if (p.melee <= 0 && p.jabQueue) {
+      const nxt = nextJab(p.meleeMove as MeleeMoveId);
+      p.jabQueue = false;
+      if (nxt) this.startMeleeMove(nxt, 0);
+    }
+    if (p.jabWindow <= 0 && p.melee <= 0) {
+      p.jabStep = 0;
+      if (isJab(p.meleeMove as MeleeMoveId)) p.meleeMove = "";
+    }
+
+    const busy = p.flourish > 0 || p.melee > 0 || p.roll > 0;
+    const intent = this.meleeIntent(a);
+
+    if (!p.grounded && a.attack && !busy) {
+      this.faceForIntent(intent, a.aimX);
+      this.startMeleeMove(intentToMove(intent, 0), 0);
+      p.meleeCharge = 0;
+    } else if (p.grounded && a.attack && intent === "dash" && !busy) {
+      this.faceForIntent(intent, a.aimX);
+      this.startMeleeMove("dash", 0);
+      p.meleeCharge = 0;
+    } else if (a.attackHeld && p.roll <= 0 && p.flourish <= 0) {
+      if (p.melee <= 0) {
+        p.meleeCharge += dt;
+        if (p.smashKind) {
+          p.smashPower = Math.min(1, (p.meleeCharge - TILT_HOLD) / 0.72);
+          p.squash = 0.84 - p.smashPower * 0.1;
+          if (p.meleeCharge >= TILT_HOLD + 0.86) this.releaseSmash();
+        } else {
+          p.squash = 0.9 - Math.min(0.12, p.meleeCharge * 0.55);
+          if (p.meleeCharge >= TILT_HOLD) {
+            const smash = smashKindFromIntent(intent);
+            if (smash && p.grounded) {
+              this.faceForIntent(intent, a.aimX);
+              p.smashKind = smash;
+              p.smashPower = 0;
+            } else if (p.grounded && p.flourishCd <= 0 && p.jabWindow <= 0) {
+              this.startFlourish();
+              p.meleeCharge = 0;
+            } else if (p.grounded && p.jabWindow > 0 && p.jabStep > 0 && p.jabStep < 3) {
+              const nxt = nextJab(p.jabStep === 1 ? "jab1" : "jab2");
+              if (nxt) this.startMeleeMove(nxt, 0);
+            }
+          }
+        }
+      } else if (isJab(p.meleeMove as MeleeMoveId) && p.jabStep < 3) {
+        const spent = 1 - p.melee / Math.max(0.001, p.meleeMax);
+        if (spent > 0.4) p.jabQueue = true;
       }
     } else {
-      if (p.meleeCharge > 0 && p.meleeCharge < 0.18 && p.melee <= 0 && p.flourish <= 0 && p.roll <= 0) {
-        this.startMelee();
+      if (p.smashKind && p.melee <= 0 && p.flourish <= 0 && p.roll <= 0) {
+        this.releaseSmash();
+      } else if (
+        p.meleeCharge > 0 &&
+        p.meleeCharge < TILT_HOLD &&
+        p.melee <= 0 &&
+        p.flourish <= 0 &&
+        p.roll <= 0 &&
+        p.grounded
+      ) {
+        this.faceForIntent(intent, a.aimX);
+        this.startMeleeMove(intentToMove(intent, p.jabStep), 0);
       }
       p.meleeCharge = 0;
     }
-    if ((a.fang || a.fangHeld) && p.flourish <= 0 && p.melee <= 0 && p.shotCd <= 0 && p.roll <= 0) {
+
+    if (a.attack && isJab(p.meleeMove as MeleeMoveId) && p.melee > 0 && p.jabStep < 3) {
+      const spent = 1 - p.melee / Math.max(0.001, p.meleeMax);
+      if (spent > 0.28) p.jabQueue = true;
+    }
+
+    if (
+      (a.fang || a.fangHeld) &&
+      p.flourish <= 0 &&
+      p.melee <= 0 &&
+      !p.smashKind &&
+      p.shotCd <= 0 &&
+      p.roll <= 0
+    ) {
       this.tryFang();
     }
     if (a.special && p.specialCd <= 0 && p.roll <= 0) {
@@ -1863,15 +1971,50 @@ export class GameEngine {
     }
   }
 
-  private startMelee() {
+  private faceForIntent(intent: ReturnType<typeof classifyMelee>, aimX: number) {
+    if (intent === "bair") return;
+    if (aimX > 0.3) this.player.facing = 1;
+    else if (aimX < -0.3) this.player.facing = -1;
+  }
+
+  private releaseSmash() {
     const p = this.player;
-    const wpn = weaponFor(p.letter);
-    p.melee = wpn.time;
-    p.meleeMax = wpn.time;
-    p.attack = wpn.time;
+    const kind = p.smashKind;
+    const power = p.smashPower;
+    p.smashKind = "";
+    p.smashPower = 0;
+    p.meleeCharge = 0;
+    if (!kind) return;
+    this.startMeleeMove(smashMove(kind), power);
+  }
+
+  private startMeleeMove(id: MeleeMoveId, smashPower: number) {
+    const p = this.player;
+    const move = resolveMove(p.letter, id, smashPower);
+    p.meleeMove = id;
+    p.melee = move.time;
+    p.meleeMax = move.time;
+    p.meleeHits = 0;
+    p.attack = move.time;
     p.attackHit = false;
-    p.squash = 0.88;
+    p.squash = move.smash ? 0.72 : 0.88;
+    p.meleeCharge = 0;
+    p.smashPower = smashPower;
+    p.smashKind = "";
+    if (isJab(id)) {
+      p.jabStep = id === "jab3" ? 3 : id === "jab2" ? 2 : 1;
+      p.jabWindow = JAB_WINDOW;
+      p.jabQueue = false;
+    } else {
+      p.jabStep = 0;
+      p.jabWindow = 0;
+      p.jabQueue = false;
+    }
+    const face = move.behind ? -p.facing : p.facing;
+    if (move.selfVx) p.vx += face * move.selfVx * (p.capital ? 1.12 : 1);
+    if (move.selfVy) p.vy += move.selfVy;
     this.audio.sfxShot();
+    if (move.smash || id === "jab3" || id === "dair" || id === "dash") this.say(move.name.toUpperCase());
   }
 
   private startFlourish() {
@@ -1883,6 +2026,12 @@ export class GameEngine {
     p.flourishCd = fl.cd;
     p.attack = fl.time;
     p.attackHit = false;
+    p.melee = 0;
+    p.meleeMove = "";
+    p.smashKind = "";
+    p.smashPower = 0;
+    p.jabStep = 0;
+    p.jabQueue = false;
     p.squash = 0.76;
     if (p.letter === "r") {
       p.vx += p.facing * (p.capital ? 320 : 240);
@@ -1951,35 +2100,64 @@ export class GameEngine {
     }
   }
 
-  private meleeStrike() {
+  private tickMelee() {
     const p = this.player;
-    p.attackHit = true;
-    const wpn = weaponFor(p.letter);
-    const box = {
-      x: p.facing > 0 ? p.x + p.w * 0.45 : p.x - wpn.reach + p.w * 0.55,
-      y: p.y + p.h * 0.12,
-      w: wpn.reach,
-      h: wpn.height,
+    const id = p.meleeMove as MeleeMoveId;
+    if (!id || !p.meleeMax) return;
+    const move = resolveMove(p.letter, id, p.smashPower);
+    const phase = 1 - p.melee / p.meleeMax;
+    while (p.meleeHits < move.hitAt.length && phase >= move.hitAt[p.meleeHits]) {
+      this.meleeStrike(p.meleeHits);
+      p.meleeHits += 1;
+    }
+  }
+
+  private meleeBoxes(move: ReturnType<typeof resolveMove>) {
+    const p = this.player;
+    const face = move.behind ? -p.facing : p.facing;
+    const y = p.y + Math.max(0, Math.min(p.h - 8, move.oy));
+    const forward = {
+      x: face > 0 ? p.x + p.w * 0.35 + move.ox : p.x - move.reach + p.w * 0.65 - move.ox,
+      y,
+      w: move.reach,
+      h: move.height,
     };
-    const dmg = wpn.dmg + (p.capital ? 1 : 0);
+    if (!move.bothSides) return [forward];
+    return [
+      { x: p.x + p.w / 2, y, w: move.reach, h: move.height },
+      { x: p.x + p.w / 2 - move.reach, y, w: move.reach, h: move.height },
+    ];
+  }
+
+  private meleeStrike(tick: number) {
+    const p = this.player;
+    const id = (p.meleeMove || "jab1") as MeleeMoveId;
+    const move = resolveMove(p.letter, id, p.smashPower);
+    p.attackHit = true;
+    const dmg = move.dmg + (p.capital ? 1 : 0);
+    const face = move.behind ? -p.facing : p.facing;
     let hit = false;
-    for (const e of this.enemies) {
-      if (!e.alive || e.hurt > 0) continue;
-      if (!aabb(box, e)) continue;
-      this.hitEnemy(e, dmg, p.facing);
-      hit = true;
+    for (const box of this.meleeBoxes(move)) {
+      for (const e of this.enemies) {
+        if (!e.alive) continue;
+        if (e.hurt > 0 && tick === 0) continue;
+        if (!aabb(box, e)) continue;
+        this.hitEnemy(e, dmg, face, { x: move.kbX, y: move.kbY, stun: move.stun });
+        hit = true;
+      }
     }
     const kit = KITS[p.letter] ?? KITS.c;
     this.burst(
-      p.x + p.w / 2 + p.facing * (wpn.reach * 0.55),
-      p.y + p.h * 0.4,
+      p.x + p.w / 2 + face * (move.reach * 0.5),
+      p.y + Math.max(10, move.oy + move.height * 0.4),
       kit.glow,
-      hit ? 10 : 5,
-      p.letter === "r" ? "ember" : "spark",
+      hit ? (move.smash ? 14 : 10) : 5,
+      move.spike || p.letter === "r" ? "ember" : "spark",
     );
     if (hit) {
-      this.trauma = Math.min(1, this.trauma + 0.12);
-      this.hitstop = 0.04;
+      this.trauma = Math.min(1, this.trauma + (move.smash ? 0.18 : 0.12));
+      this.hitstop = move.smash ? 0.06 : 0.04;
+      if (isJab(id)) p.jabWindow = JAB_WINDOW;
     }
   }
 
@@ -2044,15 +2222,17 @@ export class GameEngine {
     return cycle < 1.0;
   }
 
-  private hitEnemy(e: Enemy, dmg: number, dir: number) {
+  private hitEnemy(e: Enemy, dmg: number, dir: number, kb?: { x?: number; y?: number; stun?: number }) {
     if (e.hurt > 0) return;
     e.hp -= dmg;
     e.hurt = this.isBossKind(e.kind) ? 0.18 : 0.1;
     const boss = this.isBossKind(e.kind);
-    if (!boss) e.stun = 0.95;
+    const kx = kb?.x ?? 160;
+    const ky = kb?.y ?? -36;
+    if (!boss) e.stun = kb?.stun ?? 0.95;
     e.flash = Math.max(e.flash, 0.18);
-    e.vx += dir * (boss ? 36 : 160);
-    if (!boss) e.vy = -36;
+    e.vx += dir * (boss ? Math.min(48, kx * 0.22) : kx);
+    if (!boss) e.vy = ky;
     if (!boss) e.aux = 0;
     this.audio.sfxHit();
     if (!boss) this.trauma = Math.min(1, this.trauma + 0.25);
@@ -3528,6 +3708,13 @@ export class GameEngine {
     this.player.melee = 0;
     this.player.attack = 0;
     this.player.attackHit = false;
+    this.player.meleeMove = "";
+    this.player.meleeHits = 0;
+    this.player.jabStep = 0;
+    this.player.jabQueue = false;
+    this.player.jabWindow = 0;
+    this.player.smashKind = "";
+    this.player.smashPower = 0;
     this.player.flourish = 0;
     this.player.meleeCharge = 0;
     this.applySize();

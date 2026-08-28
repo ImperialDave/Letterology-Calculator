@@ -36,3 +36,30 @@ test("H is the fang alternate and Tab still cycles", () => {
   assert.equal(cycle.cycle, 1);
   assert.equal(cycle.fang, false);
 });
+
+test("arrows and WASD aim the melee kit", () => {
+  const right = press(["ArrowRight"]);
+  assert.equal(right.aimX, 1);
+  assert.equal(right.aimY, 0);
+  const left = press(["KeyA"]);
+  assert.equal(left.aimX, -1);
+  const up = press(["ArrowUp"]);
+  assert.equal(up.aimY, -1);
+  const down = press(["KeyS"]);
+  assert.equal(down.aimY, 1);
+  assert.equal(down.down, true);
+});
+
+test("Strike plus up aims an up-tilt and does not jump", () => {
+  const a = press(["KeyW", "KeyJ"]);
+  assert.equal(a.aimY, -1);
+  assert.equal(a.attack, true);
+  assert.equal(a.jump, false);
+  assert.equal(a.jumpHeld, false);
+});
+
+test("Space still jumps while aiming a strike", () => {
+  const a = press(["Space", "KeyJ"]);
+  assert.equal(a.jump, true);
+  assert.equal(a.attack, true);
+});

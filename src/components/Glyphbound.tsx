@@ -38,7 +38,21 @@ function ControlsCard() {
           <p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-subtle">Fight</p>
           <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-muted">
             <span className="text-fg">J Z</span>
-            <span>Strike · hold for that letter's flourish</span>
+            <span>Strike · direction on the stick or arrows picks the move</span>
+            <span className="text-fg">Tap J</span>
+            <span>Neutral jab combo · tap again for jab 2 and the finisher</span>
+            <span className="text-fg">→ / ← + J</span>
+            <span>F-tilt · dash attack if you are already running</span>
+            <span className="text-fg">↑ + J</span>
+            <span>Up-tilt · Space still jumps; hold Strike with up so you do not hop</span>
+            <span className="text-fg">↓ + J</span>
+            <span>Down-tilt</span>
+            <span className="text-fg">Hold J + dir</span>
+            <span>Charge a smash · release to fire · gold bar is the charge</span>
+            <span className="text-fg">Hold J</span>
+            <span>No direction: that letter's flourish</span>
+            <span className="text-fg">Air + J</span>
+            <span>Nair · fair · bair · uair · dair · stick/arrows pick the aerial</span>
             <span className="text-fg">F H</span>
             <span>Fang · ink-heavy ranged · never the same key as strike</span>
             <span className="text-fg">Flourish</span>
@@ -104,7 +118,7 @@ function ControlsCard() {
         </div>
       </div>
       <p className="mt-3 text-[11px] leading-snug text-subtle">
-        Touch: left stick to move. Jump under the right thumb. Strike beside it (hold to flourish). Fang under Skill. Skill above Jump, named for who is in play.
+        Touch: left stick to move. Jump under the right thumb. Strike beside it — tilt the stick as you tap for tilts and aerials, hold Strike with a direction to charge a smash, hold Strike still for that letter's flourish. Fang under Skill. Skill above Jump, named for who is in play.
         Stem and Shelf are separate so you do not fight the stick while you write. Tilt the stick and tap Skill to dash eight ways. When the cell grows, cycle with ↻ / ↺ beside the portraits.
       </p>
     </div>

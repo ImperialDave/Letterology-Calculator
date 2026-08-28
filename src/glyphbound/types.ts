@@ -247,6 +247,13 @@ export interface Player {
   melee: number;
   meleeMax: number;
   meleeCharge: number;
+  meleeMove: string;
+  meleeHits: number;
+  jabStep: number;
+  jabQueue: boolean;
+  jabWindow: number;
+  smashKind: "" | "side" | "up" | "down";
+  smashPower: number;
   flourish: number;
   flourishMax: number;
   flourishCd: number;
