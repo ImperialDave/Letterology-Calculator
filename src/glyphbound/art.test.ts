@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { existsSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ART_MANIFEST, loopOffset } from "./art";
@@ -12,6 +13,33 @@ test("every manifest art file exists on disk", () => {
     const p = join(root, "public/glyphbound", e.kind, `${e.name}.png`);
     assert.equal(existsSync(p), true, p);
   }
+});
+
+test("fx sheet cells have no magenta frame on the outer 2px", () => {
+  const fxDir = join(root, "public/glyphbound/fx");
+  const py = `
+from PIL import Image
+from pathlib import Path
+root = Path(${JSON.stringify(fxDir)})
+fail = []
+for path in sorted(root.glob("*.png")):
+    im = Image.open(path).convert("RGBA")
+    w, h = im.size
+    cols = rows = 2
+    cw, ch = w // cols, h // rows
+    px = im.load()
+    for r in range(rows):
+        for c in range(cols):
+            x0, y0 = c * cw, r * ch
+            for y in (y0, y0 + 1, y0 + ch - 2, y0 + ch - 1):
+                for x in range(x0, x0 + cw):
+                    R, G, B, a = px[x, y]
+                    if a > 40 and R > 160 and B > 80 and G < 90:
+                        fail.append(path.name)
+print(",".join(sorted(set(fail))))
+`;
+  const out = execFileSync("python3", ["-c", py], { encoding: "utf8" }).trim();
+  assert.equal(out, "", out);
 });
 
 test("loopOffset repeats a strip at one width", () => {

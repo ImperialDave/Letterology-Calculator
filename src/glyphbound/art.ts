@@ -69,6 +69,12 @@ export const ART_MANIFEST: ArtEntry[] = [
   { kind: "fx", name: "slash-smash", cols: 2, rows: 2 },
   { kind: "fx", name: "slash-thrust", cols: 2, rows: 2 },
   { kind: "fx", name: "slash-ember", cols: 2, rows: 2 },
+  { kind: "fx", name: "slash-side", cols: 2, rows: 2 },
+  { kind: "fx", name: "slash-up", cols: 2, rows: 2 },
+  { kind: "fx", name: "slash-down", cols: 2, rows: 2 },
+  { kind: "fx", name: "slash-back", cols: 2, rows: 2 },
+  { kind: "fx", name: "slash-dash", cols: 2, rows: 2 },
+  { kind: "fx", name: "smash-burst", cols: 2, rows: 2 },
   { kind: "fx", name: "impact-hit", cols: 2, rows: 2 },
   { kind: "fx", name: "flourish-ring", cols: 2, rows: 2 },
   { kind: "fx", name: "flourish-reaper", cols: 2, rows: 2 },
@@ -87,6 +93,20 @@ function keyOf(kind: string, name: string) {
 export function artUrl(kind: string, name: string) {
   return `/glyphbound/${kind}/${name}.png`;
 }
+
+/** Pin the thickest part of a slash cell on the hitbox, not the cell center. */
+export const FX_ORIGIN: Record<string, { ox: number; oy: number }> = {
+  "slash-side": { ox: 0.38, oy: 0.5 },
+  "slash-up": { ox: 0.48, oy: 0.78 },
+  "slash-down": { ox: 0.5, oy: 0.3 },
+  "slash-back": { ox: 0.62, oy: 0.5 },
+  "slash-dash": { ox: 0.2, oy: 0.5 },
+  "smash-burst": { ox: 0.5, oy: 0.5 },
+  "slash-arc": { ox: 0.45, oy: 0.5 },
+  "slash-thrust": { ox: 0.22, oy: 0.5 },
+  "slash-ember": { ox: 0.28, oy: 0.5 },
+  "slash-smash": { ox: 0.5, oy: 0.55 },
+};
 
 type Slot = HTMLImageElement | "fail";
 const images = new Map<string, Slot>();

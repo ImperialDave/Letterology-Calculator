@@ -4,6 +4,7 @@ import {
   MOVES,
   classifyMelee,
   comboDecay,
+  dashMove,
   enemyWeight,
   intentToMove,
   isAerial,
@@ -126,6 +127,19 @@ test("combo decay pops them out after a string", () => {
   const early = launchHit({ moveId: "nair", percent: 20, weight: 1, dir: 1, comboHits: 2 });
   const late = launchHit({ moveId: "nair", percent: 20, weight: 1, dir: 1, comboHits: 7 });
   assert.ok(late.speed > early.speed);
+});
+
+test("s t r c have sideways weapon dashes", () => {
+  const names = new Set<string>();
+  for (const id of ["s", "t", "r", "c"] as LetterId[]) {
+    const d = dashMove(id);
+    assert.ok(d.selfVx && d.selfVx >= 240, id);
+    assert.equal(d.fx, "slash-dash");
+    assert.equal(names.has(d.name), false, d.name);
+    names.add(d.name);
+    assert.ok(resolveMove(id, "dash", 0).selfVx! >= 240, id);
+  }
+  assert.ok((dashMove("b").selfVx ?? 0) < 240);
 });
 
 test("IASA and nair autocancel windows exist", () => {

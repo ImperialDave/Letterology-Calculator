@@ -9,10 +9,20 @@ import {
   type Player,
   type ThemeId,
 } from "./types";
-import { blitArt } from "./art";
+import { blitArt, FX_ORIGIN } from "./art";
 import { KITS } from "./roster";
 import { flourishPhase, weaponFor, type MeleeFamily } from "./weapons";
-import { MOVES, isAerial, moveSwingAngle, smashWindAngle, type MeleeMoveId, type SmashKind } from "./melee";
+import {
+  MOVES,
+  fxFrame,
+  isAerial,
+  moveSwingAngle,
+  resolveMove,
+  smashWindAngle,
+  swingProfile,
+  type MeleeMoveId,
+  type SmashKind,
+} from "./melee";
 import { fxLite } from "./sky";
 import type { Solid } from "./types";
 
@@ -2435,12 +2445,47 @@ function drawCodeWeapon(ctx: CanvasRenderingContext2D, family: MeleeFamily, glow
   void scale;
 }
 
+function drawWeaponAt(
+  ctx: CanvasRenderingContext2D,
+  p: Player,
+  cx: number,
+  cy: number,
+  ang: number,
+  handX: number,
+  handY: number,
+  glow: boolean,
+  glowColor: string,
+  facing: 1 | -1,
+) {
+  const wpn = weaponFor(p.letter);
+  const pose = wpn.pose;
+  const pal = inkPalette(p.letter, p.capital);
+  const dw = pose.drawW;
+  const dh = pose.drawH;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(facing, 1);
+  ctx.translate(handX, handY);
+  ctx.rotate(ang);
+  if (pose.flipX) ctx.scale(-1, 1);
+  ctx.translate(-pose.gripX * dw, -pose.gripY * dh);
+  if (glow) {
+    ctx.shadowColor = glowColor;
+    ctx.shadowBlur = 12;
+  }
+  if (!blitArt(ctx, "weapons", p.letter, 0, 0, dw, dh, 0)) {
+    ctx.translate(pose.gripX * dw, pose.gripY * dh);
+    drawCodeWeapon(ctx, wpn.family, pal.glow, pal.core, 1);
+  }
+  ctx.restore();
+}
+
 function drawMelee(ctx: CanvasRenderingContext2D, p: Player, cx: number, cy: number, t: number) {
   const wpn = weaponFor(p.letter);
   const pal = inkPalette(p.letter, p.capital);
   const flourishing = p.flourish > 0;
   const moveId = (p.meleeMove || "") as MeleeMoveId | "";
-  const move = moveId ? MOVES[moveId] : null;
+  const resolved = moveId ? resolveMove(p.letter, moveId, p.smashPower) : null;
   const charging = p.smashKind !== "" && p.melee <= 0 && !flourishing;
   const phase = flourishing
     ? flourishPhase(p.flourish, p.flourishMax)
@@ -2449,78 +2494,71 @@ function drawMelee(ctx: CanvasRenderingContext2D, p: Player, cx: number, cy: num
       : 0;
   const idle = p.melee <= 0 && p.flourish <= 0 && !charging;
   const wind = idle ? Math.min(1, p.meleeCharge / 0.18) : 0;
+  const profile = swingProfile(moveId);
   let ang = moveSwingAngle(moveId, phase, wpn.family, idle && !charging, flourishing);
   if (idle) ang += wpn.pose.rest - wind * 0.55;
   if (charging) ang = smashWindAngle(p.smashKind as SmashKind, wpn.family, p.smashPower) + wpn.pose.rest;
-  const pose = wpn.pose;
-  const behind = move?.behind ? -1 : 1;
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.scale(p.facing * behind, 1);
-  ctx.translate(p.w * 0.18, p.h * 0.06 + (moveId === "dtilt" || moveId === "dsmash" || moveId === "dair" ? 6 : 0));
-  ctx.rotate(ang);
-  if (pose.flipX) ctx.scale(-1, 1);
-  const pulse = flourishing || move?.smash ? 1 + Math.sin(phase * Math.PI) * 0.16 : charging ? 1 + p.smashPower * 0.12 : 1;
-  const dw = pose.drawW * pulse;
-  const dh = pose.drawH * pulse;
-  ctx.translate(-pose.gripX * dw, -pose.gripY * dh);
-  const swing = (!idle && phase > 0.16 && phase < 0.9) || charging;
-  if (swing || flourishing) {
+  const behind = resolved?.behind ? -1 : 1;
+  const handX = p.w * (0.18 + (profile?.handX ?? 0) * (moveId === "dash" ? 1 : 0.35));
+  const handY = p.h * 0.06 + (profile?.handY ?? 0) * p.h + (moveId === "dtilt" || moveId === "dsmash" || moveId === "dair" ? 6 : 0);
+  const swing = (!idle && phase > 0.14 && phase < 0.9) || charging;
+  const faceDir = (p.facing * behind) as 1 | -1;
+  const smears = swing && profile ? profile.smear : 0;
+  for (let i = smears; i >= 1; i--) {
+    const earlier = Math.max(0, phase - i * 0.07);
+    const ghost = moveSwingAngle(moveId, earlier, wpn.family, false, flourishing);
     ctx.save();
-    ctx.globalAlpha = flourishing || move?.smash ? 0.32 : charging ? 0.22 : 0.2;
-    ctx.rotate(flourishing ? -0.55 : -0.32);
-    drawCodeWeapon(ctx, wpn.family, charging ? "#e8c878" : pal.glow, pal.core, flourishing || move?.smash ? 1.15 : 1);
+    ctx.globalAlpha = 0.18 / i;
+    drawWeaponAt(ctx, p, cx, cy, ghost, handX + i * 4, handY, false, pal.glow, faceDir);
     ctx.restore();
   }
-  if (flourishing || move?.smash || charging) {
-    ctx.shadowColor = charging ? "#e8c878" : pal.glow;
-    ctx.shadowBlur = charging ? 8 + p.smashPower * 10 : 14;
-  }
-  const sprite = blitArt(ctx, "weapons", p.letter, 0, 0, dw, dh, 0);
-  if (!sprite) {
-    ctx.translate(pose.gripX * dw, pose.gripY * dh);
-    drawCodeWeapon(ctx, wpn.family, pal.glow, pal.core, 1);
-  }
-  ctx.restore();
+  drawWeaponAt(
+    ctx,
+    p,
+    cx,
+    cy,
+    ang,
+    handX,
+    handY,
+    flourishing || !!resolved?.smash || charging,
+    charging ? "#e8c878" : pal.glow,
+    faceDir,
+  );
   if (swing || flourishing) {
-    const fxName = flourishing ? wpn.flourish.fx : move?.fx || `slash-${wpn.family}`;
-    const frame = Math.min(3, Math.floor(phase * 4));
+    const fxName = flourishing ? wpn.flourish.fx : resolved?.fx || `slash-${wpn.family}`;
+    const frame = flourishing ? Math.min(3, Math.floor(phase * 4)) : fxFrame(phase, resolved?.hitAt ?? [0.4]);
     const face = p.facing * behind;
-    const ox =
-      cx +
-      face *
-        (flourishing
-          ? 8 + wpn.flourish.reach * 0.12
-          : moveId === "uair" || moveId === "usmash" || moveId === "utilt"
-            ? 4
-            : 16 + (move?.reach ?? wpn.reach) * 0.16);
+    const reach = flourishing ? wpn.flourish.reach : resolved?.reach ?? wpn.reach;
+    const ox = cx + face * (moveId === "dash" ? 10 + reach * 0.2 : flourishing ? 8 + reach * 0.12 : 6 + reach * 0.22);
     const oy =
       cy +
       (moveId === "dair" || moveId === "dsmash" || moveId === "dtilt"
-        ? 16
+        ? 18
         : moveId === "uair" || moveId === "usmash" || moveId === "utilt"
           ? -22
-          : flourishing
-            ? -10
-            : -6);
-    const fw = flourishing || move?.smash ? 96 : isAerial(moveId) ? 80 : 72;
-    const fh = flourishing || move?.smash ? 72 : 52;
+          : moveId === "dash"
+            ? 8
+            : flourishing
+              ? -10
+              : -4);
+    const fw = flourishing || resolved?.smash || moveId === "dash" ? 104 : isAerial(moveId) ? 80 : 72;
+    const fh = flourishing || resolved?.smash ? 72 : moveId === "dash" ? 40 : 52;
+    const origin = FX_ORIGIN[fxName] ?? { ox: 0.5, oy: 0.5 };
     ctx.save();
     ctx.translate(ox, oy);
     ctx.scale(face, 1);
-    const used = blitArt(ctx, "fx", fxName, -fw / 2, -fh / 2, fw, fh, t, frame);
+    const used = blitArt(ctx, "fx", fxName, -origin.ox * fw, -origin.oy * fh, fw, fh, t, frame);
     if (!used) {
       ctx.strokeStyle = charging ? "#e8c878" : pal.glow;
-      ctx.globalAlpha = flourishing || move?.smash ? 0.7 : 0.55;
-      ctx.lineWidth = flourishing || move?.smash ? 4 : 3;
+      ctx.globalAlpha = 0.6;
+      ctx.lineWidth = 3;
       ctx.beginPath();
-      if ((flourishing && wpn.flourish.bothSides) || move?.bothSides) ctx.arc(0, 4, 26 + phase * 14, 0, Math.PI * 2);
-      else ctx.arc(4, 4, 22 + phase * 8, -0.9, 0.8);
+      ctx.arc(4, 4, 22 + phase * 8, -0.9, 0.8);
       ctx.stroke();
     }
     ctx.restore();
     if ((p.attackHit || p.flourishHits > 0 || p.meleeHits > 0) && (p.melee > 0 || p.flourish > 0)) {
-      blitArt(ctx, "fx", "impact-hit", ox - 18, oy - 18, 40, 40, t, frame);
+      blitArt(ctx, "fx", "impact-hit", ox - 16, oy - 16, 36, 36, t, frame);
     }
   }
 }

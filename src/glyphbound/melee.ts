@@ -79,7 +79,7 @@ export const MOVES: Record<MeleeMoveId, MeleeMove> = {
     kbX: 24,
     kbY: -8,
     stun: 0.2,
-    fx: "slash-thrust",
+    fx: "slash-side",
   },
   jab2: {
     id: "jab2",
@@ -95,7 +95,7 @@ export const MOVES: Record<MeleeMoveId, MeleeMove> = {
     kbX: 36,
     kbY: -12,
     stun: 0.26,
-    fx: "slash-arc",
+    fx: "slash-side",
   },
   jab3: {
     id: "jab3",
@@ -112,7 +112,7 @@ export const MOVES: Record<MeleeMoveId, MeleeMove> = {
     kbY: -78,
     stun: 0.62,
     selfVx: 70,
-    fx: "slash-smash",
+    fx: "slash-side",
   },
   ftilt: {
     id: "ftilt",
@@ -128,7 +128,7 @@ export const MOVES: Record<MeleeMoveId, MeleeMove> = {
     kbX: 150,
     kbY: -46,
     stun: 0.48,
-    fx: "slash-arc",
+    fx: "slash-side",
   },
   utilt: {
     id: "utilt",
@@ -145,7 +145,7 @@ export const MOVES: Record<MeleeMoveId, MeleeMove> = {
     kbY: -210,
     stun: 0.5,
     selfVy: -40,
-    fx: "slash-arc",
+    fx: "slash-up",
   },
   dtilt: {
     id: "dtilt",
@@ -161,7 +161,7 @@ export const MOVES: Record<MeleeMoveId, MeleeMove> = {
     kbX: 110,
     kbY: -18,
     stun: 0.72,
-    fx: "slash-thrust",
+    fx: "slash-down",
   },
   dash: {
     id: "dash",
@@ -171,14 +171,14 @@ export const MOVES: Record<MeleeMoveId, MeleeMove> = {
     reach: 54,
     height: 26,
     ox: 6,
-    oy: 10,
+    oy: 14,
     dmg: 2,
     dmgMul: 0.75,
     kbX: 170,
     kbY: -36,
     stun: 0.5,
-    selfVx: 210,
-    fx: "slash-ember",
+    selfVx: 180,
+    fx: "slash-dash",
   },
   fsmash: {
     id: "fsmash",
@@ -196,7 +196,7 @@ export const MOVES: Record<MeleeMoveId, MeleeMove> = {
     stun: 0.85,
     selfVx: 90,
     smash: true,
-    fx: "flourish-thrust",
+    fx: "smash-burst",
   },
   usmash: {
     id: "usmash",
@@ -215,7 +215,7 @@ export const MOVES: Record<MeleeMoveId, MeleeMove> = {
     selfVy: -120,
     bothSides: true,
     smash: true,
-    fx: "flourish-ring",
+    fx: "slash-up",
   },
   dsmash: {
     id: "dsmash",
@@ -233,7 +233,7 @@ export const MOVES: Record<MeleeMoveId, MeleeMove> = {
     stun: 0.9,
     bothSides: true,
     smash: true,
-    fx: "flourish-slam",
+    fx: "slash-down",
   },
   nair: {
     id: "nair",
@@ -251,7 +251,7 @@ export const MOVES: Record<MeleeMoveId, MeleeMove> = {
     stun: 0.36,
     bothSides: true,
     aerial: true,
-    fx: "slash-arc",
+    fx: "slash-side",
   },
   fair: {
     id: "fair",
@@ -269,7 +269,7 @@ export const MOVES: Record<MeleeMoveId, MeleeMove> = {
     stun: 0.46,
     selfVx: 40,
     aerial: true,
-    fx: "slash-thrust",
+    fx: "slash-side",
   },
   bair: {
     id: "bair",
@@ -287,7 +287,7 @@ export const MOVES: Record<MeleeMoveId, MeleeMove> = {
     stun: 0.5,
     behind: true,
     aerial: true,
-    fx: "slash-ember",
+    fx: "slash-back",
   },
   uair: {
     id: "uair",
@@ -304,7 +304,7 @@ export const MOVES: Record<MeleeMoveId, MeleeMove> = {
     kbY: -230,
     stun: 0.48,
     aerial: true,
-    fx: "slash-arc",
+    fx: "slash-up",
   },
   dair: {
     id: "dair",
@@ -323,9 +323,65 @@ export const MOVES: Record<MeleeMoveId, MeleeMove> = {
     selfVy: 110,
     aerial: true,
     spike: true,
-    fx: "flourish-slam",
+    fx: "slash-down",
   },
 };
+
+const DASHES: Partial<Record<LetterId, MeleeMove>> = {
+  c: {
+    ...MOVES.dash,
+    name: "Disk",
+    time: 0.34,
+    hitAt: [0.26, 0.5],
+    reach: 46,
+    height: 30,
+    oy: 14,
+    dmgMul: 0.7,
+    selfVx: 250,
+    bothSides: true,
+    fx: "slash-dash",
+  },
+  s: {
+    ...MOVES.dash,
+    name: "Reaper rush",
+    time: 0.4,
+    hitAt: [0.22, 0.46],
+    reach: 72,
+    height: 34,
+    oy: 12,
+    dmgMul: 0.8,
+    selfVx: 280,
+    fx: "slash-dash",
+  },
+  r: {
+    ...MOVES.dash,
+    name: "Brand skate",
+    time: 0.36,
+    hitAt: [0.3],
+    reach: 60,
+    height: 24,
+    oy: 16,
+    dmgMul: 0.85,
+    selfVx: 310,
+    fx: "slash-dash",
+  },
+  t: {
+    ...MOVES.dash,
+    name: "Lance charge",
+    time: 0.42,
+    hitAt: [0.32, 0.55],
+    reach: 86,
+    height: 22,
+    oy: 16,
+    dmgMul: 0.9,
+    selfVx: 330,
+    fx: "slash-dash",
+  },
+};
+
+export function dashMove(letter: LetterId): MeleeMove {
+  return DASHES[letter] ?? MOVES.dash;
+}
 
 export function classifyMelee(opts: {
   grounded: boolean;
@@ -400,7 +456,7 @@ export interface ResolvedMelee extends MeleeMove {
 }
 
 export function resolveMove(letter: LetterId, id: MeleeMoveId, smashPower = 0): ResolvedMelee {
-  const move = MOVES[id];
+  const move = id === "dash" ? dashMove(letter) : MOVES[id];
   const wpn = weaponFor(letter);
   const charge = move.smash ? 1 + Math.max(0, Math.min(1, smashPower)) * 0.9 : 1;
   return {
@@ -413,6 +469,46 @@ export function resolveMove(letter: LetterId, id: MeleeMoveId, smashPower = 0): 
     kbY: move.spike ? move.kbY : move.kbY * (0.7 + 0.3 * charge),
     stun: move.stun * (move.smash ? 0.85 + 0.35 * charge : 1),
   };
+}
+
+export interface SwingProfile {
+  start: number;
+  strike: number;
+  recover: number;
+  smear: number;
+  handX: number;
+  handY: number;
+}
+
+const SWING: Record<MeleeMoveId, SwingProfile> = {
+  jab1: { start: -0.35, strike: 0.15, recover: -0.1, smear: 1, handX: 0.2, handY: 0.04 },
+  jab2: { start: -0.55, strike: 0.35, recover: -0.05, smear: 2, handX: 0.22, handY: 0.02 },
+  jab3: { start: -1.05, strike: 0.7, recover: 0.2, smear: 3, handX: 0.24, handY: 0 },
+  ftilt: { start: -0.9, strike: 0.55, recover: 0.1, smear: 2, handX: 0.22, handY: 0.02 },
+  utilt: { start: 0.45, strike: -1.35, recover: -0.4, smear: 2, handX: 0.08, handY: -0.18 },
+  dtilt: { start: 0.35, strike: 1.05, recover: 0.5, smear: 2, handX: 0.2, handY: 0.16 },
+  dash: { start: -0.04, strike: 0.06, recover: 0.02, smear: 3, handX: 0.38, handY: 0.14 },
+  fsmash: { start: -1.45, strike: 0.95, recover: 0.25, smear: 3, handX: 0.26, handY: 0 },
+  usmash: { start: 0.7, strike: -1.7, recover: -0.5, smear: 3, handX: 0.04, handY: -0.22 },
+  dsmash: { start: 0.2, strike: 1.25, recover: 0.55, smear: 3, handX: 0.16, handY: 0.18 },
+  nair: { start: -0.5, strike: 0.9, recover: 0.2, smear: 2, handX: 0.1, handY: 0.02 },
+  fair: { start: -0.7, strike: 0.45, recover: 0.05, smear: 2, handX: 0.24, handY: 0.02 },
+  bair: { start: 0.35, strike: 1.55, recover: 0.7, smear: 2, handX: 0.2, handY: 0.02 },
+  uair: { start: 0.3, strike: -1.25, recover: -0.35, smear: 2, handX: 0.06, handY: -0.2 },
+  dair: { start: 0.5, strike: 1.35, recover: 0.7, smear: 2, handX: 0.08, handY: 0.2 },
+};
+
+export function swingProfile(id: MeleeMoveId | ""): SwingProfile | null {
+  if (!id) return null;
+  return SWING[id] ?? null;
+}
+
+export function fxFrame(phase: number, hitAt: number[]): number {
+  const hit = hitAt[0] ?? 0.4;
+  if (phase < hit * 0.65) return 0;
+  if (phase < hit + 0.1) return 1;
+  if (phase < 0.82) return 2;
+  return 3;
 }
 
 export function moveSwingAngle(id: MeleeMoveId | "", phase: number, family: MeleeFamily, idle: boolean, flourish = false): number {
@@ -429,6 +525,12 @@ export function moveSwingAngle(id: MeleeMoveId | "", phase: number, family: Mele
     return -0.75;
   }
   const p = Math.max(0, Math.min(1, phase));
+  const profile = SWING[id];
+  if (profile) {
+    if (p < 0.42) return profile.start + (profile.strike - profile.start) * (p / 0.42);
+    if (p < 0.62) return profile.strike;
+    return profile.strike + (profile.recover - profile.strike) * ((p - 0.62) / 0.38);
+  }
   if (id === "utilt" || id === "usmash" || id === "uair") {
     if (p < 0.4) return 0.4 - p * 2.4;
     if (p < 0.62) return -0.56 - ((p - 0.4) / 0.22) * 1.1;

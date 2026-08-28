@@ -1188,7 +1188,8 @@ export class GameEngine {
             p.meleeMove === "dash"));
       if (a.moveX !== 0 && !lockFace) p.facing = a.moveX > 0 ? 1 : -1;
       const smashHold = p.smashKind !== "";
-      const target = smashHold ? 0 : a.moveX * spd;
+      const dashing = p.melee > 0 && p.meleeMove === "dash";
+      const target = smashHold ? 0 : dashing ? p.facing * spd * 1.2 : a.moveX * spd;
       const reversing = a.moveX !== 0 && p.vx * a.moveX < 0;
       const rate = smashHold ? 18 : p.grounded ? (reversing ? 32 : 22) : reversing ? 14 : 10;
       p.vx += (target - p.vx) * (1 - Math.exp(-rate * dt));
