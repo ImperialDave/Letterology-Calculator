@@ -37,7 +37,7 @@ function ControlsCard() {
           <p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-subtle">Fight</p>
           <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-muted">
             <span className="text-fg">J Z</span>
-            <span>Fang · hold to fire</span>
+            <span>Strike · hold to fire while ink lasts</span>
             <span className="text-fg">K X</span>
             <span>Skill of the letter in play</span>
             <span className="text-fg">Ward</span>
@@ -99,7 +99,7 @@ function ControlsCard() {
         </div>
       </div>
       <p className="mt-3 text-[11px] leading-snug text-subtle">
-        Touch: left stick to move. Jump under the right thumb. Fang beside it. Skill above Jump, named for who is in play.
+        Touch: left stick to move. Jump under the right thumb. Strike beside it. Skill above Jump, named for who is in play.
         Stem and Shelf are separate so you do not fight the stick while you write. Tilt the stick and tap Skill to dash eight ways. When the cell grows, cycle with ↻ / ↺ beside the portraits.
       </p>
     </div>
@@ -901,7 +901,7 @@ function MobilePad({
           data-role="attack"
           className="gb-pad-btn pointer-events-auto absolute bottom-4 right-[5.5rem] flex h-[3.7rem] w-[3.7rem] items-center justify-center rounded-full border border-accent bg-accent text-[12px] font-semibold text-bg"
         >
-          Fang
+          Strike
         </button>
         <button
           type="button"

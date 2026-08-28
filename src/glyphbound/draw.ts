@@ -11,6 +11,7 @@ import {
 } from "./types";
 import { blitArt } from "./art";
 import { KITS } from "./roster";
+import { meleeAngle, meleePhase, weaponFor, type MeleeFamily } from "./weapons";
 import { fxLite } from "./sky";
 import type { Solid } from "./types";
 
@@ -1045,7 +1046,7 @@ function inkStride(
   foot(1, gait + Math.PI);
 }
 
-type Motion = { vx?: number; vy?: number; grounded?: boolean; special?: number };
+type Motion = { vx?: number; vy?: number; grounded?: boolean; special?: number; melee?: number };
 
 function poseOf(t: number, squash: number, motion: Motion) {
   const vx = motion.vx ?? 0;
@@ -2373,6 +2374,112 @@ export function drawNpcGlyph(
 }
 
 
+function drawCodeWeapon(ctx: CanvasRenderingContext2D, family: MeleeFamily, glow: string, core: string, scale: number) {
+  ctx.strokeStyle = glow;
+  ctx.fillStyle = core;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  if (family === "arc") {
+    ctx.lineWidth = 3.2;
+    ctx.beginPath();
+    ctx.moveTo(-4, 2);
+    ctx.quadraticCurveTo(10, -2, 22, -10);
+    ctx.quadraticCurveTo(16, 6, 4, 8);
+    ctx.stroke();
+    ctx.lineWidth = 1.6;
+    ctx.strokeStyle = core;
+    ctx.beginPath();
+    ctx.moveTo(-2, 1);
+    ctx.quadraticCurveTo(12, -4, 20, -8);
+    ctx.stroke();
+  } else if (family === "smash") {
+    ctx.lineWidth = 3.4;
+    ctx.beginPath();
+    ctx.moveTo(-6, 4);
+    ctx.lineTo(8, -2);
+    ctx.stroke();
+    ctx.fillStyle = glow;
+    ctx.fillRect(6, -12, 16, 14);
+    ctx.fillStyle = core;
+    ctx.globalAlpha = 0.55;
+    ctx.fillRect(8, -10, 12, 10);
+    ctx.globalAlpha = 1;
+  } else if (family === "ember") {
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(-5, 3);
+    ctx.lineTo(20, -8);
+    ctx.stroke();
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.moveTo(20, -8);
+    ctx.lineTo(26, -4);
+    ctx.lineTo(18, -2);
+    ctx.closePath();
+    ctx.fill();
+  } else {
+    ctx.lineWidth = 2.6;
+    ctx.beginPath();
+    ctx.moveTo(-6, 3);
+    ctx.lineTo(24, -2);
+    ctx.stroke();
+    ctx.strokeStyle = core;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(18, -6);
+    ctx.lineTo(24, -2);
+    ctx.lineTo(18, 2);
+    ctx.stroke();
+  }
+  void scale;
+}
+
+function drawMelee(ctx: CanvasRenderingContext2D, p: Player, cx: number, cy: number, t: number) {
+  const wpn = weaponFor(p.letter);
+  const pal = inkPalette(p.letter, p.capital);
+  const phase = meleePhase(p.attack, p.letter);
+  const idle = p.melee <= 0 && p.attack <= 0;
+  const ang = meleeAngle(phase, wpn.family, idle);
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(p.facing, 1);
+  ctx.translate(p.w * 0.12, p.h * 0.02);
+  ctx.rotate(ang);
+  const swing = !idle && phase > 0.28 && phase < 0.72;
+  if (swing) {
+    ctx.save();
+    ctx.globalAlpha = 0.22;
+    ctx.rotate(-0.35);
+    drawCodeWeapon(ctx, wpn.family, pal.glow, pal.core, 1);
+    ctx.restore();
+  }
+  const sprite = blitArt(ctx, "weapons", p.letter, -6, -22, 56, 48, 0);
+  if (!sprite) drawCodeWeapon(ctx, wpn.family, pal.glow, pal.core, 1);
+  ctx.restore();
+  if (swing) {
+    const fx = `slash-${wpn.family}`;
+    const frame = Math.min(3, Math.floor(phase * 4));
+    const ox = cx + p.facing * (18 + wpn.reach * 0.18);
+    const oy = cy - 6;
+    ctx.save();
+    ctx.translate(ox, oy);
+    ctx.scale(p.facing, 1);
+    const used = blitArt(ctx, "fx", fx, -28, -24, 72, 52, t, frame);
+    if (!used) {
+      ctx.strokeStyle = pal.glow;
+      ctx.globalAlpha = 0.55;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(4, 4, 22 + phase * 8, -0.9, 0.8);
+      ctx.stroke();
+    }
+    ctx.restore();
+    if (p.attackHit && p.melee > wpn.time * 0.35) {
+      blitArt(ctx, "fx", "impact-hit", ox - 16, oy - 16, 36, 36, t, frame);
+    }
+  }
+}
+
 export function drawPlayer(ctx: CanvasRenderingContext2D, p: Player, camX: number, camY: number, t: number) {
   const cx = Math.round(p.x + p.w / 2 - camX);
   const cy = Math.round(p.y + p.h / 2 - camY);
@@ -2413,6 +2520,7 @@ export function drawPlayer(ctx: CanvasRenderingContext2D, p: Player, camX: numbe
     p.hurtFlash,
     motion,
   );
+  drawMelee(ctx, p, cx, cy, t);
   drawShieldBubble(ctx, p, camX, camY, t);
 }
 
@@ -2709,7 +2817,7 @@ export function drawHudCanvas(
   ctx.fillText(p.capital ? p.letter.toUpperCase() : p.letter, 310, 30);
   ctx.fillStyle = "#8ec8d4";
   ctx.font = "600 9px 'Source Sans 3', sans-serif";
-  ctx.fillText(`FANG ${"I".repeat(p.shotLevel)}`, 310, 44);
+  ctx.fillText(weaponFor(p.letter).name.toUpperCase(), 310, 44);
   ctx.fillStyle = "rgba(232,236,232,0.85)";
   ctx.font = "500 13px 'Source Sans 3', sans-serif";
   if (objective) ctx.fillText(objective, 16, VIEW_H - 18);

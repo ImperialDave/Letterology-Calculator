@@ -25,6 +25,7 @@ import { folioFromMeta, padRows, type Folio } from "./folio";
 import { blankFolio, cloneRows, folioTheme, resizeRows, sandboxSave, stampCell } from "./studio";
 import { collectedLore, loreIdFromGlyph } from "./lore";
 import { KITS, PENTAD } from "./roster";
+import { shotCostFor, weaponFor } from "./weapons";
 import { clearSave, defaultSave, loadSave, writeSave } from "./save";
 import { preloadArt } from "./art";
 import { isMovingSolid, SolidGrid } from "./spatial";
@@ -121,6 +122,7 @@ export class GameEngine {
   checkY = 80;
   lastSafeX = 80;
   lastSafeY = 80;
+  inkWarn = 0;
   recallCd = 0;
   oobT = 0;
   dashVx = 0;
@@ -356,6 +358,8 @@ export class GameEngine {
       hazardCd: 0,
       attack: 0,
       attackHit: false,
+      melee: 0,
+      meleeMax: 0,
       special: 0,
       specialCd: 0,
       roll: 0,
@@ -1211,6 +1215,7 @@ export class GameEngine {
     p.hazardCd = Math.max(0, p.hazardCd - dt);
     p.hurtFlash = Math.max(0, p.hurtFlash - dt);
     p.attack = Math.max(0, p.attack - dt);
+    p.melee = Math.max(0, p.melee - dt);
     p.special = Math.max(0, p.special - dt);
     p.specialCd = Math.max(0, p.specialCd - dt);
     p.shotCd = Math.max(0, p.shotCd - dt);
@@ -1788,17 +1793,78 @@ export class GameEngine {
 
   private updateCombat(dt: number, a: ReturnType<Input["poll"]>) {
     const p = this.player;
-    const kit = KITS[p.letter] ?? KITS.c;
-    const cd = kit.shotCd - Math.min(3, p.shotLevel - 1) * 0.03;
-    if ((a.attack || a.attackHeld) && p.shotCd <= 0 && p.roll <= 0) {
-      p.attack = 0.16;
-      p.shotCd = Math.max(0.18, cd);
-      p.squash = 0.92;
-      this.fireShot();
+    const wpn = weaponFor(p.letter);
+    if (p.melee > 0 && !p.attackHit) {
+      const spent = 1 - p.melee / Math.max(0.001, p.meleeMax);
+      if (spent >= wpn.hitAt) this.meleeStrike();
+    }
+    if (a.attack && p.melee <= 0 && p.roll <= 0) this.startMelee();
+    if (a.attackHeld && !a.attack && p.melee <= 0 && p.shotCd <= 0 && p.roll <= 0) {
+      this.tryFang();
     }
     if (a.special && p.specialCd <= 0 && p.roll <= 0) {
       this.castSpecial(a);
     }
+  }
+
+  private startMelee() {
+    const p = this.player;
+    const wpn = weaponFor(p.letter);
+    p.melee = wpn.time;
+    p.meleeMax = wpn.time;
+    p.attack = wpn.time;
+    p.attackHit = false;
+    p.squash = 0.88;
+    this.audio.sfxShot();
+  }
+
+  private meleeStrike() {
+    const p = this.player;
+    p.attackHit = true;
+    const wpn = weaponFor(p.letter);
+    const box = {
+      x: p.facing > 0 ? p.x + p.w * 0.45 : p.x - wpn.reach + p.w * 0.55,
+      y: p.y + p.h * 0.12,
+      w: wpn.reach,
+      h: wpn.height,
+    };
+    const dmg = wpn.dmg + (p.capital ? 1 : 0);
+    let hit = false;
+    for (const e of this.enemies) {
+      if (!e.alive || e.hurt > 0) continue;
+      if (!aabb(box, e)) continue;
+      this.hitEnemy(e, dmg, p.facing);
+      hit = true;
+    }
+    const kit = KITS[p.letter] ?? KITS.c;
+    this.burst(
+      p.x + p.w / 2 + p.facing * (wpn.reach * 0.55),
+      p.y + p.h * 0.4,
+      kit.glow,
+      hit ? 10 : 5,
+      p.letter === "r" ? "ember" : "spark",
+    );
+    if (hit) {
+      this.trauma = Math.min(1, this.trauma + 0.12);
+      this.hitstop = 0.04;
+    }
+  }
+
+  private tryFang() {
+    const p = this.player;
+    const kit = KITS[p.letter] ?? KITS.c;
+    const cost = shotCostFor(p.letter);
+    if (p.ink < cost) {
+      if (this.inkWarn > this.time) return;
+      this.inkWarn = this.time + 0.9;
+      this.say("Ink spent — strike instead.");
+      return;
+    }
+    p.ink = Math.max(0, p.ink - cost);
+    const cd = kit.shotCd - Math.min(3, p.shotLevel - 1) * 0.03;
+    p.shotCd = Math.max(0.22, cd);
+    p.squash = 0.92;
+    this.fireShot();
   }
 
   /** True when walking the slab above packed basement teeth — those do not count as a touch. */
@@ -3326,6 +3392,9 @@ export class GameEngine {
     this.player.letter = id;
     this.player.capital = this.save.hasCapital && this.save.capital;
     this.player.airHop = id === "s" ? 1 : 0;
+    this.player.melee = 0;
+    this.player.attack = 0;
+    this.player.attackHit = false;
     this.applySize();
     this.swapCd = 0.35;
     this.player.invuln = Math.max(this.player.invuln, 0.2);

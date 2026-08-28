@@ -1,7 +1,7 @@
 /** Optional HD skins. Missing files fall back to code-drawn tiles. */
 import { VIEW_W } from "./types";
 
-export type ArtKind = "tiles" | "hazards" | "movers" | "props" | "bg";
+export type ArtKind = "tiles" | "hazards" | "movers" | "props" | "bg" | "weapons" | "fx";
 
 export interface ArtEntry {
   kind: ArtKind;
@@ -57,6 +57,19 @@ export const ART_MANIFEST: ArtEntry[] = [
   { kind: "bg", name: "glacier-near" },
   { kind: "bg", name: "remainder-far" },
   { kind: "bg", name: "remainder-mid" },
+  { kind: "weapons", name: "c" },
+  { kind: "weapons", name: "s" },
+  { kind: "weapons", name: "b" },
+  { kind: "weapons", name: "e" },
+  { kind: "weapons", name: "r" },
+  { kind: "weapons", name: "k" },
+  { kind: "weapons", name: "n" },
+  { kind: "weapons", name: "t" },
+  { kind: "fx", name: "slash-arc", cols: 2, rows: 2 },
+  { kind: "fx", name: "slash-smash", cols: 2, rows: 2 },
+  { kind: "fx", name: "slash-thrust", cols: 2, rows: 2 },
+  { kind: "fx", name: "slash-ember", cols: 2, rows: 2 },
+  { kind: "fx", name: "impact-hit", cols: 2, rows: 2 },
 ];
 
 const byKey = new Map<string, ArtEntry>();
@@ -134,6 +147,7 @@ export function blitArt(
   dw: number,
   dh: number,
   t = 0,
+  frameOverride?: number,
 ): boolean {
   if (!byKey.has(keyOf(kind, name))) return false;
   const img = getArt(kind, name);
@@ -148,7 +162,7 @@ export function blitArt(
     return true;
   }
   const n = cols * rows;
-  const frame = Math.floor(t * 8) % n;
+  const frame = frameOverride != null ? ((frameOverride % n) + n) % n : Math.floor(t * 8) % n;
   const sx = (frame % cols) * cw;
   const sy = Math.floor(frame / cols) * ch;
   ctx.drawImage(img, sx, sy, cw, ch, dx, dy, dw, dh);

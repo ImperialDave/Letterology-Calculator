@@ -63,7 +63,7 @@ def process(src: Path, dest: Path, mode: str, size: int, crop: float = 0) -> Non
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--src", required=True)
-    p.add_argument("--kind", required=True, choices=["tiles", "hazards", "movers", "props"])
+    p.add_argument("--kind", required=True, choices=["tiles", "hazards", "movers", "props", "weapons", "fx"])
     p.add_argument("--name", required=True)
     p.add_argument("--mode", default="sprite", choices=["sprite", "tile"])
     p.add_argument("--size", type=int, default=96)

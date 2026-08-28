@@ -244,6 +244,8 @@ export interface Player {
   hazardCd: number;
   attack: number;
   attackHit: boolean;
+  melee: number;
+  meleeMax: number;
   special: number;
   specialCd: number;
   roll: number;
