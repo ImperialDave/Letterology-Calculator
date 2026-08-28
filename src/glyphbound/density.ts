@@ -55,6 +55,36 @@ export function tally(rows: string[]): Tally {
 
 export function densityFloors(n: number, W: number): DensityFloors {
   const w = Math.max(48, W);
+  if (n < 15) {
+    return {
+      enemies: isBoss(n) ? Math.max(3, Math.floor(w / 24)) : Math.max(4, Math.floor(w / 18)),
+      hazards: Math.max(4, Math.floor(w / 20)),
+      movers: Math.max(4, Math.floor(w / 20)),
+      deco: Math.max(8, Math.floor(w / 12)),
+      shelves: Math.max(16, Math.floor(w / 6)),
+      pickups: Math.max(3, Math.floor(w / 28)),
+    };
+  }
+  if (n < 25) {
+    return {
+      enemies: isBoss(n) ? Math.max(4, Math.floor(w / 20)) : Math.max(6, Math.floor(w / 14)),
+      hazards: Math.max(6, Math.floor(w / 16)),
+      movers: Math.max(6, Math.floor(w / 16)),
+      deco: Math.max(10, Math.floor(w / 10)),
+      shelves: Math.max(24, Math.floor(w / 4)),
+      pickups: Math.max(3, Math.floor(w / 26)),
+    };
+  }
+  if (n < 30) {
+    return {
+      enemies: isBoss(n) ? Math.max(5, Math.floor(w / 18)) : Math.max(8, Math.floor(w / 12)),
+      hazards: Math.max(8, Math.floor(w / 14)),
+      movers: Math.max(8, Math.floor(w / 14)),
+      deco: Math.max(12, Math.floor(w / 8)),
+      shelves: Math.max(28, Math.floor(w / 4)),
+      pickups: Math.max(4, Math.floor(w / 24)),
+    };
+  }
   return {
     enemies: isBoss(n) ? Math.max(5, Math.floor(w / 18)) : Math.max(10, Math.floor(w / 10)),
     hazards: Math.max(8, Math.floor(w / 12)),
@@ -66,6 +96,8 @@ export function densityFloors(n: number, W: number): DensityFloors {
 }
 
 export function packFor(n: number): string[] {
+  if (n < 15) return ["1", "0", "2", "3"];
+  if (n < 25) return ["1", "0", "2", "3", "5", "4"];
   if (n < 35) return ["1", "0", "2", "3", "5", "7"];
   if (n < 45) return ["2", "5", "7", "4", "8", "0", "3"];
   if (n < 55) return ["7", "8", "9", "A", "B", "5", "2"];
@@ -179,6 +211,21 @@ export function fillDensity(
     pitAt(x + Math.floor(rand() * 3));
   }
 
+  const bounceAt = (x: number) => {
+    if (x < 10 || x > W - 12) return false;
+    if (skip.has(x) || skip.has(x + 1)) return false;
+    if (at(rows, x, fy) !== "#" || at(rows, x + 1, fy) !== "#") return false;
+    if (RESERVED.includes(at(rows, x, fy - 1)) || RESERVED.includes(at(rows, x + 1, fy - 1))) return false;
+    setCell(rows, x, fy, ".");
+    setCell(rows, x + 1, fy, ".");
+    if (at(rows, x, fy - 1) === ".") setCell(rows, x, fy - 1, "T");
+    if (fy + 1 < H - 1) {
+      setCell(rows, x, fy + 1, "^");
+      setCell(rows, x + 1, fy + 1, "^");
+    }
+    return true;
+  };
+
   for (let x = 18; x < W - 14; x += 22) {
     const ox = x + Math.floor(rand() * 2);
     if (skip.has(ox)) continue;
@@ -188,13 +235,19 @@ export function fillDensity(
     setCell(rows, ox + 2, fy, "-");
   }
 
-  for (let x = 20; x < W - 14; x += 24) {
-    const ox = x;
-    if (skip.has(ox)) continue;
-    if (at(rows, ox, fy) !== "#" || at(rows, ox + 1, fy) !== "#") continue;
-    setCell(rows, ox, fy, "/");
-    setCell(rows, ox + 1, fy, "/");
-    if (at(rows, ox + 2, fy) === "#") setCell(rows, ox + 2, fy, "/");
+  for (let x = 16; x < W - 12; x += 26) {
+    bounceAt(x + Math.floor(rand() * 2));
+  }
+
+  if (opts.n >= 15) {
+    for (let x = 20; x < W - 14; x += 24) {
+      const ox = x;
+      if (skip.has(ox)) continue;
+      if (at(rows, ox, fy) !== "#" || at(rows, ox + 1, fy) !== "#") continue;
+      setCell(rows, ox, fy, "/");
+      setCell(rows, ox + 1, fy, "/");
+      if (at(rows, ox + 2, fy) === "#") setCell(rows, ox + 2, fy, "/");
+    }
   }
 
   if (opts.n >= 25) {
@@ -225,10 +278,12 @@ export function fillDensity(
     }
   }
 
-  for (let x = 12; x < W - 10; x += 17) {
-    if (at(rows, x, fy - 2) !== ".") continue;
-    if (skip.has(x)) continue;
-    setCell(rows, x, fy - 2, ":");
+  if (opts.n >= 15) {
+    for (let x = 12; x < W - 10; x += 17) {
+      if (at(rows, x, fy - 2) !== ".") continue;
+      if (skip.has(x)) continue;
+      setCell(rows, x, fy - 2, ":");
+    }
   }
 
   const placeEnemy = (x: number, y: number) => {
@@ -243,11 +298,13 @@ export function fillDensity(
     return true;
   };
 
-  for (let x = 8; x < W - 8; x += 6) {
+  const floorStep = opts.n < 15 ? 10 : opts.n < 25 ? 8 : 6;
+  const loftStep = opts.n < 15 ? 14 : opts.n < 25 ? 12 : 9;
+  for (let x = 8; x < W - 8; x += floorStep) {
     const ox = x + Math.floor(rand() * 2);
     placeEnemy(ox, fy - 1);
   }
-  for (let x = 10; x < W - 8; x += 9) {
+  for (let x = 10; x < W - 8; x += loftStep) {
     if (fy - 4 <= 1) break;
     placeEnemy(x, fy - 4);
   }
@@ -286,12 +343,16 @@ export function fillDensity(
         const y = rand() < 0.3 && fy - 4 > 1 ? fy - 4 : fy - 1;
         placeEnemy(x, y);
       }
-      if (d.movers < floors.movers && opts.n >= 25) {
+      if (d.movers < floors.movers) {
         const x = 10 + Math.floor(rand() * Math.max(1, W - 16));
-        if (at(rows, x, fy) === "#" && at(rows, x - 1, fy) === "#" && at(rows, x + 1, fy) === "#") {
+        if (opts.n >= 25 && at(rows, x, fy) === "#" && at(rows, x - 1, fy) === "#" && at(rows, x + 1, fy) === "#") {
           setCell(rows, x, fy, "g");
+        } else if (opts.n >= 15 && at(rows, x, fy) === "#") {
+          setCell(rows, x, fy, "/");
         } else if (at(rows, x, fy) === "#") {
           setCell(rows, x, fy, "-");
+        } else {
+          bounceAt(x);
         }
       }
       if (d.pickups < floors.pickups) placePickup(rand() < 0.35 ? "h" : rand() < 0.2 ? "o" : "i");

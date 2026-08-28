@@ -22,6 +22,10 @@ function ledger(
   const tasks: TaskDef[] = boss
     ? [{ id: `clear-${n}`, text: n === FIRST_BOOK ? "Defeat End-Mark" : n === STAGE_COUNT ? "Defeat the Remainder" : "Defeat the warden" }]
     : [{ id: `clear-${n}`, text: "Reach the gate" }];
+  if (n === 6) tasks.push({ id: "word-wall", text: "Pick up WALL" });
+  if (n === 8) tasks.push({ id: "word-rise", text: "Pick up RISE" });
+  if (n === 10) tasks.push({ id: "word-lock", text: "Pick up LOCK" });
+  if (n === 12) tasks.push({ id: "word-burn", text: "Pick up BURN" });
   if (n === 32) tasks.push({ id: "word-fold", text: "Pick up FOLD" });
   if (n === 40) tasks.push({ id: "word-tide", text: "Pick up TIDE" });
   return {
@@ -43,18 +47,59 @@ function pocket(g: Grid, fy: number, x: number, prize = "$") {
 }
 
 export const FROZEN_REMAINDER: Record<number, LevelMeta> = {
-  30: ledger(30, "vault", true, (g, fy) => {
+  6: ledger(6, "street", false, (g, fy) => {
+    const { put, fill, W } = g;
+    put(2, fy - 1, "@");
+    put(4, fy - 1, "i");
+    put(6, fy - 2, '"');
+    fill(10, fy, 3, ".");
+    put(11, fy - 1, "T");
+    fill(16, fy - 3, 5, "=");
+    put(18, fy - 4, '"');
+    put(22, fy - 1, "W");
+    put(26, fy - 1, "1");
+    put(28, fy - 1, "0");
+    put(34, fy - 1, "%");
+    put(36, fy - 1, "i");
+    fill(42, fy - 3, 5, "=");
+    put(48, fy - 1, "2");
+    put(W - 8, fy - 1, "h");
+    put(W - 4, fy - 1, "P");
+  }, { w: 96 }),
+
+  8: ledger(8, "abyss", false, (g, fy) => {
+    const { put, fill, W } = g;
+    put(2, fy - 1, "@");
+    put(4, fy - 1, "i");
+    put(6, fy - 2, "?");
+    fill(9, fy, 5, "-");
+    fill(16, fy - 3, 5, "=");
+    put(18, fy - 4, "?");
+    put(22, fy - 1, "X");
+    fill(26, fy - 4, 4, "=");
+    put(32, fy - 1, "%");
+    put(34, fy - 1, "i");
+    put(40, fy - 1, "1");
+    put(42, fy - 1, "0");
+    put(44, fy - 1, "2");
+    fill(50, fy - 3, 4, "=");
+    put(W - 8, fy - 1, "h");
+    put(W - 4, fy - 1, "P");
+  }, { w: 100 }),
+
+  10: ledger(10, "vault", true, (g, fy) => {
     const { put, fill, W } = g;
     put(2, fy - 1, "@");
     put(4, fy - 1, "i");
     put(6, fy - 2, ";");
-    put(9, fy - 1, "%");
-    fill(12, fy - 3, 6, "=");
-    put(14, fy - 4, ";");
-    fill(20, fy, 3, ".");
-    put(21, fy - 1, ")");
-    fill(26, fy - 3, 5, "=");
-    put(28, fy - 2, ";");
+    fill(10, fy - 3, 6, "=");
+    put(12, fy - 4, ";");
+    put(16, fy - 1, "Z");
+    put(20, fy - 1, "%");
+    put(22, fy - 1, "i");
+    put(26, fy - 1, "1");
+    put(28, fy - 1, "0");
+    put(30, fy - 1, "2");
     const mid = Math.floor(W / 2);
     put(mid, fy - 1, "!");
     fill(mid - 8, fy - 3, 5, "=");
@@ -63,7 +108,247 @@ export const FROZEN_REMAINDER: Record<number, LevelMeta> = {
     put(W - 10, fy - 1, "h");
     put(W - 7, fy - 1, "i");
     put(W - 4, fy - 1, "P");
-  }, { w: 96 }),
+  }, { w: 100 }),
+
+  12: ledger(12, "coil", false, (g, fy) => {
+    const { put, fill, W } = g;
+    put(2, fy - 1, "@");
+    put(4, fy - 1, "i");
+    put(6, fy - 2, ";");
+    fill(10, fy, 3, ".");
+    put(11, fy - 1, "T");
+    fill(16, fy, 4, "-");
+    put(22, fy - 1, "R");
+    fill(26, fy - 3, 5, "=");
+    put(28, fy - 4, ";");
+    put(34, fy - 1, "%");
+    put(36, fy - 1, "i");
+    put(42, fy - 1, "2");
+    put(44, fy - 1, "0");
+    put(46, fy - 1, "1");
+    fill(52, fy - 3, 4, "=");
+    put(W - 8, fy - 1, "h");
+    put(W - 4, fy - 1, "P");
+  }, { w: 104 }),
+
+  15: ledger(15, "vault", true, (g, fy) => {
+    const { put, fill, W } = g;
+    put(2, fy - 1, "@");
+    put(4, fy - 1, "i");
+    put(6, fy - 2, ";");
+    put(10, fy - 3, "|");
+    put(10, fy - 4, "|");
+    fill(13, fy - 3, 5, "=");
+    put(20, fy - 1, "%");
+    put(22, fy - 1, "i");
+    put(26, fy - 1, "2");
+    put(28, fy - 1, "0");
+    put(30, fy - 1, "5");
+    const mid = Math.floor(W / 2);
+    put(mid, fy - 1, "!");
+    fill(mid - 8, fy - 3, 5, "=");
+    put(mid - 7, fy - 4, "3");
+    fill(mid + 5, fy - 4, 5, "=");
+    put(W - 16, fy - 3, "|");
+    put(W - 16, fy - 4, "|");
+    put(W - 10, fy - 1, "h");
+    put(W - 7, fy - 1, "i");
+    put(W - 4, fy - 1, "P");
+  }, { w: 104 }),
+
+  16: ledger(16, "abyss", false, (g, fy) => {
+    const { put, fill, W } = g;
+    put(2, fy - 1, "@");
+    put(4, fy - 1, "i");
+    put(6, fy - 2, "?");
+    fill(8, fy - 2, 3, "=");
+    fill(13, fy - 4, 4, "=");
+    put(18, fy - 3, "|");
+    put(18, fy - 4, "|");
+    fill(20, fy - 5, 3, "=");
+    put(28, fy - 1, "%");
+    put(30, fy - 1, "i");
+    put(36, fy - 1, "2");
+    put(38, fy - 1, "0");
+    put(40, fy - 1, "5");
+    fill(46, fy - 3, 5, "=");
+    put(48, fy - 4, "?");
+    put(W - 8, fy - 1, "h");
+    put(W - 4, fy - 1, "P");
+  }, { w: 104 }),
+
+  18: ledger(18, "canal", false, (g, fy) => {
+    const { put, fill, W } = g;
+    put(2, fy - 1, "@");
+    put(4, fy - 1, "i");
+    put(6, fy - 2, ",");
+    fill(10, fy, 5, "/");
+    fill(24, fy, 2, ".");
+    fill(24, fy + 1, 2, "~");
+    fill(28, fy - 3, 6, "=");
+    put(30, fy - 4, ",");
+    put(38, fy - 1, "%");
+    put(34, fy - 1, "i");
+    put(40, fy - 1, "2");
+    put(42, fy - 1, "5");
+    put(44, fy - 1, "0");
+    fill(50, fy - 3, 4, "=");
+    put(W - 8, fy - 1, "h");
+    put(W - 4, fy - 1, "P");
+  }, { w: 108 }),
+
+  20: ledger(20, "spire", true, (g, fy) => {
+    const { put, fill, W } = g;
+    put(2, fy - 1, "@");
+    put(4, fy - 1, "i");
+    fill(7, fy - 2, 4, "=");
+    fill(12, fy - 4, 4, "=");
+    put(17, fy - 3, "|");
+    put(17, fy - 4, "|");
+    fill(19, fy - 5, 4, "=");
+    put(21, fy - 6, ";");
+    put(26, fy - 1, "%");
+    put(28, fy - 1, "i");
+    put(32, fy - 1, "2");
+    put(34, fy - 1, "5");
+    put(36, fy - 1, "4");
+    const mid = Math.floor(W / 2);
+    put(mid, fy - 1, "!");
+    fill(mid - 8, fy - 3, 5, "=");
+    put(mid - 7, fy - 4, "3");
+    fill(mid + 5, fy - 4, 5, "=");
+    put(W - 14, fy - 2, ";");
+    put(W - 10, fy - 1, "h");
+    put(W - 7, fy - 1, "i");
+    put(W - 4, fy - 1, "P");
+  }, { w: 108 }),
+
+  22: ledger(22, "spire", false, (g, fy) => {
+    const { put, fill, W } = g;
+    put(2, fy - 1, "@");
+    put(4, fy - 1, "i");
+    fill(7, fy - 2, 3, "=");
+    fill(12, fy - 4, 3, "=");
+    put(16, fy - 3, "|");
+    put(16, fy - 4, "|");
+    fill(18, fy - 5, 4, "=");
+    put(20, fy - 6, ";");
+    fill(26, fy, 3, ".");
+    put(27, fy - 1, "T");
+    put(34, fy - 1, "%");
+    put(36, fy - 1, "i");
+    put(42, fy - 1, "5");
+    put(44, fy - 1, "2");
+    put(46, fy - 1, "0");
+    fill(52, fy - 3, 4, "=");
+    put(W - 8, fy - 1, "h");
+    put(W - 4, fy - 1, "P");
+  }, { w: 108 }),
+
+  24: ledger(24, "fort", false, (g, fy) => {
+    const { put, fill, W } = g;
+    put(2, fy - 1, "@");
+    put(4, fy - 1, "i");
+    put(6, fy - 2, "'");
+    fill(10, fy, 5, "-");
+    fill(18, fy, 4, ".");
+    fill(18, fy - 1, 4, "/");
+    fill(24, fy - 3, 5, "=");
+    put(26, fy - 4, "'");
+    put(34, fy - 1, "%");
+    put(36, fy - 1, "i");
+    put(42, fy - 1, "5");
+    put(44, fy - 1, "2");
+    put(46, fy - 1, "4");
+    fill(52, fy - 3, 4, "=");
+    put(W - 8, fy - 1, "h");
+    put(W - 4, fy - 1, "P");
+  }, { w: 104 }),
+
+  25: ledger(25, "coil", true, (g, fy) => {
+    const { put, fill, W } = g;
+    put(2, fy - 1, "@");
+    put(4, fy - 1, "i");
+    put(6, fy - 2, ";");
+    fill(10, fy, 3, ".");
+    put(10, fy - 1, "`");
+    put(11, fy - 1, "`");
+    fill(16, fy, 1, "g");
+    fill(20, fy - 3, 5, "=");
+    put(22, fy - 4, ";");
+    put(28, fy - 1, "%");
+    put(30, fy - 1, "i");
+    put(34, fy - 1, "5");
+    put(36, fy - 1, "2");
+    put(38, fy - 1, "7");
+    const mid = Math.floor(W / 2);
+    put(mid, fy - 1, "!");
+    fill(mid - 8, fy - 3, 5, "=");
+    put(mid - 7, fy - 4, "3");
+    fill(mid + 5, fy - 4, 5, "=");
+    put(W - 14, fy - 2, ";");
+    put(W - 10, fy - 1, "h");
+    put(W - 7, fy - 1, "i");
+    put(W - 4, fy - 1, "P");
+  }, { w: 108 }),
+
+  28: ledger(28, "abyss", false, (g, fy) => {
+    const { put, fill, W } = g;
+    put(2, fy - 1, "@");
+    put(4, fy - 1, "i");
+    put(6, fy - 2, "?");
+    fill(8, fy - 2, 3, "=");
+    fill(12, fy, 3, ".");
+    put(12, fy - 1, "`");
+    put(13, fy - 1, "`");
+    fill(18, fy - 4, 4, "=");
+    fill(23, fy - 5, 4, "=");
+    put(25, fy - 6, "?");
+    put(28, fy - 3, "v");
+    fill(30, fy - 2, 3, "=");
+    put(38, fy - 1, "%");
+    put(40, fy - 1, "i");
+    put(46, fy - 1, "7");
+    put(48, fy - 1, "5");
+    put(50, fy - 1, "2");
+    fill(56, fy - 3, 4, "=");
+    put(W - 8, fy - 1, "h");
+    put(W - 4, fy - 1, "P");
+  }, { w: 108 }),
+
+  30: ledger(30, "vault", true, (g, fy) => {
+    const { put, fill, W } = g;
+    put(2, fy - 1, "@");
+    put(4, fy - 1, "i");
+    put(6, fy - 2, ";");
+    fill(10, fy - 3, 5, "=");
+    put(12, fy - 4, ";");
+    fill(18, fy, 3, ".");
+    put(19, fy - 1, ")");
+    put(20, fy - 1, ")");
+    fill(24, fy - 3, 5, "=");
+    put(26, fy - 2, ";");
+    put(32, fy - 1, "%");
+    put(34, fy - 1, "i");
+    put(38, fy - 1, "2");
+    put(40, fy - 1, "0");
+    put(42, fy - 1, "5");
+    fill(46, fy - 4, 5, "=");
+    const mid = Math.floor(W / 2);
+    put(mid, fy - 1, "!");
+    fill(mid - 8, fy - 3, 5, "=");
+    put(mid - 7, fy - 4, "3");
+    fill(mid + 4, fy - 3, 5, "=");
+    put(mid + 6, fy - 4, "7");
+    fill(mid + 16, fy, 3, ".");
+    put(mid + 17, fy - 1, ")");
+    put(W - 16, fy - 2, ";");
+    fill(W - 18, fy - 3, 5, "=");
+    put(W - 16, fy - 4, "7");
+    put(W - 10, fy - 1, "h");
+    put(W - 7, fy - 1, "i");
+    put(W - 4, fy - 1, "P");
+  }, { w: 108 }),
 
   31: ledger(31, "orbit", false, (g, fy) => {
     const { put, fill, W } = g;

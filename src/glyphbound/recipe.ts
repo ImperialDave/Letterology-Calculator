@@ -48,7 +48,7 @@ export function decoFor(theme: ThemeId) {
   if (theme === "canal") return ",";
   if (theme === "glacier") return "_";
   if (theme === "remainder" || theme === "abyss") return "?";
-  if (theme === "hub") return '"';
+  if (theme === "street" || theme === "hub") return '"';
   return ";";
 }
 
@@ -70,10 +70,16 @@ function beatOptions(n: number): Beat[][] {
       ? [["land", "mix", "combat", "rest", "arena", "gate"]]
       : [["land", "teach", "combat", "rest", "arena", "gate"]];
   }
-  if (n < 31) {
+  if (n < 20) {
     return [
       ["land", "teach", "mix", "combat", "rest", "gate"],
       ["land", "teach", "mix", "rest", "combat", "gate"],
+    ];
+  }
+  if (n < 31) {
+    return [
+      ["land", "teach", "mix", "combat", "rest", "combat", "gate"],
+      ["land", "teach", "combat", "rest", "mix", "combat", "gate"],
     ];
   }
   const band = Math.min(5, Math.floor((n - 31) / 5));

@@ -6,7 +6,7 @@ import { FY, paintPattern, pickPattern } from "./patterns";
 import { fillDensity } from "./density";
 import { validateLevel } from "./validate-level";
 import type { LevelId, TaskDef, ThemeId } from "./types";
-import { FIRST_BOOK, STAGE_COUNT } from "./types";
+import { STAGE_COUNT } from "./types";
 import { sealBasement, type LevelMeta } from "./levels-story";
 
 const WORDS: Record<number, string> = {
@@ -170,7 +170,7 @@ function mutate(rows: string[]): string[] {
 }
 
 function paintBeat(beat: Beat, recipe: Recipe, n: number, rand: () => number, used: Set<string>): string[] {
-  const width = n >= 30 ? 24 + Math.floor(rand() * 6) : 18 + Math.floor(rand() * 8);
+  const width = n >= 30 ? 24 + Math.floor(rand() * 6) : n >= 15 ? 22 + Math.floor(rand() * 6) : 18 + Math.floor(rand() * 8);
   const pit = 2 + Math.floor(rand() * 2);
   const pattern = pickPattern(beat, recipe.featured, recipe.mix, rand, used, recipe.theme);
   if (pattern) {
@@ -208,7 +208,7 @@ export function assembleStage(n: number): LevelMeta {
   }
   let rows = stitch(parts);
   landmarkDress(rows, recipe.deco, rand);
-  if (n >= 30) fillDensity(rows, { n, deco: recipe.deco, rand, fy: FY, featured: recipe.featured });
+  if (n >= 6) fillDensity(rows, { n, deco: recipe.deco, rand, fy: FY, featured: recipe.featured });
   rows = mutate(rows);
   sealBasement(rows, FY);
   const boss = isBoss(n);
@@ -221,9 +221,9 @@ export function assembleStage(n: number): LevelMeta {
   if (n === 40) tasks.push({ id: "word-tide", text: "Pick up TIDE" });
   return {
     id: `stage${n}` as LevelId,
-    name: n >= FIRST_BOOK ? remainderName(n, boss) : boss ? `Warden ${n}` : `Ledger ${n}`,
+    name: remainderName(n, boss),
     theme: themeFor(n),
-    objective: n >= FIRST_BOOK ? remainderObjective(n, boss) : boss ? "Clear the warden. Take the gate." : "Cross the ledger. Reach the gate.",
+    objective: remainderObjective(n, boss),
     tasks,
     rows,
     exit: n === STAGE_COUNT ? "win" : "hub",

@@ -264,6 +264,218 @@ export const PATTERNS: Pattern[] = [
     },
   },
   {
+    id: "street-bounce",
+    beats: ["teach", "mix"],
+    verbs: ["T"],
+    themes: ["street"],
+    paint(g, ctx) {
+      const w = pitW(ctx);
+      g.fill(6, FY, w, ".");
+      g.put(6 + Math.floor(w / 2), FY - 1, "T");
+      plantDeco(g, ctx, 5);
+      g.fill(6 + w + 2, FY - 3, 4, "=");
+      plantDeco(g, ctx, 8 + w);
+    },
+  },
+  {
+    id: "street-shelf",
+    beats: ["land"],
+    verbs: [],
+    themes: ["street"],
+    paint(g, ctx) {
+      g.put(2, FY - 1, "@");
+      g.put(4, FY - 1, "i");
+      g.fill(6, FY - 3, 5, "=");
+      plantDeco(g, ctx, 8);
+      g.fill(13, FY - 2, 4, "=");
+    },
+  },
+  {
+    id: "fort-crumble",
+    beats: ["teach", "mix"],
+    verbs: ["-"],
+    themes: ["fort"],
+    paint(g, ctx) {
+      g.fill(5, FY, 5, "-");
+      g.fill(12, FY, 3, "#");
+      plantDeco(g, ctx, 4);
+      g.fill(16, FY - 3, 4, "=");
+    },
+  },
+  {
+    id: "fort-ember-loft",
+    beats: ["mix"],
+    verbs: ["=", "-"],
+    themes: ["fort"],
+    paint(g, ctx) {
+      g.fill(5, FY, 4, "-");
+      g.fill(11, FY - 3, 6, "=");
+      plantDeco(g, ctx, 13);
+      g.put(14, FY - 4, ctx.deco || "'");
+    },
+  },
+  {
+    id: "coil-crank",
+    beats: ["teach", "mix"],
+    verbs: ["T", "-"],
+    themes: ["coil"],
+    paint(g, ctx) {
+      g.fill(5, FY, 3, ".");
+      g.put(6, FY - 1, "T");
+      g.fill(10, FY, 4, "-");
+      plantDeco(g, ctx, 4);
+    },
+  },
+  {
+    id: "coil-belt",
+    beats: ["teach", "mix"],
+    verbs: ["/"],
+    themes: ["coil"],
+    paint(g, ctx) {
+      const w = pitW(ctx, 3, 4);
+      g.fill(6, FY, w, ".");
+      g.fill(6, FY - 1, w, "/");
+      plantDeco(g, ctx, 5);
+      g.fill(6 + w + 2, FY - 3, 4, "=");
+    },
+  },
+  {
+    id: "vault-shelf",
+    beats: ["land"],
+    verbs: [],
+    themes: ["vault"],
+    paint(g, ctx) {
+      g.put(2, FY - 1, "@");
+      g.put(4, FY - 1, "i");
+      g.fill(5, FY - 3, 6, "=");
+      plantDeco(g, ctx, 7);
+      g.fill(13, FY - 2, 4, "=");
+    },
+  },
+  {
+    id: "vault-laser",
+    beats: ["teach", "mix"],
+    verbs: ["|"],
+    themes: ["vault"],
+    paint(g, ctx) {
+      plantDeco(g, ctx, 5);
+      g.put(8, FY - 3, "|");
+      g.put(8, FY - 4, "|");
+      g.fill(11, FY - 3, 5, "=");
+      plantDeco(g, ctx, 13);
+    },
+  },
+  {
+    id: "canal-dock",
+    beats: ["teach", "mix"],
+    verbs: ["T", "="],
+    themes: ["canal"],
+    paint(g, ctx) {
+      const w = pitW(ctx);
+      g.fill(6, FY, w, ".");
+      g.put(6 + Math.floor(w / 2), FY - 1, "T");
+      g.fill(6, FY + 1, w, "~");
+      g.fill(6 + w + 2, FY - 3, 5, "=");
+      plantDeco(g, ctx, 5);
+    },
+  },
+  {
+    id: "abyss-ash-stair",
+    beats: ["teach", "mix"],
+    verbs: ["T", "="],
+    themes: ["abyss"],
+    paint(g, ctx) {
+      g.fill(5, FY - 2, 3, "=");
+      g.fill(9, FY, 3, ".");
+      g.put(10, FY - 1, "T");
+      g.fill(13, FY - 4, 4, "=");
+      plantDeco(g, ctx, 4);
+    },
+  },
+  {
+    id: "spire-step",
+    beats: ["teach", "mix"],
+    verbs: ["T", "="],
+    themes: ["spire"],
+    paint(g, ctx) {
+      g.fill(5, FY - 2, 3, "=");
+      g.fill(9, FY, 3, ".");
+      g.put(10, FY - 1, "T");
+      g.fill(13, FY - 4, 3, "=");
+      g.fill(17, FY - 5, 3, "=");
+      plantDeco(g, ctx, 4);
+    },
+  },
+  {
+    id: "combat-street-pack",
+    beats: ["combat"],
+    verbs: [],
+    themes: ["street"],
+    paint(g, ctx) {
+      g.put(6, FY - 1, ctx.enemy || "1");
+      g.put(9, FY - 1, "0");
+      g.put(12, FY - 1, "2");
+      g.fill(15, FY - 3, 5, "=");
+      g.put(16, FY - 4, "3");
+      plantDeco(g, ctx, 20);
+    },
+  },
+  {
+    id: "combat-fort-pack",
+    beats: ["combat"],
+    verbs: [],
+    themes: ["fort"],
+    paint(g, ctx) {
+      g.put(5, FY - 1, ctx.enemy || "1");
+      g.put(8, FY - 1, "0");
+      g.fill(11, FY, 4, "-");
+      g.fill(16, FY - 3, 4, "=");
+      g.put(17, FY - 4, "2");
+      plantDeco(g, ctx, 20);
+    },
+  },
+  {
+    id: "combat-canal-pack",
+    beats: ["combat"],
+    verbs: [],
+    themes: ["canal"],
+    paint(g, ctx) {
+      g.put(6, FY - 1, ctx.enemy || "1");
+      g.put(9, FY - 1, "0");
+      g.put(12, FY - 1, "2");
+      g.fill(15, FY - 3, 5, "=");
+      plantDeco(g, ctx, 18);
+    },
+  },
+  {
+    id: "combat-coil-pack",
+    beats: ["combat"],
+    verbs: [],
+    themes: ["coil"],
+    paint(g, ctx) {
+      g.put(6, FY - 1, ctx.enemy || "1");
+      g.put(8, FY - 1, "0");
+      g.put(11, FY - 1, "3");
+      g.fill(14, FY - 3, 5, "=");
+      g.put(15, FY - 4, "2");
+      plantDeco(g, ctx, 20);
+    },
+  },
+  {
+    id: "combat-vault-pack",
+    beats: ["combat"],
+    verbs: [],
+    themes: ["vault"],
+    paint(g, ctx) {
+      g.put(6, FY - 1, ctx.enemy || "1");
+      g.put(9, FY - 1, "0");
+      g.fill(12, FY - 3, 5, "=");
+      g.put(13, FY - 4, "2");
+      g.put(16, FY - 1, "3");
+      plantDeco(g, ctx, 19);
+    },
+  },
+  {
     id: "orbit-rings",
     beats: ["teach", "mix"],
     verbs: ["`"],
