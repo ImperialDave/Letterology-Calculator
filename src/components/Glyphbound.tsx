@@ -1,13 +1,26 @@
 import { useEffect, useRef, useState, type PointerEvent, type RefObject } from "react";
 import type { GameEngine } from "@/glyphbound/engine";
-import type { SlotInfo, UiSnap } from "@/glyphbound/types";
+import type { LetterId, SlotInfo, UiSnap } from "@/glyphbound/types";
 import { STAGE_COUNT } from "@/glyphbound/types";
 import { LEVELS } from "@/glyphbound/levels";
 import { Pause, Volume2, VolumeX } from "lucide-react";
 import { KITS, skillName } from "@/glyphbound/roster";
+import { WEAPONS } from "@/glyphbound/weapons";
 import { GlyphboundStudio } from "@/components/GlyphboundStudio";
 import { GlyphboundProof } from "@/components/GlyphboundProof";
 import { GlyphboundReplay } from "@/components/GlyphboundReplay";
+
+const STRIKE_LETTERS: LetterId[] = ["c", "s", "b", "e", "r", "k", "n", "t"];
+const FLOURISH_LINE = STRIKE_LETTERS.map((id) => `${id} ${WEAPONS[id].flourish.name}`).join(" · ");
+
+function KeyRow({ keys, text }: { keys: string; text: string }) {
+  return (
+    <>
+      <span className="text-fg">{keys}</span>
+      <span>{text}</span>
+    </>
+  );
+}
 
 const INTRO = [
   "Calculara was a manuscript before it was an equation. Letters walked it. Words were weather.",
@@ -20,108 +33,92 @@ function ControlsCard() {
   return (
     <div className="rounded-lg border border-border bg-elevated/90 p-3 text-left">
       <p className="mb-2 text-[11px] uppercase tracking-[0.2em] text-accent">Controls</p>
+      <p className="mb-3 text-[12px] leading-snug text-muted">
+        <span className="text-fg">A D</span> walk · <span className="text-fg">Space</span> jump ·{" "}
+        <span className="text-fg">J</span> strike · <span className="text-fg">F</span> fang ·{" "}
+        <span className="text-fg">K</span> skill
+      </p>
       <div className="grid gap-3 text-sm">
         <div>
           <p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-subtle">Move</p>
           <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-muted">
-            <span className="text-fg">A D · ← →</span>
-            <span>Walk</span>
-            <span className="text-fg">Space W ↑</span>
-            <span>Jump · tap hop, hold full</span>
-            <span className="text-fg">S ↓</span>
-            <span>Drop through shelves · aim dash down</span>
-            <span className="text-fg">Stick</span>
-            <span>Walk · tilt down to drop · tilt up + skill to dash up</span>
+            <KeyRow keys="A D · ← →" text="Walk · D / → is right on the page" />
+            <KeyRow keys="Space" text="Jump · tap hop, hold full · always hops" />
+            <KeyRow keys="W ↑" text="Jump, or aim up for Strike" />
+            <KeyRow keys="S ↓" text="Drop through shelves · down-tilt · fast-fall in air" />
+            <KeyRow keys="Stick" text="Walk and aim Strike · down drops · up + skill dashes up" />
           </div>
         </div>
         <div>
-          <p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-subtle">Fight</p>
+          <p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-subtle">Strike · J Z</p>
+          <div className="mb-2 rounded-md border border-border/80 bg-bg/40 px-2 py-2 text-center text-[12px] text-muted">
+            <p className="text-fg">↑ · up-tilt · uair</p>
+            <p>
+              <span className="text-fg">←</span> back / jab{" "}
+              <span className="mx-1 text-accent">J</span> f-tilt / fair{" "}
+              <span className="text-fg">→</span>
+            </p>
+            <p className="text-fg">↓ · down-tilt · dair · fast-fall</p>
+          </div>
           <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-muted">
-            <span className="text-fg">J Z</span>
-            <span>Strike · direction on the stick or arrows picks the move</span>
-            <span className="text-fg">Tap J</span>
-            <span>Neutral jab combo · tap again for jab 2 and the finisher</span>
-            <span className="text-fg">→ / ← + J</span>
-            <span>F-tilt · dash attack if you are already running</span>
-            <span className="text-fg">↑ + J</span>
-            <span>Up-tilt · Space still jumps; hold Strike with up so you do not hop</span>
-            <span className="text-fg">↓ + J</span>
-            <span>Down-tilt</span>
-            <span className="text-fg">Hold J + dir</span>
-            <span>Charge a smash · release to fire · gold bar is the charge</span>
-            <span className="text-fg">Hold J</span>
-            <span>No direction: that letter's flourish</span>
-            <span className="text-fg">Air + J</span>
-            <span>Nair · fair · bair · uair · dair · stick/arrows pick the aerial</span>
-            <span className="text-fg">Combo</span>
-            <span>Hitstun scales with percent. Jab → up-tilt → jump uair. Down in air fast-falls. Late nair autocancels.</span>
-            <span className="text-fg">F H</span>
-            <span>Fang · ink-heavy ranged · never the same key as strike</span>
-            <span className="text-fg">Flourish</span>
-            <span>c Orrery · s Reap · b Quake · e Tidefork · r Lunge · k Crack · n Bind · t Rule</span>
-            <span className="text-fg">K X</span>
-            <span>Skill of the letter in play</span>
-            <span className="text-fg">Ward</span>
-            <span>Always on · eats a hit before health</span>
+            <KeyRow keys="Tap J" text="Jab combo · tap again for jab 2, then a finisher" />
+            <KeyRow keys="Run + J" text="Dash attack" />
+            <KeyRow keys="Hold J + dir" text="Charge a smash · gold bar · release to fire" />
+            <KeyRow keys="Hold J" text="No direction: that letter's flourish" />
+            <KeyRow keys="Air + J" text="Nair, fair, bair, uair, dair · stick picks it" />
+            <KeyRow keys="Combo" text="Jab → up-tilt → Space uair. Hits build percent." />
+          </div>
+        </div>
+        <div>
+          <p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-subtle">Fang · Skill · Ward</p>
+          <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-muted">
+            <KeyRow keys="F H" text="Fang · ink-heavy ranged · never the same key as Strike" />
+            <KeyRow keys="K X" text="Skill of the letter in play" />
+            <KeyRow keys="Flourish" text={FLOURISH_LINE} />
+            <KeyRow keys="Ward" text="Always on · eats a hit before health" />
           </div>
         </div>
         <div>
           <p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-subtle">Letters · K</p>
           <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-muted">
-            <span className="text-fg">c Dash</span>
-            <span>Eight-way. Through shot and digit. Once in the air, refresh on land. Hold a direction.</span>
-            <span className="text-fg">C Cage</span>
-            <span>Stand still and skill: a stem wall. Move or jump while skill: still Dash, a little harder.</span>
-            <span className="text-fg">s Cut</span>
-            <span>Gale blade · air hop is Space in the air</span>
-            <span className="text-fg">S Scythe</span>
-            <span>Two arcs · hold Space to glide</span>
-            <span className="text-fg">b Brace</span>
-            <span>Stone shell</span>
-            <span className="text-fg">B Bulwark</span>
-            <span>Heavier shell · Meteor if used in the air</span>
-            <span className="text-fg">e Pulse</span>
-            <span>Stun, ink, ice shelf · swim in sluice</span>
-            <span className="text-fg">E Well</span>
-            <span>Heal a mark · wider freeze</span>
-            <span className="text-fg">r Flare</span>
-            <span>Burning dash that leaves fire</span>
-            <span className="text-fg">R Inferno</span>
-            <span>Longer, hotter</span>
-            <span className="text-fg">1–8</span>
-            <span>Direct swap to that letter in the cell · tap portraits</span>
-            <span className="text-fg">Tab Q ]</span>
-            <span>Cycle next letter</span>
-            <span className="text-fg">` [ R</span>
-            <span>Cycle previous letter</span>
-            <span className="text-fg">Shift</span>
-            <span>Capital after the Drop Cap · same button on touch</span>
+            <KeyRow keys="c Dash" text="Eight-way. Through shot and digit. Once in the air, refresh on land. Hold a direction." />
+            <KeyRow keys="C Cage" text="Stand still and skill: a stem wall. Move or jump while skill: still Dash, a little harder." />
+            <KeyRow keys="s Cut" text="Gale blade · air hop is Space in the air" />
+            <KeyRow keys="S Scythe" text="Two arcs · hold Space to glide" />
+            <KeyRow keys="b Brace" text="Stone shell" />
+            <KeyRow keys="B Bulwark" text="Heavier shell · Meteor if used in the air" />
+            <KeyRow keys="e Pulse" text="Stun, ink, ice shelf · swim in sluice" />
+            <KeyRow keys="E Well" text="Heal a mark · wider freeze" />
+            <KeyRow keys="r Flare" text="Burning dash that leaves fire" />
+            <KeyRow keys="R Inferno" text="Longer, hotter" />
+            <KeyRow keys="1–8" text="Direct swap to that letter in the cell · tap portraits" />
+            <KeyRow keys="Tab Q ]" text="Cycle next letter" />
+            <KeyRow keys="` [ R" text="Cycle previous letter" />
+            <KeyRow keys="Shift" text="Capital after the Drop Cap · same button on touch" />
           </div>
         </div>
         <div>
           <p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-subtle">Write</p>
           <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-muted">
-            <span className="text-fg">L I</span>
-            <span>Stem · a wall you can stand beside</span>
-            <span className="text-fg">↓ + L</span>
-            <span>Shelf · a floor you can stand on</span>
-            <span className="text-fg">Words</span>
-            <span>WALL RISE LOCK BURN FOLD TIDE as you collect them. FOLD wall-jumps off stems. TIDE drifts shelves.</span>
+            <KeyRow keys="L I" text="Stem · a wall you can stand beside" />
+            <KeyRow keys="↓ + L" text="Shelf · a floor you can stand on" />
+            <KeyRow keys="Words" text="WALL RISE LOCK BURN FOLD TIDE as you collect them. FOLD wall-jumps off stems. TIDE drifts shelves." />
           </div>
         </div>
         <div>
           <p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-subtle">Talk · Menu</p>
           <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-muted">
-            <span className="text-fg">E</span>
-            <span>Talk, enter, pick up · the Talk button only appears when something is in reach</span>
-            <span className="text-fg">Esc P</span>
-            <span>Pause · this list lives there</span>
+            <KeyRow keys="E" text="Talk, enter, pick up · the Talk button only appears when something is in reach" />
+            <KeyRow keys="Esc P" text="Pause · this list lives there" />
           </div>
         </div>
       </div>
       <p className="mt-3 text-[11px] leading-snug text-subtle">
-        Touch: left stick to move. Jump under the right thumb. Strike beside it — tilt the stick as you tap for tilts and aerials, hold Strike with a direction to charge a smash, hold Strike still for that letter's flourish. Fang under Skill. Skill above Jump, named for who is in play.
-        Stem and Shelf are separate so you do not fight the stick while you write. Tilt the stick and tap Skill to dash eight ways. When the cell grows, cycle with ↻ / ↺ beside the portraits.
+        Touch: left stick walks and aims Strike. Jump under the right thumb. Strike beside it — tap with a tilt
+        for tilts and aerials, hold with a tilt to charge a smash, hold still for that letter's flourish. Fang
+        under Skill. Skill above Jump, named for who is in play. Stem and Shelf stay separate so you do not fight
+        the stick while you write. Tilt the stick and tap Skill to dash eight ways. When the cell grows, cycle with
+        ↻ / ↺ beside the portraits.
       </p>
     </div>
   );
@@ -448,13 +445,18 @@ export function Glyphbound() {
             >
               Proof desk
             </button>
+            <p className="rounded-md border border-[#f4f0e4]/20 bg-[#121018]/70 px-3 py-2 text-left text-[12px] leading-snug text-[#c8c4b8]">
+              <span className="text-[#f4f0e4]">A D</span> walk · <span className="text-[#f4f0e4]">Space</span> jump ·{" "}
+              <span className="text-[#f4f0e4]">J</span> strike · <span className="text-[#f4f0e4]">F</span> fang ·{" "}
+              <span className="text-[#f4f0e4]">K</span> skill
+            </p>
             <button
               type="button"
               data-ui="controls"
               className="h-11 rounded-md border border-[#f4f0e4]/25 bg-[#121018]/85 text-sm text-[#f4f0e4]"
               {...press(() => setShowControls((v) => !v))}
             >
-              {showControls ? "Hide controls" : "Controls"}
+              {showControls ? "Hide the Strike kit" : "Strike kit · full controls"}
             </button>
             {showControls && <ControlsCard />}
             {ui.lore.length > 0 && (
@@ -1010,9 +1012,10 @@ function MobilePad({
         <button
           type="button"
           data-role="attack"
-          className="gb-pad-btn pointer-events-auto absolute bottom-4 right-[5.5rem] flex h-[3.7rem] w-[3.7rem] items-center justify-center rounded-full border border-accent bg-accent text-[12px] font-semibold text-bg"
+          className="gb-pad-btn pointer-events-auto absolute bottom-4 right-[5.5rem] flex h-[3.7rem] w-[3.7rem] flex-col items-center justify-center rounded-full border border-accent bg-accent text-bg"
         >
-          Strike
+          <span className="text-[12px] font-semibold leading-none">Strike</span>
+          <span className="mt-0.5 text-[8px] font-medium tracking-wide opacity-80">hold smash</span>
         </button>
         <button
           type="button"

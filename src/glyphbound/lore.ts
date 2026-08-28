@@ -57,7 +57,8 @@ export const LORE: Record<LoreId, LoreDef> = {
     name: "t",
     lines: [
       "Press L to build a stem wall. Hold down, then L, or use the Shelf button on touch, to build a platform you can stand on.",
-      "J is your melee kit. Tap for a jab combo. Hold a direction on the stick or arrows and tap J for tilts — up, down, forward — or a dash attack if you are already running. Hold J with a direction to charge a smash. Hold J still for your weapon's flourish. In the air the same directions pick nair, fair, bair, uair, and a spike dair. F fires Fang, and it drinks ink fast. The straight 1s hate curves. The 0s float and spit from a distance.",
+      "J is Strike. Tap for a jab combo. Hold a direction and tap for a tilt — or a dash attack if you are already running. Hold J with a direction to charge a smash. Hold J still for your flourish. In the air the same directions pick nair, fair, bair, uair, and a spike dair. Space always jumps. Down in air after the peak is a fast-fall.",
+      "F fires Fang. It drinks ink fast. The straight 1s hate curves. The 0s float and spit from a distance.",
       "Ink refills slowly. Do not waste it on walls you do not need.",
       "Later stages starve your ink on purpose. Pick up every drop. A shelf at the wrong moment can cost you the fight.",
       "On mobile, the Stem and Shelf buttons are there so you do not have to fight the stick while you write.",
@@ -250,7 +251,7 @@ export const LORE: Record<LoreId, LoreDef> = {
     glyph: "j",
     name: "j",
     lines: [
-      "Fang is your main shot. Upgrade it when you find the fang pickups. Higher levels pierce and spread.",
+      "F fires Fang, your main shot. Upgrade it when you find the fang pickups. Higher levels pierce and spread. J is Strike now — never the same key.",
       "Do not dump all your ink into walls if a boss is about to appear. You will need the shot more than the shelf.",
       "Summoners stay back and open ports. Prioritize them. Every second they live is another digit on the field.",
     ],
