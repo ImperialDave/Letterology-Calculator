@@ -396,18 +396,25 @@ export function classifyMelee(opts: {
   spd: number;
   aimX: number;
   aimY: number;
+  canAirDash?: boolean;
 }): MeleeIntent {
   const ax = opts.aimX;
   const ay = opts.aimY;
   const ah = Math.abs(ax);
   const av = Math.abs(ay);
+  const running = Math.abs(opts.vx) > opts.spd * RUN_RATIO && Math.sign(opts.vx) === opts.facing;
   if (!opts.grounded) {
     if (av >= V_AIM && av >= ah) return ay < 0 ? "uair" : "dair";
-    if (ah >= H_AIM) return Math.sign(ax) === opts.facing ? "fair" : "bair";
+    const airDash = running && opts.canAirDash !== false;
+    if (ah >= H_AIM) {
+      if (Math.sign(ax) !== opts.facing) return "bair";
+      if (airDash) return "dash";
+      return "fair";
+    }
+    if (airDash) return "dash";
     return "nair";
   }
   if (av >= V_AIM && av >= ah * 0.85) return ay < 0 ? "up" : "down";
-  const running = Math.abs(opts.vx) > opts.spd * RUN_RATIO && Math.sign(opts.vx) === opts.facing;
   if (ah >= H_AIM) {
     if (running && Math.sign(ax) === opts.facing) return "dash";
     return "side";

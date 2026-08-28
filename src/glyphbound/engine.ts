@@ -413,6 +413,7 @@ export class GameEngine {
       airHop: startLetter === "s" ? 1 : 0,
       upHop: 0,
       upBoost: false,
+      airDashAtk: false,
     };
   }
 
@@ -1208,7 +1209,9 @@ export class GameEngine {
     const gDown = 2400;
     const aetherDash = p.roll > 0 && p.letter === "c";
     const risingUp =
-      p.melee > 0 && p.vy < 0 && (p.meleeMove === "uair" || p.meleeMove === "utilt");
+      p.melee > 0 &&
+      p.vy < 0 &&
+      (p.meleeMove === "uair" || p.meleeMove === "utilt" || p.meleeMove === "dash");
     if (!a.jumpHeld && !p.jumpCut && p.vy < 0 && !aetherDash && !risingUp) {
       p.vy *= 0.52;
       p.jumpCut = true;
@@ -1225,6 +1228,7 @@ export class GameEngine {
     if (p.grounded) {
       p.airHop = p.letter === "s" ? 1 : 0;
       p.upBoost = false;
+      p.airDashAtk = false;
       p.upHop = 0;
       this.airDash = 1;
       p.coyote = 0.1;
@@ -1906,6 +1910,7 @@ export class GameEngine {
       spd: kit.spd,
       aimX: a.aimX,
       aimY: a.aimY,
+      canAirDash: !p.airDashAtk,
     });
   }
 
@@ -2074,6 +2079,7 @@ export class GameEngine {
       p.upHop = UPHOP_TIME;
       p.grounded = false;
     }
+    if (id === "dash" && !p.grounded) p.airDashAtk = true;
     if (id === "uair" && !p.upBoost) {
       p.upBoost = true;
       p.vy -= p.capital ? UAIR_BOOST + 40 : UAIR_BOOST;

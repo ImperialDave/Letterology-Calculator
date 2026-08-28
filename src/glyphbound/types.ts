@@ -280,6 +280,8 @@ export interface Player {
   upHop: number;
   /** Rising uair already used this airtime. */
   upBoost: boolean;
+  /** Air dash attack already used this airtime. */
+  airDashAtk: boolean;
 }
 
 export interface TaskDef {

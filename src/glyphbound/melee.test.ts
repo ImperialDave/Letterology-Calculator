@@ -59,6 +59,15 @@ test("stick and arrows pick tilts, dash, and aerials", () => {
   assert.equal(cls({ grounded: false, aimY: 1 }), "dair");
 });
 
+test("running jump is a dash attack, not a fair", () => {
+  assert.equal(cls({ grounded: false, vx: 120, spd: 140 }), "dash");
+  assert.equal(cls({ grounded: false, vx: 120, spd: 140, aimX: 1 }), "dash");
+  assert.equal(cls({ grounded: false, vx: 120, spd: 140, aimY: -1 }), "uair");
+  assert.equal(cls({ grounded: false, vx: 120, spd: 140, aimX: -1, facing: 1 }), "bair");
+  assert.equal(cls({ grounded: false, vx: 120, spd: 140, aimX: 1, canAirDash: false }), "fair");
+  assert.equal(cls({ grounded: false, vx: 120, spd: 140, canAirDash: false }), "nair");
+});
+
 test("up and down beat a slight side tilt", () => {
   assert.equal(cls({ aimX: 0.3, aimY: -1 }), "up");
   assert.equal(cls({ aimX: 0.3, aimY: 1 }), "down");
