@@ -1,6 +1,7 @@
 import { GameEngine } from "./engine";
 import { TILE } from "./types";
 import type { Enemy, Player } from "./types";
+import { commitFacing, desiredFacing } from "./enemy-facing";
 
 type Eng = GameEngine & {
   player: Player;
@@ -27,7 +28,7 @@ function atLedge(eng: Eng, e: Enemy) {
 
 function maybeLeap(eng: Eng, e: Enemy, p: Player) {
   if (!e.grounded || !atLedge(eng, e)) return;
-  const toward = (p.x > e.x ? 1 : -1) === e.facing;
+  const toward = desiredFacing(e, p) === e.facing;
   if (leapsGaps(e.kind) && toward && Math.abs(p.x - e.x) < 230 && Math.abs(p.y - e.y) < 110) {
     const lift = e.kind === "seven" ? -520 : e.kind === "four" ? -360 : e.kind === "two" ? -430 : -460;
     e.vy = lift;
@@ -35,7 +36,8 @@ function maybeLeap(eng: Eng, e: Enemy, p: Player) {
     e.grounded = false;
     return;
   }
-  e.facing = (e.facing * -1) as 1 | -1;
+  if (e.turnLock > 0) return;
+  commitFacing(e, e.facing < 0 ? 1 : -1);
   e.vx = 0;
 }
 
@@ -46,7 +48,7 @@ function hopUp(eng: Eng, e: Enemy, p: Player, cool = 1.05) {
   if (!leapsGaps(e.kind)) return;
   const lift = e.kind === "seven" ? -540 : e.kind === "four" ? -380 : e.kind === "two" ? -460 : -480;
   e.vy = lift;
-  e.vx = (p.x > e.x ? 1 : -1) * 88;
+  e.vx = (desiredFacing(e, p) || e.facing) * 88;
   e.grounded = false;
   e.aux = 0;
   eng.burst?.(e.x + e.w / 2, e.y + e.h, "#d45a4a", 4, "dust");

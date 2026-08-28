@@ -1768,15 +1768,24 @@ export function drawShieldBubble(ctx: CanvasRenderingContext2D, p: Player, camX:
   ctx.restore();
 }
 
+const enemyDraw = new WeakMap<Enemy, { vx: number }>();
+
+function smoothEnemyVx(e: Enemy) {
+  const prev = enemyDraw.get(e);
+  const vx = prev ? prev.vx + (e.vx - prev.vx) * 0.22 : e.vx;
+  enemyDraw.set(e, { vx });
+  return vx;
+}
+
 export function drawEnemy(ctx: CanvasRenderingContext2D, e: Enemy, camX: number, camY: number, t: number) {
   const cx = e.x + e.w / 2 - camX;
   const cy = e.y + e.h / 2 - camY;
-  const spd = Math.hypot(e.vx, e.vy);
-  const run = Math.min(1, spd / 80);
+  const vx = smoothEnemyVx(e);
+  const run = Math.min(1, Math.abs(vx) / 80);
   const gait = e.t * (3.6 + run * 6.4);
   const step = Math.sin(gait);
   const bob = e.stun > 0 ? 2 : run > 0.1 ? Math.abs(step) * (2.8 + run * 2.4) : Math.sin(t * 2.4 + e.t) * 1.8;
-  const lean = Math.max(-0.3, Math.min(0.3, e.vx * e.facing * 0.0036));
+  const lean = Math.max(-0.3, Math.min(0.3, vx * e.facing * 0.0036));
   const sq = e.hurt > 0 ? 1.16 : e.grounded ? 1 + Math.abs(step) * 0.09 * run : 0.88;
   const lag = step * -0.26 * run;
   const bite = e.hurt > 0 ? 0.55 : e.aux < 0.18 ? 0.4 : 0.07 + Math.sin(t * 5.2 + e.t) * 0.06;
@@ -1787,7 +1796,7 @@ export function drawEnemy(ctx: CanvasRenderingContext2D, e: Enemy, camX: number,
   ctx.scale(e.facing, 1);
   ctx.rotate(lean + (e.stun > 0 ? -0.16 : 0));
   ctx.scale(1 / sq, sq);
-  if (e.stun > 0) ctx.globalAlpha = 0.55 + 0.45 * Math.sin(t * 28);
+  if (e.stun > 0) ctx.globalAlpha = 0.72 + 0.28 * Math.sin(t * 8);
   else if (e.flash > 0) ctx.globalAlpha = 0.5;
   ctx.translate(0, bob);
   const hide = "#24382e";

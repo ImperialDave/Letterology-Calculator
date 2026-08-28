@@ -128,6 +128,8 @@ export interface Enemy {
   hp: number;
   maxHp: number;
   facing: 1 | -1;
+  /** Seconds left before chase may turn again. Stops facing flicker. */
+  turnLock: number;
   t: number;
   hurt: number;
   flash: number;

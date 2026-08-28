@@ -135,15 +135,19 @@ test("combo decay pops them out after a string", () => {
 
 test("s t r c have sideways weapon dashes", () => {
   const names = new Set<string>();
+  const generic = dashMove("b").selfVx ?? 0;
+  assert.ok(generic >= 260);
+  assert.ok(MOVES.dash.time <= 0.26);
   for (const id of ["s", "t", "r", "c"] as LetterId[]) {
     const d = dashMove(id);
-    assert.ok(d.selfVx && d.selfVx >= 240, id);
+    assert.ok(d.selfVx && d.selfVx > generic, id);
+    assert.ok(d.time <= 0.3, id);
     assert.equal(d.fx, "slash-dash");
     assert.equal(names.has(d.name), false, d.name);
     names.add(d.name);
-    assert.ok(resolveMove(id, "dash", 0).selfVx! >= 240, id);
+    assert.ok(resolveMove(id, "dash", 0).selfVx! > generic, id);
   }
-  assert.ok((dashMove("b").selfVx ?? 0) < 240);
+  assert.ok(meleeIasaReady(0.14, 0.24, "dash"));
 });
 
 test("lights are shorter and IASA comes earlier", () => {
@@ -155,9 +159,11 @@ test("lights are shorter and IASA comes earlier", () => {
 });
 
 test("up-tilt hops and uair boosts higher than a jump", () => {
-  assert.ok(UTILT_HOP <= -200);
-  assert.ok(UAIR_BOOST >= 180);
-  assert.ok(UAIR_VY_CAP <= -600);
+  assert.ok(UTILT_HOP <= -340);
+  assert.ok(UAIR_BOOST >= 280);
+  assert.ok(UAIR_VY_CAP <= -740);
+  assert.ok((MOVES.utilt.selfVx ?? 0) >= 80);
+  assert.ok((MOVES.uair.selfVx ?? 0) >= 60);
   const jump = 522;
   assert.ok(Math.abs(UAIR_VY_CAP) > jump);
 });

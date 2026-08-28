@@ -63,10 +63,10 @@ const RUN_RATIO = 0.68;
 export const JAB_WINDOW = 0.48;
 export const TILT_HOLD = 0.08;
 export const SMASH_CHARGE = 0.72;
-export const UAIR_BOOST = 200;
-export const UAIR_VY_CAP = -640;
-export const UTILT_HOP = -220;
-export const UPHOP_TIME = 0.28;
+export const UAIR_BOOST = 300;
+export const UAIR_VY_CAP = -780;
+export const UTILT_HOP = -360;
+export const UPHOP_TIME = 0.38;
 
 export const MOVES: Record<MeleeMoveId, MeleeMove> = {
   jab1: {
@@ -148,6 +148,7 @@ export const MOVES: Record<MeleeMoveId, MeleeMove> = {
     kbX: 36,
     kbY: -210,
     stun: 0.5,
+    selfVx: 90,
     selfVy: UTILT_HOP,
     fx: "slash-up",
   },
@@ -170,8 +171,8 @@ export const MOVES: Record<MeleeMoveId, MeleeMove> = {
   dash: {
     id: "dash",
     name: "Dash attack",
-    time: 0.36,
-    hitAt: [0.28, 0.52],
+    time: 0.24,
+    hitAt: [0.26, 0.5],
     reach: 54,
     height: 26,
     ox: 6,
@@ -181,7 +182,7 @@ export const MOVES: Record<MeleeMoveId, MeleeMove> = {
     kbX: 170,
     kbY: -36,
     stun: 0.5,
-    selfVx: 180,
+    selfVx: 280,
     fx: "slash-dash",
   },
   fsmash: {
@@ -307,6 +308,7 @@ export const MOVES: Record<MeleeMoveId, MeleeMove> = {
     kbX: 28,
     kbY: -230,
     stun: 0.48,
+    selfVx: 70,
     aerial: true,
     fx: "slash-up",
   },
@@ -335,50 +337,50 @@ const DASHES: Partial<Record<LetterId, MeleeMove>> = {
   c: {
     ...MOVES.dash,
     name: "Disk",
-    time: 0.34,
-    hitAt: [0.26, 0.5],
+    time: 0.22,
+    hitAt: [0.24, 0.48],
     reach: 46,
     height: 30,
     oy: 14,
     dmgMul: 0.7,
-    selfVx: 250,
+    selfVx: 360,
     bothSides: true,
     fx: "slash-dash",
   },
   s: {
     ...MOVES.dash,
     name: "Reaper rush",
-    time: 0.4,
-    hitAt: [0.22, 0.46],
+    time: 0.26,
+    hitAt: [0.2, 0.44],
     reach: 72,
     height: 34,
     oy: 12,
     dmgMul: 0.8,
-    selfVx: 280,
+    selfVx: 400,
     fx: "slash-dash",
   },
   r: {
     ...MOVES.dash,
     name: "Brand skate",
-    time: 0.36,
-    hitAt: [0.3],
+    time: 0.24,
+    hitAt: [0.28],
     reach: 60,
     height: 24,
     oy: 16,
     dmgMul: 0.85,
-    selfVx: 310,
+    selfVx: 420,
     fx: "slash-dash",
   },
   t: {
     ...MOVES.dash,
     name: "Lance charge",
-    time: 0.42,
-    hitAt: [0.32, 0.55],
+    time: 0.28,
+    hitAt: [0.28, 0.5],
     reach: 86,
     height: 22,
     oy: 16,
     dmgMul: 0.9,
-    selfVx: 330,
+    selfVx: 460,
     fx: "slash-dash",
   },
 };
@@ -593,7 +595,7 @@ export const KNOCKBACK: Record<
   ftilt: { angle: 40, bkb: 200, kbg: 2.5, iasa: 0.38 },
   utilt: { angle: 88, bkb: 430, kbg: 3.3, iasa: 0.34 },
   dtilt: { angle: 26, bkb: 150, kbg: 1.7, iasa: 0.36 },
-  dash: { angle: 36, bkb: 210, kbg: 2.1, iasa: 0.58 },
+  dash: { angle: 36, bkb: 210, kbg: 2.1, iasa: 0.4 },
   fsmash: { angle: 42, bkb: 360, kbg: 4.3, iasa: 0.7 },
   usmash: { angle: 90, bkb: 500, kbg: 4.1, iasa: 0.7 },
   dsmash: { angle: 32, bkb: 280, kbg: 3.1, iasa: 0.7 },

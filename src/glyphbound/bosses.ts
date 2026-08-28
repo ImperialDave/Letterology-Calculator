@@ -1,6 +1,7 @@
 import { GameEngine } from "./engine";
 import { VIEW_W } from "./types";
 import type { Enemy, Player } from "./types";
+import { desiredFacing, faceToward } from "./enemy-facing";
 
 const BOSS = new Set([
   "dualis",
@@ -140,7 +141,7 @@ function aiShard(eng: Eng, e: Enemy, p: Player, dt: number) {
   e.aux += dt;
   e.x += Math.sin(e.t * 1.6) * 46 * dt;
   e.y += Math.cos(e.t * 2.2) * 22 * dt;
-  e.facing = p.x > e.x ? 1 : -1;
+  faceToward(e, p);
   if (!e.grounded) e.vy += 900 * dt;
   e.vx *= 0.92;
   if (e.aux > 1.55) {
@@ -162,7 +163,7 @@ function tick(eng: Eng, e: Enemy, p: Player, dt: number) {
   const far = dist > 120 && dist < VIEW_W;
   if (e.grounded && s.jump <= 0 && (far || (high && dist < 90))) {
     e.vy = e.kind === "endmark" || e.kind === "remainder" ? -720 : -620;
-    e.vx = (p.x > e.x ? 1 : -1) * (far ? 160 : 90);
+    e.vx = (desiredFacing(e, p) || e.facing) * (far ? 160 : 90);
     e.grounded = false;
     s.air = true;
     const furious = e.hp < e.maxHp * 0.4;

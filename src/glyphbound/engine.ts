@@ -41,11 +41,13 @@ import {
   resolveMove,
   smashKindFromIntent,
   smashMove,
+  dashMove,
   UAIR_BOOST,
   UAIR_VY_CAP,
   UPHOP_TIME,
   type MeleeMoveId,
 } from "./melee";
+import { commitFacing, faceToward, reverseAtLedge, tickTurnLock } from "./enemy-facing";
 import { SLOT_COUNT, activeSlot, clearSave, defaultSave, listSlots, loadSave, selectSlot, writeSave } from "./save";
 import { preloadArt } from "./art";
 import { isMovingSolid, SolidGrid } from "./spatial";
@@ -899,6 +901,7 @@ export class GameEngine {
       hp,
       maxHp: hp,
       facing: -1,
+      turnLock: 0,
       t: Math.random() * 10,
       hurt: 0,
       flash: 0,
@@ -1194,22 +1197,25 @@ export class GameEngine {
       if (a.moveX !== 0 && !lockFace) p.facing = a.moveX > 0 ? 1 : -1;
       const smashHold = p.smashKind !== "";
       const dashing = p.melee > 0 && p.meleeMove === "dash";
-      const target = smashHold ? 0 : dashing ? p.facing * spd * 1.2 : a.moveX * spd;
+      const dashSpd = dashing ? (dashMove(p.letter).selfVx ?? 280) : 0;
+      const target = smashHold ? 0 : dashing ? p.facing * dashSpd : a.moveX * spd;
       const reversing = a.moveX !== 0 && p.vx * a.moveX < 0;
-      const rate = smashHold ? 18 : p.grounded ? (reversing ? 32 : 22) : reversing ? 14 : 10;
+      const rate = smashHold ? 18 : dashing ? 8 : p.grounded ? (reversing ? 32 : 22) : reversing ? 14 : 10;
       p.vx += (target - p.vx) * (1 - Math.exp(-rate * dt));
       if ((a.moveX === 0 || smashHold) && Math.abs(p.vx) < 6) p.vx = 0;
     }
     const gUp = 1300;
     const gDown = 2400;
     const aetherDash = p.roll > 0 && p.letter === "c";
-    const risingUair = p.meleeMove === "uair" && p.melee > 0 && p.vy < 0;
-    if (!a.jumpHeld && !p.jumpCut && p.vy < 0 && !aetherDash && !risingUair) {
+    const risingUp =
+      p.melee > 0 && p.vy < 0 && (p.meleeMove === "uair" || p.meleeMove === "utilt");
+    if (!a.jumpHeld && !p.jumpCut && p.vy < 0 && !aetherDash && !risingUp) {
       p.vy *= 0.52;
       p.jumpCut = true;
     }
     if (!aetherDash) {
-      p.vy += (p.vy < 0 ? gUp : gDown) * dt;
+      const gRise = risingUp && p.meleeMove === "utilt" ? gUp * 0.72 : gUp;
+      p.vy += (p.vy < 0 ? gRise : gDown) * dt;
       if (!p.grounded && a.aimY >= 1 && p.vy > 28) p.vy = Math.max(p.vy, 680);
       if (p.vy > 980) p.vy = 980;
     }
@@ -2466,6 +2472,7 @@ export class GameEngine {
     for (const e of list) {
       if (!e.alive) continue;
       e.t += dt;
+      tickTurnLock(e, dt);
       e.hurt = Math.max(0, e.hurt - dt);
       e.flash = Math.max(0, e.flash - dt);
       e.stun = Math.max(0, e.stun - dt);
@@ -2495,7 +2502,7 @@ export class GameEngine {
       if (e.kind === "zero") {
         e.y += Math.sin(e.t * 2) * 18 * dt;
         e.x += Math.sin(e.t * 0.6) * 30 * dt;
-        e.facing = p.x > e.x ? 1 : -1;
+        faceToward(e, p);
         if (e.phase === 1) {
           this.pullToward(e, p, 160, 100, dt);
           if (e.aux > 0.55) {
@@ -2533,13 +2540,10 @@ export class GameEngine {
             e.aux = 0;
           }
         } else {
-          e.facing = p.x > e.x ? 1 : -1;
+          faceToward(e, p);
           e.vx = e.facing * 55;
           this.moveActor(e, dt, large);
-          if (e.grounded && this.atLedge(e)) {
-            e.facing = (e.facing * -1) as 1 | -1;
-            e.vx = 0;
-          }
+          if (e.grounded && this.atLedge(e)) reverseAtLedge(e, p);
           if (e.aux > 0.75 && Math.abs(p.x - e.x) < 120 && Math.abs(p.y - e.y) < 70) e.vx *= 0.2;
           if (e.aux > 1.05 && Math.abs(p.x - e.x) < 120 && Math.abs(p.y - e.y) < 70) {
             e.phase = 1;
@@ -2550,13 +2554,10 @@ export class GameEngine {
         }
       } else if (e.kind === "two") {
         if (!e.grounded) e.vy += 1800 * dt;
-        e.facing = p.x > e.x ? 1 : -1;
+        faceToward(e, p);
         e.vx = e.facing * 62;
         this.moveActor(e, dt, large);
-        if (e.grounded && this.atLedge(e)) {
-          e.facing = (e.facing * -1) as 1 | -1;
-          e.vx = 0;
-        }
+        if (e.grounded && this.atLedge(e)) reverseAtLedge(e, p);
         if (this.windFire(e, 1.55)) {
           if (Math.abs(p.x - e.x) < 56 && e.grounded) this.shockwave(e);
           else {
@@ -2567,19 +2568,16 @@ export class GameEngine {
         }
       } else if (e.kind === "four") {
         if (!e.grounded) e.vy += 1800 * dt;
-        e.facing = p.x > e.x ? 1 : -1;
+        faceToward(e, p);
         e.vx = e.facing * 38;
         this.moveActor(e, dt, large);
-        if (e.grounded && this.atLedge(e)) {
-          e.facing = (e.facing * -1) as 1 | -1;
-          e.vx = 0;
-        }
+        if (e.grounded && this.atLedge(e)) reverseAtLedge(e, p);
         if (this.windFire(e, 1.9)) {
           this.stampLine(p.x + p.w / 2, p.y + p.h - 4, 3, 42);
         }
       } else if (e.kind === "five") {
         if (!e.grounded) e.vy += 1800 * dt;
-        e.facing = p.x > e.x ? 1 : -1;
+        faceToward(e, p);
         if (e.phase === 1) {
           this.moveActor(e, dt, large);
           if (e.grounded) {
@@ -2591,10 +2589,7 @@ export class GameEngine {
         } else {
           e.vx = e.facing * 30;
           this.moveActor(e, dt, large);
-          if (e.grounded && this.atLedge(e)) {
-            e.facing = (e.facing * -1) as 1 | -1;
-            e.vx = 0;
-          }
+          if (e.grounded && this.atLedge(e)) reverseAtLedge(e, p);
           if (e.grounded && this.windFire(e, 2.15)) {
             e.phase = 1;
             e.vy = -360;
@@ -2605,17 +2600,14 @@ export class GameEngine {
         if (!e.grounded) e.vy += 1800 * dt;
         const spd = e.kind === "seven" ? 48 : 58;
         if (Math.abs(p.x - e.x) < 300) {
-          e.facing = p.x > e.x ? 1 : -1;
+          faceToward(e, p);
           e.vx = e.facing * spd;
         } else {
           e.vx = e.facing * 40;
-          if (Math.random() < 0.005) e.facing *= -1;
+          if (Math.random() < 0.005) commitFacing(e, e.facing < 0 ? 1 : -1);
         }
         this.moveActor(e, dt, large);
-        if (e.grounded && this.atLedge(e)) {
-          e.facing = (e.facing * -1) as 1 | -1;
-          e.vx = 0;
-        }
+        if (e.grounded && this.atLedge(e)) reverseAtLedge(e, p);
         if ((e.kind === "three" || e.kind === "triad") && e.grounded && e.aux > 0.9 && Math.abs(p.x - e.x) < 220) {
           e.vy = -440;
           e.aux = 0;
@@ -2648,7 +2640,7 @@ export class GameEngine {
           e.x += Math.sin(e.t * 0.8) * 24 * dt;
           e.vy = 0;
         }
-        e.facing = p.x > e.x ? 1 : -1;
+        faceToward(e, p);
         if (this.windFire(e, 1.55)) {
           this.mortar(e, 0, 0.45);
           this.mortar(e, 0.45, 0.22);
@@ -2656,7 +2648,7 @@ export class GameEngine {
         }
       } else if (e.kind === "nine") {
         e.y += Math.sin(e.t * 3) * 16 * dt;
-        e.facing = p.x > e.x ? 1 : -1;
+        faceToward(e, p);
         if (e.phase === 1) {
           if (e.aux > 0.42) {
             e.x = e.armor;
@@ -2676,7 +2668,7 @@ export class GameEngine {
       } else if (e.kind === "eight") {
         e.x += Math.sin(e.t * 1.4) * 70 * dt;
         e.y += Math.cos(e.t * 2.8) * 40 * dt;
-        e.facing = p.x > e.x ? 1 : -1;
+        faceToward(e, p);
         e.aux2 += dt;
         if (e.aux2 > 3 && e.hp < e.maxHp) {
           e.hp = Math.min(e.maxHp, e.hp + 1);
@@ -2690,7 +2682,7 @@ export class GameEngine {
         }
       } else if (e.kind === "dualis") {
         if (!e.grounded) e.vy += 1600 * dt;
-        e.facing = p.x > e.x ? 1 : -1;
+        faceToward(e, p);
         if (e.phase === 0 && e.hp < e.maxHp * 0.62) {
           e.phase = 1;
           this.enemies.push(this.spawnEnemy("two", e.x - 50, e.y));
@@ -2726,7 +2718,7 @@ export class GameEngine {
         if (e.grounded && Math.random() < 0.012) e.vy = -340;
       } else if (e.kind === "tetrarch") {
         if (!e.grounded) e.vy += 1800 * dt;
-        e.facing = p.x > e.x ? 1 : -1;
+        faceToward(e, p);
         e.vx = e.facing * 28;
         this.moveActor(e, dt, true);
         if (e.hp < e.maxHp * 0.45 && e.phase < 1) {
@@ -2763,7 +2755,7 @@ export class GameEngine {
   private aiSecond(e: Enemy, dt: number, p: Player) {
     if (e.kind === "nullring") {
       e.y += Math.sin(e.t * 1.6) * 20 * dt;
-      e.facing = p.x > e.x ? 1 : -1;
+      faceToward(e, p);
       if (e.phase === 1) {
         const cx = e.x + e.w / 2;
         const cy = e.y + e.h / 2;
@@ -2794,7 +2786,7 @@ export class GameEngine {
       const oldVx = e.vx;
       this.moveActor(e, dt, false);
       if (e.vx === 0 && oldVx !== 0) {
-        e.facing = (e.facing * -1) as 1 | -1;
+        commitFacing(e, e.facing < 0 ? 1 : -1);
         e.vy = -90;
         e.vx = e.facing * 70;
       }
@@ -2804,7 +2796,7 @@ export class GameEngine {
       }
     } else if (e.kind === "summoner") {
       if (!e.grounded) e.vy += 1600 * dt;
-      e.facing = p.x > e.x ? 1 : -1;
+      faceToward(e, p);
       const dist = Math.abs(p.x - e.x);
       e.vx = dist < 220 ? -e.facing * 55 : dist > 360 ? e.facing * 40 : 0;
       this.moveActor(e, dt, false);
@@ -2814,7 +2806,7 @@ export class GameEngine {
         this.burst(e.x, e.y, "#c46ad4", 8, "glyph");
       }
     } else if (e.kind === "gradient") {
-      e.facing = p.x > e.x ? 1 : -1;
+      faceToward(e, p);
       if (!e.grounded) {
         e.vx += e.facing * 180 * dt;
         e.vy += 2100 * dt;
@@ -2852,7 +2844,7 @@ export class GameEngine {
       }
     } else if (e.kind === "archivist") {
       if (!e.grounded) e.vy += 1700 * dt;
-      e.facing = p.facing;
+      if (p.facing !== e.facing) commitFacing(e, p.facing);
       e.vx = e.facing * 50;
       this.moveActor(e, dt, false);
       if (e.aux > 1.45) {
@@ -2862,7 +2854,7 @@ export class GameEngine {
       }
     } else if (e.kind === "importer") {
       if (!e.grounded) e.vy += 1500 * dt;
-      e.facing = p.x > e.x ? 1 : -1;
+      faceToward(e, p);
       if (e.hp < e.maxHp * 0.62 && e.phase < 1) {
         e.phase = 1;
         this.say("G opens a second port.");
@@ -2898,7 +2890,7 @@ export class GameEngine {
         }
       }
     } else if (e.kind === "nullis") {
-      e.facing = p.x > e.x ? 1 : -1;
+      faceToward(e, p);
       const fury = e.hp < e.maxHp * 0.4;
       if (e.phase === 1) {
         e.aux2 += dt;
@@ -2934,7 +2926,7 @@ export class GameEngine {
       }
     } else if (e.kind === "endmark") {
       if (!e.grounded) e.vy += 1600 * dt;
-      e.facing = p.x > e.x ? 1 : -1;
+      faceToward(e, p);
       if (e.hp < e.maxHp * 0.55 && e.phase < 1) {
         e.phase = 1;
         this.say("The period thickens.");
@@ -2965,7 +2957,7 @@ export class GameEngine {
       if (e.grounded && Math.random() < 0.014) e.vy = -360;
     } else if (e.kind === "plus" || e.kind === "summand") {
       if (!e.grounded) e.vy += 1600 * dt;
-      e.facing = p.x > e.x ? 1 : -1;
+      faceToward(e, p);
       e.vx = e.facing * (e.kind === "summand" ? 72 : 40);
       this.moveActor(e, dt, e.kind === "summand");
       if (e.aux > (e.kind === "summand" ? 1.15 : 1.6)) {
@@ -2987,7 +2979,7 @@ export class GameEngine {
       }
     } else if (e.kind === "minus" || e.kind === "difference") {
       if (!e.grounded) e.vy += 1600 * dt;
-      e.facing = p.x > e.x ? 1 : -1;
+      faceToward(e, p);
       e.vx = e.facing * (e.kind === "difference" ? 96 : 55);
       this.moveActor(e, dt, e.kind === "difference");
       if (e.aux > (e.kind === "difference" ? 0.95 : 1.4)) {
@@ -3010,7 +3002,7 @@ export class GameEngine {
       }
     } else if (e.kind === "times" || e.kind === "product") {
       if (!e.grounded) e.vy += 1500 * dt;
-      e.facing = p.x > e.x ? 1 : -1;
+      faceToward(e, p);
       e.vx = e.facing * (e.kind === "product" ? 50 : 35);
       this.moveActor(e, dt, e.kind === "product");
       const cap = e.kind === "product" ? 16 : 14;
@@ -3049,7 +3041,7 @@ export class GameEngine {
       }
     } else if (e.kind === "pi") {
       e.y += Math.sin(e.t * 2.2) * 18 * dt;
-      e.facing = p.x > e.x ? 1 : -1;
+      faceToward(e, p);
       if (e.aux > 0.85) {
         e.aux = 0;
         const a = e.t * 2.2;
@@ -3073,13 +3065,13 @@ export class GameEngine {
       this.moveActor(e, dt, false);
       if (e.aux > 0.9) {
         e.aux = 0;
-        e.facing = (e.facing * -1) as 1 | -1;
+        commitFacing(e, e.facing < 0 ? 1 : -1);
         e.vy = -220;
       }
     } else if (e.kind === "infinitum") {
       e.x += Math.sin(e.t * 1.6) * 90 * dt;
       e.y += Math.cos(e.t * 2.4) * 34 * dt;
-      e.facing = p.x > e.x ? 1 : -1;
+      faceToward(e, p);
       if (e.hp < e.maxHp * 0.5 && e.phase < 1) {
         e.phase = 1;
         this.say("Infinitum will not close.");
@@ -3099,7 +3091,7 @@ export class GameEngine {
       }
     } else if (e.kind === "remainder") {
       if (!e.grounded) e.vy += 1500 * dt;
-      e.facing = p.x > e.x ? 1 : -1;
+      faceToward(e, p);
       e.vx = e.facing * (90 + e.phase * 24);
       this.moveActor(e, dt, true);
       if (e.hp < e.maxHp * 0.55 && e.phase < 1) {
@@ -3127,7 +3119,7 @@ export class GameEngine {
       }
     } else {
       if (!e.grounded) e.vy += 1800 * dt;
-      e.facing = p.x > e.x ? 1 : -1;
+      faceToward(e, p);
       e.vx = e.facing * 50;
       this.moveActor(e, dt, false);
     }
@@ -4859,6 +4851,7 @@ export class GameEngine {
       hp: 1,
       maxHp: 1,
       facing,
+      turnLock: 0,
       t: t * 0.6,
       hurt: 0,
       flash: 0,
