@@ -1,6 +1,7 @@
 /** Optional HD skins. Missing files fall back to code-drawn tiles. */
+import { VIEW_W } from "./types";
 
-export type ArtKind = "tiles" | "hazards" | "movers" | "props";
+export type ArtKind = "tiles" | "hazards" | "movers" | "props" | "bg";
 
 export interface ArtEntry {
   kind: ArtKind;
@@ -36,6 +37,26 @@ export const ART_MANIFEST: ArtEntry[] = [
   { kind: "props", name: "lantern" },
   { kind: "props", name: "fort-brazier" },
   { kind: "props", name: "vault-lamp" },
+  { kind: "bg", name: "street-far" },
+  { kind: "bg", name: "street-mid" },
+  { kind: "bg", name: "hub-far" },
+  { kind: "bg", name: "hub-mid" },
+  { kind: "bg", name: "fort-far" },
+  { kind: "bg", name: "canal-far" },
+  { kind: "bg", name: "canal-mid" },
+  { kind: "bg", name: "canal-near" },
+  { kind: "bg", name: "coil-far" },
+  { kind: "bg", name: "vault-far" },
+  { kind: "bg", name: "abyss-far" },
+  { kind: "bg", name: "spire-far" },
+  { kind: "bg", name: "orbit-far" },
+  { kind: "bg", name: "orbit-mid" },
+  { kind: "bg", name: "orbit-near" },
+  { kind: "bg", name: "glacier-far" },
+  { kind: "bg", name: "glacier-mid" },
+  { kind: "bg", name: "glacier-near" },
+  { kind: "bg", name: "remainder-far" },
+  { kind: "bg", name: "remainder-mid" },
 ];
 
 const byKey = new Map<string, ArtEntry>();
@@ -131,5 +152,37 @@ export function blitArt(
   const sx = (frame % cols) * cw;
   const sy = Math.floor(frame / cols) * ch;
   ctx.drawImage(img, sx, sy, cw, ch, dx, dy, dw, dh);
+  return true;
+}
+
+/** Repeatable strip offset. `camX + width / factor` yields the same seam. */
+export function loopOffset(camX: number, factor: number, width: number) {
+  const w = Math.max(1, width);
+  let o = (-camX * factor) % w;
+  if (o > 0) o -= w;
+  return o;
+}
+
+/** Tile a scenery plate across the view. Returns false if the file is missing. */
+export function blitLoop(
+  ctx: CanvasRenderingContext2D,
+  kind: ArtKind,
+  name: string,
+  camX: number,
+  factor: number,
+  y = 0,
+  h = 0,
+  camY = 0,
+  yFactor = 0,
+): boolean {
+  const img = getArt(kind, name);
+  if (!img || !img.width) return false;
+  const dh = h || img.height;
+  const dw = img.width * (dh / img.height);
+  const x0 = loopOffset(camX, factor, dw);
+  const dy = y - camY * yFactor;
+  for (let x = x0; x < VIEW_W + dw; x += dw) {
+    ctx.drawImage(img, x, dy, dw, dh);
+  }
   return true;
 }

@@ -12,6 +12,7 @@ import {
   drawTiles,
   drawToys,
   drawWeatherFront,
+  drawFgVeil,
   drawGrade,
   setFxLite,
 } from "./draw";
@@ -4022,6 +4023,7 @@ export class GameEngine {
         ctx.globalAlpha = 1;
       }
       drawWeatherFront(ctx, this.camX, this.camY, this.time, district);
+      drawFgVeil(ctx, this.camX, this.time, district);
       ctx.restore();
       if (!this.lite) drawGrade(ctx, district);
       if (this.mode === "play" || this.mode === "hub" || this.mode === "transform") {

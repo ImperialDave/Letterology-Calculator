@@ -11,7 +11,7 @@ description: >
 
 # Glyphbound Doctrine
 
-ASCII `rows` are the collision map. `TILE=48`. Do not infer collision from art. Do not gate `P` on a letter or word the party does not have.
+ASCII `rows` are the collision map. `TILE=48`. Do not infer collision from art. Parallax plates (`public/glyphbound/bg/`) are scenery only — never platforms, pits, or gates. Do not gate `P` on a letter or word the party does not have.
 
 ## Jump budget
 

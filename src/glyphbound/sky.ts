@@ -1,3 +1,4 @@
+import { blitLoop } from "./art";
 import { districtFor, type DistrictLook, type Mid, type Weather } from "./districts";
 import { VIEW_H, VIEW_W, type ThemeId } from "./types";
 
@@ -22,7 +23,12 @@ export function drawParallax(
   ctx.translate(shakeX, shakeY);
   fillSky(ctx, d);
   drawCelestial(ctx, d, t, camX);
-  drawMid(ctx, d, camX, t, index);
+  const far = blitLoop(ctx, "bg", `${d.theme}-far`, camX, 0.1, 0, VIEW_H, camY, 0.04);
+  if (!far) drawFarLand(ctx, d, camX, t, index);
+  const mid = blitLoop(ctx, "bg", `${d.theme}-mid`, camX, 0.28, 0, VIEW_H, camY, 0.08);
+  if (!mid) drawMid(ctx, d, camX, t, index);
+  const near = blitLoop(ctx, "bg", `${d.theme}-near`, camX, 0.5, 0, VIEW_H, camY, 0.12);
+  if (!near) drawNearLand(ctx, d, camX, t);
   if (!fxLite) {
     drawWeather(ctx, d.weather, camX, t, d.accent, 0.55);
     drawHaze(ctx, d);
@@ -31,6 +37,13 @@ export function drawParallax(
     drawHaze(ctx, d);
   }
   ctx.restore();
+}
+
+export function drawFgVeil(ctx: CanvasRenderingContext2D, camX: number, t: number, index: number) {
+  const d = districtFor(index);
+  if (blitLoop(ctx, "bg", `${d.theme}-fg`, camX, 1.15, 0, VIEW_H)) return;
+  if (fxLite) return;
+  drawFgLand(ctx, d, camX, t);
 }
 
 export function drawWeatherFront(
@@ -125,6 +138,141 @@ function drawHaze(ctx: CanvasRenderingContext2D, d: DistrictLook) {
   ctx.globalAlpha = 0.35;
   ctx.fillRect(0, VIEW_H - 90, VIEW_W, 90);
   ctx.globalAlpha = 1;
+}
+
+function wrapSlot(camX: number, factor: number, spacing: number, i: number) {
+  const span = spacing * 12;
+  return ((i * spacing - camX * factor) % (VIEW_W + span)) - spacing;
+}
+
+function drawFarLand(ctx: CanvasRenderingContext2D, d: DistrictLook, camX: number, t: number, index: number) {
+  const h = VIEW_H;
+  if (d.sun === "night" || d.sun === "eclipse") {
+    ctx.fillStyle = "#e8ece8";
+    for (let i = 0; i < 28; i++) {
+      const x = wrapSlot(camX, 0.04, 48, i);
+      const y = 18 + ((i * 37 + index * 9) % 110);
+      ctx.globalAlpha = 0.12 + (i % 5) * 0.04;
+      ctx.fillRect(x, y, i % 4 === 0 ? 2 : 1, i % 4 === 0 ? 2 : 1);
+    }
+    ctx.globalAlpha = 1;
+  }
+  ctx.beginPath();
+  ctx.moveTo(-20, h);
+  const ridge = d.mid === "glacier" || d.mid === "glass" ? 0.38 : d.mid === "spires" || d.mid === "orrery" ? 0.34 : 0.48;
+  for (let i = 0; i <= 18; i++) {
+    const x = wrapSlot(camX, 0.1, 92, i);
+    const peak = h * ridge - (20 + ((i * 19 + index) % 70));
+    ctx.lineTo(x, peak);
+  }
+  ctx.lineTo(VIEW_W + 40, h);
+  ctx.closePath();
+  ctx.fillStyle = d.sky[2];
+  ctx.globalAlpha = 0.72;
+  ctx.fill();
+  ctx.globalAlpha = 0.22;
+  ctx.fillStyle = d.accent;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  if (d.mid === "orrery" || d.mid === "lattice") {
+    ctx.strokeStyle = d.accent;
+    ctx.globalAlpha = 0.2;
+    ctx.lineWidth = 1.2;
+    for (let i = 0; i < 3; i++) {
+      const cx = wrapSlot(camX, 0.1, 220, i) + 80;
+      const cy = 70 + i * 18;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, 36 + i * 10, 14 + i * 4, t * 0.12 + i, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+
+function drawNearLand(ctx: CanvasRenderingContext2D, d: DistrictLook, camX: number, t: number) {
+  const h = VIEW_H;
+  const base = h - 64;
+  ctx.globalAlpha = 0.55;
+  for (let i = 0; i < 10; i++) {
+    const x = wrapSlot(camX, 0.5, 140, i);
+    const bw = 48 + (i % 3) * 22;
+    const bh = 70 + (i % 5) * 28;
+    ctx.fillStyle = i % 2 ? d.sky[2] : "#0a0c10";
+    if (d.mid === "spires" || d.mid === "columns") {
+      ctx.fillRect(x + 16, base - bh - 40, 10, bh + 40);
+      ctx.beginPath();
+      ctx.moveTo(x + 8, base - bh - 40);
+      ctx.lineTo(x + 21, base - bh - 70);
+      ctx.lineTo(x + 34, base - bh - 40);
+      ctx.fill();
+    } else if (d.mid === "ribs" || d.mid === "abyss") {
+      ctx.beginPath();
+      ctx.moveTo(x, base);
+      ctx.quadraticCurveTo(x + bw * 0.5, base - bh - 20, x + bw, base);
+      ctx.fill();
+    } else if (d.mid === "pipes" || d.mid === "docks" || d.mid === "ships") {
+      ctx.fillRect(x, base - 36, bw, 36);
+      ctx.fillRect(x + 8, base - 70, 14, 34);
+    } else if (d.mid === "glacier" || d.mid === "glass") {
+      ctx.beginPath();
+      ctx.moveTo(x, base);
+      ctx.lineTo(x + bw * 0.35, base - bh);
+      ctx.lineTo(x + bw, base);
+      ctx.fill();
+    } else if (d.mid === "coils") {
+      ctx.beginPath();
+      ctx.arc(x + 24, base - 30, 28, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (d.mid === "garden" || d.mid === "forest") {
+      ctx.beginPath();
+      ctx.ellipse(x + 22, base - 38, 26, 40, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillRect(x + 18, base - 24, 8, 24);
+    } else {
+      ctx.fillRect(x, base - bh, bw, bh);
+      ctx.fillStyle = d.accent;
+      ctx.globalAlpha = 0.12;
+      ctx.fillRect(x + 4, base - bh + 8, 3, bh - 16);
+      ctx.globalAlpha = 0.55;
+    }
+  }
+  ctx.globalAlpha = 0.08 + Math.sin(t * 0.7) * 0.02;
+  ctx.fillStyle = d.accent;
+  ctx.fillRect(0, base - 8, VIEW_W, 12);
+  ctx.globalAlpha = 1;
+}
+
+function drawFgLand(ctx: CanvasRenderingContext2D, d: DistrictLook, camX: number, t: number) {
+  ctx.save();
+  ctx.globalAlpha = 0.22;
+  ctx.fillStyle = "#05060a";
+  ctx.strokeStyle = d.accent;
+  ctx.lineWidth = 1.4;
+  for (let i = 0; i < 5; i++) {
+    const x = wrapSlot(camX, 1.15, 260, i);
+    if (d.mid === "glacier" || d.mid === "glass") {
+      ctx.beginPath();
+      ctx.moveTo(x + 20, 0);
+      ctx.lineTo(x + 28, 70 + (i % 3) * 20);
+      ctx.lineTo(x + 36, 0);
+      ctx.fill();
+    } else if (d.mid === "ribs" || d.mid === "abyss") {
+      ctx.beginPath();
+      ctx.moveTo(x, VIEW_H);
+      ctx.quadraticCurveTo(x + 40, VIEW_H - 120, x + 50, VIEW_H);
+      ctx.fill();
+    } else if (d.mid === "pipes" || d.mid === "docks") {
+      ctx.fillRect(x + 10, 0, 8, 50);
+      ctx.fillRect(x, 48, 70, 8);
+    } else {
+      ctx.globalAlpha = 0.14;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x + 8 + Math.sin(t + i) * 2, 36);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
 }
 
 function drawWeather(ctx: CanvasRenderingContext2D, kind: Weather, camX: number, t: number, accent: string, layer: number) {

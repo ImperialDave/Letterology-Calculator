@@ -32,7 +32,7 @@ export function roundRect(
   ctx.closePath();
 }
 
-export { drawParallax, drawWeatherFront, drawGrade, setFxLite } from "./sky";
+export { drawParallax, drawWeatherFront, drawGrade, drawFgVeil, setFxLite } from "./sky";
 
 function tileChar(rows: string[], tx: number, ty: number) {
   if (ty < 0 || ty >= rows.length || tx < 0 || tx >= rows[0].length) return "#";
