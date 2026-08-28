@@ -345,8 +345,8 @@
   position: absolute;
   left: 0;
   bottom: 0;
-  height: 46%;
-  width: min(46%, 17.5rem);
+  height: 48%;
+  width: min(42%, 16.5rem);
   padding-bottom: max(0.7rem, env(safe-area-inset-bottom));
   padding-left: max(1rem, env(safe-area-inset-left));
 }
@@ -355,8 +355,8 @@
   position: absolute;
   right: 0;
   bottom: 0;
-  height: 11.5rem;
-  width: 12.2rem;
+  height: 13.2rem;
+  width: 14.5rem;
   padding-bottom: max(0.4rem, env(safe-area-inset-bottom));
   padding-right: max(0.4rem, env(safe-area-inset-right));
   pointer-events: none;
@@ -391,7 +391,8 @@
     padding-bottom: 1.35rem;
   }
   .gb-actions {
-    height: min(12rem, 86%);
+    height: min(13.5rem, 88%);
+    width: 14.5rem;
   }
 }
 

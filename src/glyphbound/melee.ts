@@ -627,6 +627,25 @@ export function comboDecay(hits: number): number {
   return 1 + Math.max(0, hits - 3) * 0.15;
 }
 
+/** Smash DI: pull launch angle toward the stick by up to this many degrees. */
+export const DI_MAX_DEG = 18;
+
+export function applyDi(vx: number, vy: number, diX = 0, diY = 0): { vx: number; vy: number } {
+  const mag = Math.min(1, Math.hypot(diX, diY));
+  if (mag < 0.18) return { vx, vy };
+  const spd = Math.hypot(vx, vy);
+  if (spd < 8) return { vx, vy };
+  const launch = Math.atan2(-vy, vx);
+  const stick = Math.atan2(-diY, diX);
+  let diff = stick - launch;
+  while (diff > Math.PI) diff -= Math.PI * 2;
+  while (diff < -Math.PI) diff += Math.PI * 2;
+  const max = (DI_MAX_DEG * Math.PI) / 180;
+  const tilt = Math.max(-max, Math.min(max, diff)) * mag;
+  const ang = launch + tilt;
+  return { vx: Math.cos(ang) * spd, vy: -Math.sin(ang) * spd };
+}
+
 export function launchHit(opts: {
   moveId?: MeleeMoveId | "";
   percent: number;
@@ -635,6 +654,8 @@ export function launchHit(opts: {
   comboHits: number;
   smashPower?: number;
   flourish?: boolean;
+  diX?: number;
+  diY?: number;
 }): { vx: number; vy: number; stun: number; hitlag: number; speed: number } {
   let angle = 42;
   let bkb = 170;
@@ -658,8 +679,11 @@ export function launchHit(opts: {
   speed = (speed / Math.max(0.55, opts.weight)) * comboDecay(opts.comboHits);
   let rad = (angle * Math.PI) / 180;
   if (sakurai && speed < 150) rad = (10 * Math.PI) / 180;
-  const vx = opts.dir * speed * Math.cos(rad);
-  const vy = -speed * Math.sin(rad);
+  const rawX = opts.dir * speed * Math.cos(rad);
+  const rawY = -speed * Math.sin(rad);
+  const di = applyDi(rawX, rawY, opts.diX ?? 0, opts.diY ?? 0);
+  const vx = di.vx;
+  const vy = di.vy;
   const stun = Math.min(1.7, 0.11 + speed * 0.00105);
   const heavy =
     opts.flourish ||

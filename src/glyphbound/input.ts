@@ -1,3 +1,5 @@
+import { codesFor, KEY_DEFS, type KeyAction } from "./keys";
+
 export type Actions = {
   moveX: number;
   /** Stick / arrows for melee aim. -1 left, +1 right. */
@@ -105,6 +107,8 @@ export class Input {
   prevButtons = new Set<string>();
   canvas: HTMLElement | null = null;
   enabled = true;
+  keymap: Partial<Record<string, string>> = {};
+  capturing = false;
   private stickRadius = 56;
   private padHeld = new Set<number>();
 
@@ -148,9 +152,15 @@ export class Input {
     if (document.hidden) this.clear();
   };
 
+  private boundCodes() {
+    const out = new Set(GAME_KEYS);
+    for (const d of KEY_DEFS) for (const c of codesFor(this.keymap, d.id)) out.add(c);
+    return out;
+  }
+
   private onKeyDown = (e: KeyboardEvent) => {
-    if (!this.enabled) return;
-    if (GAME_KEYS.has(e.code)) e.preventDefault();
+    if (!this.enabled || this.capturing) return;
+    if (this.boundCodes().has(e.code)) e.preventDefault();
     this.keys.add(e.code);
     this.latched.add(e.code);
   };
@@ -279,9 +289,11 @@ export class Input {
     }
 
     const a = empty();
+    const act = (id: KeyAction) => codesFor(this.keymap, id).some((c) => this.held(c));
+    const edgeAct = (id: KeyAction) => codesFor(this.keymap, id).some((c) => this.edge(c));
     let mx = 0;
-    if (this.held("KeyA") || this.held("ArrowLeft")) mx -= 1;
-    if (this.held("KeyD") || this.held("ArrowRight")) mx += 1;
+    if (act("left")) mx -= 1;
+    if (act("right")) mx += 1;
     if (this.stick.active) {
       if (this.stick.x > 0.28) mx += 1;
       else if (this.stick.x < -0.28) mx -= 1;
@@ -289,13 +301,9 @@ export class Input {
     if (this.buttons.has("left")) mx -= 1;
     if (this.buttons.has("right")) mx += 1;
     a.moveX = Math.max(-1, Math.min(1, mx));
-    a.down =
-      this.held("KeyS") ||
-      this.held("ArrowDown") ||
-      this.stick.y > 0.48 ||
-      this.buttons.has("down");
-    const upKey = this.held("KeyW") || this.held("ArrowUp");
-    const attackHeld = this.held("KeyJ") || this.held("KeyZ") || this.buttons.has("attack");
+    a.down = act("down") || this.stick.y > 0.48 || this.buttons.has("down");
+    const upKey = act("up");
+    const attackHeld = act("attack") || this.buttons.has("attack");
     let aimX = mx;
     if (this.stick.active && Math.abs(this.stick.x) > 0.28) aimX = this.stick.x;
     a.aimX = Math.max(-1, Math.min(1, aimX));
@@ -308,46 +316,28 @@ export class Input {
     } else {
       a.aimY = 0;
     }
-    const jumpBtn =
-      this.held("Space") || this.buttons.has("jump");
+    const jumpBtn = act("jump") || this.buttons.has("jump");
     // W / ArrowUp / stick-up aim the melee kit. Space and the Jump pad still hop.
     // Holding Strike plus up is an up-tilt / up-smash, not a jump.
     const tapJump = (upKey || this.stick.y < -0.48) && !attackHeld;
     a.jumpHeld = jumpBtn || tapJump;
     a.jump =
-      this.edge("Space") ||
+      edgeAct("jump") ||
       (this.buttons.has("jump") && !this.prevButtons.has("jump")) ||
-      (!attackHeld && (this.edge("KeyW") || this.edge("ArrowUp")));
+      (!attackHeld && edgeAct("up"));
     a.attackHeld = attackHeld;
-    a.attack =
-      this.edge("KeyJ") ||
-      this.edge("KeyZ") ||
-      (this.buttons.has("attack") && !this.prevButtons.has("attack"));
-    a.fangHeld = this.held("KeyF") || this.held("KeyH") || this.buttons.has("fang");
-    a.fang =
-      this.edge("KeyF") ||
-      this.edge("KeyH") ||
-      (this.buttons.has("fang") && !this.prevButtons.has("fang"));
-    a.special =
-      this.edge("KeyK") ||
-      this.edge("KeyX") ||
-      (this.buttons.has("special") && !this.prevButtons.has("special"));
-    a.interact =
-      this.edge("KeyE") ||
-      (this.buttons.has("interact") && !this.prevButtons.has("interact"));
-    a.pause =
-      this.edge("Escape") ||
-      this.edge("KeyP") ||
-      (this.buttons.has("pause") && !this.prevButtons.has("pause"));
+    a.attack = edgeAct("attack") || (this.buttons.has("attack") && !this.prevButtons.has("attack"));
+    a.fangHeld = act("fang") || this.buttons.has("fang");
+    a.fang = edgeAct("fang") || (this.buttons.has("fang") && !this.prevButtons.has("fang"));
+    a.special = edgeAct("special") || (this.buttons.has("special") && !this.prevButtons.has("special"));
+    a.interact = edgeAct("interact") || (this.buttons.has("interact") && !this.prevButtons.has("interact"));
+    a.pause = edgeAct("pause") || (this.buttons.has("pause") && !this.prevButtons.has("pause"));
 
     // Stem / Shelf — keyboard L is stem (wall); hold down + L for shelf.
     // Touch: dedicated Stem / Shelf roles.
     const stemTap = this.buttons.has("stem") && !this.prevButtons.has("stem");
     const shelfTap = this.buttons.has("shelf") && !this.prevButtons.has("shelf");
-    const wordKey =
-      this.edge("KeyL") ||
-      this.edge("KeyI") ||
-      (this.buttons.has("word") && !this.prevButtons.has("word"));
+    const wordKey = edgeAct("stem") || (this.buttons.has("word") && !this.prevButtons.has("word"));
     a.stem = stemTap || (wordKey && !a.down && !shelfTap);
     a.shelf = shelfTap || (wordKey && a.down);
     a.word = wordKey || stemTap || shelfTap;
@@ -371,12 +361,7 @@ export class Input {
     // Cycle the cell when the roster outgrows a single number row.
     // Tab / Q / ]  → next ·  ` / [ / R  → previous · touch: cycle / cyclePrev
     // F is Fang, never cycle.
-    if (
-      this.edge("Tab") ||
-      this.edge("KeyQ") ||
-      this.edge("BracketRight") ||
-      (this.buttons.has("cycle") && !this.prevButtons.has("cycle"))
-    ) {
+    if (edgeAct("cycle") || (this.buttons.has("cycle") && !this.prevButtons.has("cycle"))) {
       a.cycle = 1;
     } else if (
       this.edge("Backquote") ||

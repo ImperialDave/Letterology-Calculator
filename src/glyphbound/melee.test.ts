@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  applyDi,
   DASH_CD,
+  DI_MAX_DEG,
   MOVES,
   TILT_HOLD,
   UAIR_BOOST,
@@ -184,6 +186,14 @@ test("up-tilt hops and uair boosts higher than a jump", () => {
   assert.ok((MOVES.uair.selfVx ?? 0) >= 60);
   const jump = 522;
   assert.ok(Math.abs(UAIR_VY_CAP) > jump);
+});
+
+test("DI pulls a forward launch toward the stick by at most 18 degrees", () => {
+  const base = applyDi(200, -200, 0, 0);
+  const up = applyDi(200, -200, 0, -1);
+  const ang = (vx: number, vy: number) => (Math.atan2(-vy, vx) * 180) / Math.PI;
+  assert.ok(ang(up.vx, up.vy) > ang(base.vx, base.vy));
+  assert.ok(ang(up.vx, up.vy) - ang(base.vx, base.vy) <= DI_MAX_DEG + 0.5);
 });
 
 test("IASA and nair autocancel windows exist", () => {

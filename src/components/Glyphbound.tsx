@@ -5,6 +5,7 @@ import { STAGE_COUNT } from "@/glyphbound/types";
 import { LEVELS } from "@/glyphbound/levels";
 import { Pause, Volume2, VolumeX } from "lucide-react";
 import { KITS, skillName } from "@/glyphbound/roster";
+import { KEY_DEFS, prettyCode, type KeyAction } from "@/glyphbound/keys";
 import { WEAPONS } from "@/glyphbound/weapons";
 import { GlyphboundStudio } from "@/components/GlyphboundStudio";
 import { GlyphboundProof } from "@/components/GlyphboundProof";
@@ -162,6 +163,7 @@ const emptyUi = (): UiSnap => ({
   sfxVol: 1,
   musicVol: 1,
   reducedMotion: false,
+  keys: {},
   hard: false,
   canContinue: false,
   introPage: 0,
@@ -207,6 +209,9 @@ export function Glyphbound() {
   const [showLore, setShowLore] = useState(false);
   const [openLetter, setOpenLetter] = useState<string | null>(null);
   const [objOpen, setObjOpen] = useState(true);
+  const [partyOpen, setPartyOpen] = useState(false);
+  const [capturing, setCapturing] = useState<KeyAction | null>(null);
+  const [portrait, setPortrait] = useState(false);
   const [perf, setPerf] = useState<{
     fps: number;
     frameMs: number;
@@ -255,6 +260,34 @@ export function Glyphbound() {
   useEffect(() => {
     if (window.matchMedia("(pointer: coarse)").matches) setObjOpen(false);
   }, []);
+
+  useEffect(() => {
+    const check = () => setPortrait(window.innerHeight > window.innerWidth * 1.15);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  useEffect(() => {
+    if (!capturing) return;
+    const onKey = (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.code === "Escape") {
+        setCapturing(null);
+        return;
+      }
+      gameRef.current?.bindKey(capturing, e.code);
+      setCapturing(null);
+    };
+    window.addEventListener("keydown", onKey, true);
+    const inp = gameRef.current?.input;
+    if (inp) inp.capturing = true;
+    return () => {
+      window.removeEventListener("keydown", onKey, true);
+      if (inp) inp.capturing = false;
+    };
+  }, [capturing]);
 
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -592,6 +625,32 @@ export function Glyphbound() {
                 />
               </label>
               <p className="mt-2 text-[11px] text-subtle">Pad: stick walk · A jump · X/B strike · Y fang · RB skill · Start pause</p>
+              <p className="mt-3 mb-1 text-[10px] uppercase tracking-[0.2em] text-accent">Keys</p>
+              <div className="grid max-h-40 gap-1 overflow-y-auto">
+                {KEY_DEFS.map((d) => {
+                  const code = ui.keys?.[d.id] || d.code;
+                  return (
+                    <button
+                      key={d.id}
+                      type="button"
+                      className="flex h-8 items-center justify-between rounded-md border border-border bg-bg/60 px-2 text-[11px] text-fg"
+                      onClick={() => setCapturing(d.id)}
+                    >
+                      <span>{d.label}</span>
+                      <span className="text-accent">
+                        {capturing === d.id ? "press a key" : prettyCode(code)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <button
+                type="button"
+                className="mt-2 h-8 w-full rounded-md border border-border text-[11px] text-muted"
+                onClick={() => g()?.resetKeys()}
+              >
+                Restore default keys
+              </button>
             </div>
             <div className="mt-4 flex flex-col gap-3">
               <button type="button" className="h-11 rounded-lg bg-fg text-bg" {...press(() => g()?.resume())}>
@@ -694,51 +753,78 @@ export function Glyphbound() {
             }}
           >
             <div className="pointer-events-auto flex flex-col gap-2">
-              <div className="gb-party flex max-w-[min(22rem,calc(100vw-7rem))] flex-wrap items-center gap-1.5">
-                {ui.party.length > 1 && (
-                  <button
-                    type="button"
-                    data-role="cyclePrev"
-                    className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-bg text-sm text-fg"
-                    aria-label="Previous letter"
-                    title="Previous letter (` / [ / R)"
-                  >
-                    ↺
-                  </button>
-                )}
-                {ui.party.map((L, i) => {
+              <div className="gb-party relative">
+                {(() => {
+                  const L = ui.letter;
                   const kit = KITS[L] ?? KITS.c;
-                  const on = ui.letter === L;
                   return (
                     <button
-                      key={L}
                       type="button"
-                      data-role={`p${i + 1}`}
-                      title={`${kit.element} · ${skillName(L, ui.capital)}`}
-                      className={`gb-letter flex h-11 min-w-11 flex-col items-center justify-center rounded-md px-1.5 font-display leading-none ${
-                        on ? "gb-letter-on" : ""
-                      }`}
-                      style={{
-                        boxShadow: on ? `inset 0 2px 0 ${kit.glow}` : `inset 0 0 0 1px ${kit.glow}66`,
+                      className="gb-letter gb-letter-on flex h-12 min-w-12 flex-col items-center justify-center rounded-md px-2 font-display leading-none"
+                      style={{ boxShadow: `inset 0 2px 0 ${kit.glow}` }}
+                      onPointerUp={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setPartyOpen((v) => !v);
                       }}
+                      aria-expanded={partyOpen}
+                      aria-label="Party letters"
                     >
-                      <span className="text-lg font-semibold text-fg" style={{ color: kit.core }}>
+                      <span className="text-xl font-semibold" style={{ color: kit.core }}>
                         {ui.capital ? L.toUpperCase() : L}
                       </span>
                       <span className="gb-letter-name mt-0.5 text-[8px] uppercase">{kit.element}</span>
                     </button>
                   );
-                })}
-                {ui.party.length > 1 && (
-                  <button
-                    type="button"
-                    data-role="cycle"
-                    className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-bg text-sm text-fg"
-                    aria-label="Next letter"
-                    title="Next letter (Tab / Q / ])"
-                  >
-                    ↻
-                  </button>
+                })()}
+                {partyOpen && (
+                  <div className="absolute left-0 top-14 z-40 flex flex-wrap items-center gap-1.5 rounded-md border border-border bg-surface/95 p-1.5 shadow-lg">
+                    {ui.party.length > 1 && (
+                      <button
+                        type="button"
+                        data-role="cyclePrev"
+                        className="flex h-11 w-11 items-center justify-center rounded-md border border-border bg-bg text-sm text-fg"
+                        aria-label="Previous letter"
+                      >
+                        ↺
+                      </button>
+                    )}
+                    {ui.party.map((L, i) => {
+                      const kit = KITS[L] ?? KITS.c;
+                      const on = ui.letter === L;
+                      return (
+                        <button
+                          key={L}
+                          type="button"
+                          data-role={`p${i + 1}`}
+                          title={`${kit.element} · ${skillName(L, ui.capital)}`}
+                          className={`gb-letter flex h-12 min-w-12 flex-col items-center justify-center rounded-md px-2 font-display leading-none ${
+                            on ? "gb-letter-on" : ""
+                          }`}
+                          style={{
+                            boxShadow: on ? `inset 0 2px 0 ${kit.glow}` : `inset 0 0 0 1px ${kit.glow}66`,
+                          }}
+                          onPointerUp={() => setPartyOpen(false)}
+                        >
+                          <span className="text-lg font-semibold" style={{ color: kit.core }}>
+                            {ui.capital ? L.toUpperCase() : L}
+                          </span>
+                          <span className="gb-letter-name mt-0.5 text-[8px] uppercase">{kit.element}</span>
+                        </button>
+                      );
+                    })}
+                    {ui.party.length > 1 && (
+                      <button
+                        type="button"
+                        data-role="cycle"
+                        className="flex h-11 w-11 items-center justify-center rounded-md border border-border bg-bg text-sm text-fg"
+                        aria-label="Next letter"
+                        onPointerUp={() => setPartyOpen(false)}
+                      >
+                        ↻
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
               <div className="flex items-center gap-1 pl-1">
@@ -843,6 +929,13 @@ export function Glyphbound() {
         </>
       )}
 
+      {padOn && portrait && (
+        <div className="pointer-events-none absolute inset-x-0 top-[42%] z-30 text-center">
+          <p className="inline-block rounded-md border border-border bg-surface/90 px-3 py-1.5 text-[12px] tracking-wide text-fg">
+            Turn the page sideways
+          </p>
+        </div>
+      )}
       {padOn && <MobilePad hint={ui.hint} letter={ui.letter} capital={ui.capital} inputRef={gameRef} />}
 
       {wipe && (
@@ -1013,8 +1106,8 @@ function MobilePad({
         <button
           type="button"
           data-role="interact"
-          className="gb-pad-btn pointer-events-auto absolute left-1/2 z-30 h-11 -translate-x-1/2 rounded-full border border-accent/50 bg-accent px-5 text-sm font-medium text-bg shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
-          style={{ bottom: "calc(7.25rem + env(safe-area-inset-bottom))" }}
+          className="gb-pad-btn pointer-events-auto absolute left-1/2 z-30 h-12 -translate-x-1/2 rounded-full border border-accent/50 bg-accent px-5 text-sm font-medium text-bg shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
+          style={{ bottom: "calc(8.4rem + env(safe-area-inset-bottom))" }}
         >
           {use}
         </button>
@@ -1027,7 +1120,7 @@ function MobilePad({
         aria-label="Move"
       >
         <div
-          className={`absolute h-[6.6rem] w-[6.6rem] -translate-x-1/2 -translate-y-1/2 rounded-full border ${
+          className={`absolute h-[7.2rem] w-[7.2rem] -translate-x-1/2 -translate-y-1/2 rounded-full border ${
             knob.on ? "border-fg/40 bg-elevated/55 opacity-100" : "border-fg/30 bg-elevated/40 opacity-90"
           }`}
           style={{ left: `${knob.ox * 100}%`, top: `${knob.oy * 100}%` }}
@@ -1042,14 +1135,14 @@ function MobilePad({
           <button
             type="button"
             data-role="shelf"
-            className="gb-pad-btn flex h-11 w-11 items-center justify-center rounded-full border border-accent/50 bg-bg text-[10px] font-medium tracking-wide text-accent"
+            className="gb-pad-btn flex h-12 w-12 items-center justify-center rounded-full border border-accent/50 bg-bg text-[10px] font-medium tracking-wide text-accent"
           >
             Shelf
           </button>
           <button
             type="button"
             data-role="down"
-            className="gb-pad-btn flex h-10 w-10 items-center justify-center rounded-full border border-fg/30 bg-bg text-sm text-fg"
+            className="gb-pad-btn flex h-11 w-11 items-center justify-center rounded-full border border-fg/30 bg-bg text-sm text-fg"
             aria-label="Down"
           >
             ↓
@@ -1061,14 +1154,14 @@ function MobilePad({
         <button
           type="button"
           data-role="jump"
-          className="gb-pad-btn pointer-events-auto absolute bottom-3 right-3 flex h-[4.6rem] w-[4.6rem] items-center justify-center rounded-full bg-fg text-[13px] font-semibold tracking-wide text-bg shadow-[0_10px_24px_rgba(0,0,0,0.4)]"
+          className="gb-pad-btn pointer-events-auto absolute bottom-3 right-3 flex h-[5.2rem] w-[5.2rem] items-center justify-center rounded-full bg-fg text-[13px] font-semibold tracking-wide text-bg shadow-[0_10px_24px_rgba(0,0,0,0.4)]"
         >
           Jump
         </button>
         <button
           type="button"
           data-role="attack"
-          className="gb-pad-btn pointer-events-auto absolute bottom-4 right-[5.5rem] flex h-[3.7rem] w-[3.7rem] flex-col items-center justify-center rounded-full border border-accent bg-accent text-bg"
+          className="gb-pad-btn pointer-events-auto absolute bottom-4 right-[6.4rem] flex h-[4.3rem] w-[4.3rem] flex-col items-center justify-center rounded-full border border-accent bg-accent text-bg"
         >
           <span className="text-[12px] font-semibold leading-none">Strike</span>
           <span className="mt-0.5 text-[8px] font-medium tracking-wide opacity-80">hold smash</span>
@@ -1076,21 +1169,21 @@ function MobilePad({
         <button
           type="button"
           data-role="fang"
-          className="gb-pad-btn pointer-events-auto absolute bottom-[5.6rem] right-[8.7rem] flex h-[2.85rem] w-[2.85rem] items-center justify-center rounded-full border border-accent/60 bg-bg text-[10px] font-semibold tracking-wide text-accent"
+          className="gb-pad-btn pointer-events-auto absolute bottom-[6.4rem] right-[10.2rem] flex h-[3.25rem] w-[3.25rem] items-center justify-center rounded-full border border-accent/60 bg-bg text-[10px] font-semibold tracking-wide text-accent"
         >
           Fang
         </button>
         <button
           type="button"
           data-role="stem"
-          className="gb-pad-btn pointer-events-auto absolute bottom-[5.6rem] right-[5.7rem] flex h-[2.85rem] w-[2.85rem] items-center justify-center rounded-full border border-accent/50 bg-bg text-[10px] font-semibold tracking-wide text-accent"
+          className="gb-pad-btn pointer-events-auto absolute bottom-[6.4rem] right-[6.5rem] flex h-[3.25rem] w-[3.25rem] items-center justify-center rounded-full border border-accent/50 bg-bg text-[10px] font-semibold tracking-wide text-accent"
         >
           Stem
         </button>
         <button
           type="button"
           data-role="special"
-          className="gb-pad-btn pointer-events-auto absolute bottom-[5.7rem] right-4 flex h-[2.85rem] w-[2.85rem] items-center justify-center rounded-full border border-fg/35 bg-bg text-[10px] font-semibold tracking-wide text-fg"
+          className="gb-pad-btn pointer-events-auto absolute bottom-[6.5rem] right-3 flex h-[3.25rem] w-[3.25rem] items-center justify-center rounded-full border border-fg/35 bg-bg text-[10px] font-semibold tracking-wide text-fg"
         >
           {skill}
         </button>

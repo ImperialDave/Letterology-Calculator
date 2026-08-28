@@ -31,6 +31,7 @@ export const defaultSave = (): SaveData => ({
   sfxVol: 1,
   musicVol: 1,
   reducedMotion: false,
+  keys: {},
   hp: 6,
   ink: 18,
   stage: "hub",
@@ -167,6 +168,7 @@ function parseSave(raw: string | null): SaveData {
       sfxVol: clamp01(parsed.sfxVol ?? 1),
       musicVol: clamp01(parsed.musicVol ?? 1),
       reducedMotion: parsed.reducedMotion ?? prefersReducedMotion(),
+      keys: parsed.keys && typeof parsed.keys === "object" ? parsed.keys : {},
     };
     if (merged.progress < 1 && merged.stage1) merged.progress = Math.max(merged.progress, 1);
     if (merged.progress < 2 && merged.stage2) merged.progress = Math.max(merged.progress, 2);

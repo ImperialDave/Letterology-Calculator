@@ -43,6 +43,7 @@ import {
   smashMove,
   dashMove,
   DASH_CD,
+  applyDi,
   UAIR_BOOST,
   UAIR_VY_CAP,
   UPHOP_TIME,
@@ -50,6 +51,7 @@ import {
 } from "./melee";
 import { commitFacing, faceToward, reverseAtLedge, tickTurnLock } from "./enemy-facing";
 import { applyJump, gravityFor, heightTo, jumpVy } from "./enemy-move";
+import { bindKey as bindKeyMap, type KeyAction } from "./keys";
 import { SLOT_COUNT, activeSlot, clearSave, defaultSave, listSlots, loadSave, selectSlot, writeSave } from "./save";
 import { preloadArt } from "./art";
 import { isMovingSolid, SolidGrid } from "./spatial";
@@ -122,6 +124,8 @@ export class GameEngine {
   camX = 0;
   camY = 0;
   look = 0;
+  aimX = 0;
+  aimY = 0;
   trauma = 0;
   kickX = 0;
   kickY = 0;
@@ -420,6 +424,8 @@ export class GameEngine {
       upBoost: false,
       airDashAtk: false,
       dashCd: 0,
+      ledgeHang: "",
+      ledgeLock: 0,
     };
   }
 
@@ -1055,7 +1061,10 @@ export class GameEngine {
   }
 
   step(dt: number) {
+    this.input.keymap = this.save.keys ?? {};
     const a = this.input.poll();
+    this.aimX = a.aimX;
+    this.aimY = a.aimY;
     if (this.mode === "title") {
       this.titleC += dt;
       return;
@@ -1195,8 +1204,9 @@ export class GameEngine {
     const large = isLarge(p.letter, p.capital);
     const kit = KITS[p.letter] ?? KITS.c;
     const spd = kit.spd + (p.capital ? -12 : 0);
+    const hanging = p.ledgeHang !== "";
     const dashing = p.melee > 0 && p.meleeMove === "dash";
-    const airDashing = dashing && !p.grounded;
+    const airDashing = dashing && !p.grounded && !hanging;
     if (p.roll <= 0) {
       const lockFace =
         p.smashKind !== "" ||
@@ -1207,7 +1217,7 @@ export class GameEngine {
             p.meleeMove === "dsmash" ||
             p.meleeMove === "dash"));
       if (a.moveX !== 0 && !lockFace) p.facing = a.moveX > 0 ? 1 : -1;
-      const smashHold = p.smashKind !== "";
+      const smashHold = p.smashKind !== "" || hanging;
       const dashSpd = dashing ? (dashMove(p.letter).selfVx ?? 400) : 0;
       const target = smashHold ? 0 : dashing ? p.facing * dashSpd : a.moveX * spd;
       const reversing = a.moveX !== 0 && p.vx * a.moveX < 0;
@@ -1226,7 +1236,7 @@ export class GameEngine {
       p.vy *= 0.52;
       p.jumpCut = true;
     }
-    if (airDashing) {
+    if (hanging || airDashing) {
       p.vy = 0;
     } else if (!aetherDash) {
       let gRise = risingUp && p.meleeMove === "utilt" ? gUp * 0.72 : gUp;
@@ -1243,6 +1253,7 @@ export class GameEngine {
       p.upBoost = false;
       p.airDashAtk = false;
       p.upHop = 0;
+      p.ledgeHang = "";
       this.airDash = 1;
       p.coyote = 0.1;
     } else {
@@ -1254,7 +1265,25 @@ export class GameEngine {
     if (p.smashKind) p.jumpBuf = 0;
     const iasa = meleeIasaReady(p.melee, p.meleeMax, p.meleeMove);
     const allowJump = p.melee <= 0 || iasa;
-    if (!aetherDash) {
+    p.ledgeLock = Math.max(0, p.ledgeLock - dt);
+    if (hanging && a.down) {
+      p.ledgeHang = "";
+      p.ledgeLock = 0.45;
+      p.vy = 90;
+    } else if (hanging && p.jumpBuf > 0 && allowJump) {
+      const onto = p.ledgeHang === "right" ? 1 : -1;
+      p.vy = -500;
+      p.vx = onto * 220;
+      p.facing = onto;
+      p.ledgeHang = "";
+      p.ledgeLock = 0.45;
+      p.jumpBuf = 0;
+      p.jumpCut = false;
+      p.squash = 0.8;
+      this.audio.sfxJump();
+      this.burst(p.x + p.w / 2, p.y + p.h / 2, "#e8d48a", 6, "dust");
+    }
+    if (!aetherDash && !hanging) {
     if (p.jumpBuf > 0 && (p.coyote > 0 || p.upHop > 0) && allowJump) {
       p.vy = Math.min(p.vy, -kit.jump);
       p.grounded = false;
@@ -1379,6 +1408,7 @@ export class GameEngine {
       this.wallCoyote = 0.12;
       this.wallDir = wallL ? 1 : -1;
     } else this.wallCoyote = Math.max(0, this.wallCoyote - dt);
+    if (!hanging) this.tryLedgeGrab(p, large, dashing);
     for (const s of this.solidsNow(large, p)) {
       if (s.type === "conveyor" && p.grounded && aabb({ x: p.x, y: p.y + p.h - 8, w: p.w, h: 10 }, s)) {
         p.x += (s.phase ?? 1) * 110 * dt;
@@ -2431,8 +2461,7 @@ export class GameEngine {
     if (hazard) {
       if (p.hazardCd > 0) return;
       p.hazardCd = HAZARD_COOLDOWN;
-      p.vx = dir * 220;
-      p.vy = -220;
+      this.knockPlayer(dir * 220, -220);
       let dmg = n;
       if (p.shield > 0) {
         const soak = Math.min(p.shield, dmg);
@@ -2492,8 +2521,7 @@ export class GameEngine {
     p.hp -= n;
     p.invuln = 1.05;
     p.hurtFlash = 0.4;
-    p.vx = dir * 160;
-    p.vy = -140;
+    this.knockPlayer(dir * 160, -140);
     p.shieldCd = 1.8;
     this.audio.sfxHurt();
     this.trauma = Math.min(1, this.trauma + 0.45);
@@ -3874,6 +3902,52 @@ export class GameEngine {
     this.emit();
   }
 
+  private knockPlayer(vx: number, vy: number) {
+    const p = this.player;
+    const di = applyDi(vx, vy, this.aimX, this.aimY);
+    p.vx = di.vx;
+    p.vy = di.vy;
+    if (!this.save.reducedMotion) {
+      p.x += this.aimX * 4;
+      p.y += this.aimY * 4;
+    }
+  }
+
+  private tryLedgeGrab(p: Player, large: boolean, dashing: boolean) {
+    if (p.grounded || p.ledgeHang || p.ledgeLock > 0) return;
+    if (p.vy < -80) return;
+    if (dashing || p.roll > 0) return;
+    if (p.hurtFlash > 0.2) return;
+    const box = { x: p.x - 8, y: p.y - 8, w: p.w + 16, h: p.h + 16 };
+    for (const s of this.solidsNow(large, box)) {
+      if (s.type === "spike" || s.type === "saw" || s.type === "geyser" || s.type === "laser" || s.type === "sluice") continue;
+      const lip = s.y;
+      const hands = p.y + 8;
+      if (hands > lip + 12 || hands < lip - 14) continue;
+      if (p.y + p.h < lip + 8) continue;
+      const fromLeft = p.x + p.w >= s.x - 8 && p.x + p.w <= s.x + 12 && p.x < s.x + 4;
+      const fromRight = p.x <= s.x + s.w + 8 && p.x >= s.x + s.w - 12 && p.x + p.w > s.x + s.w - 4;
+      if (fromLeft) {
+        p.ledgeHang = "right";
+        p.x = s.x - p.w;
+        p.y = lip - 10;
+        p.facing = -1;
+      } else if (fromRight) {
+        p.ledgeHang = "left";
+        p.x = s.x + s.w;
+        p.y = lip - 10;
+        p.facing = 1;
+      } else continue;
+      p.vx = 0;
+      p.vy = 0;
+      p.grounded = false;
+      p.squash = 0.88;
+      this.audio.sfxLand();
+      this.burst(p.x + p.w / 2, lip, "#8a908c", 4, "dust");
+      return;
+    }
+  }
+
   private followCam(dt: number) {
     const p = this.player;
     this.look += (p.facing * 42 - this.look) * (1 - Math.exp(-3.4 * dt));
@@ -4019,6 +4093,18 @@ export class GameEngine {
   setShakeAmt(amt: 0 | 1 | 2) {
     this.save.shakeAmt = amt;
     this.save.shake = amt > 0;
+    this.persist();
+    this.emit();
+  }
+
+  bindKey(action: string, code: string) {
+    this.save.keys = bindKeyMap(this.save.keys ?? {}, action as KeyAction, code);
+    this.persist();
+    this.emit();
+  }
+
+  resetKeys() {
+    this.save.keys = {};
     this.persist();
     this.emit();
   }
@@ -4461,6 +4547,7 @@ export class GameEngine {
       sfxVol: this.save.sfxVol ?? 1,
       musicVol: this.save.musicVol ?? 1,
       reducedMotion: !!this.save.reducedMotion,
+      keys: this.save.keys ?? {},
       hard: this.hard,
       canContinue: this.save.progress > 0 || this.save.hasCapital || this.save.stage1 || this.save.party.length > 1,
       introPage: this.introPage,

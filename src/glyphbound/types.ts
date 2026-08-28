@@ -285,6 +285,9 @@ export interface Player {
   airDashAtk: boolean;
   /** Shared ground/air dash attack cooldown. */
   dashCd: number;
+  /** Lip hang: wall is on this side of the body. */
+  ledgeHang: "" | "left" | "right";
+  ledgeLock: number;
 }
 
 export interface TaskDef {
@@ -321,6 +324,7 @@ export interface SaveData {
   sfxVol: number;
   musicVol: number;
   reducedMotion: boolean;
+  keys: Partial<Record<string, string>>;
   hp: number;
   ink: number;
   stage: string;
@@ -357,6 +361,7 @@ export interface UiSnap {
   sfxVol: number;
   musicVol: number;
   reducedMotion: boolean;
+  keys: Partial<Record<string, string>>;
   hard: boolean;
   canContinue: boolean;
   introPage: number;
@@ -392,7 +397,7 @@ export interface SlotInfo {
   updated: number;
 }
 
-export const VIEW_W = 640;
+export const VIEW_W = 800;
 export const VIEW_H = 360;
 export const TILE = 48;
 /** Spike, laser, saw, and sluice hits. Digit contact stays 1. */
