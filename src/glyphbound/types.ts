@@ -282,6 +282,8 @@ export interface Player {
   upBoost: boolean;
   /** Air dash attack already used this airtime. */
   airDashAtk: boolean;
+  /** Shared ground/air dash attack cooldown. */
+  dashCd: number;
 }
 
 export interface TaskDef {

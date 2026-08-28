@@ -62,6 +62,7 @@ const RUN_RATIO = 0.68;
 
 export const JAB_WINDOW = 0.48;
 export const TILT_HOLD = 0.08;
+export const DASH_CD = 0.5;
 export const SMASH_CHARGE = 0.72;
 export const UAIR_BOOST = 300;
 export const UAIR_VY_CAP = -780;
@@ -182,7 +183,7 @@ export const MOVES: Record<MeleeMoveId, MeleeMove> = {
     kbX: 170,
     kbY: -36,
     stun: 0.5,
-    selfVx: 280,
+    selfVx: 400,
     fx: "slash-dash",
   },
   fsmash: {
@@ -343,7 +344,7 @@ const DASHES: Partial<Record<LetterId, MeleeMove>> = {
     height: 30,
     oy: 14,
     dmgMul: 0.7,
-    selfVx: 360,
+    selfVx: 500,
     bothSides: true,
     fx: "slash-dash",
   },
@@ -356,7 +357,7 @@ const DASHES: Partial<Record<LetterId, MeleeMove>> = {
     height: 34,
     oy: 12,
     dmgMul: 0.8,
-    selfVx: 400,
+    selfVx: 560,
     fx: "slash-dash",
   },
   r: {
@@ -368,7 +369,7 @@ const DASHES: Partial<Record<LetterId, MeleeMove>> = {
     height: 24,
     oy: 16,
     dmgMul: 0.85,
-    selfVx: 420,
+    selfVx: 580,
     fx: "slash-dash",
   },
   t: {
@@ -380,7 +381,7 @@ const DASHES: Partial<Record<LetterId, MeleeMove>> = {
     height: 22,
     oy: 16,
     dmgMul: 0.9,
-    selfVx: 460,
+    selfVx: 640,
     fx: "slash-dash",
   },
 };
@@ -397,15 +398,17 @@ export function classifyMelee(opts: {
   aimX: number;
   aimY: number;
   canAirDash?: boolean;
+  canDash?: boolean;
 }): MeleeIntent {
   const ax = opts.aimX;
   const ay = opts.aimY;
   const ah = Math.abs(ax);
   const av = Math.abs(ay);
   const running = Math.abs(opts.vx) > opts.spd * RUN_RATIO && Math.sign(opts.vx) === opts.facing;
+  const dashOk = running && opts.canDash !== false;
   if (!opts.grounded) {
     if (av >= V_AIM && av >= ah) return ay < 0 ? "uair" : "dair";
-    const airDash = running && opts.canAirDash !== false;
+    const airDash = dashOk && opts.canAirDash !== false;
     if (ah >= H_AIM) {
       if (Math.sign(ax) !== opts.facing) return "bair";
       if (airDash) return "dash";
@@ -416,10 +419,10 @@ export function classifyMelee(opts: {
   }
   if (av >= V_AIM && av >= ah * 0.85) return ay < 0 ? "up" : "down";
   if (ah >= H_AIM) {
-    if (running && Math.sign(ax) === opts.facing) return "dash";
+    if (dashOk && Math.sign(ax) === opts.facing) return "dash";
     return "side";
   }
-  if (running) return "dash";
+  if (dashOk) return "dash";
   return "jab";
 }
 

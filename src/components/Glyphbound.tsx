@@ -62,7 +62,7 @@ function ControlsCard() {
           </div>
           <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-muted">
             <KeyRow keys="Tap J" text="Jab combo · tap again for jab 2, then a finisher" />
-            <KeyRow keys="Run + J" text="Dash attack · ground or mid-jump · once in the air · s scythe · t lance · r fire skate · c disk" />
+            <KeyRow keys="Run + J" text="Dash attack · 0.5s cool · air dash holds height · s scythe · t lance · r fire skate · c disk" />
             <KeyRow keys="Hold J + dir" text="Charge a smash · gold bar · release to fire" />
             <KeyRow keys="Hold J" text="No direction: that letter's flourish" />
             <KeyRow keys="Air + J" text="Nair, fair, bair, uair, dair · run then jump + J is a dash attack" />

@@ -42,6 +42,7 @@ import {
   smashKindFromIntent,
   smashMove,
   dashMove,
+  DASH_CD,
   UAIR_BOOST,
   UAIR_VY_CAP,
   UPHOP_TIME,
@@ -415,6 +416,7 @@ export class GameEngine {
       upHop: 0,
       upBoost: false,
       airDashAtk: false,
+      dashCd: 0,
     };
   }
 
@@ -1187,6 +1189,8 @@ export class GameEngine {
     const large = isLarge(p.letter, p.capital);
     const kit = KITS[p.letter] ?? KITS.c;
     const spd = kit.spd + (p.capital ? -12 : 0);
+    const dashing = p.melee > 0 && p.meleeMove === "dash";
+    const airDashing = dashing && !p.grounded;
     if (p.roll <= 0) {
       const lockFace =
         p.smashKind !== "" ||
@@ -1198,8 +1202,7 @@ export class GameEngine {
             p.meleeMove === "dash"));
       if (a.moveX !== 0 && !lockFace) p.facing = a.moveX > 0 ? 1 : -1;
       const smashHold = p.smashKind !== "";
-      const dashing = p.melee > 0 && p.meleeMove === "dash";
-      const dashSpd = dashing ? (dashMove(p.letter).selfVx ?? 280) : 0;
+      const dashSpd = dashing ? (dashMove(p.letter).selfVx ?? 400) : 0;
       const target = smashHold ? 0 : dashing ? p.facing * dashSpd : a.moveX * spd;
       const reversing = a.moveX !== 0 && p.vx * a.moveX < 0;
       const rate = smashHold ? 18 : dashing ? 8 : p.grounded ? (reversing ? 32 : 22) : reversing ? 14 : 10;
@@ -1212,12 +1215,14 @@ export class GameEngine {
     const risingUp =
       p.melee > 0 &&
       p.vy < 0 &&
-      (p.meleeMove === "uair" || p.meleeMove === "utilt" || p.meleeMove === "dash");
-    if (!a.jumpHeld && !p.jumpCut && p.vy < 0 && !aetherDash && !risingUp) {
+      (p.meleeMove === "uair" || p.meleeMove === "utilt");
+    if (!a.jumpHeld && !p.jumpCut && p.vy < 0 && !aetherDash && !airDashing && !risingUp) {
       p.vy *= 0.52;
       p.jumpCut = true;
     }
-    if (!aetherDash) {
+    if (airDashing) {
+      p.vy = 0;
+    } else if (!aetherDash) {
       const gRise = risingUp && p.meleeMove === "utilt" ? gUp * 0.72 : gUp;
       p.vy += (p.vy < 0 ? gRise : gDown) * dt;
       if (!p.grounded && a.aimY >= 1 && p.vy > 28) p.vy = Math.max(p.vy, 680);
@@ -1329,6 +1334,7 @@ export class GameEngine {
     p.special = Math.max(0, p.special - dt);
     p.specialCd = Math.max(0, p.specialCd - dt);
     p.shotCd = Math.max(0, p.shotCd - dt);
+    p.dashCd = Math.max(0, p.dashCd - dt);
     p.shieldFlash = Math.max(0, p.shieldFlash - dt);
     if (p.shield < p.maxShield) {
       p.shieldCd -= dt;
@@ -1912,6 +1918,7 @@ export class GameEngine {
       aimX: a.aimX,
       aimY: a.aimY,
       canAirDash: !p.airDashAtk,
+      canDash: p.dashCd <= 0,
     });
   }
 
@@ -2080,7 +2087,13 @@ export class GameEngine {
       p.upHop = UPHOP_TIME;
       p.grounded = false;
     }
-    if (id === "dash" && !p.grounded) p.airDashAtk = true;
+    if (id === "dash") {
+      p.dashCd = DASH_CD;
+      if (!p.grounded) {
+        p.airDashAtk = true;
+        p.vy = 0;
+      }
+    }
     if (id === "uair" && !p.upBoost) {
       p.upBoost = true;
       p.vy -= p.capital ? UAIR_BOOST + 40 : UAIR_BOOST;

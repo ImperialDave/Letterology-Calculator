@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  DASH_CD,
   MOVES,
   TILT_HOLD,
   UAIR_BOOST,
@@ -145,7 +146,8 @@ test("combo decay pops them out after a string", () => {
 test("s t r c have sideways weapon dashes", () => {
   const names = new Set<string>();
   const generic = dashMove("b").selfVx ?? 0;
-  assert.ok(generic >= 260);
+  assert.ok(generic >= 390);
+  assert.ok(DASH_CD >= 0.5);
   assert.ok(MOVES.dash.time <= 0.26);
   for (const id of ["s", "t", "r", "c"] as LetterId[]) {
     const d = dashMove(id);
@@ -157,6 +159,13 @@ test("s t r c have sideways weapon dashes", () => {
     assert.ok(resolveMove(id, "dash", 0).selfVx! > generic, id);
   }
   assert.ok(meleeIasaReady(0.14, 0.24, "dash"));
+});
+
+test("dash cooldown turns a run-strike into a tilt or fair", () => {
+  assert.equal(cls({ vx: 120, spd: 140, aimX: 1, canDash: false }), "side");
+  assert.equal(cls({ vx: 120, spd: 140, canDash: false }), "jab");
+  assert.equal(cls({ grounded: false, vx: 120, spd: 140, aimX: 1, canDash: false }), "fair");
+  assert.equal(cls({ grounded: false, vx: 120, spd: 140, canDash: false }), "nair");
 });
 
 test("lights are shorter and IASA comes earlier", () => {
