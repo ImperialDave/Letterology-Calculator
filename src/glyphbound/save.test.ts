@@ -64,3 +64,14 @@ test("empty default is an empty file", () => {
   assert.equal(isEmptySave(defaultSave()), true);
   assert.equal(isEmptySave({ ...defaultSave(), visited: ["hub"] }), false);
 });
+
+test("legacy shake false becomes shakeAmt 0", () => {
+  const m = memoryStore();
+  const raw = { ...defaultSave(), shake: false, progress: 1, visited: ["hub"] };
+  delete (raw as { shakeAmt?: 0 | 1 | 2 }).shakeAmt;
+  m.set("glyphbound-slot-0", JSON.stringify(raw));
+  const loaded = loadSave(0);
+  assert.equal(loaded.shakeAmt, 0);
+  assert.equal(loaded.shake, false);
+  assert.ok(loaded.sfxVol >= 0 && loaded.sfxVol <= 1);
+});

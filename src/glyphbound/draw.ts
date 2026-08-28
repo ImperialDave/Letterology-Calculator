@@ -1777,7 +1777,14 @@ function smoothEnemyVx(e: Enemy) {
   return vx;
 }
 
-export function drawEnemy(ctx: CanvasRenderingContext2D, e: Enemy, camX: number, camY: number, t: number) {
+export function drawEnemy(
+  ctx: CanvasRenderingContext2D,
+  e: Enemy,
+  camX: number,
+  camY: number,
+  t: number,
+  calm = false,
+) {
   const cx = e.x + e.w / 2 - camX;
   const cy = e.y + e.h / 2 - camY;
   const vx = smoothEnemyVx(e);
@@ -1796,7 +1803,7 @@ export function drawEnemy(ctx: CanvasRenderingContext2D, e: Enemy, camX: number,
   ctx.scale(e.facing, 1);
   ctx.rotate(lean + (e.stun > 0 ? -0.16 : 0));
   ctx.scale(1 / sq, sq);
-  if (e.stun > 0) ctx.globalAlpha = 0.72 + 0.28 * Math.sin(t * 8);
+  if (e.stun > 0) ctx.globalAlpha = calm ? 0.82 : 0.72 + 0.28 * Math.sin(t * 8);
   else if (e.flash > 0) ctx.globalAlpha = 0.5;
   ctx.translate(0, bob);
   const hide = "#24382e";
@@ -2228,6 +2235,27 @@ export function drawEnemy(ctx: CanvasRenderingContext2D, e: Enemy, camX: number,
     ctx.fillRect(e.x - camX, e.y - camY - 10, e.w, 4);
     ctx.fillStyle = "#d45a4a";
     ctx.fillRect(e.x - camX, e.y - camY - 10, e.w * ratio, 4);
+  }
+  const pct = Math.floor(e.percent ?? 0);
+  if (pct > 0) {
+    const bossBar =
+      e.kind === "dualis" ||
+      e.kind === "tetrarch" ||
+      e.kind === "importer" ||
+      e.kind === "nullis" ||
+      e.kind === "endmark" ||
+      e.kind === "summand" ||
+      e.kind === "difference" ||
+      e.kind === "product" ||
+      e.kind === "quotient" ||
+      e.kind === "infinitum" ||
+      e.kind === "remainder";
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.font = bossBar ? "700 12px 'Source Sans 3', sans-serif" : "600 10px 'Source Sans 3', sans-serif";
+    ctx.fillStyle = pct >= 80 ? "#d45a4a" : "#e8ece8";
+    ctx.fillText(`${pct}%`, e.x + e.w / 2 - camX, e.y - camY - (bossBar ? 18 : 8));
+    ctx.restore();
   }
 }
 

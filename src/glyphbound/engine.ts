@@ -123,6 +123,8 @@ export class GameEngine {
   camY = 0;
   look = 0;
   trauma = 0;
+  kickX = 0;
+  kickY = 0;
   hitstop = 0;
   objective = "";
   stage: LevelId = "hub";
@@ -222,6 +224,7 @@ export class GameEngine {
     setFxLite(this.lite);
     this.last = performance.now();
     this.fpsStamp = this.last;
+    this.applyPrefs();
     const onVis = () => {
       if (this.holdVisible) {
         this.visHidden = false;
@@ -951,6 +954,7 @@ export class GameEngine {
     this.save = selectSlot(i);
     this.save.hard = this.hard;
     this.player = this.makePlayer();
+    this.applyPrefs();
     this.audio.unlock();
     this.audio.sfxUi();
     this.emit();
@@ -1169,6 +1173,8 @@ export class GameEngine {
     if (this.swapCd > 0) this.swapCd -= dt;
     this.followCam(dt);
     this.trauma = Math.max(0, this.trauma - dt * 1.8);
+    this.kickX += -this.kickX * (1 - Math.exp(-14 * dt));
+    this.kickY += -this.kickY * (1 - Math.exp(-14 * dt));
     this.recallCd = Math.max(0, this.recallCd - dt);
     this.watchBounds(dt);
     this.maybeHud();
@@ -1223,7 +1229,8 @@ export class GameEngine {
     if (airDashing) {
       p.vy = 0;
     } else if (!aetherDash) {
-      const gRise = risingUp && p.meleeMove === "utilt" ? gUp * 0.72 : gUp;
+      let gRise = risingUp && p.meleeMove === "utilt" ? gUp * 0.72 : gUp;
+      if (!p.grounded && Math.abs(p.vy) < 70) gRise *= 0.55;
       p.vy += (p.vy < 0 ? gRise : gDown) * dt;
       if (!p.grounded && a.aimY >= 1 && p.vy > 28) p.vy = Math.max(p.vy, 680);
       if (p.vy > 980) p.vy = 980;
@@ -1401,9 +1408,11 @@ export class GameEngine {
       if (fall > 280) {
         p.squash = 1.22;
         this.audio.sfxLand();
-        this.burst(p.x + p.w / 2, p.y + p.h, "#8a908c", 4, "dust");
+        this.burst(p.x + p.w / 2, p.y + p.h, "#8a908c", 5, "dust");
       } else {
         p.squash = 1.1;
+        this.audio.sfxLand();
+        this.burst(p.x + p.w / 2, p.y + p.h, "#8a908c", 2, "dust");
       }
       if (this.save.words.includes("RISE") && !a.down) {
         const feet = { x: p.x + 4, y: p.y + p.h - 4, w: p.w - 8, h: 8 };
@@ -2100,7 +2109,11 @@ export class GameEngine {
       if (p.vy < UAIR_VY_CAP) p.vy = UAIR_VY_CAP;
       p.jumpCut = false;
     }
-    this.audio.sfxShot();
+    if (move.smash) {
+      this.audio.sfxSlash();
+      this.audio.sfxHit();
+      this.audio.duck(0.16);
+    } else this.audio.sfxSlash();
     if (move.smash || id === "jab3" || id === "dair" || id === "dash") this.say(move.name.toUpperCase());
   }
 
@@ -2128,7 +2141,9 @@ export class GameEngine {
     } else if (p.letter === "s") {
       p.vx += p.facing * 90;
     }
-    this.audio.sfxShot();
+    this.audio.sfxSlash();
+    this.audio.sfxHit();
+    this.audio.duck(0.18);
     this.say(fl.name.toUpperCase());
   }
 
@@ -2355,7 +2370,11 @@ export class GameEngine {
     this.audio.sfxHit();
     if (!boss) this.trauma = Math.min(1, this.trauma + (this.comboHits >= 4 ? 0.32 : 0.22));
     if (this.hitstop < 0.04) this.hitstop = 0.04;
+    this.kickX -= dir * (this.shakeMul() > 0 ? 2.4 : 0);
+    this.kickY -= 0.6 * this.shakeMul();
+    this.rumble(boss || (kb?.flourish || this.player.smashPower > 0) ? 90 : 45, boss ? 0.45 : 0.22);
     this.burst(e.x + e.w / 2, e.y + e.h / 2, "#e8ece8", this.comboHits >= 3 ? 10 : 6, "spark");
+    this.floatText(e.x + e.w / 2, e.y - 4, `+${dmg * 9}%`, "#e8c878");
     if (e.kind === "dummy") {
       e.hp = e.maxHp;
       return;
@@ -2478,6 +2497,8 @@ export class GameEngine {
     p.shieldCd = 1.8;
     this.audio.sfxHurt();
     this.trauma = Math.min(1, this.trauma + 0.45);
+    this.kickX += dir * 3 * this.shakeMul();
+    this.rumble(110, 0.4);
     if (p.hp <= 0) {
       p.hp = 0;
       this.mode = "dead";
@@ -3858,46 +3879,78 @@ export class GameEngine {
     this.look += (p.facing * 42 - this.look) * (1 - Math.exp(-3.4 * dt));
     const tx = p.x + p.w / 2 - VIEW_W * 0.4 + this.look;
     const ty = p.y + p.h / 2 - VIEW_H * 0.56;
-    this.camX += (tx - this.camX) * (1 - Math.exp(-5.2 * dt));
-    this.camY += (ty - this.camY) * (1 - Math.exp(-4.4 * dt));
+    const dx = tx - this.camX;
+    const dy = ty - this.camY;
+    const deadX = 46;
+    const deadY = 26;
+    const ax = Math.abs(dx) > deadX ? tx - Math.sign(dx) * deadX : this.camX;
+    const ay = Math.abs(dy) > deadY ? ty - Math.sign(dy) * deadY : this.camY;
+    const ky = p.vy < -40 ? 2.6 : 6.4;
+    this.camX += (ax - this.camX) * (1 - Math.exp(-5.2 * dt));
+    this.camY += (ay - this.camY) * (1 - Math.exp(-ky * dt));
     this.camX = Math.max(0, Math.min(this.worldW - VIEW_W, this.camX));
     this.camY = Math.max(0, Math.min(Math.max(0, this.worldH - VIEW_H), this.camY));
   }
 
-  private burst(x: number, y: number, color: string, n: number, kind: Particle["kind"]) {
+  private burst(x: number, y: number, color: string, n: number, kind: Particle["kind"], label?: string) {
     const cap = this.lite ? 40 : 80;
-    if (this.particles.length > cap) return;
-    const count = this.lite ? Math.max(1, Math.ceil(n * 0.4)) : n;
+    const count = label ? 1 : this.lite ? Math.max(1, Math.ceil(n * 0.4)) : n;
     for (let i = 0; i < count; i++) {
-      this.particles.push({
+      this.spawnParticle({
         x,
         y,
-        vx: (Math.random() - 0.5) * 180,
-        vy: (Math.random() - 0.8) * 160,
-        life: 0.35 + Math.random() * 0.35,
-        max: 0.7,
-        size: 2 + Math.random() * 3,
+        vx: label ? (Math.random() - 0.5) * 20 : (Math.random() - 0.5) * 180,
+        vy: label ? -70 : (Math.random() - 0.8) * 160,
+        life: label ? 0.7 : 0.35 + Math.random() * 0.35,
+        max: label ? 0.7 : 0.7,
+        size: label ? 0 : 2 + Math.random() * 3,
         color,
         kind,
+        label,
       });
+      if (this.particles.length >= cap && !label) break;
     }
   }
 
-  private updateParticles(dt: number) {
+  private spawnParticle(init: Particle) {
     const cap = this.lite ? 40 : 80;
-    let w = 0;
+    for (const q of this.particles) {
+      if (q.life <= 0) {
+        q.x = init.x;
+        q.y = init.y;
+        q.vx = init.vx;
+        q.vy = init.vy;
+        q.life = init.life;
+        q.max = init.max;
+        q.size = init.size;
+        q.color = init.color;
+        q.kind = init.kind;
+        q.label = init.label;
+        return;
+      }
+    }
+    if (this.particles.length >= cap) return;
+    this.particles.push(init);
+  }
+
+  private floatText(x: number, y: number, text: string, color: string) {
+    this.burst(x, y, color, 1, "glyph", text);
+  }
+
+  private updateParticles(dt: number) {
     const list = this.particles;
     for (let i = 0; i < list.length; i++) {
       const q = list[i];
-      q.life -= dt;
       if (q.life <= 0) continue;
+      q.life -= dt;
+      if (q.life <= 0) {
+        q.label = undefined;
+        continue;
+      }
       q.x += q.vx * dt;
       q.y += q.vy * dt;
-      q.vy += 240 * dt;
-      list[w++] = q;
+      if (!q.label) q.vy += 240 * dt;
     }
-    list.length = w;
-    if (list.length > cap) list.splice(0, list.length - cap);
   }
 
   private say(s: string) {
@@ -3947,6 +4000,69 @@ export class GameEngine {
     this.save.muted = this.audio.muted;
     this.persist();
     this.emit();
+  }
+
+  setSfxVol(v: number) {
+    this.save.sfxVol = Math.max(0, Math.min(1, v));
+    this.audio.setSfxVol(this.save.sfxVol);
+    this.persist();
+    this.emit();
+  }
+
+  setMusicVol(v: number) {
+    this.save.musicVol = Math.max(0, Math.min(1, v));
+    this.audio.setMusicVol(this.save.musicVol);
+    this.persist();
+    this.emit();
+  }
+
+  setShakeAmt(amt: 0 | 1 | 2) {
+    this.save.shakeAmt = amt;
+    this.save.shake = amt > 0;
+    this.persist();
+    this.emit();
+  }
+
+  setReducedMotion(on: boolean) {
+    this.save.reducedMotion = on;
+    if (on) {
+      this.save.shakeAmt = 0;
+      this.save.shake = false;
+    }
+    this.persist();
+    this.emit();
+  }
+
+  private applyPrefs() {
+    this.audio.setMuted(!!this.save.muted);
+    this.audio.setSfxVol(this.save.sfxVol ?? 1);
+    this.audio.setMusicVol(this.save.musicVol ?? 1);
+  }
+
+  private shakeMul() {
+    if (this.save.reducedMotion) return 0;
+    const amt = this.save.shakeAmt ?? (this.save.shake ? 2 : 0);
+    if (amt <= 0) return 0;
+    return amt === 1 ? 0.4 : 1;
+  }
+
+  private rumble(ms: number, mag: number) {
+    if (this.shakeMul() <= 0) return;
+    try {
+      const pads = navigator.getGamepads?.() ?? [];
+      for (const gp of pads) {
+        const act = (gp as Gamepad & { vibrationActuator?: { playEffect: (n: string, o: object) => Promise<unknown> } } | null)
+          ?.vibrationActuator;
+        void act?.playEffect("dual-rumble", {
+          startDelay: 0,
+          duration: ms,
+          weakMagnitude: mag * 0.55,
+          strongMagnitude: mag,
+        });
+      }
+    } catch {
+      /* no actuator */
+    }
   }
 
   toggleHard() {
@@ -4341,6 +4457,10 @@ export class GameEngine {
       stage: this.draft?.name ?? LEVELS[this.stage]?.name ?? "",
       muted: this.audio.muted,
       shake: this.save.shake,
+      shakeAmt: this.save.shakeAmt ?? (this.save.shake ? 2 : 0),
+      sfxVol: this.save.sfxVol ?? 1,
+      musicVol: this.save.musicVol ?? 1,
+      reducedMotion: !!this.save.reducedMotion,
       hard: this.hard,
       canContinue: this.save.progress > 0 || this.save.hasCapital || this.save.stage1 || this.save.party.length > 1,
       introPage: this.introPage,
@@ -4471,9 +4591,10 @@ export class GameEngine {
     ctx.rect(0, 0, VIEW_W, VIEW_H);
     ctx.clip();
 
-    const sh = this.save.shake ? this.trauma * this.trauma : 0;
-    const sx = sh ? (Math.random() * 2 - 1) * 10 * sh : 0;
-    const sy = sh ? (Math.random() * 2 - 1) * 8 * sh : 0;
+    const mul = this.shakeMul();
+    const sh = mul * this.trauma * this.trauma;
+    const sx = (sh ? (Math.random() * 2 - 1) * 10 * sh : 0) + this.kickX;
+    const sy = (sh ? (Math.random() * 2 - 1) * 8 * sh : 0) + this.kickY;
     const theme = this.themeOverride ?? LEVELS[this.stage]?.theme ?? "hub";
     const district = this.draft?.index ?? LEVELS[this.stage]?.index ?? 0;
 
@@ -4481,23 +4602,23 @@ export class GameEngine {
       drawParallax(ctx, this.titleC * 40, 0, this.time, "street", 0, 0, 1);
       this.drawTitleScene(ctx);
     } else {
-      drawParallax(ctx, this.camX, this.camY, this.time, theme, sx, sy, district);
+      const camX = Math.round(this.camX);
+      const camY = Math.round(this.camY);
+      drawParallax(ctx, camX, camY, this.time, theme, sx, sy, district);
       ctx.save();
       ctx.translate(sx, sy);
-      drawTiles(ctx, this.rows, this.camX, this.camY, this.time, theme, this.broken);
-      drawToys(ctx, this.solids, this.camX, this.camY, this.time, theme);
+      drawTiles(ctx, this.rows, camX, camY, this.time, theme, this.broken);
+      drawToys(ctx, this.solids, camX, camY, this.time, theme);
       if (this.mode === "studio") this.drawStudioGrid(ctx);
       this.drawHubChrome(ctx);
-      drawMarkers(ctx, this.markers, this.camX, this.camY, this.time);
+      drawMarkers(ctx, this.markers, camX, camY, this.time);
       const goal = this.goal();
-      if (goal) drawBeacon(ctx, goal.x, goal.y, this.camX, this.camY, this.time, goal.label);
+      if (goal) drawBeacon(ctx, goal.x, goal.y, camX, camY, this.time, goal.label);
       for (const w of this.walls) this.drawConstruct(ctx, w);
       for (const b of this.burns) {
         ctx.fillStyle = "rgba(212,90,74,0.45)";
-        ctx.fillRect(b.x - this.camX, b.y - this.camY, b.w, b.h);
+        ctx.fillRect(b.x - camX, b.y - camY, b.w, b.h);
       }
-      const camX = this.camX;
-      const camY = this.camY;
       const vis = (x: number, y: number, w: number, h: number) =>
         x + w > camX - 48 && x < camX + VIEW_W + 48 && y + h > camY - 48 && y < camY + VIEW_H + 48;
       for (const n of this.npcs) {
@@ -4512,7 +4633,7 @@ export class GameEngine {
       }
       for (const e of this.enemies) {
         if (!e.alive || !vis(e.x, e.y, e.w, e.h)) continue;
-        drawEnemy(ctx, e, camX, camY, this.time);
+        drawEnemy(ctx, e, camX, camY, this.time, this.save.reducedMotion);
       }
       drawPlayer(ctx, this.player, camX, camY, this.time);
       for (const b of this.bullets) {
@@ -4520,14 +4641,21 @@ export class GameEngine {
         drawShot(ctx, b, camX, camY);
       }
       for (const q of this.particles) {
-        if (!vis(q.x, q.y, q.size, q.size)) continue;
+        if (q.life <= 0) continue;
+        if (!vis(q.x, q.y, 16, 16)) continue;
         ctx.globalAlpha = q.life / q.max;
         ctx.fillStyle = q.color;
-        ctx.fillRect(q.x - camX, q.y - camY, q.size, q.size);
+        if (q.label) {
+          ctx.font = "700 11px 'Source Sans 3', sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText(q.label, q.x - camX, q.y - camY);
+        } else {
+          ctx.fillRect(q.x - camX, q.y - camY, q.size, q.size);
+        }
         ctx.globalAlpha = 1;
       }
-      drawWeatherFront(ctx, this.camX, this.camY, this.time, district);
-      drawFgVeil(ctx, this.camX, this.time, district);
+      drawWeatherFront(ctx, camX, camY, this.time, district);
+      drawFgVeil(ctx, camX, this.time, district);
       ctx.restore();
       if (!this.lite) drawGrade(ctx, district);
       if (this.mode === "play" || this.mode === "hub" || this.mode === "transform") {

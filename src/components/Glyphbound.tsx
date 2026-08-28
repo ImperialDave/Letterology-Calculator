@@ -158,6 +158,10 @@ const emptyUi = (): UiSnap => ({
   stage: "",
   muted: false,
   shake: true,
+  shakeAmt: 2,
+  sfxVol: 1,
+  musicVol: 1,
+  reducedMotion: false,
   hard: false,
   canContinue: false,
   introPage: 0,
@@ -538,6 +542,57 @@ export function Glyphbound() {
                 <CodexList lore={ui.lore} openId={openLetter} onOpen={setOpenLetter} />
               </div>
             )}
+            <div className="mt-4 rounded-lg border border-border bg-elevated/80 p-3">
+              <p className="mb-2 text-[10px] uppercase tracking-[0.2em] text-accent">Options</p>
+              <label className="flex items-center justify-between gap-3 text-sm text-fg">
+                SFX
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={Math.round((ui.sfxVol ?? 1) * 100)}
+                  className="w-36"
+                  onChange={(e) => g()?.setSfxVol(Number(e.target.value) / 100)}
+                />
+              </label>
+              <label className="mt-2 flex items-center justify-between gap-3 text-sm text-fg">
+                Music
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={Math.round((ui.musicVol ?? 1) * 100)}
+                  className="w-36"
+                  onChange={(e) => g()?.setMusicVol(Number(e.target.value) / 100)}
+                />
+              </label>
+              <div className="mt-2 flex items-center justify-between gap-2 text-sm">
+                <span className="text-fg">Shake</span>
+                <span className="flex gap-1">
+                  {([0, 1, 2] as const).map((amt) => (
+                    <button
+                      key={amt}
+                      type="button"
+                      className={`h-8 rounded-md px-2 text-[11px] ${
+                        (ui.shakeAmt ?? 2) === amt ? "bg-fg text-bg" : "border border-border text-muted"
+                      }`}
+                      onClick={() => g()?.setShakeAmt(amt)}
+                    >
+                      {amt === 0 ? "Off" : amt === 1 ? "Low" : "Full"}
+                    </button>
+                  ))}
+                </span>
+              </div>
+              <label className="mt-2 flex items-center justify-between gap-3 text-sm text-fg">
+                Reduced motion
+                <input
+                  type="checkbox"
+                  checked={!!ui.reducedMotion}
+                  onChange={(e) => g()?.setReducedMotion(e.target.checked)}
+                />
+              </label>
+              <p className="mt-2 text-[11px] text-subtle">Pad: stick walk · A jump · X/B strike · Y fang · RB skill · Start pause</p>
+            </div>
             <div className="mt-4 flex flex-col gap-3">
               <button type="button" className="h-11 rounded-lg bg-fg text-bg" {...press(() => g()?.resume())}>
                 Resume

@@ -101,6 +101,7 @@ export interface Particle {
   size: number;
   color: string;
   kind: "spark" | "ink" | "dust" | "ember" | "glyph";
+  label?: string;
 }
 
 export interface Bullet {
@@ -315,6 +316,11 @@ export interface SaveData {
   hard: boolean;
   muted: boolean;
   shake: boolean;
+  /** 0 off · 1 low · 2 full. `shake` stays in sync (amt > 0). */
+  shakeAmt: 0 | 1 | 2;
+  sfxVol: number;
+  musicVol: number;
+  reducedMotion: boolean;
   hp: number;
   ink: number;
   stage: string;
@@ -347,6 +353,10 @@ export interface UiSnap {
   stage: string;
   muted: boolean;
   shake: boolean;
+  shakeAmt: 0 | 1 | 2;
+  sfxVol: number;
+  musicVol: number;
+  reducedMotion: boolean;
   hard: boolean;
   canContinue: boolean;
   introPage: number;

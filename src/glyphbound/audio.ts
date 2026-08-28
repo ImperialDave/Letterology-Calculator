@@ -5,11 +5,13 @@ export class AudioBus {
   music: GainNode | null = null;
   muted = false;
   musicOn = true;
+  sfxVol = 1;
+  musicVol = 1;
   step = 0;
   acc = 0;
   started = false;
   private voices = 0;
-  private readonly maxVoices = 8;
+  private readonly maxVoices = 12;
   private noiseBuf: AudioBuffer | null = null;
   private lastHit = 0;
 
@@ -27,8 +29,8 @@ export class AudioBus {
         this.master = this.ctx.createGain();
         this.sfx = this.ctx.createGain();
         this.music = this.ctx.createGain();
-        this.sfx.gain.value = 0.28;
-        this.music.gain.value = 0.16;
+        this.sfx.gain.value = 0.28 * this.sfxVol;
+        this.music.gain.value = 0.16 * this.musicVol;
         this.sfx.connect(this.master);
         this.music.connect(this.master);
         this.master.connect(this.ctx.destination);
@@ -51,6 +53,26 @@ export class AudioBus {
     }
   }
 
+  setSfxVol(v: number) {
+    this.sfxVol = Math.max(0, Math.min(1, v));
+    if (this.sfx && this.ctx) this.sfx.gain.setTargetAtTime(0.28 * this.sfxVol, this.ctx.currentTime, 0.04);
+  }
+
+  setMusicVol(v: number) {
+    this.musicVol = Math.max(0, Math.min(1, v));
+    if (this.music && this.ctx) this.music.gain.setTargetAtTime(0.16 * this.musicVol, this.ctx.currentTime, 0.04);
+  }
+
+  duck(sec = 0.14) {
+    if (!this.ctx || !this.music || this.muted) return;
+    const t = this.ctx.currentTime;
+    const rest = 0.16 * this.musicVol;
+    this.music.gain.cancelScheduledValues(t);
+    this.music.gain.setValueAtTime(rest, t);
+    this.music.gain.linearRampToValueAtTime(rest * 0.22, t + 0.03);
+    this.music.gain.linearRampToValueAtTime(rest, t + Math.max(0.08, sec));
+  }
+
   private release = () => {
     this.voices = Math.max(0, this.voices - 1);
   };
@@ -69,8 +91,9 @@ export class AudioBus {
     const o = this.ctx.createOscillator();
     const g = this.ctx.createGain();
     o.type = type;
-    o.frequency.setValueAtTime(freq, t);
-    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, freq + slide), t + dur);
+    const jitter = 0.94 + Math.random() * 0.12;
+    o.frequency.setValueAtTime(freq * jitter, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, freq * jitter + slide), t + dur);
     g.gain.setValueAtTime(gain, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + dur);
     o.connect(g);
@@ -139,9 +162,10 @@ export class AudioBus {
   }
   sfxHit() {
     const now = this.ctx?.currentTime ?? 0;
-    if (now - this.lastHit < 0.05) return;
+    if (now - this.lastHit < 0.04) return;
     this.lastHit = now;
     this.tone(160, 0.08, "square", 0.08, -80);
+    this.noise(0.04, 0.04);
   }
   sfxHurt() {
     this.tone(220, 0.16, "sawtooth", 0.09, -140);
@@ -162,6 +186,7 @@ export class AudioBus {
     this.tone(392, 0.5, "triangle", 0.06, 280);
   }
   sfxDeath() {
+    this.duck(0.28);
     this.tone(110, 0.4, "sawtooth", 0.1, -70);
   }
   sfxSwap() {

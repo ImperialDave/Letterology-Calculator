@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { Input } from "./input";
+import { Input, applyGamepad } from "./input";
 
 function press(codes: string[]) {
   const i = new Input();
@@ -62,4 +62,22 @@ test("Space still jumps while aiming a strike", () => {
   const a = press(["Space", "KeyJ"]);
   assert.equal(a.jump, true);
   assert.equal(a.attack, true);
+});
+
+test("standard pad maps A jump, X strike, Y fang, Start pause", () => {
+  const a = press([]);
+  a.jump = false;
+  a.attack = false;
+  const buttons = Array.from({ length: 16 }, () => ({ pressed: false }));
+  buttons[0] = { pressed: true };
+  buttons[2] = { pressed: true };
+  buttons[3] = { pressed: true };
+  buttons[9] = { pressed: true };
+  const next = new Set<number>();
+  applyGamepad(a, { axes: [0.6, 0], buttons }, new Set(), next);
+  assert.equal(a.jump, true);
+  assert.equal(a.attack, true);
+  assert.equal(a.fang, true);
+  assert.equal(a.pause, true);
+  assert.ok(a.moveX > 0);
 });

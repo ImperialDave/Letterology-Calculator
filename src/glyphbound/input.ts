@@ -106,6 +106,7 @@ export class Input {
   canvas: HTMLElement | null = null;
   enabled = true;
   private stickRadius = 56;
+  private padHeld = new Set<number>();
 
   attach(el: HTMLElement) {
     this.canvas = el;
@@ -386,9 +387,69 @@ export class Input {
       a.cycle = -1;
     }
 
+    this.mergeGamepad(a);
+
     this.prev = new Set([...this.keys, ...this.forced]);
     this.prevButtons = new Set(this.buttons);
     this.latched.clear();
     return a;
   }
+
+  private mergeGamepad(a: Actions) {
+    const pads =
+      typeof navigator !== "undefined" && typeof navigator.getGamepads === "function"
+        ? navigator.getGamepads()
+        : [];
+    const next = new Set<number>();
+    for (const gp of pads) {
+      if (!gp) continue;
+      applyGamepad(a, gp, this.padHeld, next);
+    }
+    this.padHeld = next;
+  }
+}
+
+const PAD_DEAD = 0.28;
+
+/** Standard layout: A jump, X/B strike, Y fang, RB skill, LB cycle, Start pause. */
+export function applyGamepad(
+  a: Actions,
+  gp: { axes: readonly number[]; buttons: readonly { pressed: boolean }[] },
+  prev: Set<number>,
+  next: Set<number>,
+) {
+  const ax = gp.axes[0] ?? 0;
+  const ay = gp.axes[1] ?? 0;
+  if (ax > PAD_DEAD) a.moveX = Math.min(1, a.moveX + 1);
+  else if (ax < -PAD_DEAD) a.moveX = Math.max(-1, a.moveX - 1);
+  if (Math.abs(ax) > PAD_DEAD) a.aimX = Math.max(-1, Math.min(1, ax));
+  if (ay > 0.48) {
+    a.down = true;
+    a.aimY = 1;
+  } else if (ay < -0.48) {
+    a.aimY = -1;
+  }
+  const down = (i: number) => !!gp.buttons[i]?.pressed;
+  const edge = (i: number) => {
+    if (down(i)) next.add(i);
+    return down(i) && !prev.has(i);
+  };
+  if (down(14)) a.moveX = Math.max(-1, a.moveX - 1);
+  if (down(15)) a.moveX = Math.min(1, a.moveX + 1);
+  if (down(14)) a.aimX = -1;
+  if (down(15)) a.aimX = 1;
+  if (down(13)) {
+    a.down = true;
+    a.aimY = 1;
+  }
+  if (down(12) && a.aimY === 0) a.aimY = -1;
+  if (down(0)) a.jumpHeld = true;
+  if (edge(0)) a.jump = true;
+  if (down(1) || down(2)) a.attackHeld = true;
+  if (edge(1) || edge(2)) a.attack = true;
+  if (down(3)) a.fangHeld = true;
+  if (edge(3)) a.fang = true;
+  if (edge(5)) a.special = true;
+  if (edge(4)) a.cycle = 1;
+  if (edge(9) || edge(8)) a.pause = true;
 }

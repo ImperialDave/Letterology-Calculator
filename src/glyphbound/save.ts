@@ -27,6 +27,10 @@ export const defaultSave = (): SaveData => ({
   hard: false,
   muted: false,
   shake: true,
+  shakeAmt: 2,
+  sfxVol: 1,
+  musicVol: 1,
+  reducedMotion: false,
   hp: 6,
   ink: 18,
   stage: "hub",
@@ -119,6 +123,18 @@ function migrateLegacy(ls: Storage) {
   }
 }
 
+function clamp01(n: number) {
+  return Math.max(0, Math.min(1, n));
+}
+
+export function prefersReducedMotion() {
+  try {
+    return typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  } catch {
+    return false;
+  }
+}
+
 function parseSave(raw: string | null): SaveData {
   if (!raw) return defaultSave();
   try {
@@ -127,6 +143,12 @@ function parseSave(raw: string | null): SaveData {
     const party = Array.isArray(parsed.party) && parsed.party.length ? parsed.party : base.party;
     const letter =
       parsed.letter && party.includes(parsed.letter) ? parsed.letter : party[0] ?? "c";
+    const shakeAmt: 0 | 1 | 2 =
+      parsed.shakeAmt === 0 || parsed.shakeAmt === 1 || parsed.shakeAmt === 2
+        ? parsed.shakeAmt
+        : parsed.shake === false
+          ? 0
+          : 2;
     const merged: SaveData = {
       ...base,
       ...parsed,
@@ -140,6 +162,11 @@ function parseSave(raw: string | null): SaveData {
       words: parsed.words ?? [],
       powerups: parsed.powerups ?? [],
       progress: Math.max(0, parsed.progress ?? 0),
+      shakeAmt,
+      shake: shakeAmt > 0,
+      sfxVol: clamp01(parsed.sfxVol ?? 1),
+      musicVol: clamp01(parsed.musicVol ?? 1),
+      reducedMotion: parsed.reducedMotion ?? prefersReducedMotion(),
     };
     if (merged.progress < 1 && merged.stage1) merged.progress = Math.max(merged.progress, 1);
     if (merged.progress < 2 && merged.stage2) merged.progress = Math.max(merged.progress, 2);
