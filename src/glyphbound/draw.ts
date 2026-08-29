@@ -12,6 +12,7 @@ import {
 import { blitArt, FX_ORIGIN } from "./art";
 import { KITS } from "./roster";
 import { flourishPhase, weaponFor, type MeleeFamily } from "./weapons";
+import { CASE_ART, FINISHERS, HEAT_SMASH } from "./arts";
 import {
   MOVES,
   fxFrame,
@@ -2529,7 +2530,8 @@ function drawMelee(ctx: CanvasRenderingContext2D, p: Player, cx: number, cy: num
     : p.meleeMax > 0 && p.melee > 0
       ? Math.max(0, Math.min(1, 1 - p.melee / p.meleeMax))
       : 0;
-  const idle = p.melee <= 0 && p.flourish <= 0 && !charging;
+  const supering = p.art > 0 || p.heatSmash > 0;
+  const idle = p.melee <= 0 && p.flourish <= 0 && !charging && !supering;
   const wind = idle ? Math.min(1, p.meleeCharge / 0.18) : 0;
   const profile = swingProfile(moveId);
   let ang = moveSwingAngle(moveId, phase, wpn.family, idle && !charging, flourishing);
@@ -2598,6 +2600,47 @@ function drawMelee(ctx: CanvasRenderingContext2D, p: Player, cx: number, cy: num
       blitArt(ctx, "fx", "impact-hit", ox - 16, oy - 16, 36, 36, t, frame);
     }
   }
+  if (supering) drawSuperFx(ctx, p, cx, cy, t, pal.glow);
+}
+
+function drawSuperFx(
+  ctx: CanvasRenderingContext2D,
+  p: Player,
+  cx: number,
+  cy: number,
+  t: number,
+  glow: string,
+) {
+  const def =
+    p.superKind === "art" ? CASE_ART[p.letter] : p.superKind === "heat" ? HEAT_SMASH[p.letter] : FINISHERS[p.letter];
+  const left = p.superKind === "art" ? p.art : p.heatSmash;
+  const max = p.superKind === "art" ? p.artMax : p.heatSmashMax;
+  const phase = max > 0 ? 1 - left / max : 0;
+  const cols = p.superKind === "art" ? 3 : 2;
+  const rows = p.superKind === "art" ? 2 : 2;
+  const frame = Math.min(cols * rows - 1, Math.floor(phase * cols * rows));
+  const fw = p.superKind === "art" ? 160 : 120;
+  const fh = p.superKind === "art" ? 100 : 72;
+  const ox = cx + p.facing * (p.superKind === "art" ? 18 : 12);
+  const oy = cy - 8;
+  ctx.save();
+  ctx.translate(ox, oy);
+  ctx.scale(p.facing, 1);
+  const used = blitArt(ctx, "fx", def.fx, -fw * 0.45, -fh * 0.5, fw, fh, t, frame);
+  if (!used) {
+    ctx.strokeStyle = glow;
+    ctx.fillStyle = glow;
+    ctx.globalAlpha = 0.35 + phase * 0.4;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(0, 4, 28 + phase * 36, 16 + phase * 10, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = 0.18;
+    ctx.beginPath();
+    ctx.arc(0, 0, 12 + phase * 40, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
 }
 
 export function drawPlayer(ctx: CanvasRenderingContext2D, p: Player, camX: number, camY: number, t: number) {
@@ -2917,9 +2960,10 @@ export function drawHudCanvas(
   toast: string,
   comboHits = 0,
   lives = -1,
+  heat = 0,
 ) {
   ctx.fillStyle = "rgba(7,8,12,0.55)";
-  roundRect(ctx, 132, 14, 210, p.smashKind ? 48 : 44, 10);
+  roundRect(ctx, 132, 14, 210, p.smashKind ? 56 : 52, 10);
   ctx.fill();
   roundRect(ctx, 144, 22, 160, 8, 4);
   ctx.fillStyle = "rgba(232,236,232,0.12)";
@@ -2933,6 +2977,11 @@ export function drawHudCanvas(
   ctx.fillRect(144, 34, Math.max(0, 160 * (p.shield / Math.max(1, p.maxShield))), 7);
   ctx.fillStyle = "#5ee0c0";
   ctx.fillRect(144, 44, Math.max(0, 160 * (p.ink / p.maxInk)), 5);
+  ctx.fillStyle = "rgba(232,212,138,0.18)";
+  roundRect(ctx, 144, 51, 160, 4, 2);
+  ctx.fill();
+  ctx.fillStyle = heat >= 100 ? "#f0d48a" : "#c9b070";
+  ctx.fillRect(144, 51, Math.max(0, 160 * Math.min(1, heat / 100)), 4);
   ctx.fillStyle = "#e8ece8";
   ctx.font = "600 11px 'Source Sans 3', sans-serif";
   ctx.textAlign = "left";

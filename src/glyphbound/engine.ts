@@ -55,6 +55,34 @@ import { bindKey as bindKeyMap, type KeyAction } from "./keys";
 import { SLOT_COUNT, activeSlot, clearSave, defaultSave, listSlots, loadSave, selectSlot, writeSave } from "./save";
 import { cycleDifficulty, livesFor, scaledHp } from "./difficulty";
 import { padEnemies } from "./density";
+import {
+  ART_HOLD,
+  matchFf,
+  matchQcf,
+  pushDir,
+  relDir,
+  CMD_WINDOW_DESKTOP,
+  CMD_WINDOW_MOBILE,
+  STRING_WINDOW_DESKTOP,
+  STRING_WINDOW_MOBILE,
+  type DirSample,
+} from "./command";
+import {
+  CASE_ART,
+  CASE_ART_COST,
+  FINISHERS,
+  HEAT_DECAY,
+  HEAT_IDLE,
+  HEAT_MAX,
+  HEAT_SMASH,
+  HEAT_SMASH_COST,
+  STRING_FINISH_HEAT,
+  heatFromDamage,
+  stringCanFire,
+  stringNext,
+  stringRoute,
+  type SuperDef,
+} from "./arts";
 import { preloadArt } from "./art";
 import { isMovingSolid, SolidGrid } from "./spatial";
 import {
@@ -173,6 +201,10 @@ export class GameEngine {
   private uiAt = 0;
   difficulty: Difficulty = "easy";
   lives = -1;
+  private dirs: DirSample[] = [];
+  slowT = 0;
+  letterbox = 0;
+  camPunch = 1;
   wordMenu = false;
   returnT = 0;
   intBuf = 0;
@@ -314,6 +346,12 @@ export class GameEngine {
       this.fps = this.fpsEma;
       this.fpsStamp = now;
     }
+    if (this.slowT > 0 && !this.save.reducedMotion) {
+      this.slowT = Math.max(0, this.slowT - dt);
+      dt *= 0.28;
+    } else {
+      this.slowT = Math.max(0, this.slowT - dt);
+    }
     this.acc += dt;
     this.time += dt;
     if (this.hitstop > 0) this.hitstop -= dt;
@@ -431,6 +469,19 @@ export class GameEngine {
       dashCd: 0,
       ledgeHang: "",
       ledgeLock: 0,
+      heat: 0,
+      heatIdle: 0,
+      art: 0,
+      artMax: 0,
+      artHits: 0,
+      heatSmash: 0,
+      heatSmashMax: 0,
+      heatSmashHits: 0,
+      superKind: "",
+      stringStep: 0,
+      stringWindow: 0,
+      skillHold: 0,
+      skillArmed: false,
     };
   }
 
@@ -1223,10 +1274,13 @@ export class GameEngine {
     const spd = kit.spd + (p.capital ? -12 : 0);
     const hanging = p.ledgeHang !== "";
     const dashing = p.melee > 0 && p.meleeMove === "dash";
+    if (p.art > 0) a = { ...a, moveX: 0, jump: false, fang: false, fangHeld: false };
     const airDashing = dashing && !p.grounded && !hanging;
     if (p.roll <= 0) {
       const lockFace =
         p.smashKind !== "" ||
+        p.art > 0 ||
+        p.heatSmash > 0 ||
         (p.melee > 0 &&
           (p.meleeMove === "bair" ||
             p.meleeMove === "fsmash" ||
@@ -1384,6 +1438,13 @@ export class GameEngine {
     if (p.melee <= 0 && p.meleeMove && !isJab(p.meleeMove as MeleeMoveId)) p.meleeMove = "";
     p.flourish = Math.max(0, p.flourish - dt);
     p.flourishCd = Math.max(0, p.flourishCd - dt);
+    p.art = Math.max(0, p.art - dt);
+    p.heatSmash = Math.max(0, p.heatSmash - dt);
+    p.stringWindow = Math.max(0, p.stringWindow - dt);
+    if (p.art <= 0 && p.heatSmash <= 0) p.superKind = "";
+    if (p.stringWindow <= 0 && p.melee <= 0) p.stringStep = 0;
+    p.heatIdle += dt;
+    if (p.heatIdle > HEAT_IDLE) p.heat = Math.max(0, p.heat - HEAT_DECAY * dt);
     p.special = Math.max(0, p.special - dt);
     p.specialCd = Math.max(0, p.specialCd - dt);
     p.shotCd = Math.max(0, p.shotCd - dt);
@@ -1963,6 +2024,214 @@ export class GameEngine {
     }
   }
 
+  private cmdWindow() {
+    return this.lite ? CMD_WINDOW_MOBILE : CMD_WINDOW_DESKTOP;
+  }
+
+  private stringWin() {
+    return this.lite ? STRING_WINDOW_MOBILE : STRING_WINDOW_DESKTOP;
+  }
+
+  private superBusy() {
+    const p = this.player;
+    return p.art > 0 || p.heatSmash > 0 || p.superKind !== "";
+  }
+
+  private gainHeat(n: number) {
+    const p = this.player;
+    p.heat = Math.min(HEAT_MAX, p.heat + n);
+    p.heatIdle = 0;
+  }
+
+  private openString(id: MeleeMoveId) {
+    const p = this.player;
+    const route = stringRoute(p.letter);
+    if (p.stringStep <= 0) {
+      if (route[0] !== id) {
+        p.stringStep = 0;
+        p.stringWindow = 0;
+        return;
+      }
+      p.stringStep = 1;
+      p.stringWindow = this.stringWin();
+      return;
+    }
+    const expect = stringNext(p.letter, p.stringStep);
+    if (expect === id) {
+      p.stringStep += 1;
+      p.stringWindow = this.stringWin();
+    } else if (expect !== "finisher") {
+      p.stringStep = route[0] === id ? 1 : 0;
+      p.stringWindow = p.stringStep ? this.stringWin() : 0;
+    }
+  }
+
+  private tryStringAdvance() {
+    const p = this.player;
+    if (p.stringWindow <= 0 || p.stringStep <= 0) return false;
+    const next = stringNext(p.letter, p.stringStep);
+    if (!next) {
+      p.stringStep = 0;
+      p.stringWindow = 0;
+      return false;
+    }
+    if (next === "finisher") {
+      this.startSuper("finisher", FINISHERS[p.letter]);
+      p.stringStep = 0;
+      p.stringWindow = 0;
+      this.gainHeat(STRING_FINISH_HEAT);
+      return true;
+    }
+    if (!stringCanFire(next, p.grounded)) {
+      p.stringStep = 0;
+      p.stringWindow = 0;
+      return false;
+    }
+    p.melee = 0;
+    p.attack = 0;
+    this.startMeleeMove(next, 0);
+    p.stringWindow = this.stringWin();
+    return true;
+  }
+
+  private canSuper() {
+    const p = this.player;
+    return p.hurtFlash <= 0 && p.roll <= 0 && p.ledgeHang === "" && p.invuln < 0.5 && !this.superBusy();
+  }
+
+  private tryHeatSmash(a: ReturnType<Input["poll"]>) {
+    const p = this.player;
+    if (p.heat < HEAT_SMASH_COST || !this.canSuper()) return false;
+    const kit = KITS[p.letter] ?? KITS.c;
+    const running = p.grounded && Math.abs(p.vx) > kit.spd * 0.62;
+    const ff = matchFf(this.dirs, this.time, this.cmdWindow());
+    if (!ff && !(this.lite && running)) return false;
+    this.startSuper("heat", HEAT_SMASH[p.letter]);
+    p.heat -= HEAT_SMASH_COST;
+    return true;
+  }
+
+  private tryArtCommand(a: ReturnType<Input["poll"]>) {
+    const p = this.player;
+    if (p.heat < CASE_ART_COST || !this.canSuper()) return false;
+    if (!matchQcf(this.dirs, this.time, this.cmdWindow())) return false;
+    this.startSuper("art", CASE_ART[p.letter]);
+    p.heat = 0;
+    return true;
+  }
+
+  private startSuper(kind: "art" | "heat" | "finisher", def: SuperDef) {
+    const p = this.player;
+    p.superKind = kind;
+    p.artHits = 0;
+    p.heatSmashHits = 0;
+    p.flourish = 0;
+    p.melee = 0;
+    p.meleeMove = "";
+    p.smashKind = "";
+    p.smashPower = 0;
+    p.meleeCharge = 0;
+    p.jabStep = 0;
+    p.attack = def.time;
+    p.attackHit = false;
+    if (kind === "art") {
+      p.art = def.time;
+      p.artMax = def.time;
+      p.heatSmash = 0;
+      p.invuln = Math.max(p.invuln, def.time);
+      if (!this.save.reducedMotion) {
+        this.slowT = 0.16;
+        this.letterbox = 1;
+        this.camPunch = 1.08;
+      }
+      this.audio.duck(0.35);
+    } else {
+      p.heatSmash = def.time;
+      p.heatSmashMax = def.time;
+      p.heatSmashHits = 0;
+      p.art = 0;
+      p.invuln = Math.max(p.invuln, kind === "finisher" ? 0.12 : 0.12);
+      if (def.camera && !this.save.reducedMotion) this.camPunch = 1.04;
+      this.audio.duck(0.18);
+    }
+    if (def.selfVx) p.vx += p.facing * def.selfVx * (p.capital ? 1.1 : 1);
+    if (def.selfVy) p.vy += def.selfVy;
+    p.squash = 0.7;
+    this.audio.sfxSlash();
+    this.audio.sfxHit();
+    this.say(def.name.toUpperCase());
+    this.rumble(kind === "art" ? 140 : 80, kind === "art" ? 0.55 : 0.32);
+  }
+
+  private activeSuper(): SuperDef | null {
+    const p = this.player;
+    if (p.superKind === "art") return CASE_ART[p.letter];
+    if (p.superKind === "heat") return HEAT_SMASH[p.letter];
+    if (p.superKind === "finisher") return FINISHERS[p.letter];
+    return null;
+  }
+
+  private tickSuper() {
+    const p = this.player;
+    const def = this.activeSuper();
+    if (!def) return;
+    const left = p.superKind === "art" ? p.art : p.heatSmash || p.attack;
+    const max = p.superKind === "art" ? p.artMax : p.heatSmashMax || def.time;
+    const phase = 1 - left / Math.max(0.001, max);
+    while (true) {
+      const n = p.superKind === "heat" || p.superKind === "finisher" ? p.heatSmashHits : p.artHits;
+      if (n >= def.hitAt.length || phase < (def.hitAt[n]?.at ?? 9)) break;
+      this.superStrike(def, n);
+      if (p.superKind === "heat" || p.superKind === "finisher") p.heatSmashHits += 1;
+      else p.artHits += 1;
+    }
+    const squashPhase = phase < 0.22 ? 0.72 : phase < 0.55 ? 1.16 : 0.82;
+    p.squash = squashPhase;
+    if (p.superKind === "art") p.invuln = Math.max(p.invuln, p.art);
+  }
+
+  private superStrike(def: SuperDef, tick: number) {
+    const p = this.player;
+    const h = def.hitAt[tick];
+    if (!h) return;
+    const dmg = h.dmg + (p.capital && tick === def.hitAt.length - 1 ? 2 : 0);
+    const y = p.y + (h.oy ?? p.h * 0.08);
+    const boxes = h.bothSides
+      ? [
+          { x: p.x + p.w / 2, y, w: h.reach, h: h.height },
+          { x: p.x + p.w / 2 - h.reach, y, w: h.reach, h: h.height },
+        ]
+      : [
+          {
+            x: p.facing > 0 ? p.x + p.w * 0.3 : p.x - h.reach + p.w * 0.7,
+            y,
+            w: h.reach,
+            h: h.height,
+          },
+        ];
+    let hit = false;
+    for (const box of boxes) {
+      for (const e of this.enemies) {
+        if (!e.alive) continue;
+        if (e.hurt > 0 && tick === 0) continue;
+        if (!aabb(box, e)) continue;
+        this.hitEnemy(e, dmg, p.facing, { x: h.kbX, y: h.kbY, stun: h.stun, heat: true });
+        if (def.pull && e.alive) {
+          const cx = p.x + p.w / 2;
+          e.x += Math.sign(cx - (e.x + e.w / 2)) * Math.min(def.pull, 24);
+        }
+        if (h.spike && e.alive) e.vy = Math.max(e.vy, h.kbY);
+        hit = true;
+      }
+    }
+    const kit = KITS[p.letter] ?? KITS.c;
+    this.burst(p.x + p.w / 2 + p.facing * 24, p.y + p.h * 0.4, kit.glow, hit ? 16 : 8, p.letter === "r" ? "ember" : "spark");
+    if (hit) {
+      this.trauma = Math.min(1, this.trauma + (p.superKind === "art" ? 0.28 : 0.16));
+      this.hitstop = p.superKind === "art" ? 0.1 : 0.08;
+    }
+  }
+
   private meleeIntent(a: ReturnType<Input["poll"]>) {
     const p = this.player;
     const kit = KITS[p.letter] ?? KITS.c;
@@ -1980,6 +2249,10 @@ export class GameEngine {
 
   private updateCombat(dt: number, a: ReturnType<Input["poll"]>) {
     const p = this.player;
+    pushDir(this.dirs, this.time, relDir(a.aimX, a.aimY, p.facing));
+    this.letterbox = Math.max(0, this.letterbox - dt * 1.6);
+    this.camPunch += (1 - this.camPunch) * (1 - Math.exp(-5 * dt));
+    if (this.superBusy()) this.tickSuper();
     this.comboTimer = Math.max(0, this.comboTimer - dt);
     if (this.comboTimer <= 0 && !this.enemies.some((e) => e.alive && e.stun > 0)) {
       if (this.comboHits >= 4) this.say(this.comboHits + " HIT COMBO");
@@ -1997,15 +2270,19 @@ export class GameEngine {
       p.meleeCharge = 0;
     }
     const iasa = meleeIasaReady(p.melee, p.meleeMax, p.meleeMove);
-    if (iasa && a.attack && p.flourish <= 0 && p.roll <= 0 && p.melee > 0) {
-      p.melee = 0;
-      p.attack = 0;
-      const intent = this.meleeIntent(a);
-      this.faceForIntent(intent, a.aimX);
-      if (!p.grounded) this.startMeleeMove(intentToMove(intent, 0), 0);
-      else if (intent === "dash") this.startMeleeMove("dash", 0);
-      else this.startMeleeMove(intentToMove(intent, p.jabStep), 0);
-      p.meleeCharge = 0;
+    if (iasa && a.attack && p.flourish <= 0 && p.roll <= 0 && p.melee > 0 && !this.superBusy()) {
+      if (this.tryStringAdvance()) {
+        p.meleeCharge = 0;
+      } else {
+        p.melee = 0;
+        p.attack = 0;
+        const intent = this.meleeIntent(a);
+        this.faceForIntent(intent, a.aimX);
+        if (!p.grounded) this.startMeleeMove(intentToMove(intent, 0), 0);
+        else if (intent === "dash") this.startMeleeMove("dash", 0);
+        else this.startMeleeMove(intentToMove(intent, p.jabStep), 0);
+        p.meleeCharge = 0;
+      }
     }
     if (p.flourish > 0) this.tickFlourish();
     else if (p.melee > 0) this.tickMelee();
@@ -2019,18 +2296,28 @@ export class GameEngine {
       if (isJab(p.meleeMove as MeleeMoveId)) p.meleeMove = "";
     }
 
-    const busy = p.flourish > 0 || p.melee > 0 || p.roll > 0;
+    const busy = p.flourish > 0 || p.melee > 0 || p.roll > 0 || this.superBusy();
     const intent = this.meleeIntent(a);
 
+    if (a.attack && p.stringWindow > 0 && !this.superBusy() && (p.melee <= 0 || iasa)) {
+      if (this.tryStringAdvance()) p.meleeCharge = 0;
+    }
+
     if (!p.grounded && a.attack && !busy) {
-      this.faceForIntent(intent, a.aimX);
-      this.startMeleeMove(intentToMove(intent, 0), 0);
+      if (this.tryArtCommand(a) || this.tryHeatSmash(a)) {
+        p.meleeCharge = 0;
+      } else {
+        this.faceForIntent(intent, a.aimX);
+        this.startMeleeMove(intentToMove(intent, 0), 0);
+        p.meleeCharge = 0;
+      }
+    } else if (p.grounded && a.attack && !busy && (this.tryArtCommand(a) || this.tryHeatSmash(a))) {
       p.meleeCharge = 0;
     } else if (p.grounded && a.attack && intent === "dash" && !busy) {
       this.faceForIntent(intent, a.aimX);
       this.startMeleeMove("dash", 0);
       p.meleeCharge = 0;
-    } else if (a.attackHeld && p.roll <= 0 && p.flourish <= 0) {
+    } else if (a.attackHeld && p.roll <= 0 && p.flourish <= 0 && !this.superBusy()) {
       if (p.melee <= 0) {
         p.meleeCharge += dt;
         if (p.smashKind) {
@@ -2090,9 +2377,42 @@ export class GameEngine {
     ) {
       this.tryFang();
     }
-    if (a.special && p.specialCd <= 0 && p.roll <= 0) {
-      this.castSpecial(a);
+    this.tickSkillHold(dt, a);
+  }
+
+  private tickSkillHold(dt: number, a: ReturnType<Input["poll"]>) {
+    const p = this.player;
+    if (this.superBusy()) {
+      p.skillHold = 0;
+      p.skillArmed = false;
+      return;
     }
+    if (p.heat >= CASE_ART_COST) {
+      if (a.specialHeld) {
+        if (!p.skillArmed) {
+          p.skillArmed = true;
+          p.skillHold = 0;
+        }
+        p.skillHold += dt;
+        if (p.skillHold >= ART_HOLD && this.canSuper()) {
+          this.startSuper("art", CASE_ART[p.letter]);
+          p.heat = 0;
+          p.skillHold = 0;
+          p.skillArmed = false;
+        }
+        return;
+      }
+      if (p.skillArmed) {
+        const held = p.skillHold;
+        p.skillArmed = false;
+        p.skillHold = 0;
+        if (held < ART_HOLD && p.specialCd <= 0 && p.roll <= 0) this.castSpecial(a);
+      }
+      return;
+    }
+    p.skillArmed = false;
+    p.skillHold = 0;
+    if (a.special && p.specialCd <= 0 && p.roll <= 0) this.castSpecial(a);
   }
 
   private faceForIntent(intent: ReturnType<typeof classifyMelee>, aimX: number) {
@@ -2307,6 +2627,7 @@ export class GameEngine {
       this.trauma = Math.min(1, this.trauma + (move.smash ? 0.18 : 0.12));
       this.hitstop = move.smash ? 0.06 : 0.04;
       if (isJab(id)) p.jabWindow = JAB_WINDOW;
+      this.openString(id);
     }
   }
 
@@ -2375,7 +2696,7 @@ export class GameEngine {
     e: Enemy,
     dmg: number,
     dir: number,
-    kb?: { x?: number; y?: number; stun?: number; moveId?: MeleeMoveId; flourish?: boolean },
+    kb?: { x?: number; y?: number; stun?: number; moveId?: MeleeMoveId; flourish?: boolean; heat?: boolean },
   ) {
     if (e.hurt > 0) return;
     e.hp -= dmg;
@@ -2386,6 +2707,7 @@ export class GameEngine {
     if (this.comboTimer > 0 || live) this.comboHits += 1;
     else this.comboHits = 1;
     this.comboTimer = 0.8;
+    if (kb?.moveId || kb?.flourish || kb?.heat) this.gainHeat(heatFromDamage(dmg));
     if (kb?.x != null && !kb.moveId && !kb.flourish) {
       const kx = kb.x;
       const ky = kb.y ?? -36;
@@ -3973,8 +4295,15 @@ export class GameEngine {
     const ax = Math.abs(dx) > deadX ? tx - Math.sign(dx) * deadX : this.camX;
     const ay = Math.abs(dy) > deadY ? ty - Math.sign(dy) * deadY : this.camY;
     const ky = p.vy < -40 ? 2.6 : 6.4;
+    const punch = this.camPunch;
     this.camX += (ax - this.camX) * (1 - Math.exp(-5.2 * dt));
     this.camY += (ay - this.camY) * (1 - Math.exp(-ky * dt));
+    if (punch > 1.01) {
+      const cx = p.x + p.w / 2;
+      const cy = p.y + p.h / 2;
+      this.camX += (cx - VIEW_W * 0.5 - this.camX) * 0.08 * (punch - 1) * 12;
+      this.camY += (cy - VIEW_H * 0.55 - this.camY) * 0.08 * (punch - 1) * 12;
+    }
     this.camX = Math.max(0, Math.min(this.worldW - VIEW_W, this.camX));
     this.camY = Math.max(0, Math.min(Math.max(0, this.worldH - VIEW_H), this.camY));
   }
@@ -4602,6 +4931,7 @@ export class GameEngine {
       reducedMotion: !!this.save.reducedMotion,
       keys: this.save.keys ?? {},
       difficulty: this.mode === "title" ? this.difficulty : this.save.difficulty,
+      heat: Math.round(this.player.heat),
       lives: this.lives,
       livesMax: this.livesStock(),
       canContinue: this.save.progress > 0 || this.save.hasCapital || this.save.stage1 || this.save.party.length > 1,
@@ -4801,7 +5131,13 @@ export class GameEngine {
       ctx.restore();
       if (!this.lite) drawGrade(ctx, district);
       if (this.mode === "play" || this.mode === "hub" || this.mode === "transform") {
-        drawHudCanvas(ctx, this.player, this.nearHint, this.toast, this.comboHits, this.lives);
+        if (this.letterbox > 0.02 && !this.save.reducedMotion) {
+          const h = 28 * Math.min(1, this.letterbox);
+          ctx.fillStyle = "#07080c";
+          ctx.fillRect(0, 0, VIEW_W, h);
+          ctx.fillRect(0, VIEW_H - h, VIEW_W, h);
+        }
+        drawHudCanvas(ctx, this.player, this.nearHint, this.toast, this.comboHits, this.lives, this.player.heat);
       }
       if (this.mode === "transform") {
         ctx.fillStyle = `rgba(94,224,192,${0.15 + this.transformT * 0.1})`;

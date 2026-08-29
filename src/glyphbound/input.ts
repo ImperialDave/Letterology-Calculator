@@ -14,6 +14,7 @@ export type Actions = {
   fang: boolean;
   fangHeld: boolean;
   special: boolean;
+  specialHeld: boolean;
   interact: boolean;
   pause: boolean;
   word: boolean;
@@ -40,6 +41,7 @@ const empty = (): Actions => ({
   fang: false,
   fangHeld: false,
   special: false,
+  specialHeld: false,
   interact: false,
   pause: false,
   word: false,
@@ -330,6 +332,7 @@ export class Input {
     a.fangHeld = act("fang") || this.buttons.has("fang");
     a.fang = edgeAct("fang") || (this.buttons.has("fang") && !this.prevButtons.has("fang"));
     a.special = edgeAct("special") || (this.buttons.has("special") && !this.prevButtons.has("special"));
+    a.specialHeld = act("special") || this.buttons.has("special");
     a.interact = edgeAct("interact") || (this.buttons.has("interact") && !this.prevButtons.has("interact"));
     a.pause = edgeAct("pause") || (this.buttons.has("pause") && !this.prevButtons.has("pause"));
 
@@ -434,6 +437,7 @@ export function applyGamepad(
   if (edge(1) || edge(2)) a.attack = true;
   if (down(3)) a.fangHeld = true;
   if (edge(3)) a.fang = true;
+  if (down(5)) a.specialHeld = true;
   if (edge(5)) a.special = true;
   if (edge(4)) a.cycle = 1;
   if (edge(9) || edge(8)) a.pause = true;

@@ -290,6 +290,19 @@ export interface Player {
   /** Lip hang: wall is on this side of the body. */
   ledgeHang: "" | "left" | "right";
   ledgeLock: number;
+  heat: number;
+  heatIdle: number;
+  art: number;
+  artMax: number;
+  artHits: number;
+  heatSmash: number;
+  heatSmashMax: number;
+  heatSmashHits: number;
+  superKind: "" | "art" | "heat" | "finisher";
+  stringStep: number;
+  stringWindow: number;
+  skillHold: number;
+  skillArmed: boolean;
 }
 
 export interface TaskDef {
@@ -384,6 +397,7 @@ export interface UiSnap {
   shield: number;
   maxShield: number;
   shotLevel: number;
+  heat: number;
   hint: string;
   lore: { id: string; glyph: string; name: string; lines: string[] }[];
   sandbox: boolean;

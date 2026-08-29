@@ -78,6 +78,7 @@ function ControlsCard() {
             <KeyRow keys="F H" text="Fang · ink-heavy ranged · never the same key as Strike" />
             <KeyRow keys="K X" text="Skill of the letter in play" />
             <KeyRow keys="Flourish" text={FLOURISH_LINE} />
+            <KeyRow keys="Heat" text="f,f + Strike Heat Smash · hold Skill Case Art when the gold bar is full" />
             <KeyRow keys="Ward" text="Always on · eats a hit before health" />
           </div>
         </div>
@@ -181,6 +182,7 @@ const emptyUi = (): UiSnap => ({
   shield: 3,
   maxShield: 3,
   shotLevel: 1,
+  heat: 0,
   hint: "",
   lore: [],
   sandbox: false,
@@ -967,7 +969,9 @@ export function Glyphbound() {
           </p>
         </div>
       )}
-      {padOn && <MobilePad hint={ui.hint} letter={ui.letter} capital={ui.capital} inputRef={gameRef} />}
+      {padOn && (
+        <MobilePad hint={ui.hint} letter={ui.letter} capital={ui.capital} heat={ui.heat ?? 0} inputRef={gameRef} />
+      )}
 
       {wipe && (
         <div className="pointer-events-auto absolute inset-0 z-40 flex items-center justify-center bg-bg/80 px-6">
@@ -1071,11 +1075,13 @@ function MobilePad({
   hint,
   letter,
   capital,
+  heat,
   inputRef,
 }: {
   hint: string;
   letter: UiSnap["letter"];
   capital: boolean;
+  heat: number;
   inputRef: RefObject<GameEngine | null>;
 }) {
   const zoneRef = useRef<HTMLDivElement>(null);
@@ -1195,7 +1201,9 @@ function MobilePad({
           className="gb-pad-btn pointer-events-auto absolute bottom-4 right-[6.4rem] flex h-[4.3rem] w-[4.3rem] flex-col items-center justify-center rounded-full border border-accent bg-accent text-bg"
         >
           <span className="text-[12px] font-semibold leading-none">Strike</span>
-          <span className="mt-0.5 text-[8px] font-medium tracking-wide opacity-80">hold smash</span>
+          <span className="mt-0.5 text-[8px] font-medium tracking-wide opacity-80">
+            {heat >= 50 ? "HEAT" : "hold smash"}
+          </span>
         </button>
         <button
           type="button"
@@ -1214,9 +1222,11 @@ function MobilePad({
         <button
           type="button"
           data-role="special"
-          className="gb-pad-btn pointer-events-auto absolute bottom-[6.5rem] right-3 flex h-[3.25rem] w-[3.25rem] items-center justify-center rounded-full border border-fg/35 bg-bg text-[10px] font-semibold tracking-wide text-fg"
+          className={`gb-pad-btn pointer-events-auto absolute bottom-[6.5rem] right-3 flex h-[3.25rem] w-[3.25rem] items-center justify-center rounded-full border text-[10px] font-semibold tracking-wide ${
+            heat >= 100 ? "border-accent bg-accent/20 text-accent gb-art-hold" : "border-fg/35 bg-bg text-fg"
+          }`}
         >
-          {skill}
+          {heat >= 100 ? "ART" : skill}
         </button>
       </div>
     </div>
