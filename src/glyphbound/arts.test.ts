@@ -50,6 +50,11 @@ test("heat from a 2-damage melee hit is 18", () => {
   assert.equal(heatFromDamage(2), 18);
 });
 
+test("Case Art startup invuln is a window, not the full cinematic", () => {
+  assert.equal(CASE_ART.c.invuln, 0.22);
+  assert.ok((CASE_ART.c.invuln ?? 1) < CASE_ART.c.time * 0.3);
+});
+
 test("Case Art does not one-shot Dualis (36 hp)", () => {
   for (const L of LETTERS) {
     assert.ok(artDamage(CASE_ART[L], true) < 36, L);

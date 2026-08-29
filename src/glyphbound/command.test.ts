@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   ART_HOLD,
+  canHeatSmash,
+  matchBf,
   matchFf,
   matchQcf,
   pushDir,
@@ -40,6 +42,20 @@ test("qcf is down then forward", () => {
   pushDir(buf, 0.18, "df");
   pushDir(buf, 0.26, "f");
   assert.equal(matchQcf(buf, 0.3, 0.14), true);
+});
+
+test("b,f is a throw command, not f,f", () => {
+  const buf: DirSample[] = [];
+  pushDir(buf, 0.1, "b");
+  pushDir(buf, 0.2, "f");
+  assert.equal(matchBf(buf, 0.25, 0.14), true);
+  assert.equal(matchFf(buf, 0.25, 0.14), false);
+});
+
+test("Heat Smash needs f,f or a double tap, never a single run-strike", () => {
+  assert.equal(canHeatSmash(false, false), false);
+  assert.equal(canHeatSmash(true, false), true);
+  assert.equal(canHeatSmash(false, true), true);
 });
 
 test("a 0.1s Skill press is a tap, not a Case Art", () => {

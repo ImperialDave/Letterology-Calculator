@@ -17,15 +17,21 @@ test("every manifest art file exists on disk", () => {
 
 test("fx sheet cells have no magenta frame on the outer 2px", () => {
   const fxDir = join(root, "public/glyphbound/fx");
+  const grids = Object.fromEntries(
+    ART_MANIFEST.filter((e) => e.kind === "fx").map((e) => [e.name, { cols: e.cols ?? 2, rows: e.rows ?? 2 }]),
+  );
   const py = `
 from PIL import Image
 from pathlib import Path
+import json
 root = Path(${JSON.stringify(fxDir)})
+grids = json.loads(${JSON.stringify(JSON.stringify(grids))})
 fail = []
 for path in sorted(root.glob("*.png")):
     im = Image.open(path).convert("RGBA")
     w, h = im.size
-    cols = rows = 2
+    g = grids.get(path.stem, {"cols": 2, "rows": 2})
+    cols, rows = int(g["cols"]), int(g["rows"])
     cw, ch = w // cols, h // rows
     px = im.load()
     for r in range(rows):

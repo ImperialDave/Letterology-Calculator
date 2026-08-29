@@ -44,6 +44,7 @@ import {
   dashMove,
   DASH_CD,
   applyDi,
+  landingLag,
   UAIR_BOOST,
   UAIR_VY_CAP,
   UPHOP_TIME,
@@ -59,6 +60,8 @@ import {
   ART_HOLD,
   matchFf,
   matchQcf,
+  matchBf,
+  canHeatSmash,
   pushDir,
   relDir,
   CMD_WINDOW_DESKTOP,
@@ -77,6 +80,7 @@ import {
   HEAT_SMASH,
   HEAT_SMASH_COST,
   STRING_FINISH_HEAT,
+  THROW,
   heatFromDamage,
   stringCanFire,
   stringNext,
@@ -482,6 +486,9 @@ export class GameEngine {
       stringWindow: 0,
       skillHold: 0,
       skillArmed: false,
+      landLag: false,
+      artArmor: false,
+      superFlash: 0,
     };
   }
 
@@ -1446,6 +1453,9 @@ export class GameEngine {
     p.heatIdle += dt;
     if (p.heatIdle > HEAT_IDLE) p.heat = Math.max(0, p.heat - HEAT_DECAY * dt);
     p.special = Math.max(0, p.special - dt);
+    p.superFlash = Math.max(0, p.superFlash - dt);
+    if (p.melee <= 0) p.landLag = false;
+    if (p.art <= 0) p.artArmor = false;
     p.specialCd = Math.max(0, p.specialCd - dt);
     p.shotCd = Math.max(0, p.shotCd - dt);
     p.dashCd = Math.max(0, p.dashCd - dt);
@@ -2089,8 +2099,8 @@ export class GameEngine {
     }
     p.melee = 0;
     p.attack = 0;
+    p.landLag = false;
     this.startMeleeMove(next, 0);
-    p.stringWindow = this.stringWin();
     return true;
   }
 
@@ -2099,15 +2109,41 @@ export class GameEngine {
     return p.hurtFlash <= 0 && p.roll <= 0 && p.ledgeHang === "" && p.invuln < 0.5 && !this.superBusy();
   }
 
+  private lastStrikeAt = -9;
+  private strikeDouble = false;
   private tryHeatSmash(a: ReturnType<Input["poll"]>) {
     const p = this.player;
     if (p.heat < HEAT_SMASH_COST || !this.canSuper()) return false;
-    const kit = KITS[p.letter] ?? KITS.c;
-    const running = p.grounded && Math.abs(p.vx) > kit.spd * 0.62;
     const ff = matchFf(this.dirs, this.time, this.cmdWindow());
-    if (!ff && !(this.lite && running)) return false;
+    const doubleTap = this.lite && a.attack && this.strikeDouble;
+    if (!canHeatSmash(ff, doubleTap)) return false;
     this.startSuper("heat", HEAT_SMASH[p.letter]);
     p.heat -= HEAT_SMASH_COST;
+    return true;
+  }
+
+  private tryThrow() {
+    const p = this.player;
+    if (!p.grounded || !this.canSuper() || p.melee > 0) return false;
+    if (!matchBf(this.dirs, this.time, this.cmdWindow())) return false;
+    const face = p.facing;
+    const box = {
+      x: face > 0 ? p.x + p.w * 0.4 : p.x - THROW.reach,
+      y: p.y,
+      w: THROW.reach,
+      h: p.h,
+    };
+    const e = this.enemies.find(
+      (o) => o.alive && !this.isBossKind(o.kind) && o.grounded && aabb(box, o),
+    );
+    if (!e) return false;
+    this.hitEnemy(e, THROW.dmg, face, { x: 40, y: 160, stun: THROW.stun, heat: true });
+    p.squash = 0.78;
+    p.attack = THROW.time;
+    p.invuln = Math.max(p.invuln, 0.18);
+    this.audio.sfxHit();
+    this.say(THROW.name.toUpperCase());
+    this.hitstop = 0.08;
     return true;
   }
 
@@ -2134,11 +2170,13 @@ export class GameEngine {
     p.jabStep = 0;
     p.attack = def.time;
     p.attackHit = false;
+    p.landLag = false;
+    p.artArmor = kind === "art";
     if (kind === "art") {
       p.art = def.time;
       p.artMax = def.time;
       p.heatSmash = 0;
-      p.invuln = Math.max(p.invuln, def.time);
+      p.invuln = Math.max(p.invuln, def.invuln ?? 0.22);
       if (!this.save.reducedMotion) {
         this.slowT = 0.16;
         this.letterbox = 1;
@@ -2150,7 +2188,8 @@ export class GameEngine {
       p.heatSmashMax = def.time;
       p.heatSmashHits = 0;
       p.art = 0;
-      p.invuln = Math.max(p.invuln, kind === "finisher" ? 0.12 : 0.12);
+      p.artArmor = false;
+      p.invuln = Math.max(p.invuln, def.invuln ?? 0.12);
       if (def.camera && !this.save.reducedMotion) this.camPunch = 1.04;
       this.audio.duck(0.18);
     }
@@ -2185,9 +2224,9 @@ export class GameEngine {
       if (p.superKind === "heat" || p.superKind === "finisher") p.heatSmashHits += 1;
       else p.artHits += 1;
     }
-    const squashPhase = phase < 0.22 ? 0.72 : phase < 0.55 ? 1.16 : 0.82;
+    const squashPhase = phase < 0.22 ? 0.7 : phase < 0.55 ? 1.18 : 0.78;
     p.squash = squashPhase;
-    if (p.superKind === "art") p.invuln = Math.max(p.invuln, p.art);
+    if (p.superKind === "art" && p.artArmor && phase > 0.85) p.artArmor = false;
   }
 
   private superStrike(def: SuperDef, tick: number) {
@@ -2229,6 +2268,7 @@ export class GameEngine {
     if (hit) {
       this.trauma = Math.min(1, this.trauma + (p.superKind === "art" ? 0.28 : 0.16));
       this.hitstop = p.superKind === "art" ? 0.1 : 0.08;
+      p.superFlash = 0.14;
     }
   }
 
@@ -2258,14 +2298,19 @@ export class GameEngine {
       if (this.comboHits >= 4) this.say(this.comboHits + " HIT COMBO");
       this.comboHits = 0;
     }
-    if (p.grounded && isAerial(p.meleeMove as MeleeMoveId) && p.melee > 0) {
+    if (p.grounded && isAerial(p.meleeMove as MeleeMoveId) && p.melee > 0 && !p.landLag) {
       const phase = 1 - p.melee / Math.max(0.001, p.meleeMax);
       if (p.meleeMove === "nair" && nairAutocancel(phase)) {
         p.melee = 0;
         p.attack = 0;
       } else {
-        p.melee = Math.min(p.melee, 0.1);
-        p.attack = p.melee;
+        const lag = landingLag(p.meleeMove as MeleeMoveId);
+        p.landLag = true;
+        p.melee = lag;
+        p.meleeMax = lag;
+        p.meleeHits = 99;
+        p.attack = lag;
+        p.squash = 0.82;
       }
       p.meleeCharge = 0;
     }
@@ -2285,7 +2330,7 @@ export class GameEngine {
       }
     }
     if (p.flourish > 0) this.tickFlourish();
-    else if (p.melee > 0) this.tickMelee();
+    else if (p.melee > 0 && !p.landLag) this.tickMelee();
     if (p.melee <= 0 && p.jabQueue) {
       const nxt = nextJab(p.meleeMove as MeleeMoveId);
       p.jabQueue = false;
@@ -2298,6 +2343,11 @@ export class GameEngine {
 
     const busy = p.flourish > 0 || p.melee > 0 || p.roll > 0 || this.superBusy();
     const intent = this.meleeIntent(a);
+    if (a.attack) {
+      const gap = this.time - this.lastStrikeAt;
+      this.strikeDouble = gap > 0.04 && gap < 0.22;
+      this.lastStrikeAt = this.time;
+    }
 
     if (a.attack && p.stringWindow > 0 && !this.superBusy() && (p.melee <= 0 || iasa)) {
       if (this.tryStringAdvance()) p.meleeCharge = 0;
@@ -2311,6 +2361,8 @@ export class GameEngine {
         this.startMeleeMove(intentToMove(intent, 0), 0);
         p.meleeCharge = 0;
       }
+    } else if (p.grounded && a.attack && !busy && this.tryThrow()) {
+      p.meleeCharge = 0;
     } else if (p.grounded && a.attack && !busy && (this.tryArtCommand(a) || this.tryHeatSmash(a))) {
       p.meleeCharge = 0;
     } else if (p.grounded && a.attack && intent === "dash" && !busy) {
@@ -2443,6 +2495,7 @@ export class GameEngine {
     p.meleeHits = 0;
     p.attack = p.melee;
     p.attackHit = false;
+    p.landLag = false;
     p.squash = move.smash ? 0.72 : 0.88;
     p.meleeCharge = 0;
     p.smashPower = smashPower;
@@ -2611,7 +2664,10 @@ export class GameEngine {
         if (!e.alive) continue;
         if (e.hurt > 0 && tick === 0) continue;
         if (!aabb(box, e)) continue;
-        this.hitEnemy(e, dmg, face, { moveId: id });
+        const ch = e.stun <= 0 && e.facing * face < 0 && Math.abs(e.vx) > 30;
+        const dealt = ch ? Math.max(1, Math.round(dmg * 1.25)) : dmg;
+        this.hitEnemy(e, dealt, face, { moveId: id });
+        if (ch && e.alive) e.stun *= 1.2;
         hit = true;
       }
     }
@@ -2826,6 +2882,14 @@ export class GameEngine {
       return;
     }
     if (p.invuln > 0) return;
+    if (p.artArmor && p.art > 0) {
+      p.hp = Math.max(0, p.hp - 1);
+      p.hurtFlash = 0.2;
+      this.audio.sfxBlock();
+      this.burst(p.x + p.w / 2, p.y + p.h / 2, "#e8d48a", 8, "spark");
+      if (p.hp <= 0) this.fileDeath();
+      return;
+    }
     if (p.shield > 0) {
       p.shield -= 1;
       p.shieldFlash = 0.4;

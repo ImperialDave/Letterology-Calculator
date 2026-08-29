@@ -303,6 +303,9 @@ export interface Player {
   stringWindow: number;
   skillHold: number;
   skillArmed: boolean;
+  landLag: boolean;
+  artArmor: boolean;
+  superFlash: number;
 }
 
 export interface TaskDef {

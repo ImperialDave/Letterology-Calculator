@@ -35,6 +35,8 @@ export interface SuperDef {
   camera: boolean;
   letterbox: boolean;
   pull?: number;
+  /** Startup i-frames. Case Art uses 0.22; Heat Smash 0.12. */
+  invuln?: number;
 }
 
 const hit = (at: number, dmg: number, extra: Partial<ArtHit> = {}): ArtHit => ({
@@ -85,7 +87,7 @@ export const HEAT_SMASH: Record<LetterId, SuperDef> = {
 };
 
 export const CASE_ART: Record<LetterId, SuperDef> = {
-  c: { name: "Case of the Crescent", time: 1.5, cost: 100, camera: true, letterbox: true, fx: "art-c", fxBehind: true, hitAt: [hit(0.28, 6, { bothSides: true, reach: 70, height: 52 }), hit(0.52, 6, { bothSides: true, reach: 80, height: 56 }), hit(0.78, 8, { bothSides: true, reach: 90, height: 60, kbX: 220, kbY: -140 })] },
+  c: { name: "Case of the Crescent", time: 1.5, cost: 100, camera: true, letterbox: true, fx: "art-c", fxBehind: true, invuln: 0.22, hitAt: [hit(0.28, 6, { bothSides: true, reach: 70, height: 52 }), hit(0.52, 6, { bothSides: true, reach: 80, height: 56 }), hit(0.78, 8, { bothSides: true, reach: 90, height: 60, kbX: 220, kbY: -140 })] },
   s: { name: "Harvest Moon", time: 1.55, cost: 100, camera: true, letterbox: true, fx: "art-s", hitAt: [hit(0.3, 5, { bothSides: true, reach: 80, height: 44 }), hit(0.52, 7, { bothSides: true, reach: 88, height: 48 }), hit(0.78, 8, { bothSides: true, reach: 96, height: 52, kbX: 60, kbY: -220 })] },
   b: { name: "Drop Cap", time: 1.6, cost: 100, camera: true, letterbox: true, fx: "art-b", selfVy: -240, hitAt: [hit(0.42, 10, { reach: 64, height: 48 }), hit(0.78, 12, { spike: true, reach: 72, height: 44, oy: 18, kbX: 40, kbY: 200 })] },
   e: { name: "Tidefork", time: 1.58, cost: 100, camera: true, letterbox: true, fx: "art-e", fxBehind: true, hitAt: [hit(0.26, 4, { reach: 70, height: 80, oy: -20 }), hit(0.44, 4, { reach: 70, height: 80, oy: -20 }), hit(0.62, 4, { reach: 74, height: 84, oy: -22 }), hit(0.82, 8, { reach: 80, height: 88, oy: -24, kbX: 160, kbY: -160 })] },
@@ -121,3 +123,11 @@ export function artDamage(def: SuperDef, capital = false) {
 export function heatFromDamage(dmg: number) {
   return Math.max(0, Math.floor(dmg * HEAT_PER_DMG));
 }
+
+export const THROW = {
+  name: "Break Throw",
+  time: 0.45,
+  reach: 36,
+  dmg: 5,
+  stun: 1.1,
+} as const;

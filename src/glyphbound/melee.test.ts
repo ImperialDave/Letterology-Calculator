@@ -16,6 +16,7 @@ import {
   intentToMove,
   isAerial,
   launchHit,
+  landingLag,
   meleeIasaReady,
   nairAutocancel,
   nextJab,
@@ -202,4 +203,11 @@ test("IASA and nair autocancel windows exist", () => {
   assert.equal(nairAutocancel(0.1), true);
   assert.equal(nairAutocancel(0.5), false);
   assert.equal(nairAutocancel(0.9), true);
+});
+
+test("aerial landing lag is Smash-length, not 6 frames", () => {
+  assert.equal(landingLag("fair"), 0.27);
+  assert.equal(landingLag("dair"), 0.37);
+  assert.ok(landingLag("nair") >= 0.2);
+  assert.equal(landingLag("ftilt"), 0);
 });

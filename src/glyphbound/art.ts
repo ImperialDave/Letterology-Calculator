@@ -82,6 +82,7 @@ export const ART_MANIFEST: ArtEntry[] = [
   { kind: "fx", name: "flourish-thrust", cols: 2, rows: 2 },
   { kind: "fx", name: "flourish-ember", cols: 2, rows: 2 },
   { kind: "fx", name: "art-c", cols: 3, rows: 2 },
+  { kind: "fx", name: "heat-c", cols: 2, rows: 2 },
 ];
 
 const byKey = new Map<string, ArtEntry>();

@@ -527,7 +527,13 @@ export function fxFrame(phase: number, hitAt: number[]): number {
   return 3;
 }
 
-export function moveSwingAngle(id: MeleeMoveId | "", phase: number, family: MeleeFamily, idle: boolean, flourish = false): number {
+export function moveSwingAngle(id: MeleeMoveId | "", phase: number, family: MeleeFamily, idle: boolean, flourish = false, art = false): number {
+  if (art) {
+    if (family === "arc") return -1.35 + phase * 7.2;
+    if (family === "smash") return -1.85 + (phase < 0.42 ? 0 : (phase - 0.42) * 4.2);
+    if (family === "ember") return -0.55 + phase * 1.15;
+    return -0.35 + (phase < 0.4 ? -0.25 : 0.85);
+  }
   if (flourish) {
     if (family === "arc") return -1.2 + phase * 6.4;
     if (family === "smash") return -1.7 + (phase < 0.5 ? 0 : (phase - 0.5) * 3.6);
@@ -707,4 +713,14 @@ export function meleeIasaReady(melee: number, meleeMax: number, moveId: string):
 
 export function nairAutocancel(phase: number): boolean {
   return phase < 0.16 || phase > 0.84;
+}
+
+/** Seconds of landing lag. Nair autocancel is handled by the caller. */
+export function landingLag(id: MeleeMoveId | ""): number {
+  if (id === "nair") return 0.2;
+  if (id === "fair") return 0.27;
+  if (id === "bair") return 0.23;
+  if (id === "uair") return 0.25;
+  if (id === "dair") return 0.37;
+  return 0;
 }

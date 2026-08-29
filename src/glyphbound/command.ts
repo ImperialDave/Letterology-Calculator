@@ -49,6 +49,25 @@ export function matchFf(buf: DirSample[], now: number, window: number): boolean 
   return gap >= 0.04 && gap <= window * 1.8;
 }
 
+export function matchBf(buf: DirSample[], now: number, window: number): boolean {
+  const recent = buf.filter((s) => now - s.t <= window * 2.6);
+  let sawB = false;
+  let bT = 0;
+  for (const s of recent) {
+    if (s.d === "b") {
+      sawB = true;
+      bT = s.t;
+    } else if (sawB && s.d === "f" && s.t - bT >= 0.04 && s.t - bT <= window * 1.8) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export function canHeatSmash(ff: boolean, doubleTap: boolean) {
+  return ff || doubleTap;
+}
+
 export function matchQcf(buf: DirSample[], now: number, window: number): boolean {
   const seq = buf.filter((s) => now - s.t <= window * 3.2).map((s) => s.d);
   for (let i = 0; i < seq.length; i++) {

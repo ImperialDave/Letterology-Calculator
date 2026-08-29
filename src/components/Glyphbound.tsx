@@ -78,7 +78,7 @@ function ControlsCard() {
             <KeyRow keys="F H" text="Fang · ink-heavy ranged · never the same key as Strike" />
             <KeyRow keys="K X" text="Skill of the letter in play" />
             <KeyRow keys="Flourish" text={FLOURISH_LINE} />
-            <KeyRow keys="Heat" text="f,f + Strike Heat Smash · hold Skill Case Art when the gold bar is full" />
+            <KeyRow keys="Heat" text="f,f + Strike Heat Smash · hold Skill Case Art when the gold bar is full · b,f + Strike throw" />
             <KeyRow keys="Ward" text="Always on · eats a hit before health" />
           </div>
         </div>

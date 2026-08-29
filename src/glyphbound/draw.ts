@@ -2534,7 +2534,11 @@ function drawMelee(ctx: CanvasRenderingContext2D, p: Player, cx: number, cy: num
   const idle = p.melee <= 0 && p.flourish <= 0 && !charging && !supering;
   const wind = idle ? Math.min(1, p.meleeCharge / 0.18) : 0;
   const profile = swingProfile(moveId);
-  let ang = moveSwingAngle(moveId, phase, wpn.family, idle && !charging, flourishing);
+  const superPhase =
+    supering && (p.superKind === "art" ? p.artMax : p.heatSmashMax) > 0
+      ? 1 - (p.superKind === "art" ? p.art : p.heatSmash) / (p.superKind === "art" ? p.artMax : p.heatSmashMax)
+      : 0;
+  let ang = moveSwingAngle(moveId, supering ? superPhase : phase, wpn.family, idle && !charging, flourishing, supering);
   if (idle) ang += wpn.pose.rest - wind * 0.55;
   if (charging) ang = smashWindAngle(p.smashKind as SmashKind, wpn.family, p.smashPower) + wpn.pose.rest;
   const behind = resolved?.behind ? -1 : 1;
@@ -2542,10 +2546,10 @@ function drawMelee(ctx: CanvasRenderingContext2D, p: Player, cx: number, cy: num
   const handY = p.h * 0.06 + (profile?.handY ?? 0) * p.h + (moveId === "dtilt" || moveId === "dsmash" || moveId === "dair" ? 6 : 0);
   const swing = (!idle && phase > 0.14 && phase < 0.9) || charging;
   const faceDir = (p.facing * behind) as 1 | -1;
-  const smears = swing && profile ? profile.smear : 0;
+  const smears = supering ? 4 : swing && profile ? profile.smear : 0;
   for (let i = smears; i >= 1; i--) {
-    const earlier = Math.max(0, phase - i * 0.07);
-    const ghost = moveSwingAngle(moveId, earlier, wpn.family, false, flourishing);
+    const earlier = Math.max(0, (supering ? superPhase : phase) - i * 0.07);
+    const ghost = moveSwingAngle(moveId, earlier, wpn.family, false, flourishing, supering);
     ctx.save();
     ctx.globalAlpha = 0.18 / i;
     drawWeaponAt(ctx, p, cx, cy, ghost, handX + i * 4, handY, false, pal.glow, faceDir);
@@ -2559,7 +2563,7 @@ function drawMelee(ctx: CanvasRenderingContext2D, p: Player, cx: number, cy: num
     ang,
     handX,
     handY,
-    flourishing || !!resolved?.smash || charging,
+    flourishing || supering || !!resolved?.smash || charging,
     charging ? "#e8c878" : pal.glow,
     faceDir,
   );
@@ -2601,6 +2605,9 @@ function drawMelee(ctx: CanvasRenderingContext2D, p: Player, cx: number, cy: num
     }
   }
   if (supering) drawSuperFx(ctx, p, cx, cy, t, pal.glow);
+  if (p.superFlash > 0) {
+    blitArt(ctx, "fx", "impact-hit", cx - 18, cy - 18, 40, 40, t, 1);
+  }
 }
 
 function drawSuperFx(
