@@ -48,6 +48,8 @@ export type LevelId = "hub" | `stage${number}`;
 
 export const STAGE_COUNT = 60;
 export const FIRST_BOOK = 30;
+/** Last hand-authored Numberomicon ledger. Unbound Sentence starts at 16. */
+export const SECOND_BOOK = 15;
 
 export type EnemyKind =
   | "one"
@@ -72,6 +74,8 @@ export type EnemyKind =
   | "gradient"
   | "crossseal"
   | "archivist"
+  | "iris"
+  | "archivant"
   | "endmark"
   | "plus"
   | "minus"
@@ -298,9 +302,10 @@ export interface Player {
   heatSmash: number;
   heatSmashMax: number;
   heatSmashHits: number;
-  superKind: "" | "art" | "heat" | "finisher";
+  superKind: "" | "art" | "heat" | "finisher" | "special";
   stringStep: number;
   stringWindow: number;
+  stringBranch: "staple" | "launch" | "low";
   skillHold: number;
   skillArmed: boolean;
   landLag: boolean;

@@ -24,7 +24,7 @@ import { CATALOG } from "./catalog";
 import { folioFromMeta, padRows, type Folio } from "./folio";
 import { blankFolio, cloneRows, folioTheme, resizeRows, sandboxSave, stampCell } from "./studio";
 import { collectedLore, loreIdFromGlyph } from "./lore";
-import { KITS, PENTAD } from "./roster";
+import { KITS, OCTET } from "./roster";
 import { shotCostFor, weaponFor } from "./weapons";
 import {
   JAB_WINDOW,
@@ -61,6 +61,8 @@ import {
   matchFf,
   matchQcf,
   matchBf,
+  matchDf,
+  matchUf,
   canHeatSmash,
   pushDir,
   relDir,
@@ -79,12 +81,15 @@ import {
   HEAT_MAX,
   HEAT_SMASH,
   HEAT_SMASH_COST,
+  SPECIALS,
   STRING_FINISH_HEAT,
   THROW,
+  branchForOpener,
   heatFromDamage,
   stringCanFire,
   stringNext,
   stringRoute,
+  type ComboBranch,
   type SuperDef,
 } from "./arts";
 import { preloadArt } from "./art";
@@ -484,6 +489,7 @@ export class GameEngine {
       superKind: "",
       stringStep: 0,
       stringWindow: 0,
+      stringBranch: "staple",
       skillHold: 0,
       skillArmed: false,
       landLag: false,
@@ -621,6 +627,7 @@ export class GameEngine {
       shotLevel: this.save.shotLevel,
       talked: this.save.talked,
       bossKind: this.bossKindFor(id),
+      progress: this.save.progress,
     });
     this.solids = parsed.solids;
     this.enemies = parsed.enemySpawns.map((s) => this.spawnEnemy(s.kind, s.x, s.y));
@@ -688,9 +695,11 @@ export class GameEngine {
     this.lastDone = new Set(this.currentTasks().filter((t) => t.done).map((t) => t.id));
     if (id === "hub")
       this.say(
-        this.save.progress >= 5
-          ? "Five chapters closed. Through the arch: the Unbound Sentence, then Studio."
-          : "Five doors ahead, left to right. Through the arch: the rest of the book.",
+        this.save.progress >= 15
+          ? "The icon fell. Through the last arch: the Unbound Sentence, then Studio."
+          : this.save.progress >= 5
+            ? "Five chapters closed. Through the arch: the Numberomicons. k, n, and t walked into the count."
+            : "Five doors ahead, left to right. Through the arch: the Numberomicons, then the rest of the book.",
       );
     this.persist();
     this.emit();
@@ -886,6 +895,8 @@ export class GameEngine {
       kind === "tetrarch" ||
       kind === "importer" ||
       kind === "nullis" ||
+      kind === "iris" ||
+      kind === "archivant" ||
       kind === "endmark" ||
       kind === "summand" ||
       kind === "difference" ||
@@ -900,6 +911,9 @@ export class GameEngine {
     if (id === "stage1") return "dualis";
     if (id === "stage2") return "importer";
     if (id === "stage5") return "nullis";
+    if (id === "stage8") return "tetrarch";
+    if (id === "stage11") return "iris";
+    if (id === "stage15") return "archivant";
     const n = this.stageIndex(id);
     if (n === FIRST_BOOK) return "endmark";
     if (n === STAGE_COUNT) return "remainder";
@@ -954,6 +968,8 @@ export class GameEngine {
       gradient: { w: 36, h: 40, hp: 9, name: "7-Fall" },
       crossseal: { w: 44, h: 44, hp: 12, name: "4-Seal" },
       archivist: { w: 34, h: 46, hp: 11, name: "5-Clerk" },
+      iris: { w: 70, h: 70, hp: 80, name: "The Iris · 0" },
+      archivant: { w: 76, h: 84, hp: 88, name: "Archivant · 5" },
       endmark: { w: 82, h: 86, hp: 92, name: "End-Mark · 8" },
       plus: { w: 40, h: 42, hp: 11, name: "+" },
       minus: { w: 38, h: 28, hp: 10, name: "−" },
@@ -1073,7 +1089,7 @@ export class GameEngine {
 
   /**
    * Title-screen cheat: type "Chief69" (case-insensitive) to open every ledger,
-   * recruit the full pentad, grant capital case, all words, and all relics.
+   * recruit the full octet, grant capital case, all words, and all relics.
    * A small mercy for the Chief who already walked the path once.
    */
   feedCheat(ch: string) {
@@ -1094,7 +1110,7 @@ export class GameEngine {
     this.save.stage5 = true;
     this.save.hasCapital = true;
     this.save.capital = true;
-    this.save.party = [...PENTAD];
+    this.save.party = [...OCTET];
     this.save.words = ["WALL", "BURN", "RISE", "LOCK", "FOLD", "TIDE"];
     this.save.relics = ["dropCap", "spine", "copper", "counter"];
     this.save.shotLevel = 3;
@@ -2053,9 +2069,10 @@ export class GameEngine {
     p.heatIdle = 0;
   }
 
-  private openString(id: MeleeMoveId) {
+  private openString(id: MeleeMoveId, branch?: ComboBranch) {
     const p = this.player;
-    const route = stringRoute(p.letter);
+    if (p.stringStep <= 0 && branch) p.stringBranch = branch;
+    const route = stringRoute(p.letter, p.stringBranch);
     if (p.stringStep <= 0) {
       if (route[0] !== id) {
         p.stringStep = 0;
@@ -2066,7 +2083,7 @@ export class GameEngine {
       p.stringWindow = this.stringWin();
       return;
     }
-    const expect = stringNext(p.letter, p.stringStep);
+    const expect = stringNext(p.letter, p.stringStep, p.stringBranch);
     if (expect === id) {
       p.stringStep += 1;
       p.stringWindow = this.stringWin();
@@ -2079,7 +2096,7 @@ export class GameEngine {
   private tryStringAdvance() {
     const p = this.player;
     if (p.stringWindow <= 0 || p.stringStep <= 0) return false;
-    const next = stringNext(p.letter, p.stringStep);
+    const next = stringNext(p.letter, p.stringStep, p.stringBranch);
     if (!next) {
       p.stringStep = 0;
       p.stringWindow = 0;
@@ -2101,6 +2118,22 @@ export class GameEngine {
     p.attack = 0;
     p.landLag = false;
     this.startMeleeMove(next, 0);
+    return true;
+  }
+
+  private tryLetterSpecial() {
+    const p = this.player;
+    if (!this.canSuper() || p.melee > 0) return false;
+    const spec = SPECIALS[p.letter];
+    const win = this.cmdWindow();
+    const ok =
+      spec.cmd === "qcf"
+        ? matchQcf(this.dirs, this.time, win)
+        : spec.cmd === "df"
+          ? matchDf(this.dirs, this.time, win)
+          : matchUf(this.dirs, this.time, win);
+    if (!ok) return false;
+    this.startSuper("special", spec);
     return true;
   }
 
@@ -2147,16 +2180,7 @@ export class GameEngine {
     return true;
   }
 
-  private tryArtCommand(a: ReturnType<Input["poll"]>) {
-    const p = this.player;
-    if (p.heat < CASE_ART_COST || !this.canSuper()) return false;
-    if (!matchQcf(this.dirs, this.time, this.cmdWindow())) return false;
-    this.startSuper("art", CASE_ART[p.letter]);
-    p.heat = 0;
-    return true;
-  }
-
-  private startSuper(kind: "art" | "heat" | "finisher", def: SuperDef) {
+  private startSuper(kind: "art" | "heat" | "finisher" | "special", def: SuperDef) {
     const p = this.player;
     p.superKind = kind;
     p.artHits = 0;
@@ -2207,6 +2231,7 @@ export class GameEngine {
     if (p.superKind === "art") return CASE_ART[p.letter];
     if (p.superKind === "heat") return HEAT_SMASH[p.letter];
     if (p.superKind === "finisher") return FINISHERS[p.letter];
+    if (p.superKind === "special") return SPECIALS[p.letter];
     return null;
   }
 
@@ -2218,11 +2243,11 @@ export class GameEngine {
     const max = p.superKind === "art" ? p.artMax : p.heatSmashMax || def.time;
     const phase = 1 - left / Math.max(0.001, max);
     while (true) {
-      const n = p.superKind === "heat" || p.superKind === "finisher" ? p.heatSmashHits : p.artHits;
+      const n = p.superKind === "art" ? p.artHits : p.heatSmashHits;
       if (n >= def.hitAt.length || phase < (def.hitAt[n]?.at ?? 9)) break;
       this.superStrike(def, n);
-      if (p.superKind === "heat" || p.superKind === "finisher") p.heatSmashHits += 1;
-      else p.artHits += 1;
+      if (p.superKind === "art") p.artHits += 1;
+      else p.heatSmashHits += 1;
     }
     const squashPhase = phase < 0.22 ? 0.7 : phase < 0.55 ? 1.18 : 0.78;
     p.squash = squashPhase;
@@ -2354,7 +2379,7 @@ export class GameEngine {
     }
 
     if (!p.grounded && a.attack && !busy) {
-      if (this.tryArtCommand(a) || this.tryHeatSmash(a)) {
+      if (this.tryHeatSmash(a) || this.tryLetterSpecial()) {
         p.meleeCharge = 0;
       } else {
         this.faceForIntent(intent, a.aimX);
@@ -2363,7 +2388,7 @@ export class GameEngine {
       }
     } else if (p.grounded && a.attack && !busy && this.tryThrow()) {
       p.meleeCharge = 0;
-    } else if (p.grounded && a.attack && !busy && (this.tryArtCommand(a) || this.tryHeatSmash(a))) {
+    } else if (p.grounded && a.attack && !busy && (this.tryHeatSmash(a) || this.tryLetterSpecial())) {
       p.meleeCharge = 0;
     } else if (p.grounded && a.attack && intent === "dash" && !busy) {
       this.faceForIntent(intent, a.aimX);
@@ -2681,9 +2706,10 @@ export class GameEngine {
     );
     if (hit) {
       this.trauma = Math.min(1, this.trauma + (move.smash ? 0.18 : 0.12));
-      this.hitstop = move.smash ? 0.06 : 0.04;
+      this.hitstop = move.smash ? 0.06 : this.comboHits >= 3 ? 0.055 : 0.04;
       if (isJab(id)) p.jabWindow = JAB_WINDOW;
-      this.openString(id);
+      const last = this.dirs[this.dirs.length - 1];
+      this.openString(id, branchForOpener(p.letter, id, last?.d ?? "n"));
     }
   }
 
@@ -2836,9 +2862,14 @@ export class GameEngine {
         this.enemies.push(twin);
         this.say("End-Mark splits. Finish both arcs.");
       }
-      if (boss && e.kind !== "endmark") {
+      if (boss && e.kind !== "endmark" && e.kind !== "archivant") {
         this.markProgress();
         this.say(e.name + " falls. The gate opens.");
+        this.objective = "Enter the exit gate.";
+      }
+      if (e.kind === "archivant" && !this.enemies.some((x) => x.kind === "archivant" && x.alive)) {
+        this.markProgress();
+        this.say("The count filed a copy. The page is still yours.");
         this.objective = "Enter the exit gate.";
       }
       if (e.kind === "endmark" && !this.enemies.some((x) => x.kind === "endmark" && x.alive)) {
@@ -3220,32 +3251,43 @@ export class GameEngine {
   }
 
   private aiSecond(e: Enemy, dt: number, p: Player) {
-    if (e.kind === "nullring") {
+    if (e.kind === "nullring" || e.kind === "iris") {
+      const boss = e.kind === "iris";
+      const rad = boss ? 220 : 170;
       e.y += Math.sin(e.t * 1.6) * 20 * dt;
       faceToward(e, p);
-      if (e.phase === 1) {
+      if (boss && e.hp < e.maxHp * 0.45 && e.phase < 2) {
+        e.phase = 2;
+        this.say("The Iris opens a second lid.");
+        if (this.enemies.filter((x) => x.kind === "nullring" && x.alive).length < 1) {
+          this.enemies.push(this.spawnEnemy("nullring", e.x - 70, e.y));
+        }
+      }
+      if (e.phase === 1 || (boss && e.phase === 2 && e.aux2 > 0)) {
         const cx = e.x + e.w / 2;
         const cy = e.y + e.h / 2;
-        this.pullToward(e, p, 170, 85, dt);
+        this.pullToward(e, p, rad, boss ? 110 : 85, dt);
         for (const b of this.bullets) {
           if (!b.alive) continue;
           const bx = cx - b.x;
           const by = cy - b.y;
           const bd = Math.hypot(bx, by) || 1;
-          if (bd < 170) {
+          if (bd < rad) {
             b.vx += (bx / bd) * 140 * dt;
             b.vy += (by / bd) * 140 * dt;
           }
         }
         e.aux2 += dt;
-        if (e.aux2 > 0.85) {
-          e.phase = 0;
+        if (e.aux2 > (boss ? 1.05 : 0.85)) {
+          if (e.phase !== 2) e.phase = 0;
           e.aux2 = 0;
+          if (boss) this.ringShot(e, 6, 190);
         }
-      } else if (e.aux > 2.1) {
+      } else if (e.aux > (boss ? 1.6 : 2.1)) {
         e.aux = 0;
-        e.phase = 1;
-        this.burst(e.x + e.w / 2, e.y + e.h / 2, "#7a8b96", 8, "ink");
+        e.phase = e.phase === 2 ? 2 : 1;
+        e.aux2 = 0.01;
+        this.burst(e.x + e.w / 2, e.y + e.h / 2, "#7a8b96", boss ? 14 : 8, "ink");
       }
     } else if (e.kind === "mobius") {
       if (!e.grounded) e.vy += 900 * dt;
@@ -3309,15 +3351,34 @@ export class GameEngine {
           pierce: 0,
         });
       }
-    } else if (e.kind === "archivist") {
+    } else if (e.kind === "archivist" || e.kind === "archivant") {
+      const boss = e.kind === "archivant";
       if (!e.grounded) e.vy += 1700 * dt;
       if (p.facing !== e.facing) commitFacing(e, p.facing);
-      e.vx = e.facing * 50;
-      this.moveActor(e, dt, false);
-      if (e.aux > 1.45) {
+      e.vx = e.facing * (boss ? 58 : 50);
+      this.moveActor(e, dt, boss);
+      if (boss && e.hp < e.maxHp * 0.5 && e.phase < 1) {
+        e.phase = 1;
+        this.say("The Archivant files a second copy.");
+        if (!this.enemies.some((x) => x.kind === "archivant" && x !== e && x.alive)) {
+          const echo = this.spawnEnemy("archivant", e.x + 72, e.y);
+          echo.phase = 2;
+          echo.hp = Math.ceil(e.maxHp * 0.4);
+          echo.maxHp = echo.hp;
+          echo.name = "Filed Echo";
+          this.enemies.push(echo);
+        }
+      }
+      if (e.aux > (boss ? 1.05 : 1.45)) {
         e.aux = 0;
+        if (boss) this.say("It copies " + p.letter + ".");
         this.shoot(e, p.facing, 0);
         this.shoot(e, p.facing, 0.2);
+        if (boss && (p.letter === "k" || p.letter === "b")) this.stampAt(p.x + p.w / 2, p.y + p.h - 4);
+        if (boss && p.letter === "s") this.shoot(e, p.facing, -0.35);
+        if (boss && p.letter === "n") {
+          p.vx += (p.x < e.x ? -1 : 1) * 40;
+        }
       }
     } else if (e.kind === "importer") {
       if (!e.grounded) e.vy += 1500 * dt;
@@ -3883,7 +3944,13 @@ export class GameEngine {
     if (id === "stage4") return "The Coil is still counted shut.";
     if (id === "stage2") return "The Fort is still counted shut.";
     if (id === "stage5") return "The Ledger is still counted shut.";
-    if (id === "continue") return "The rest of the book opens after you close the five chapters. Then this is the only door that keeps offering new ledgers through 60.";
+    if (id === "continue")
+      return "The rest of the book opens after you close the five chapters. Numberomicons first. Then this is the only door that keeps offering new ledgers through 60.";
+    if (id === "stage7") return "Keystroke Yard opens after the Foundry.";
+    if (id === "stage8") return "Fourfold Keep opens after k joins.";
+    if (id === "stage10") return "Ampersand Dock is still counted shut.";
+    if (id === "stage12") return "The Scriptorium is still counted shut.";
+    if (id === "stage15") return "The Iconostasis waits until the approach is written.";
     if (id === "replay") return "Last Page opens after you close a ledger. It rereads pages you have already written.";
     return "Still counted shut.";
   }
@@ -3893,6 +3960,7 @@ export class GameEngine {
       if (this.save.progress < 5) return { title: "THE REST OF THE BOOK", sub: "locked · finish the five closed chapters" };
       if (this.save.progress >= STAGE_COUNT) return { title: "THE REST OF THE BOOK", sub: "all 60 ledgers written" };
       const n = Math.min(STAGE_COUNT, this.save.progress + 1);
+      if (this.save.progress < 15) return { title: "THE NUMBEROMICONS", sub: `next ${n} / 15 · then Unbound` };
       return { title: "THE REST OF THE BOOK", sub: `only door that keeps changing · next ${n} / 60` };
     }
     if (id === "replay") {
@@ -3908,6 +3976,11 @@ export class GameEngine {
       stage3: { title: "III  PRESS", sub: "one ledger · never changes" },
       stage4: { title: "IV  COIL", sub: "one ledger · never changes" },
       stage5: { title: "V  LEDGER", sub: "one ledger · never changes" },
+      stage7: { title: "VII  KEYSTROKE", sub: "one ledger · never changes" },
+      stage8: { title: "VIII  FOURFOLD", sub: "one ledger · never changes" },
+      stage10: { title: "X  AMPERSAND", sub: "one ledger · never changes" },
+      stage12: { title: "XII  SCRIPTORIUM", sub: "one ledger · never changes" },
+      stage15: { title: "XV  ICONOMICON", sub: "one ledger · never changes" },
     };
     return chapters[id] ?? { title: "", sub: "" };
   }
@@ -4661,7 +4734,7 @@ export class GameEngine {
   private applyProofKit() {
     this.save.hasCapital = true;
     this.save.capital = true;
-    this.save.party = [...PENTAD];
+    this.save.party = [...OCTET];
     this.save.words = ["WALL", "BURN", "RISE", "LOCK", "FOLD", "TIDE"];
     this.save.relics = ["dropCap", "spine", "copper", "counter"];
     this.save.shotLevel = 4;
@@ -4802,6 +4875,16 @@ export class GameEngine {
         return s.visited.includes("stage2");
       case "enter-ledger":
         return s.visited.includes("stage5");
+      case "enter-keystroke":
+        return s.visited.includes("stage7");
+      case "enter-fourfold":
+        return s.visited.includes("stage8");
+      case "enter-ampersand":
+        return s.visited.includes("stage10");
+      case "enter-scriptorium":
+        return s.visited.includes("stage12");
+      case "enter-iconostasis":
+        return s.visited.includes("stage15");
       case "continue":
         return s.progress >= 6;
       case "word-wall":
@@ -4816,9 +4899,14 @@ export class GameEngine {
         return s.hasCapital;
       case "dualis":
         return s.stage1;
-      case "tetrarch":
       case "importer":
         return s.stage2;
+      case "tetrarch":
+        return s.progress >= 8 && this.stage !== "stage8";
+      case "iris":
+        return s.progress >= 11 && this.stage !== "stage11";
+      case "archivant":
+        return s.progress >= 15 && this.stage !== "stage15";
       case "nullis":
         return s.stage5;
       case "cross-gutter":
@@ -5280,10 +5368,17 @@ export class GameEngine {
 
     ctx.fillStyle = "#e8d48a";
     ctx.font = "700 16px 'Cormorant Garamond', serif";
-    ctx.fillText("THE UNBOUND SENTENCE", wx(41), wy(1) + 22);
+    ctx.fillText("THE NUMBEROMICONS", wx(43), wy(1) + 22);
     ctx.fillStyle = "#b08a4a";
     ctx.font = "600 10px 'Source Sans 3', sans-serif";
-    ctx.fillText("next ledger  ·  last page  ·  studio desk", wx(41), wy(1) + 38);
+    ctx.fillText("five named ledgers  ·  they never change once written", wx(43), wy(1) + 38);
+
+    ctx.fillStyle = "#e8d48a";
+    ctx.font = "700 16px 'Cormorant Garamond', serif";
+    ctx.fillText("THE UNBOUND SENTENCE", wx(70), wy(1) + 22);
+    ctx.fillStyle = "#b08a4a";
+    ctx.font = "600 10px 'Source Sans 3', sans-serif";
+    ctx.fillText("next ledger  ·  last page  ·  studio desk", wx(70), wy(1) + 38);
 
     ctx.strokeStyle = "rgba(201,184,150,0.45)";
     ctx.lineWidth = 2;

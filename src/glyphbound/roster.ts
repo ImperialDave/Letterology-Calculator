@@ -202,10 +202,12 @@ export const KITS: Record<LetterId, LetterKit> = {
   },
 };
 
-/** Found in the five closed chapters. Hub teachers never join from the Stacks. */
-export const RECRUIT_LETTERS: LetterId[] = ["s", "b", "e", "r"];
+/** Found in the closed chapters and the Numberomicons. Hub teachers join in the field. */
+export const RECRUIT_LETTERS: LetterId[] = ["s", "b", "e", "r", "k", "n", "t"];
 
 export const PENTAD: LetterId[] = ["c", "s", "b", "e", "r"];
+
+export const OCTET: LetterId[] = ["c", "s", "b", "e", "r", "k", "n", "t"];
 
 export function skillName(letter: LetterId, capital: boolean) {
   const k = KITS[letter] ?? KITS.c;

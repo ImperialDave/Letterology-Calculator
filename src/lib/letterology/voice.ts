@@ -69,7 +69,7 @@ export const VOICE = {
   askHint:
     "Ask in ordinary words. Should, will, how, when, who — or two options split by or. We read the letters of the matter, not the mood word.",
   glyphLede:
-    "Play as the letter c against living numbers. Sixty ledgers. The rest of the book is still being written.",
+    "Play as the letter c against living numbers. Five closed chapters, then the Numberomicons. Sixty ledgers.",
   glyphHome: "The club keeps a side-scroller. Letters against numbers.",
 } as const;
 

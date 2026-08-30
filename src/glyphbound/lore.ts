@@ -61,6 +61,7 @@ export const LORE: Record<LoreId, LoreDef> = {
       "F fires Fang. It drinks ink fast. The straight 1s hate curves. The 0s float and spit from a distance.",
       "Ink refills slowly. Do not waste it on walls you do not need.",
       "Later stages starve your ink on purpose. Pick up every drop. A shelf at the wrong moment can cost you the fight.",
+      "A nib, not a fang. When ink runs dry, write the floor. That is the only shot I trust.",
       "On mobile, the Stem and Shelf buttons are there so you do not have to fight the stick while you write.",
     ],
   },
@@ -80,6 +81,7 @@ export const LORE: Record<LoreId, LoreDef> = {
     lines: [
       "G sold the ports. Ships full of digits came in overnight. We woke up counted, filed, and told to stand in lines.",
       "The numbers keep the lights on and the clocks running. That does not make them right. It only makes them hard to refuse.",
+      "I will not teach from a desk while the count files the yard. Find me where the floor still holds.",
       "Watch for new shapes deeper in. The first landing was simple digits. The second landing wears symbols that think.",
       "Triads split. Null-Rings pull. Möbius coils climb. Summoners open ports. Gradients lean. Cross-Seals rotate. Archivists copy you. End-Mark is the last of them.",
       "Willingness is the only thing the Dominion cannot file. Keep choosing. That is the whole doctrine.",
@@ -94,6 +96,7 @@ export const LORE: Record<LoreId, LoreDef> = {
       "The Null Ledger waits past G's Fort. Nullis is not a number. It is the habit of counting everything down to nothing.",
       "Lasers pulse on a beat. Wait for the dark window, then cross. The 9s blink and rain ink from above.",
       "Deeper stages invent new roles: splitters, suction rings, wall-climbers, summoners. Learn each one before the next arrives.",
+      "The 8s heal each other. Pin one and the heal never ticks. That is why I still connect things.",
       "The Continue gate in the hub opens the next unread ledger. The deeper you go, the more the page fights back.",
     ],
   },
@@ -189,7 +192,7 @@ export const LORE: Record<LoreId, LoreDef> = {
       "I used to mark footnotes. Now I mark exits. When a stage feels finished, look for a glowing gate. It will not open while the warden is still standing.",
       "The deeper ledgers invent new wardens. Dualis splits. G imports. Nullis erases. After them come symbols that were never meant to be numbers.",
       "End-Mark is the last of the second landing. It begins whole. When you crack it, the pieces chase you separately. Finish both arcs.",
-      "Thirty ledgers. That is the current count of the progressive book. Clear them and the final gate will open.",
+      "Five closed chapters. Ten Numberomicons. Then the Unbound Sentence through sixty. Clear them and the final gate will open.",
     ],
   },
   h: {
@@ -208,7 +211,7 @@ export const LORE: Record<LoreId, LoreDef> = {
       "I am the door that still remembers what a door was for. Most of the portals you see are counted shut until you clear the stage.",
       "The hub has milestone doors for the big districts. The Continue gate leads into the progressive ledgers — stages that grow tighter the further you go.",
       "Once you clear a stage, its number is written into your progress. The Continue gate always opens the next unread page. You can also replay what you have already finished.",
-      "Thirty stages is not a wall. It is a long sentence. Keep writing.",
+      "Sixty stages is not a wall. It is a long sentence. The Numberomicons are the middle clause. Keep writing.",
     ],
   },
   v: {
@@ -244,7 +247,7 @@ export const LORE: Record<LoreId, LoreDef> = {
     lines: [
       "I am the end of the old alphabet. The Dominion does not stop at Z. It invents new marks when the old digits are not enough.",
       "End-Mark is the last of the second landing. It begins as a whole shape. When you break it, it splits into arcs that chase you separately. Finish both.",
-      "The Final Account is stage thirty. Everything before it is practice for that last sentence.",
+      "The Final Account is still End-Mark at thirty, after the Numberomicons. Everything before it is practice for that sentence.",
     ],
   },
   j: {
@@ -280,7 +283,7 @@ export const LORE: Record<LoreId, LoreDef> = {
     lines: [
       "Ink is the only currency that still belongs to us. Pick up every drop. Later stages place regenerating ink behind lasers or behind a Summoner you have to clear first.",
       "Triad-Splitters break into three small 1s when they die. Kill the pieces or they will try to reform.",
-      "The progressive book has thirty ledgers. Each one is a tighter sentence. Willingness, not fate, is what turns the page.",
+      "The progressive book has sixty ledgers. The Numberomicons sit in the middle. Willingness, not fate, is what turns the page.",
     ],
   },
   c: {

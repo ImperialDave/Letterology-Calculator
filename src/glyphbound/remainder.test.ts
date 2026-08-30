@@ -21,8 +21,8 @@ test("remainder ledgers have unique names", () => {
   }
 });
 
-const SHOWPIECES = [6, 8, 12, 16, 18, 22, 24, 28, 31, 32, 33, 34, 36, 38, 42, 44, 48, 51, 54, 57, 59];
-const BOSSES = [10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60];
+const SHOWPIECES = [16, 18, 22, 24, 28, 31, 32, 33, 34, 36, 38, 42, 44, 48, 51, 54, 57, 59];
+const BOSSES = [20, 25, 30, 35, 40, 45, 50, 55, 60];
 const FEATURED: Record<number, string> = {
   6: "T",
   8: "-",
@@ -93,8 +93,8 @@ test("listLedgers covers hub through 60", () => {
   const list = listLedgers();
   assert.equal(list[0]?.id, "hub");
   assert.equal(list.length, STAGE_COUNT + 1);
-  assert.equal(LEVELS.stage6.name, "Open Case");
-  assert.equal(LEVELS.stage15.name, "Book Warden");
+  assert.equal(LEVELS.stage6.name, "Foundry Margin");
+  assert.equal(LEVELS.stage15.name, "The Iconostasis");
   assert.equal(LEVELS.stage31.name, "Gold Orrery");
   assert.equal(LEVELS.stage40.name, "Void Point");
 });

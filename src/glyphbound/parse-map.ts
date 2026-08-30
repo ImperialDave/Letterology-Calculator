@@ -27,6 +27,7 @@ export interface ParseCtx {
   shotLevel: number;
   talked: string[];
   bossKind: EnemyKind;
+  progress: number;
 }
 
 export interface EnemySpawn {
@@ -47,6 +48,19 @@ export interface ParsedMap {
   worldH: number;
 }
 
+const HUB_DOORS: Record<string, { id: string; label: string }> = {
+  "[": { id: "stage1", label: "EXCHANGE" },
+  "]": { id: "stage2", label: "FORT" },
+  "{": { id: "stage3", label: "PRESS" },
+  "}": { id: "stage4", label: "COIL" },
+  "(": { id: "stage5", label: "LEDGER" },
+  "7": { id: "stage7", label: "KEYSTROKE" },
+  "8": { id: "stage8", label: "FOURFOLD" },
+  A: { id: "stage10", label: "AMPERSAND" },
+  B: { id: "stage12", label: "SCRIPTORIUM" },
+  C: { id: "stage15", label: "ICONOSTASIS" },
+};
+
 const emptyCtx = (): ParseCtx => ({
   id: "hub",
   exit: "hub",
@@ -61,6 +75,7 @@ const emptyCtx = (): ParseCtx => ({
   shotLevel: 1,
   talked: [],
   bossKind: "dualis",
+  progress: 0,
 });
 
 export function parseRows(rows: string[], ctx: Partial<ParseCtx> = {}): ParsedMap {
@@ -200,6 +215,18 @@ export function parseRows(rows: string[], ctx: Partial<ParseCtx> = {}): ParsedMa
             kind: ch === "V" ? "down" : "arrow",
           });
         }
+      } else if (c.isHub && HUB_DOORS[ch]) {
+        const d = HUB_DOORS[ch];
+        pickups.push({
+          kind: "door",
+          id: d.id,
+          x: x - 12,
+          y: y + TILE - 96,
+          w: 72,
+          h: 96,
+          taken: false,
+          label: d.label,
+        });
       } else if (ch === "!" || ENEMY_CHAR_LIST.includes(ch)) {
         enemySpawns.push({
           kind: ch === "!" ? c.bossKind : ENEMY_CHARS[ch],
@@ -255,7 +282,8 @@ export function parseRows(rows: string[], ctx: Partial<ParseCtx> = {}): ParsedMa
           });
         }
       } else if (/^[a-z]$/.test(ch)) {
-        pushNpc(ch, x, y);
+        const leftStacks = c.isHub && "knt".includes(ch) && c.progress >= 5 && !c.party.includes(ch as LetterId);
+        if (!leftStacks) pushNpc(ch, x, y);
       } else if (ch === "+") {
         const pid = "fang-" + c.id + "-" + tx + "-" + ty;
         pickups.push({
@@ -301,16 +329,6 @@ export function parseRows(rows: string[], ctx: Partial<ParseCtx> = {}): ParsedMa
         });
       } else if (ch === "F") {
         pickups.push({ kind: "case", id: "font" + tx, x: x, y: y, w: TILE, h: TILE, taken: false, label: "CASE" });
-      } else if (ch === "[") {
-        pickups.push({ kind: "door", id: "stage1", x: x - 12, y: y + TILE - 96, w: 72, h: 96, taken: false, label: "EXCHANGE" });
-      } else if (ch === "]") {
-        pickups.push({ kind: "door", id: "stage2", x: x - 12, y: y + TILE - 96, w: 72, h: 96, taken: false, label: "FORT" });
-      } else if (ch === "{") {
-        pickups.push({ kind: "door", id: "stage3", x: x - 12, y: y + TILE - 96, w: 72, h: 96, taken: false, label: "PRESS" });
-      } else if (ch === "}") {
-        pickups.push({ kind: "door", id: "stage4", x: x - 12, y: y + TILE - 96, w: 72, h: 96, taken: false, label: "COIL" });
-      } else if (ch === "(") {
-        pickups.push({ kind: "door", id: "stage5", x: x - 12, y: y + TILE - 96, w: 72, h: 96, taken: false, label: "LEDGER" });
       } else if (ch === "$") {
         const pid = "secret-" + c.id + "-" + tx + "-" + ty;
         pickups.push({

@@ -76,6 +76,7 @@ const STANCES: Partial<Record<string, Stance>> = {
   radix: { ...RUSH, gapLeap: false, leapVx: 90, cd: 0.7 },
   summoner: { ...RUSH, gapLeap: false, cd: 0.7 },
   archivist: { ...RUSH, gapLeap: false, cd: 0.7 },
+  archivant: { ...RUSH, gapLeap: false, leapVx: 130, cd: 0.75 },
   gradient: { ...RUSH, gapLeap: false, cd: 0.65 },
   dualis: { ...RUSH, vaultMax: TILE * 2, leapVx: 140, cd: 0.8 },
   tetrarch: { ...RUSH, vaultMax: TILE * 2, leapVx: 120, cd: 0.9 },
@@ -106,7 +107,7 @@ export function gravityFor(kind: string): number {
     kind === "dualis"
   )
     return 1600;
-  if (kind === "archivist") return 1700;
+  if (kind === "archivist" || kind === "archivant") return 1700;
   return ENEMY_G;
 }
 

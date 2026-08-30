@@ -68,6 +68,42 @@ export function canHeatSmash(ff: boolean, doubleTap: boolean) {
   return ff || doubleTap;
 }
 
+export function matchDf(buf: DirSample[], now: number, window: number): boolean {
+  const recent = buf.filter((s) => now - s.t <= window * 2.2);
+  const last = recent[recent.length - 1];
+  if (!last) return false;
+  if (last.d === "df") return true;
+  let sawD = false;
+  let dT = 0;
+  for (const s of recent) {
+    if (s.d === "d" || s.d === "df") {
+      sawD = true;
+      dT = s.t;
+    } else if (sawD && s.d === "f" && s.t - dT >= 0.03 && s.t - dT <= window * 1.6) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export function matchUf(buf: DirSample[], now: number, window: number): boolean {
+  const recent = buf.filter((s) => now - s.t <= window * 2.2);
+  const last = recent[recent.length - 1];
+  if (!last) return false;
+  if (last.d === "uf") return true;
+  let sawU = false;
+  let uT = 0;
+  for (const s of recent) {
+    if (s.d === "u" || s.d === "uf") {
+      sawU = true;
+      uT = s.t;
+    } else if (sawU && s.d === "f" && s.t - uT >= 0.03 && s.t - uT <= window * 1.6) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function matchQcf(buf: DirSample[], now: number, window: number): boolean {
   const seq = buf.filter((s) => now - s.t <= window * 3.2).map((s) => s.d);
   for (let i = 0; i < seq.length; i++) {

@@ -2,6 +2,18 @@ import type { LevelId } from "./types";
 import { STAGE_COUNT, FIRST_BOOK } from "./types";
 import { armTeeth, slice, grid, type LevelMeta, type Grid } from "./levels-story";
 import { buildExchange, buildGutter, buildCoil, buildLedger } from "./levels-chapters";
+import {
+  buildAmpersand,
+  buildApproach,
+  buildFoundry,
+  buildFourfold,
+  buildIconostasis,
+  buildIrisBind,
+  buildKeystroke,
+  buildLigature,
+  buildRuleStorm,
+  buildScriptorium,
+} from "./levels-numberomicons";
 import { assembleStage } from "./assemble";
 
 export type { LevelId, LevelMeta };
@@ -9,7 +21,7 @@ export type { ThemeId } from "./types";
 export { STAGE_COUNT, FIRST_BOOK };
 
 function buildHub(): string[] {
-  const W = 54;
+  const W = 86;
   const H = 11;
   const fy = 8;
   const g = grid(W, H, fy) as Grid;
@@ -41,9 +53,16 @@ function buildHub(): string[] {
     put(39, y, "#");
   }
   put(38, fy - 1, "j");
-  put(42, fy - 1, ">");
-  put(49, fy - 1, "<");
-  put(47, fy - 1, "h");
+  // Numberomicon replay doors: Keystroke, Fourfold, Ampersand, Scriptorium, Iconostasis
+  put(44, fy - 1, "7");
+  put(49, fy - 1, "8");
+  put(54, fy - 1, "A");
+  put(59, fy - 1, "B");
+  put(64, fy - 1, "C");
+  fill(43, fy - 4, 24, "=");
+  put(72, fy - 1, ">");
+  put(80, fy - 1, "<");
+  put(77, fy - 1, "h");
   return armTeeth(g, fy);
 }
 
@@ -52,7 +71,7 @@ const hand: Record<string, LevelMeta> = {
     id: "hub",
     name: "Lower Register Stacks",
     theme: "hub",
-    objective: "Five chapter doors in the hall. Past the arch: the Unbound Sentence and the Studio desk.",
+    objective: "Five chapter doors, then the Numberomicons. Past the icon: the Unbound Sentence and the Studio desk.",
     tasks: [
       { id: "talk-e", text: "Talk to e" },
       { id: "talk-t", text: "Learn scribing from t" },
@@ -61,7 +80,12 @@ const hand: Record<string, LevelMeta> = {
       { id: "enter-coil", text: "Enter the Coil Yard", need: 3 },
       { id: "enter-fort", text: "Enter G's Fort", need: 4 },
       { id: "enter-ledger", text: "Enter the Null Ledger", need: 4 },
-      { id: "continue", text: "Cross into the Unbound Sentence — the only door that keeps opening new ledgers", need: 5 },
+      { id: "enter-keystroke", text: "Enter Keystroke Yard — recruit k", need: 5 },
+      { id: "enter-fourfold", text: "Enter Fourfold Keep — Tetrarch", need: 7 },
+      { id: "enter-ampersand", text: "Enter Ampersand Dock — recruit n", need: 9 },
+      { id: "enter-scriptorium", text: "Enter the Scriptorium — recruit t", need: 11 },
+      { id: "enter-iconostasis", text: "Enter the Iconostasis — Archivant", need: 14 },
+      { id: "continue", text: "Walk the next unread ledger — Numberomicons, then the Unbound Sentence", need: 5 },
     ],
     rows: buildHub(),
     index: 0,
@@ -157,11 +181,133 @@ const hand: Record<string, LevelMeta> = {
     exit: "hub",
     index: 5,
   },
+  stage6: {
+    id: "stage6",
+    name: "Foundry Margin",
+    theme: "fort",
+    objective: "Walk G's leftover forges. Bounce the case. Read the painted 4s.",
+    tasks: [{ id: "clear-6", text: "Reach the gate" }],
+    rows: buildFoundry(),
+    exit: "hub",
+    index: 6,
+  },
+  stage7: {
+    id: "stage7",
+    name: "Keystroke Yard",
+    theme: "fort",
+    objective: "Flyers first. Free k. Then Stomp the floor the count still owns.",
+    tasks: [
+      { id: "recruit-k", text: "Recruit k — Storm" },
+      { id: "clear-7", text: "Reach the gate" },
+    ],
+    rows: buildKeystroke(),
+    exit: "hub",
+    index: 7,
+  },
+  stage8: {
+    id: "stage8",
+    name: "Fourfold Keep",
+    theme: "fort",
+    objective: "The keep is a plus sign. Drop Tetrarch · 4.",
+    tasks: [
+      { id: "tetrarch", text: "Defeat Tetrarch" },
+      { id: "clear-8", text: "Take the gate" },
+    ],
+    rows: buildFourfold(),
+    exit: "hub",
+    index: 8,
+  },
+  stage9: {
+    id: "stage9",
+    name: "Ligature Canal",
+    theme: "canal",
+    objective: "8s heal each other. Burst them. n was here.",
+    tasks: [{ id: "clear-9", text: "Cross the last canal" }],
+    rows: buildLigature(),
+    exit: "hub",
+    index: 9,
+  },
+  stage10: {
+    id: "stage10",
+    name: "Ampersand Dock",
+    theme: "canal",
+    objective: "Free n. Pin the 8s. FOLD waits on a stem roof.",
+    tasks: [
+      { id: "recruit-n", text: "Recruit n — Bind" },
+      { id: "word-fold", text: "Pick up FOLD" },
+      { id: "clear-10", text: "Reach the gate" },
+    ],
+    rows: buildAmpersand(),
+    exit: "hub",
+    index: 10,
+  },
+  stage11: {
+    id: "stage11",
+    name: "Iris Bind",
+    theme: "vault",
+    objective: "Wait outside the pull. Pin from the rim. Drop The Iris.",
+    tasks: [
+      { id: "iris", text: "Defeat The Iris" },
+      { id: "clear-11", text: "Take the gate" },
+    ],
+    rows: buildIrisBind(),
+    exit: "hub",
+    index: 11,
+  },
+  stage12: {
+    id: "stage12",
+    name: "Scriptorium",
+    theme: "remainder",
+    objective: "Fang is a trap. Write a shelf. Free t — the nib, not the fang.",
+    tasks: [
+      { id: "recruit-t", text: "Recruit t — Quill" },
+      { id: "clear-12", text: "Reach the gate" },
+    ],
+    rows: buildScriptorium(),
+    exit: "hub",
+    index: 12,
+  },
+  stage13: {
+    id: "stage13",
+    name: "Rule and Storm",
+    theme: "spire",
+    objective: "The octet is in play. Each clause asks for a letter.",
+    tasks: [{ id: "clear-13", text: "Pass every clause" }],
+    rows: buildRuleStorm(),
+    exit: "hub",
+    index: 13,
+  },
+  stage14: {
+    id: "stage14",
+    name: "Operator Approach",
+    theme: "abyss",
+    objective: "TIDE drifts the last shelves. The icon waits past the quiet.",
+    tasks: [
+      { id: "word-tide", text: "Pick up TIDE" },
+      { id: "clear-14", text: "Reach the gate" },
+    ],
+    rows: buildApproach(),
+    exit: "hub",
+    index: 14,
+  },
+  stage15: {
+    id: "stage15",
+    name: "The Iconostasis",
+    theme: "remainder",
+    objective: "Archivant copies the letter you are holding. Swap, or be filed.",
+    tasks: [
+      { id: "archivant", text: "Defeat Archivant" },
+      { id: "clear-15", text: "Take the gate" },
+    ],
+    rows: buildIconostasis(),
+    exit: "hub",
+    index: 15,
+  },
 };
 
 export const LEVELS: Record<string, LevelMeta> = { ...hand };
 
-for (let n = 6; n <= STAGE_COUNT; n++) {
+for (let n = 16; n <= STAGE_COUNT; n++) {
   const meta = assembleStage(n);
   LEVELS[meta.id] = meta;
 }

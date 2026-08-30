@@ -1,5 +1,5 @@
 import { padRows, type Folio } from "./folio";
-import { PENTAD } from "./roster";
+import { OCTET } from "./roster";
 import { defaultSave } from "./save";
 import type { SaveData, ThemeId } from "./types";
 
@@ -7,7 +7,7 @@ export function sandboxSave(): SaveData {
   const s = defaultSave();
   s.hasCapital = true;
   s.capital = true;
-  s.party = [...PENTAD];
+  s.party = [...OCTET];
   s.words = ["WALL", "BURN", "RISE", "LOCK", "FOLD", "TIDE"];
   s.relics = ["dropCap", "spine", "copper", "counter"];
   s.shotLevel = 3;

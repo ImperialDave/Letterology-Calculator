@@ -4,8 +4,10 @@ import {
   ART_HOLD,
   canHeatSmash,
   matchBf,
+  matchDf,
   matchFf,
   matchQcf,
+  matchUf,
   pushDir,
   relDir,
   skillHoldIsArt,
@@ -34,6 +36,23 @@ test("single f is not f,f", () => {
   const buf: DirSample[] = [];
   pushDir(buf, 0.1, "f");
   assert.equal(matchFf(buf, 0.2, 0.14), false);
+});
+
+test("df is a down-forward command mid", () => {
+  const buf: DirSample[] = [];
+  pushDir(buf, 0.1, "d");
+  pushDir(buf, 0.18, "df");
+  assert.equal(matchDf(buf, 0.2, 0.14), true);
+  const onlyF: DirSample[] = [];
+  pushDir(onlyF, 0.1, "f");
+  assert.equal(matchDf(onlyF, 0.2, 0.14), false);
+});
+
+test("uf is up-forward hopkick", () => {
+  const buf: DirSample[] = [];
+  pushDir(buf, 0.1, "u");
+  pushDir(buf, 0.18, "uf");
+  assert.equal(matchUf(buf, 0.2, 0.14), true);
 });
 
 test("qcf is down then forward", () => {

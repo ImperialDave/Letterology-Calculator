@@ -12,7 +12,7 @@ import {
 import { blitArt, FX_ORIGIN } from "./art";
 import { KITS } from "./roster";
 import { flourishPhase, weaponFor, type MeleeFamily } from "./weapons";
-import { CASE_ART, FINISHERS, HEAT_SMASH } from "./arts";
+import { CASE_ART, FINISHERS, HEAT_SMASH, SPECIALS } from "./arts";
 import {
   MOVES,
   fxFrame,
@@ -1798,7 +1798,7 @@ export function drawEnemy(
   const lag = step * -0.26 * run;
   const bite = e.hurt > 0 ? 0.55 : e.aux < 0.18 ? 0.4 : 0.07 + Math.sin(t * 5.2 + e.t) * 0.06;
   const s = Math.max(0.72, e.h / 50);
-  const fly = e.kind === "zero" || e.kind === "nullis" || e.kind === "nullring" || e.kind === "mobius" || !e.grounded;
+  const fly = e.kind === "zero" || e.kind === "nullis" || e.kind === "nullring" || e.kind === "iris" || e.kind === "mobius" || !e.grounded;
   ctx.save();
   ctx.translate(cx, cy);
   ctx.scale(e.facing, 1);
@@ -1885,17 +1885,17 @@ export function drawEnemy(
     head(3 * s, -19 * s, -1.2, 0.64);
     tail(-6 * s, 16 * s);
     legs();
-  } else if (k === "zero" || k === "nullis" || k === "nullring") {
-    const big = k === "nullis" ? 1.32 : 1;
-    if (k === "nullis") ctx.globalAlpha = (ctx.globalAlpha || 1) * (0.72 + Math.sin(t * 4) * 0.18);
-    const spin = k === "nullring" ? t * 1.6 : t * 0.7;
+  } else if (k === "zero" || k === "nullis" || k === "nullring" || k === "iris") {
+    const big = k === "nullis" || k === "iris" ? 1.32 : 1;
+    if (k === "nullis" || k === "iris") ctx.globalAlpha = (ctx.globalAlpha || 1) * (0.72 + Math.sin(t * 4) * 0.18);
+    const spin = k === "nullring" || k === "iris" ? t * 1.6 : t * 0.7;
     ctx.save();
     ctx.rotate(Math.sin(spin) * 0.08);
     body(9 * big, () => {
       ctx.ellipse(0, 0, 12 * s * big, 16 * s * big, 0, 0.12, Math.PI * 2 - 0.12);
     });
-    energyCore(ctx, 0, 0, 5.2 * s * big, t, k === "nullring" ? visor : aether);
-    if (k === "nullring") {
+    energyCore(ctx, 0, 0, 5.2 * s * big, t, k === "nullring" || k === "iris" ? visor : aether);
+    if (k === "nullring" || k === "iris") {
       ctx.strokeStyle = visor;
       ctx.globalAlpha = 0.4 + Math.sin(t * 5) * 0.2;
       ctx.lineWidth = 2;
@@ -1974,7 +1974,7 @@ export function drawEnemy(
     }
     tail(-8 * s * b, 16 * s * b);
     if (k !== "crossseal") legs();
-  } else if (k === "five" || k === "archivist") {
+  } else if (k === "five" || k === "archivist" || k === "archivant") {
     body(8.4, () => {
       ctx.moveTo(13 * s, -18 * s);
       ctx.lineTo(-11 * s, -18 * s);
@@ -1992,7 +1992,7 @@ export function drawEnemy(
     ctx.lineTo(13 * s + beam, -10 * s);
     ctx.stroke();
     head(13 * s, -18 * s, -0.2, 0.58);
-    if (k === "archivist") {
+    if (k === "archivist" || k === "archivant") {
       ctx.globalAlpha = 0.22 + Math.sin(t * 6) * 0.1;
       ctx.strokeStyle = aether;
       ctx.lineWidth = 2.2;
@@ -2223,6 +2223,8 @@ export function drawEnemy(
     e.kind === "tetrarch" ||
     e.kind === "importer" ||
     e.kind === "nullis" ||
+    e.kind === "iris" ||
+    e.kind === "archivant" ||
     e.kind === "endmark" ||
     e.kind === "summand" ||
     e.kind === "difference" ||
@@ -2244,6 +2246,8 @@ export function drawEnemy(
       e.kind === "tetrarch" ||
       e.kind === "importer" ||
       e.kind === "nullis" ||
+      e.kind === "iris" ||
+      e.kind === "archivant" ||
       e.kind === "endmark" ||
       e.kind === "summand" ||
       e.kind === "difference" ||
@@ -2546,7 +2550,7 @@ function drawMelee(ctx: CanvasRenderingContext2D, p: Player, cx: number, cy: num
   const handY = p.h * 0.06 + (profile?.handY ?? 0) * p.h + (moveId === "dtilt" || moveId === "dsmash" || moveId === "dair" ? 6 : 0);
   const swing = (!idle && phase > 0.14 && phase < 0.9) || charging;
   const faceDir = (p.facing * behind) as 1 | -1;
-  const smears = supering ? 4 : swing && profile ? profile.smear : 0;
+  const smears = supering ? 4 : p.stringStep > 0 ? Math.max(2, swing && profile ? profile.smear : 0) : swing && profile ? profile.smear : 0;
   for (let i = smears; i >= 1; i--) {
     const earlier = Math.max(0, (supering ? superPhase : phase) - i * 0.07);
     const ghost = moveSwingAngle(moveId, earlier, wpn.family, false, flourishing, supering);
@@ -2619,9 +2623,15 @@ function drawSuperFx(
   glow: string,
 ) {
   const def =
-    p.superKind === "art" ? CASE_ART[p.letter] : p.superKind === "heat" ? HEAT_SMASH[p.letter] : FINISHERS[p.letter];
+    p.superKind === "art"
+      ? CASE_ART[p.letter]
+      : p.superKind === "heat"
+        ? HEAT_SMASH[p.letter]
+        : p.superKind === "special"
+          ? SPECIALS[p.letter]
+          : FINISHERS[p.letter];
   const left = p.superKind === "art" ? p.art : p.heatSmash;
-  const max = p.superKind === "art" ? p.artMax : p.heatSmashMax;
+  const max = p.superKind === "art" ? p.artMax : p.heatSmashMax || def.time;
   const phase = max > 0 ? 1 - left / max : 0;
   const cols = p.superKind === "art" ? 3 : 2;
   const rows = p.superKind === "art" ? 2 : 2;

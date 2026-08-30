@@ -32,7 +32,7 @@ test("resize keeps borders", () => {
 test("sandbox save does not look like a campaign clear", () => {
   const s = sandboxSave();
   assert.equal(s.progress, 0);
-  assert.equal(s.party.length, 5);
+  assert.equal(s.party.length, 8);
   assert.equal(s.hasCapital, true);
 });
 

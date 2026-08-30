@@ -27,8 +27,8 @@ function KeyRow({ keys, text }: { keys: string; text: string }) {
 const INTRO = [
   "Calculara was a manuscript before it was an equation. Letters walked it. Words were weather.",
   "G opened the ports. Ships of digits landed overnight. The Decimal Dominion rounded magic down and filed every letter that would stand in line.",
-  "Five letters, five elements. You are c, Aether. The Exchange hides Gale. The Fort holds Stone. Tide waits in the Press. Ember runs the Coil. After the Drop Cap, Shift capitalizes whoever is in play.",
-  "End-Mark is not the end. After the point come the operators: plus, minus, times, divide, remainder. Sixty ledgers. Willingness still turns them.",
+  "Five letters close the First Book. Then k, n, and t leave the Stacks and walk into the count. Stomp. Pin. Compose. That is how the Numberomicons fall.",
+  "End-Mark is not the end. After the icon come the Unbound Sentence and the operators. Sixty ledgers. Willingness still turns them.",
 ];
 
 function ControlsCard() {
@@ -63,12 +63,12 @@ function ControlsCard() {
             <p className="text-fg">↓ · down-tilt · dair · fast-fall</p>
           </div>
           <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-muted">
-            <KeyRow keys="Tap J" text="Jab combo · tap again for jab 2, then a finisher" />
+            <KeyRow keys="Tap J" text="Staple string 1,1,2 · keep tapping in the window for the finisher" />
             <KeyRow keys="Run + J" text="Dash attack · 0.5s cool · air dash holds height · s scythe · t lance · r fire skate · c disk" />
             <KeyRow keys="Hold J + dir" text="Charge a smash · gold bar · release to fire" />
             <KeyRow keys="Hold J" text="No direction: that letter's flourish" />
             <KeyRow keys="Air + J" text="Nair, fair, bair, uair, dair · run then jump + J is a dash attack" />
-            <KeyRow keys="Combo" text="Jab → up-tilt → Space uair. Hits build percent." />
+            <KeyRow keys="Combo" text="Three trees: mash J staple · ↑ J launcher into uair · ↓ J low. Hits build percent." />
             <KeyRow keys="↑ + J" text="Up-tilt hops forward. Jump then up-Strike lifts higher than a jump. Up-tilt, then Space, hops into a full jump." />
           </div>
         </div>
@@ -78,7 +78,7 @@ function ControlsCard() {
             <KeyRow keys="F H" text="Fang · ink-heavy ranged · never the same key as Strike" />
             <KeyRow keys="K X" text="Skill of the letter in play" />
             <KeyRow keys="Flourish" text={FLOURISH_LINE} />
-            <KeyRow keys="Heat" text="f,f + Strike Heat Smash · hold Skill Case Art when the gold bar is full · b,f + Strike throw" />
+            <KeyRow keys="Heat" text="f,f + Strike Heat Smash · hold Skill Case Art when the gold bar is full · b,f throw · qcf / df / uf + Strike letter special" />
             <KeyRow keys="Ward" text="Always on · eats a hit before health" />
           </div>
         </div>
