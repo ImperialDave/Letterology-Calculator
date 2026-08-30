@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { densityFloors, tally } from "./density";
 import { LEVELS } from "./levels";
 import { OCTET, RECRUIT_LETTERS } from "./roster";
 import { SECOND_BOOK } from "./types";
@@ -55,4 +56,21 @@ test("recruits and numberomicons sit on the Second Book path", () => {
 
 test("Unbound Sentence still starts at 16", () => {
   assert.equal(LEVELS.stage16.name, "Lower Ribs");
+});
+
+test("Numberomicon ledgers meet late-book density", () => {
+  const failed: string[] = [];
+  for (const n of STORY) {
+    const meta = LEVELS[`stage${n}`];
+    const d = tally(meta.rows);
+    const f = densityFloors(30, d.W);
+    const bits: string[] = [];
+    if (d.enemies < f.enemies) bits.push(`enemies ${d.enemies}<${f.enemies}`);
+    if (d.hazards < f.hazards) bits.push(`hazards ${d.hazards}<${f.hazards}`);
+    if (d.movers < f.movers) bits.push(`movers ${d.movers}<${f.movers}`);
+    if (d.deco < f.deco) bits.push(`deco ${d.deco}<${f.deco}`);
+    if (d.shelves < f.shelves) bits.push(`shelves ${d.shelves}<${f.shelves}`);
+    if (bits.length) failed.push(`stage${n} W=${d.W} ${bits.join("; ")}`);
+  }
+  assert.equal(failed.join("\n"), "");
 });
