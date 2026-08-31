@@ -76,20 +76,22 @@ export function decoFor(theme: ThemeId) {
 
 export function verbsFor(n: number): Verb[] {
   if (n < 15) return ["T", "-", "="];
-  if (n < 25) return ["|", "/", "T", "l", "z"];
-  if (n < 35) return ["`", ")", "g", "f", "{", "x"];
-  if (n < 45) return ["S", "`", ")", "j", "d", "}"];
-  return ["S", "g", "|", "`", "w", "[", "{"];
+  if (n < 25) return ["|", "/", "l", "z", "x"];
+  if (n < 35) return ["`", ")", "g", "f", "{", "j"];
+  if (n < 45) return ["S", "d", "}", "x", "`"];
+  return ["S", "w", "[", "j", "|"];
 }
 
 /** Mix pool. Sluice is mix-only — never featured, never before the Press, never glacier/orbit. */
 export function mixVerbsFor(n: number, theme: ThemeId): Verb[] {
   const base = verbsFor(n);
-  if (theme === "glacier" || theme === "orbit") return base;
+  const extra: Verb[] = [];
+  if (n >= 15 && !base.includes("T")) extra.push("T");
+  if (theme === "glacier" || theme === "orbit") return [...base, ...extra];
   if (n >= 12 && (theme === "canal" || (theme === "remainder" && n >= 34))) {
-    return [...base, "~"];
+    extra.push("~");
   }
-  return base;
+  return extra.length ? [...base, ...extra] : base;
 }
 
 function pick<T>(rand: () => number, list: T[]): T {

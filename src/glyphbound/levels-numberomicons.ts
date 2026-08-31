@@ -64,8 +64,9 @@ function colonnade(g: Grid, fy: number, x: number, cols: number, deco: string) {
   }
 }
 
-function cascade(g: Grid, fy: number, x: number, deco: string) {
-  g.put(x, fy - 1, "T");
+function cascade(g: Grid, fy: number, x: number, deco: string, hang = "") {
+  if (hang) g.put(x, fy - 2, hang);
+  else g.put(x, fy - 1, "T");
   g.fill(x + 2, fy - 3, 3, "=");
   g.fill(x + 5, fy - 4, 3, "=");
   g.put(x + 8, fy - 1, "T");
@@ -153,20 +154,66 @@ function kept(ch: string) {
   return KEEP.includes(ch);
 }
 
-/** After the sentence is painted, pack leftover air. Never on @ % P or recruits. */
-function pressure(g: Grid, fy: number, deco: string) {
+type PressureKit = {
+  hang?: string;
+  floor?: string;
+  echo?: boolean;
+  ride?: boolean;
+  laser?: boolean;
+};
+
+/** After the sentence is painted, pack leftover air with the stage's damage kit. Never on @ % P. */
+function pressure(g: Grid, fy: number, deco: string, kit: PressureKit = {}) {
   const W = g.W;
   const ink = deco === "," || deco === "?";
   const busy = (x: number) => {
-    for (let dx = -2; dx <= 3; dx++) if (kept(cell(g, x + dx, fy - 1))) return true;
+    for (let dx = -2; dx <= 3; dx++) {
+      for (let y = 1; y <= fy; y++) if (kept(cell(g, x + dx, y))) return true;
+    }
     return false;
   };
-  for (let x = 9; x < W - 10; x += 8) {
+  for (let x = 12; x < W - 16; x += 10) {
     if (busy(x)) continue;
-    if (cell(g, x, fy) === "#" && cell(g, x + 1, fy) === "#") hop(g, fy, x);
+    let clear = true;
+    for (let i = 0; i < 7; i++) if (cell(g, x + i, fy - 3) !== ".") clear = false;
+    if (!clear) continue;
+    g.fill(x, fy - 3, 7, "=");
+    g.put(x + 2, fy - 4, deco);
+    g.put(x + 5, fy - 4, "1");
   }
-  if (!ink) {
-    for (let x = 16; x < W - 10; x += 14) {
+  if (kit.hang) {
+    let i = 0;
+    for (let x = 11; x < W - 10; x += 9) {
+      if (busy(x)) continue;
+      if (cell(g, x, fy - 2) !== ".") continue;
+      g.put(x, fy - 2, kit.hang[i % kit.hang.length] ?? kit.hang[0]);
+      i += 1;
+    }
+  }
+  if (kit.floor) {
+    for (let x = 16; x < W - 12; x += 14) {
+      if (busy(x) || busy(x + 1)) continue;
+      if (cell(g, x, fy) !== "#" || cell(g, x + 1, fy) !== "#") continue;
+      if (kept(cell(g, x, fy - 1)) || kept(cell(g, x + 1, fy - 1))) continue;
+      g.fill(x, fy, 2, kit.floor);
+    }
+  }
+  if (kit.echo) {
+    for (let x = 18; x < W - 12; x += 20) {
+      if (busy(x)) continue;
+      if (cell(g, x, fy - 3) !== ".") continue;
+      echoLoft(g, fy, x);
+    }
+  }
+  if (kit.ride) {
+    for (let x = 20; x < W - 14; x += 24) {
+      if (busy(x)) continue;
+      if (cell(g, x, fy - 1) !== ".") continue;
+      rideCarriage(g, fy, x);
+    }
+  }
+  if (kit.laser || (!kit.hang && !kit.floor && !ink)) {
+    for (let x = 16; x < W - 10; x += 16) {
       if (busy(x)) continue;
       if (cell(g, x, fy - 3) === "." && cell(g, x, fy - 4) === ".") laserHang(g, fy, x, 2);
     }
@@ -181,29 +228,12 @@ function pressure(g: Grid, fy: number, deco: string) {
       break;
     }
   }
-  for (let x = 12; x < W - 16; x += 10) {
-    if (busy(x)) continue;
-    let clear = true;
-    for (let i = 0; i < 7; i++) if (cell(g, x + i, fy - 2) !== ".") clear = false;
-    if (!clear) continue;
-    g.fill(x, fy - 2, 7, "=");
-    g.put(x + 2, fy - 3, deco);
-    g.put(x + 5, fy - 3, "1");
-  }
-  for (let x = 14; x < W - 12; x += 10) {
+  let bounces = 0;
+  for (let x = 18; x < W - 14 && bounces < 3; x += 22) {
     if (busy(x)) continue;
     if (cell(g, x, fy) !== "#" && cell(g, x, fy) !== "-") continue;
-    let ok = true;
-    for (let i = 0; i < 3; i++) {
-      const ch = cell(g, x + i, fy - 1);
-      if (kept(ch) || ch === "^") ok = false;
-    }
-    if (!ok) continue;
-    for (let i = 0; i < 3; i++) {
-      const ch = cell(g, x + i, fy - 1);
-      if (ch !== "." && ch !== "T" && cell(g, x + i, fy - 3) === ".") g.put(x + i, fy - 3, ch);
-    }
     bouncePit(g, fy, x);
+    bounces += 1;
   }
   for (let x = 22; x < W - 14; x += 18) {
     if (busy(x)) continue;
@@ -230,7 +260,7 @@ export function buildFoundry(): string[] {
     bouncePit(g, fy, 14);
     shelf(g, fy - 3, 18, 5, "1", d);
     pack(g, fy, 24, "14");
-    hop(g, fy, 28);
+    hangCenser(g, fy, 28);
     pack(g, fy, 32, "41");
     // mix crumble
     crumble(g, fy, 36, 6);
@@ -238,7 +268,7 @@ export function buildFoundry(): string[] {
     bouncePit(g, fy, 48);
     terrace(g, fy, 54, d, "414");
     pack(g, fy, 68, "1414");
-    hop(g, fy, 74);
+    hangCenser(g, fy, 74);
     colonnade(g, fy, 78, 5, d);
     pack(g, fy, 94, "44");
     put(98, fy - 1, "%");
@@ -248,18 +278,18 @@ export function buildFoundry(): string[] {
     // pack two
     pack(g, fy, 108, "141241");
     crumble(g, fy, 116, 5);
-    bouncePit(g, fy, 122);
+    hangCenser(g, fy, 122);
     zipper(g, fy, 128, d);
     pack(g, fy, 144, "41414");
-    hop(g, fy, 152);
-    cascade(g, fy, 156, d);
+    hangCenser(g, fy, 152);
+    cascade(g, fy, 156, d, "l");
     shelf(g, fy - 3, 166, 6, "4", d);
     put(168, fy - 4, "$");
     pack(g, fy, 174, "141");
     torches(g, fy - 2, 178, 4, d);
     put(W - 8, fy - 1, "i");
     put(W - 4, fy - 1, "P");
-    pressure(g, fy, d);
+    pressure(g, fy, d, { hang: "l" });
   });
 }
 
@@ -308,15 +338,15 @@ export function buildKeystroke(): string[] {
     crumble(g, fy, 124, 6);
     zipper(g, fy, 132, d);
     pack(g, fy, 148, "4441");
-    hop(g, fy, 154);
-    cascade(g, fy, 158, d);
+    hangStamper(g, fy, 154);
+    cascade(g, fy, 158, d, "z");
     shelf(g, fy - 3, 170, 6, "4", d);
     put(172, fy - 4, "$");
     hop(g, fy, 176);
     pack(g, fy, 178, "1414");
     put(W - 8, fy - 1, "i");
     put(W - 4, fy - 1, "P");
-    pressure(g, fy, d);
+    pressure(g, fy, d, { hang: "lz" });
     g.put(45, fy - 4, "^");
     g.put(46, fy - 4, "^");
     g.put(47, fy - 4, "^");
@@ -350,19 +380,19 @@ export function buildFourfold(): string[] {
     pack(g, fy, 86, "44144");
     put(100, fy - 1, "!");
     pack(g, fy, 108, "414");
-    hop(g, fy, 116);
+    hangDropcap(g, fy, 116);
     zipper(g, fy, 120, d);
-    bouncePit(g, fy, 136);
+    hangStamper(g, fy, 136);
     crumble(g, fy, 142, 5);
     pack(g, fy, 150, "44141");
-    cascade(g, fy, 158, d);
+    cascade(g, fy, 158, d, "f");
     shelf(g, fy - 3, 170, 8, "4", d);
     put(172, fy - 4, "$");
     pack(g, fy, 180, "1414");
     torches(g, fy - 2, 186, 4, d);
     put(W - 8, fy - 1, "i");
     put(W - 4, fy - 1, "P");
-    pressure(g, fy, d);
+    pressure(g, fy, d, { hang: "zx", laser: true });
   });
 }
 
@@ -419,7 +449,7 @@ export function buildLigature(): string[] {
     laserHang(g, fy, 184, 2);
     put(W - 8, fy - 1, "i");
     put(W - 4, fy - 1, "P");
-    pressure(g, fy, d);
+    pressure(g, fy, d, { floor: "w", ride: true });
   });
 }
 
@@ -466,7 +496,7 @@ export function buildAmpersand(): string[] {
     pack(g, fy, 178, "1818");
     put(W - 8, fy - 1, "i");
     put(W - 4, fy - 1, "P");
-    pressure(g, fy, d);
+    pressure(g, fy, d, { echo: true, ride: true });
   });
 }
 
@@ -505,15 +535,15 @@ export function buildIrisBind(): string[] {
     put(136, fy - 1, "!");
     shelf(g, fy - 2, 140, 6, "", d);
     pack(g, fy, 148, "B10");
-    hop(g, fy, 154);
-    cascade(g, fy, 158, d);
+    hangRotor(g, fy, 154);
+    cascade(g, fy, 158, d, "d");
     pack(g, fy, 170, "1015");
     laserHang(g, fy, 176, 2);
     shelf(g, fy - 4, 178, 6, "$", d);
     pack(g, fy, 186, "12");
     put(W - 8, fy - 1, "h");
     put(W - 4, fy - 1, "P");
-    pressure(g, fy, d);
+    pressure(g, fy, d, { hang: "d", laser: true });
   });
 }
 
@@ -550,12 +580,12 @@ export function buildScriptorium(): string[] {
     shelf(g, fy - 4, 130, 6, "$", d);
     cascade(g, fy, 140, d);
     pack(g, fy, 152, "12315");
-    bouncePit(g, fy, 160);
+    grateRun(g, fy, 160, 3);
     shelf(g, fy - 2, 166, 6, "i", d);
     pack(g, fy, 174, "121");
     put(W - 8, fy - 1, "i");
     put(W - 4, fy - 1, "P");
-    pressure(g, fy, d);
+    pressure(g, fy, d, { floor: "j" });
   });
 }
 
@@ -599,14 +629,14 @@ export function buildRuleStorm(): string[] {
     zipper(g, fy, 126, d);
     liftPair(g, fy, 142);
     pack(g, fy, 148, "41518");
-    hop(g, fy, 156);
-    cascade(g, fy, 160, d);
+    hangCenser(g, fy, 156);
+    cascade(g, fy, 160, d, "l");
     shelf(g, fy - 4, 172, 6, "$", d);
     pack(g, fy, 180, "14151");
-    bouncePit(g, fy, 188);
+    grateRun(g, fy, 188, 2);
     put(W - 8, fy - 1, "h");
     put(W - 4, fy - 1, "P");
-    pressure(g, fy, d);
+    pressure(g, fy, d, { hang: "l", floor: "j" });
   });
 }
 
@@ -650,12 +680,12 @@ export function buildApproach(): string[] {
     blinkPair(g, fy, 136);
     terrace(g, fy, 142, d, "171");
     pack(g, fy, 158, "12517");
-    bouncePit(g, fy, 166);
+    rideCarriage(g, fy, 166);
     colonnade(g, fy, 172, 4, d);
     pack(g, fy, 186, "11");
     put(W - 8, fy - 1, "i");
     put(W - 4, fy - 1, "P");
-    pressure(g, fy, d);
+    pressure(g, fy, d, { ride: true });
   });
 }
 
@@ -689,15 +719,15 @@ export function buildIconostasis(): string[] {
     echoLoft(g, fy, 106);
     pack(g, fy, 108, "UQ1");
     shelf(g, fy - 2, 112, 8, "U", d);
-    hop(g, fy, 122);
-    cascade(g, fy, 126, d);
+    hangRotor(g, fy, 122);
+    cascade(g, fy, 126, d, "d");
     pack(g, fy, 138, "1Q1U");
     liftPair(g, fy, 146);
     shelf(g, fy - 4, 150, 6, "$", d);
     pack(g, fy, 158, "Q12");
-    bouncePit(g, fy, 164);
+    echoLoft(g, fy, 164);
     put(W - 8, fy - 1, "h");
     put(W - 4, fy - 1, "P");
-    pressure(g, fy, d);
+    pressure(g, fy, d, { hang: "d", echo: true });
   });
 }

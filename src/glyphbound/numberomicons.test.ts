@@ -54,6 +54,20 @@ test("recruits and numberomicons sit on the Second Book path", () => {
   assert.ok(join(15).includes("!"));
 });
 
+test("Numberomicon wallpaper is toys, not bounce halls", () => {
+  const count = (n: number, ch: string) =>
+    [...LEVELS[`stage${n}`].rows.join("")].filter((c) => c === ch).length;
+  assert.equal(count(1, "l") + count(1, "z") + count(1, "w") + count(1, "x"), 0, "Exchange stays toy-free");
+  assert.ok(count(6, "l") >= 3, `foundry censers ${count(6, "l")}`);
+  assert.ok(count(6, "T") <= 6, `foundry bounce ${count(6, "T")}`);
+  assert.ok(count(7, "l") + count(7, "z") >= 4, "keystroke hang kit");
+  assert.ok(count(8, "f") >= 2, "fourfold drop-caps");
+  assert.ok(count(12, "j") >= 3, "scriptorium grates");
+  for (const n of STORY) {
+    assert.equal(count(n, "S"), 0, `stage${n} saw`);
+  }
+});
+
 test("Unbound Sentence still starts at 16", () => {
   assert.equal(LEVELS.stage16.name, "Lower Ribs");
 });

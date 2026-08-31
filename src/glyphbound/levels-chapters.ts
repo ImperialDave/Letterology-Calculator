@@ -33,9 +33,11 @@ export function buildExchange(): string[] {
   put(70, 6, "i");
   put(58, 3, "====");
   put(60, 2, "3");
+  put(40, 4, "====");
   put(72, 2, "0");
   bite(g, 8, 80, 2);
   hang(g, 8, 76, 2);
+  hang(g, 8, 40, 2);
   put(84, 6, "####");
   put(86, 5, "s");
   put(90, 5, "q");
@@ -56,6 +58,7 @@ export function buildExchange(): string[] {
   put(132, 7, "2");
   put(134, 6, "%");
   hang(g, 8, 144, 2);
+  hang(g, 8, 138, 2);
   put(142, 7, "h");
   put(128, 4, "========");
   put(130, 3, "4");
@@ -105,6 +108,7 @@ export function buildGutter(): string[] {
   put(40, 8, "3");
   put(44, 5, "----");
   fill(46, 9, 2, "w");
+  fill(64, 9, 2, "w");
   put(48, 7, "====");
   put(50, 6, "0");
   put(52, 8, "1");
@@ -178,6 +182,7 @@ export function buildCoil(): string[] {
   put(48, 8, "1");
   put(50, 8, "5");
   bite(g, 9, 52, 2);
+  put(54, 7, "x");
   put(56, 6, "====");
   put(58, 5, "Z");
   put(62, 8, "6");
@@ -290,6 +295,8 @@ export function buildLedger(): string[] {
   put(154, 9, "========");
   put(156, 8, "3");
   put(158, 8, "%");
+  put(162, 9, "}}}");
+  fill(162, 7, 3, "=");
   put(166, 6, "##########");
   put(168, 5, "*");
   put(170, 5, "*");

@@ -28,7 +28,7 @@ ASCII `rows` are the collision map. `TILE=48`. Do not infer collision from art. 
 | Persia | phase/offset, pit 2–4, crumble 3–6 | laser on walkway floor (`FY-1` or `FY`); `S` as the only floor cell; commit with no landing in view |
 | Metroid | optional loft/`$`/vent pocket; landmark deco from the district | secret on the only path to `P`; landmark-free 80-tile hall |
 
-Unlock schedule: 6–14 `T - =` · 15–24 `\| / T` · 25–34 `` ` ) g `` · 35–44 `S` + prior · 45–59 two prior verbs, never three new.
+Unlock schedule: 6–14 `T - =` · 15–24 `\| / l z x` (bounce mix-only) · 25–34 `` ` ) g f { j `` · 35–44 `S` + hang toys · 45–59 two prior verbs, never three new. Wallpaper after teach is the unlocked *damage* toy, not a bounce hallway.
 
 Foundry toys (off-hub only; hub `[ { }` stay doors, hub `d f j w x` stay teachers): `l` censer · `z` stamper · `x` guillotine · `f` drop-cap · `j` ember grate · `d` rotor · `w` sinkink · `}` shutter · `{` carriage · `[` echo plate.
 

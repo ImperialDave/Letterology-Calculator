@@ -343,7 +343,7 @@ export function fillDensity(
   }
 
   if (!ink) {
-    for (let x = 16; x < W - 14; x += 18) {
+    for (let x = 16; x < W - 14; x += 28) {
       hopAt(x + Math.floor(rand() * 2));
     }
   }
@@ -372,7 +372,7 @@ export function fillDensity(
     setCell(rows, ox + 2, fy, "-");
   }
 
-  for (let x = 16; x < W - 12; x += 20) {
+  for (let x = 16; x < W - 12; x += 32) {
     bounceAt(x + Math.floor(rand() * 2));
   }
 
@@ -694,6 +694,27 @@ function hopTeeth(rows: string[], fy: number, x: number) {
   return true;
 }
 
+function hangKit(rows: string[], fy: number, x: number, n: number) {
+  if (n === 3 && at(rows, x, fy) === "#" && at(rows, x, fy - 1) === ".") {
+    setCell(rows, x, fy, "w");
+    return true;
+  }
+  if (at(rows, x, fy - 2) !== ".") return false;
+  let ch = "|";
+  if (n === 2) ch = "z";
+  else if (n === 4) ch = "x";
+  else if (n === 5) ch = "}";
+  else if (n < 25) ch = n % 2 ? "l" : "z";
+  else if (n < 35) ch = n % 2 ? "x" : "j";
+  else ch = n % 2 ? "l" : "x";
+  if (ch === "j" && at(rows, x, fy) === "#") {
+    setCell(rows, x, fy, "j");
+    return true;
+  }
+  setCell(rows, x, fy - 2, ch);
+  return true;
+}
+
 function crumbleRun(rows: string[], fy: number, x: number) {
   for (let i = 0; i < 4; i++) {
     if (at(rows, x + i, fy) !== "#" || at(rows, x + i, fy - 1) !== ".") return false;
@@ -727,7 +748,7 @@ export function dressTerrain(
   for (let x = 12; x < W - 12 && hops < hopN; x += 11) {
     const ox = x + Math.floor(rand() * 2);
     if (skip.has(ox) || skip.has(ox + 1) || busyCol(out, fy, ox)) continue;
-    if (hopTeeth(out, fy, ox)) hops += 1;
+    if (hangKit(out, fy, ox, n) || hopTeeth(out, fy, ox)) hops += 1;
   }
   for (let x = 8; x < W - 8; x += 7) {
     if (skip.has(x) || busyCol(out, fy, x)) continue;
@@ -756,7 +777,7 @@ export function padTerrain(rows: string[], n: number, difficulty: Difficulty): s
   for (let k = 0; k < 80 && hops < hopNeed; k++) {
     const x = 12 + Math.floor(rand() * Math.max(1, W - 18));
     if (skip.has(x) || skip.has(x + 1) || busyCol(out, fy, x)) continue;
-    if (hopTeeth(out, fy, x)) hops += 1;
+    if (hangKit(out, fy, x, n) || hopTeeth(out, fy, x)) hops += 1;
   }
   if (difficulty === "extreme") {
     const y2 = fy - 5;
