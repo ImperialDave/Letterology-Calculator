@@ -17,7 +17,7 @@ function ledger(
   const fy = opts.fy ?? 10;
   const g = grid(W, H, fy) as Grid;
   paint(g, fy);
-  fillDensity(g, { n, deco: decoFor(theme), rand: rng(n * 9973 + 91), fy });
+  fillDensity(g, { n, deco: decoFor(theme), rand: rng(n * 9973 + 91), fy, theme, featured: SHOW_TOY[n] });
   sealBasement(g, fy);
   const tasks: TaskDef[] = boss
     ? [{ id: `clear-${n}`, text: n === FIRST_BOOK ? "Defeat End-Mark" : n === STAGE_COUNT ? "Defeat the Remainder" : "Defeat the warden" }]
@@ -42,6 +42,35 @@ function pocket(g: Grid, fy: number, x: number, prize = "$") {
   put(x + 2, fy - 5, prize);
 }
 
+const SHOW_TOY: Record<number, string> = {
+  16: "|",
+  18: "/",
+  20: "|",
+  22: "|",
+  24: "/",
+  25: "`",
+  28: "`",
+  31: "`",
+  32: ")",
+  33: "T",
+  34: "g",
+  35: "`",
+  36: ")",
+  38: "`",
+  40: ")",
+  42: "g",
+  44: "|",
+  45: "S",
+  48: "S",
+  50: ")",
+  51: "$",
+  54: "v",
+  55: "S",
+  57: "|",
+  59: ")",
+  60: "`",
+};
+
 export const FROZEN_REMAINDER: Record<number, LevelMeta> = {
   16: ledger(16, "abyss", false, (g, fy) => {
     const { put, fill, W } = g;
@@ -53,6 +82,9 @@ export const FROZEN_REMAINDER: Record<number, LevelMeta> = {
     put(18, fy - 3, "|");
     put(18, fy - 4, "|");
     fill(20, fy - 5, 3, "=");
+    put(24, fy - 1, "v");
+    put(24, fy - 2, "v");
+    put(24, fy - 3, "v");
     put(28, fy - 1, "%");
     put(30, fy - 1, "i");
     put(36, fy - 1, "2");
@@ -72,6 +104,8 @@ export const FROZEN_REMAINDER: Record<number, LevelMeta> = {
     fill(10, fy, 5, "/");
     fill(24, fy, 2, ".");
     fill(24, fy + 1, 2, "~");
+    put(25, fy - 3, "|");
+    put(25, fy - 4, "|");
     fill(28, fy - 3, 6, "=");
     put(30, fy - 4, ",");
     put(38, fy - 1, "%");
@@ -122,6 +156,9 @@ export const FROZEN_REMAINDER: Record<number, LevelMeta> = {
     put(20, fy - 6, ";");
     fill(26, fy, 3, ".");
     put(27, fy - 1, "T");
+    put(30, fy - 1, "v");
+    put(30, fy - 2, "v");
+    put(30, fy - 3, "v");
     put(34, fy - 1, "%");
     put(36, fy - 1, "i");
     put(42, fy - 1, "5");
@@ -140,6 +177,10 @@ export const FROZEN_REMAINDER: Record<number, LevelMeta> = {
     fill(10, fy, 5, "-");
     fill(18, fy, 4, ".");
     fill(18, fy - 1, 4, "/");
+    fill(24, fy, 2, ".");
+    fill(24, fy + 1, 2, "^");
+    put(24, fy - 1, "T");
+    fill(27, fy, 4, "\\");
     fill(24, fy - 3, 5, "=");
     put(26, fy - 4, "'");
     put(34, fy - 1, "%");
@@ -163,6 +204,9 @@ export const FROZEN_REMAINDER: Record<number, LevelMeta> = {
     fill(16, fy, 1, "g");
     fill(20, fy - 3, 5, "=");
     put(22, fy - 4, ";");
+    put(24, fy - 1, "v");
+    put(24, fy - 2, "v");
+    put(24, fy - 3, "v");
     put(28, fy - 1, "%");
     put(30, fy - 1, "i");
     put(34, fy - 1, "5");
@@ -191,6 +235,8 @@ export const FROZEN_REMAINDER: Record<number, LevelMeta> = {
     fill(18, fy - 4, 4, "=");
     fill(23, fy - 5, 4, "=");
     put(25, fy - 6, "?");
+    put(28, fy - 1, "v");
+    put(28, fy - 2, "v");
     put(28, fy - 3, "v");
     fill(30, fy - 2, 3, "=");
     put(38, fy - 1, "%");
@@ -443,6 +489,9 @@ export const FROZEN_REMAINDER: Record<number, LevelMeta> = {
     put(17, fy - 4, "|");
     fill(19, fy - 5, 4, "=");
     put(21, fy - 6, ";");
+    put(24, fy - 1, "v");
+    put(24, fy - 2, "v");
+    put(24, fy - 3, "v");
     fill(28, fy - 2, 4, "=");
     put(34, fy - 1, "%");
     put(36, fy - 1, "i");
@@ -488,6 +537,9 @@ export const FROZEN_REMAINDER: Record<number, LevelMeta> = {
     put(30, fy - 1, "8");
     put(32, fy - 1, "9");
     put(34, fy - 1, "A");
+    fill(38, fy, 3, ".");
+    fill(38, fy + 1, 3, "~");
+    put(39, fy - 1, "T");
     fill(38, fy - 3, 5, "=");
     put(50, fy - 2, "?");
     put(W - 4, fy - 1, "P");
@@ -544,6 +596,8 @@ export const FROZEN_REMAINDER: Record<number, LevelMeta> = {
     fill(12, fy - 4, 4, "=");
     fill(17, fy - 5, 4, "=");
     put(19, fy - 6, "?");
+    put(22, fy - 1, "v");
+    put(22, fy - 2, "v");
     put(22, fy - 3, "v");
     fill(24, fy - 2, 3, "=");
     put(30, fy - 1, "%");

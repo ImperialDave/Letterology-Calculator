@@ -17,10 +17,9 @@ function torches(g: Grid, y: number, x: number, n: number, ch: string, step = 2)
   for (let i = 0; i < n; i++) g.put(x + i * step, y, ch);
 }
 
-/** 2-tile spike jump on the walkway. Doctrine allows this. Never under @ % P. */
+/** 2-tile pit. Walk-on ^ at fy-1 is stripped by ensurePortalAccess. */
 function hop(g: Grid, fy: number, x: number) {
-  g.put(x, fy - 1, "^");
-  g.put(x + 1, fy - 1, "^");
+  g.fill(x, fy, 2, ".");
 }
 
 function bouncePit(g: Grid, fy: number, x: number) {
@@ -113,13 +112,30 @@ function kept(ch: string) {
 /** After the sentence is painted, pack leftover air. Never on @ % P or recruits. */
 function pressure(g: Grid, fy: number, deco: string) {
   const W = g.W;
+  const ink = deco === "," || deco === "?";
   const busy = (x: number) => {
     for (let dx = -2; dx <= 3; dx++) if (kept(cell(g, x + dx, fy - 1))) return true;
     return false;
   };
-  for (let x = 9; x < W - 10; x += 4) {
+  for (let x = 9; x < W - 10; x += 8) {
     if (busy(x)) continue;
-    if (cell(g, x, fy - 1) === "." && cell(g, x + 1, fy - 1) === ".") hop(g, fy, x);
+    if (cell(g, x, fy) === "#" && cell(g, x + 1, fy) === "#") hop(g, fy, x);
+  }
+  if (!ink) {
+    for (let x = 16; x < W - 10; x += 14) {
+      if (busy(x)) continue;
+      if (cell(g, x, fy - 3) === "." && cell(g, x, fy - 4) === ".") laserHang(g, fy, x, 2);
+    }
+  }
+  if (ink) {
+    for (let x = 20; x < W - 16; x += 28) {
+      if (busy(x) || busy(x + 1)) continue;
+      if (cell(g, x, fy) !== "#" || cell(g, x + 1, fy) !== "#" || cell(g, x + 2, fy) !== "#") continue;
+      g.fill(x, fy, 3, ".");
+      if (cell(g, x + 1, fy - 1) === ".") g.put(x + 1, fy - 1, "T");
+      g.fill(x, fy + 1, 3, "~");
+      break;
+    }
   }
   for (let x = 12; x < W - 16; x += 10) {
     if (busy(x)) continue;

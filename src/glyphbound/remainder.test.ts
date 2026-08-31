@@ -208,3 +208,80 @@ test("beatenLedgers only lists closed pages", () => {
   assert.equal(closed[33]?.id, "stage34");
   assert.equal(closed.some((l) => l.index === 35), false);
 });
+
+function countCh(rows: string[], ch: string) {
+  let n = 0;
+  for (const r of rows) for (const c of r) if (c === ch) n += 1;
+  return n;
+}
+
+function stagesWith(ch: string, from = 1, to = STAGE_COUNT) {
+  const out: number[] = [];
+  for (let n = from; n <= to; n++) {
+    const meta = LEVELS[`stage${n}`];
+    if (meta && countCh(meta.rows, ch) > 0) out.push(n);
+  }
+  return out;
+}
+
+test("campaign density uses LEVELS, not assemble ghosts, for Numberomicons", () => {
+  const failed: string[] = [];
+  for (let n = 6; n <= 15; n++) {
+    const meta = LEVELS[`stage${n}`];
+    const d = tally(meta.rows);
+    const f = densityFloors(30, d.W);
+    const bits: string[] = [];
+    if (d.hazards < f.hazards) bits.push(`hazards ${d.hazards}<${f.hazards}`);
+    if (bits.length) failed.push(`stage${n} W=${d.W} ${bits.join("; ")}`);
+  }
+  assert.equal(failed.join("\n"), "");
+});
+
+test("featured remainder verb is never sluice", () => {
+  for (let n = 16; n <= STAGE_COUNT; n++) {
+    const r = assembleRecipe(n);
+    assert.notEqual(r.featured, "~", `stage${n}`);
+    assert.ok(verbsFor(n).includes(r.featured), `${n} ${r.featured}`);
+  }
+});
+
+test("saws stay on the unlock ramp and do not flood", () => {
+  for (let n = 1; n <= 30; n++) {
+    assert.equal(countCh(LEVELS[`stage${n}`].rows, "S"), 0, `saw before 31 at ${n}`);
+  }
+  for (const n of [31, 32, 33, 34]) {
+    const saws = countCh(LEVELS[`stage${n}`].rows, "S");
+    assert.ok(saws <= 1, `glimpse ${n} has ${saws}`);
+  }
+  for (let n = 35; n <= STAGE_COUNT; n++) {
+    const saws = countCh(LEVELS[`stage${n}`].rows, "S");
+    const cap = n % 5 === 0 || n === STAGE_COUNT ? 4 : n >= 46 ? 6 : 4;
+    assert.ok(saws <= cap + 2, `stage${n} saws ${saws} > ${cap}`);
+  }
+});
+
+test("underused HP hazards return across the campaign", () => {
+  const sluice = stagesWith("~");
+  const vents = stagesWith("v");
+  const left = stagesWith("\\");
+  const lasers = stagesWith("|");
+  const spikes = stagesWith("^");
+  assert.ok(sluice.length >= 10, `sluice stages ${sluice.length} ${sluice.join(",")}`);
+  assert.ok(vents.length >= 8, `vent stages ${vents.length} ${vents.join(",")}`);
+  assert.ok(left.length >= 4, `left-belt stages ${left.length} ${left.join(",")}`);
+  assert.ok(lasers.length >= 20, `laser stages ${lasers.length}`);
+  assert.ok(spikes.length >= 20, `spike stages ${spikes.length}`);
+  assert.ok(sluice.some((n) => n >= 34), "late remainder still carries ink");
+  assert.ok(!sluice.includes(33) && !sluice.includes(36), "glacier stays dry");
+});
+
+test("First Book walk-on teeth became real pits", () => {
+  for (const n of [1, 2, 3, 4, 5]) {
+    const rows = LEVELS[`stage${n}`].rows;
+    const teeth = countCh(rows, "^") + countCh(rows, "~");
+    const lasers = countCh(rows, "|");
+    assert.ok(teeth >= 2, `stage${n} teeth ${teeth}`);
+    if (n !== 3) assert.ok(lasers >= 1, `stage${n} lasers ${lasers}`);
+  }
+});
+

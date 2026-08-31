@@ -149,7 +149,8 @@ const hand: Record<string, LevelMeta> = {
       { id: "importer", text: "Defeat G" },
       { id: "gate-chapter", text: "Take the CHAPTER gate" },
     ],
-    rows: armTeeth(slice(`
+    rows: (() => {
+      const rows = slice(`
 ################################################################################################
 #..............................................................................................#
 #.$..............vv..............|.............................................................#
@@ -162,7 +163,20 @@ const hand: Record<string, LevelMeta> = {
 ################################################################################################
 ################################################################################################
 ################################################################################################
-`), 8),
+`);
+      const walk = 7;
+      const fy = 8;
+      const i = rows[walk].indexOf("^^^^");
+      if (i >= 0) {
+        rows[walk] = rows[walk].slice(0, i) + ".T.." + rows[walk].slice(i + 4);
+        rows[fy] = rows[fy].slice(0, i) + "...." + rows[fy].slice(i + 4);
+      }
+      const j = rows[walk].indexOf("|");
+      if (j >= 0 && walk - 1 > 0 && rows[walk - 1][j] === ".") {
+        rows[walk - 1] = rows[walk - 1].slice(0, j) + "|" + rows[walk - 1].slice(j + 1);
+      }
+      return armTeeth(rows, 8);
+    })(),
     exit: "hub",
     index: 2,
   },

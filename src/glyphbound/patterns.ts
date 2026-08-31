@@ -34,7 +34,11 @@ function plantPocket(g: Grid, ctx: PaintCtx, x: number) {
   g.fill(x, FY - 3, 4, "=");
   const prize = ctx.secret ? "$" : "i";
   g.put(x + 1, FY - 4, prize);
-  if (ctx.pocket === "vent") g.put(x + 3, FY - 2, "v");
+  if (ctx.pocket === "vent") {
+    g.put(x + 3, FY - 1, "v");
+    g.put(x + 3, FY - 2, "v");
+    g.put(x + 3, FY - 3, "v");
+  }
 }
 
 function plantDeco(g: Grid, ctx: PaintCtx, x: number) {
@@ -368,7 +372,7 @@ export const PATTERNS: Pattern[] = [
   {
     id: "canal-dock",
     beats: ["teach", "mix"],
-    verbs: ["T", "="],
+    verbs: ["T", "=", "~"],
     themes: ["canal"],
     paint(g, ctx) {
       const w = pitW(ctx);
@@ -556,6 +560,9 @@ export const PATTERNS: Pattern[] = [
       g.put(13, FY - 3, "|");
       g.put(13, FY - 4, "|");
       g.fill(15, FY - 5, 3, "=");
+      g.put(8, FY - 1, "v");
+      g.put(8, FY - 2, "v");
+      g.put(8, FY - 3, "v");
       plantDeco(g, ctx, 4);
     },
   },
@@ -568,6 +575,8 @@ export const PATTERNS: Pattern[] = [
       g.fill(5, FY - 2, 3, "=");
       g.fill(9, FY - 4, 4, "=");
       g.fill(14, FY - 5, 3, "=");
+      g.put(17, FY - 1, "v");
+      g.put(17, FY - 2, "v");
       g.put(17, FY - 3, "v");
       plantDeco(g, ctx, 4);
     },
@@ -663,6 +672,61 @@ export const PATTERNS: Pattern[] = [
       g.put(4, FY - 1, "i");
       plantDeco(g, ctx, 7);
       g.put(g.W - 4, FY - 1, "P");
+    },
+  },
+  {
+    id: "mix-sluice-laser",
+    beats: ["mix"],
+    verbs: ["~", "|"],
+    themes: ["canal", "remainder"],
+    paint(g, ctx) {
+      const w = pitW(ctx);
+      g.fill(6, FY, w, ".");
+      g.fill(6, FY + 1, w, "~");
+      g.put(6 + Math.floor(w / 2), FY - 1, "T");
+      g.put(8, FY - 3, "|");
+      g.put(8, FY - 4, "|");
+      plantDeco(g, ctx, 5);
+    },
+  },
+  {
+    id: "mix-belts",
+    beats: ["mix"],
+    verbs: ["/"],
+    paint(g, ctx) {
+      g.fill(5, FY, 3, "/");
+      g.fill(9, FY, 2, ".");
+      g.fill(9, FY + 1, 2, "^");
+      g.put(9, FY - 1, "T");
+      g.fill(12, FY, 3, "\\");
+      plantDeco(g, ctx, 4);
+    },
+  },
+  {
+    id: "mix-fan-laser",
+    beats: ["mix"],
+    verbs: ["|"],
+    themes: ["coil", "vault", "spire"],
+    paint(g, ctx) {
+      g.fill(6, FY, 2, ".");
+      g.put(6, FY - 1, ":");
+      g.put(10, FY - 3, "|");
+      g.put(10, FY - 4, "|");
+      g.fill(12, FY - 3, 4, "=");
+      plantDeco(g, ctx, 5);
+    },
+  },
+  {
+    id: "teach-retract",
+    beats: ["teach", "mix"],
+    verbs: ["|"],
+    themes: ["coil", "vault"],
+    paint(g, ctx) {
+      g.put(7, FY - 3, "|");
+      g.put(7, FY - 4, "|");
+      g.fill(9, FY, 4, "#");
+      g.fill(14, FY - 3, 4, "=");
+      plantDeco(g, ctx, 5);
     },
   },
 ];
