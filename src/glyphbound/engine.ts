@@ -5589,11 +5589,20 @@ export class GameEngine {
       const warn = this.time >= g.warnAt && this.time < g.hurtAt;
       const hot = this.time >= g.hurtAt;
       ctx.save();
-      ctx.globalAlpha = warn ? 0.35 + ((this.time - g.warnAt) / Math.max(0.05, ECHO_WARN)) * 0.4 : 0.7;
-      ctx.fillStyle = hot ? "#d45a4a" : "#5ee0c0";
-      ctx.fillRect(x, y, g.w, g.h);
-      ctx.strokeStyle = "#e8d48a";
-      ctx.strokeRect(x, y, g.w, g.h);
+      const pulse = 0.55 + Math.sin(this.time * 14) * 0.25;
+      ctx.globalAlpha = warn ? 0.5 + ((this.time - g.warnAt) / Math.max(0.05, ECHO_WARN)) * 0.45 : 0.9;
+      ctx.shadowColor = hot ? "#d45a4a" : "#5ee0c0";
+      ctx.shadowBlur = 18;
+      ctx.fillStyle = hot ? `rgba(212,90,74,${0.45 + pulse * 0.2})` : `rgba(94,224,192,${0.28 + pulse * 0.15})`;
+      ctx.fillRect(x - 3, y - 3, g.w + 6, g.h + 6);
+      ctx.strokeStyle = hot ? "#ff7a6a" : "#9af8de";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x - 3, y - 3, g.w + 6, g.h + 6);
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = hot ? "#ff7a6a" : "#ffe08a";
+      ctx.font = "700 13px 'Source Sans 3', sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(hot ? "ECHO" : "WAIT", x + g.w / 2, y - 8);
       ctx.restore();
     }
   }

@@ -113,6 +113,48 @@ export function toyFrame(t: number, phase: number, period: number, frames: numbe
   return Math.min(n - 1, Math.floor((cycle(t, phase, period) / period) * n));
 }
 
+/** Sheet cell that matches the live pose, not a leftover animation loop. */
+export function toyDrawFrame(id: ToyId, t: number, phase: number): number {
+  const n = TOY_SHEET[id].cols * TOY_SHEET[id].rows;
+  if (id === "stamper") {
+    const p = stamperPose(t, phase);
+    if (p.hot) return Math.min(2, n - 1);
+    if (p.tell) return Math.min(1, n - 1);
+    return 0;
+  }
+  if (id === "guillotine") {
+    const p = guillotinePose(t, phase);
+    if (p.hot && p.w > TILE) return Math.min(2, n - 1);
+    if (p.tell) return Math.min(1, n - 1);
+    return 0;
+  }
+  if (id === "grate") {
+    const p = gratePhase(t, phase);
+    if (p === "warn") return Math.min(1, n - 1);
+    if (p === "hot") return Math.min(2, n - 1);
+    if (p === "cool") return Math.min(3, n - 1);
+    return 0;
+  }
+  if (id === "shutter") return shutterOpen(t, phase) ? Math.min(3, n - 1) : 0;
+  if (id === "dropcap") {
+    const p = dropcapPose(t, phase);
+    if (p.plat) return Math.min(4, n - 1);
+    if (p.hot) return Math.min(3, n - 1);
+    if (p.tell) return Math.min(1, n - 1);
+    return 0;
+  }
+  if (id === "rotor") return rotorHorizontal(t, phase) ? 0 : Math.min(6, n - 1);
+  if (id === "censer") {
+    const o = censerOffset(t, phase);
+    if (o < -TILE * 0.55) return Math.min(4, n - 1);
+    if (o > TILE * 0.55) return Math.min(6, n - 1);
+    return 0;
+  }
+  if (id === "echo") return 0;
+  if (id === "carriage") return toyFrame(t, phase, TOY_PERIOD.carriage, Math.min(3, n));
+  return toyFrame(t, phase, TOY_PERIOD[id], n);
+}
+
 /** Censer bowl x offset in pixels. Full swing is on-screen before the lane. */
 export function censerOffset(t: number, phase: number) {
   const c = cycle(t, phase, TOY_PERIOD.censer);

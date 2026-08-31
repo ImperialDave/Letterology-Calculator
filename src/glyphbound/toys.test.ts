@@ -5,7 +5,7 @@ import { parseRows } from "./parse-map";
 import { isMovingSolid, SolidGrid } from "./spatial";
 import { TILE } from "./types";
 import { padRows } from "./folio";
-import { grateHot, gratePhase, shutterOpen, TELL, TOY_PERIOD } from "./toys";
+import { grateHot, gratePhase, shutterOpen, TELL, TOY_PERIOD, toyDrawFrame } from "./toys";
 
 function blank(w = 24, h = 10): string[] {
   const rows = Array.from({ length: h }, () => ".".repeat(w));
@@ -128,6 +128,17 @@ test("grate hot window and shutter all-open are readable", () => {
     if (shutterOpen(t, 0) && shutterOpen(t, 0.25) && shutterOpen(t, 0.5)) allOpen += step;
   }
   assert.ok(allOpen > 0.4 && allOpen < 0.7, `all-open ${allOpen}`);
+});
+
+test("toy draw frames follow the live pose, not a leftover loop", () => {
+  assert.equal(toyDrawFrame("grate", 0.2, 0), 0);
+  assert.equal(toyDrawFrame("grate", 0.9, 0), 1);
+  assert.equal(toyDrawFrame("grate", 1.4, 0), 2);
+  assert.equal(toyDrawFrame("stamper", 0.2, 0), 0);
+  assert.equal(toyDrawFrame("stamper", 1.2, 0), 1);
+  assert.equal(toyDrawFrame("guillotine", 0.2, 0), 0);
+  assert.equal(toyDrawFrame("rotor", 0.1, 0), 0);
+  assert.equal(toyDrawFrame("shutter", 0, 0), 0);
 });
 
 test("saws stay out of the static walk grid", () => {
