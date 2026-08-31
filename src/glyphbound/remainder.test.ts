@@ -7,6 +7,7 @@ import { isBoss, rng, verbsFor } from "./recipe";
 import { beatenLedgers, listLedgers, LEVELS } from "./levels";
 import { FROZEN_REMAINDER } from "./remainder-hand";
 import { densityFloors, dressTerrain, padTerrain, tally } from "./density";
+import { localFloorY } from "./levels-story";
 import { REMAINDER_NAMES, REMAINDER_OBJECTIVES } from "./remainder-names";
 import { validateLevel } from "./validate-level";
 import { HAZARD_COOLDOWN, HAZARD_DAMAGE, STAGE_COUNT } from "./types";
@@ -176,6 +177,28 @@ test("remainder 6-60 meet Glyphbound Doctrine density floors", () => {
     if (bits.length) failed.push(`stage${n} W=${d.W} ${bits.join("; ")}`);
   }
   assert.equal(failed.join("\n"), "");
+});
+
+test("remainder ledgers carve hills and valleys", () => {
+  const failed: string[] = [];
+  for (let n = 16; n <= STAGE_COUNT; n += 3) {
+    const rows = assembleStage(n).rows;
+    const W = rows[0]?.length ?? 0;
+    const heights = new Set<number>();
+    for (let x = 8; x < W - 8; x++) heights.add(localFloorY(rows, x));
+    if (heights.size < 2) failed.push(`stage${n} heights ${heights.size}`);
+  }
+  assert.equal(failed.join("; "), "");
+});
+
+test("First Book floors leave the runway", () => {
+  for (const n of [1, 2, 3, 4, 5]) {
+    const rows = LEVELS[`stage${n}`].rows;
+    const W = rows[0]?.length ?? 0;
+    const heights = new Set<number>();
+    for (let x = 8; x < W - 8; x++) heights.add(localFloorY(rows, x));
+    assert.ok(heights.size >= 2, `stage${n} heights ${heights.size} ${[...heights].join(",")}`);
+  }
 });
 
 test("Exchange is never dressed", () => {

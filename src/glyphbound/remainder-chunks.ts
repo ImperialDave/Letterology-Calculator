@@ -1,9 +1,10 @@
-import { grid, type Grid } from "./levels-story";
+import { grid, sealBasement, type Grid } from "./levels-story";
 import type { Beat, Chunk } from "./chunks";
+import { armTeethAlongPath, chunkLand, realizeLandform } from "./sculpt";
 import type { ThemeId } from "./types";
 
-const H = 12;
-const FY = 8;
+const H = 16;
+const FY = 11;
 
 function make(
   id: string,
@@ -15,7 +16,10 @@ function make(
 ): Chunk {
   const w = opts.w ?? 22;
   const g = grid(w, H, FY) as Grid;
+  const spine = realizeLandform(g, chunkLand(w, id));
   paint(g);
+  armTeethAlongPath(g, spine);
+  sealBasement(g, FY);
   return {
     id,
     name,

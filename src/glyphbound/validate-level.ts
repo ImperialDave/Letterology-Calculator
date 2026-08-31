@@ -61,22 +61,31 @@ function mainFloorY(rows: string[]) {
 
 function pitIssues(rows: string[]): FolioIssue[] {
   const issues: FolioIssue[] = [];
-  const fy = mainFloorY(rows);
+  const spawn = findChar(rows, "@");
+  const main = spawn ? Math.min(rows.length - 2, spawn.y + 1) : mainFloorY(rows);
   const W = rows[0]?.length ?? 0;
   let x = 1;
   while (x < W - 1) {
-    if (isFloor(at(rows, x, fy))) {
+    const local = localFloorY(rows, x);
+    const carved = local >= main + 2 && local <= main + 4 && isFloor(at(rows, x, local));
+    if (isFloor(at(rows, x, main)) || carved) {
       x++;
       continue;
     }
     const x0 = x;
-    while (x < W - 1 && !isFloor(at(rows, x, fy))) x++;
+    while (x < W - 1) {
+      const yf = localFloorY(rows, x);
+      const valley = yf >= main + 2 && yf <= main + 4 && isFloor(at(rows, x, yf));
+      if (isFloor(at(rows, x, main)) || valley) break;
+      x++;
+    }
     const w = x - x0;
     let assists = 0;
     let sluice = false;
     for (let i = x0; i < x; i++) {
+      const yf = localFloorY(rows, i);
       for (let dy = -2; dy <= 2; dy++) {
-        const ch = at(rows, i, fy + dy);
+        const ch = at(rows, i, yf + dy);
         if (ch === "T" || ch === "=" || ch === "_" || ch === "`" || ch === ")" || ch === "g") assists += 1;
         if (ch === SLUICE) sluice = true;
       }
@@ -113,7 +122,9 @@ function jumpClear(rows: string[], x0: number, y0: number, x1: number, y1: numbe
   for (let i = 1; i < steps; i++) {
     const x = Math.round(x0 + ((x1 - x0) * i) / steps);
     const y = Math.round(y0 + ((y1 - y0) * i) / steps);
-    if (isSolid(at(rows, x, y))) return false;
+    if (!isSolid(at(rows, x, y))) continue;
+    if (x === x1 && y > y1) continue;
+    return false;
   }
   return true;
 }
@@ -143,10 +154,13 @@ function reachable(rows: string[]): boolean {
     if (x === gate.x && (y === gate.y || y === gate.y - 1 || y === gate.y + 1)) return true;
     tryPush(x + 1, y);
     tryPush(x - 1, y);
-    for (let drop = 1; drop <= 6; drop++) {
-      const ny = y + drop;
-      if (isSolid(at(rows, x, ny))) break;
-      tryPush(x, ny);
+    for (const dx of [-1, 0, 1] as const) {
+      for (let drop = 1; drop <= 6; drop++) {
+        const nx = x + dx;
+        const ny = y + drop;
+        if (isSolid(at(rows, nx, ny))) break;
+        tryPush(nx, ny);
+      }
     }
     for (let dx = -4; dx <= 4; dx++) {
       for (let up = 0; up <= 2; up++) {
@@ -161,11 +175,23 @@ function reachable(rows: string[]): boolean {
   return seen.has(key(gate.x, gate.y)) || seen.has(key(gate.x, gate.y - 1)) || seen.has(key(gate.x, gate.y + 1));
 }
 
+function localFloorY(rows: string[], x: number) {
+  const H = rows.length;
+  for (let y = H - 2; y >= 1; y--) {
+    const ch = at(rows, x, y);
+    if (ch === "^" || ch === "S" || ch === "~") continue;
+    if (isFloor(ch) && ch !== ".") continue;
+    if (ch === "#" || ch === "*" || ch === "&") continue;
+    return Math.min(H - 2, y + 1);
+  }
+  return mainFloorY(rows);
+}
+
 function laserFloorIssues(rows: string[]): FolioIssue[] {
-  const fy = mainFloorY(rows);
   const W = rows[0]?.length ?? 0;
   const issues: FolioIssue[] = [];
   for (let x = 1; x < W - 1; x++) {
+    const fy = localFloorY(rows, x);
     if (at(rows, x, fy) === LASER || at(rows, x, fy - 1) === LASER) {
       issues.push({ code: "laser-floor", message: `laser on the walkway at ${x}` });
     }
@@ -174,10 +200,10 @@ function laserFloorIssues(rows: string[]): FolioIssue[] {
 }
 
 function sawPathIssues(rows: string[]): FolioIssue[] {
-  const fy = mainFloorY(rows);
   const W = rows[0]?.length ?? 0;
   const issues: FolioIssue[] = [];
   for (let x = 1; x < W - 1; x++) {
+    const fy = localFloorY(rows, x);
     if (at(rows, x, fy - 1) === SAW) {
       issues.push({ code: "saw-path", message: `saw blocks the walkway at ${x}` });
     }

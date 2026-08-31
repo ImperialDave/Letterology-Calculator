@@ -1,4 +1,5 @@
-import { grid, armTeeth, type Grid } from "./levels-story";
+import type { Grid } from "./levels-story";
+import { sculptLevel } from "./sculpt";
 
 /** 2-tile pit. Walk-on ^ at fy-1 is stripped by ensurePortalAccess. */
 function bite(g: Grid, fy: number, x: number, n = 2) {
@@ -11,8 +12,13 @@ function hang(g: Grid, fy: number, x: number, h = 2) {
 
 export function buildExchange(): string[] {
   const W = 184;
-  const H = 13;
-  const g = grid(W, H, 8) as Grid;
+  const H = 16;
+  const fy = 8;
+  return sculptLevel(W, H, fy, [
+    { t: "hill", at: 38, w: 14, h: 1 },
+    { t: "valley", at: 88, w: 12, d: 2 },
+    { t: "hill", at: 128, w: 14, h: 1 },
+  ], (g) => {
   const { put, fill } = g;
   const pit = 156;
   put(1, 7, "@");
@@ -65,7 +71,6 @@ export function buildExchange(): string[] {
   put(134, 3, "+");
   put(148, 5, "|");
   put(148, 6, "|");
-  put(148, 7, "|");
   put(150, 6, "==");
   put(118, 2, "0");
   put(pit - 14, 7, "y");
@@ -80,13 +85,18 @@ export function buildExchange(): string[] {
   put(166, 6, "====");
   put(168, 5, "$");
   put(88, 2, "4");
-  return armTeeth(g, 8);
+  });
 }
 
 export function buildGutter(): string[] {
   const W = 172;
-  const H = 14;
-  const g = grid(W, H, 9) as Grid;
+  const H = 16;
+  return sculptLevel(W, H, 9, [
+    { t: "valley", at: 30, w: 12, d: 2 },
+    { t: "sink", at: 46, n: 3 },
+    { t: "hill", at: 88, w: 14, h: 1 },
+    { t: "valley", at: 140, w: 12, d: 2 },
+  ], (g) => {
   const { put, fill } = g;
   const gap = (x: number, n: number) => {
     fill(x, 9, n, "~");
@@ -153,13 +163,18 @@ export function buildGutter(): string[] {
   put(25, 2, "$");
   put(164, 6, "==");
   put(164, 5, "$");
-  return armTeeth(g, 9);
+  });
 }
 
 export function buildCoil(): string[] {
   const W = 176;
-  const H = 14;
-  const g = grid(W, H, 9) as Grid;
+  const H = 16;
+  return sculptLevel(W, H, 9, [
+    { t: "hill", at: 24, w: 12, h: 1 },
+    { t: "corridor", at: 96, w: 14 },
+    { t: "valley", at: 132, w: 12, d: 2 },
+    { t: "ridge", at: 150, w: 14 },
+  ], (g) => {
   const { put, fill } = g;
   const laserCol = (x: number, y0: number, y1: number) => {
     for (let y = y0; y <= y1; y++) put(x, y, "|");
@@ -230,13 +245,18 @@ export function buildCoil(): string[] {
   put(158, 4, "====");
   put(160, 3, "$");
   put(40, 8, "5");
-  return armTeeth(g, 9);
+  });
 }
 
 export function buildLedger(): string[] {
   const W = 224;
   const H = 16;
-  const g = grid(W, H, 11) as Grid;
+  return sculptLevel(W, H, 11, [
+    { t: "hill", at: 28, w: 14, h: 1 },
+    { t: "valley", at: 80, w: 14, d: 2 },
+    { t: "corridor", at: 160, w: 18 },
+    { t: "pass", at: 188, w: 18 },
+  ], (g) => {
   const { put, fill } = g;
   const gap = (x: number, n: number) => {
     fill(x, 11, n, "~");
@@ -332,5 +352,51 @@ export function buildLedger(): string[] {
   for (let y = 12; y <= 14; y++) fill(1, y, 216, "#");
   put(W - 8, 10, "!");
   put(W - 4, 10, "P");
-  return armTeeth(g, 11);
+  });
+}
+
+export function buildFort(): string[] {
+  return sculptLevel(96, 16, 11, [
+    { t: "hill", at: 16, w: 12, h: 1 },
+    { t: "valley", at: 48, w: 10, d: 2 },
+    { t: "ridge", at: 70, w: 14 },
+  ], (g, fy) => {
+    const { put, fill } = g;
+    put(2, fy - 1, "@");
+    put(4, fy - 1, "i");
+    put(12, fy - 3, "=");
+    put(13, fy - 3, "=");
+    put(14, fy - 3, "=");
+    put(15, fy - 3, "=");
+    put(18, fy - 2, "z");
+    fill(20, fy - 4, 8, "#");
+    fill(22, fy - 3, 2, "v");
+    fill(22, fy - 2, 2, "v");
+    fill(22, fy - 1, 2, "v");
+    put(28, fy - 2, "z");
+    hang(g, fy, 32, 2);
+    put(36, fy - 5, "F");
+    put(40, fy - 1, "8");
+    fill(42, fy, 4, ".");
+    put(43, fy - 1, "T");
+    bite(g, fy, 12, 2);
+    hang(g, fy, 32, 2);
+    put(46, fy - 1, "5");
+    fill(52, fy - 4, 10, "#");
+    put(54, fy - 3, "*");
+    put(58, fy - 5, "b");
+    put(62, fy - 2, "z");
+    put(66, fy - 1, "2");
+    put(68, fy - 3, "=");
+    put(69, fy - 3, "=");
+    put(70, fy - 3, "=");
+    put(71, fy - 3, "=");
+    put(66, fy - 5, "R");
+    put(74, fy - 1, "4");
+    put(78, fy - 1, "7");
+    put(82, fy - 1, "o");
+    put(g.W - 10, fy - 1, "!");
+    put(g.W - 4, fy - 1, "P");
+    put(8, fy - 6, "$");
+  });
 }

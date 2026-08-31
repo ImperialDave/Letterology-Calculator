@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { densityFloors, tally } from "./density";
 import { LEVELS } from "./levels";
+import { localFloorY } from "./levels-story";
 import { OCTET, RECRUIT_LETTERS } from "./roster";
 import { SECOND_BOOK } from "./types";
 import { validateLevel } from "./validate-level";
@@ -70,6 +71,30 @@ test("Numberomicon wallpaper is toys, not bounce halls", () => {
 
 test("Unbound Sentence still starts at 16", () => {
   assert.equal(LEVELS.stage16.name, "Lower Ribs");
+});
+
+function floorHeights(rows: string[]) {
+  const W = rows[0]?.length ?? 0;
+  const set = new Set<number>();
+  for (let x = 8; x < W - 8; x++) set.add(localFloorY(rows, x));
+  return set;
+}
+
+test("Numberomicon floors are hills and valleys, not a runway", () => {
+  for (const n of STORY) {
+    const rows = LEVELS[`stage${n}`].rows;
+    const heights = floorHeights(rows);
+    assert.ok(heights.size >= 3, `stage${n} floor heights ${heights.size} ${[...heights].join(",")}`);
+  }
+});
+
+test("foundry damage toys sit at more than one height", () => {
+  const rows = LEVELS.stage6.rows;
+  const ys = new Set<number>();
+  for (let y = 0; y < rows.length; y++) {
+    for (const ch of rows[y]) if (ch === "l") ys.add(y);
+  }
+  assert.ok(ys.size >= 2, `censer heights ${[...ys].join(",")}`);
 });
 
 test("Numberomicon ledgers meet late-book density", () => {

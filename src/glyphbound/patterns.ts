@@ -1,11 +1,12 @@
 /** Beat painters. Glyphbound Doctrine: .grok/skills/glyphbound-ledgers/SKILL.md */
-import { grid, type Grid } from "./levels-story";
+import { grid, sealBasement, type Grid } from "./levels-story";
 import type { Beat } from "./chunks";
 import type { Pocket, Verb } from "./recipe";
 import type { ThemeId } from "./types";
+import { armTeethAlongPath, chunkLand, realizeLandform } from "./sculpt";
 
-const H = 12;
-export const FY = 8;
+const H = 16;
+export const FY = 11;
 
 export interface PaintCtx {
   enemy: string;
@@ -920,9 +921,12 @@ export function pickPattern(
 export function paintPattern(p: Pattern, width: number, ctx: PaintCtx): string[] {
   const w = Math.max(p.minW ?? 18, Math.min(28, width));
   const g = grid(w, H, FY) as Grid;
+  const spine = realizeLandform(g, chunkLand(w, p.id));
   p.paint(g, ctx);
   if (ctx.pocket !== "none" && p.beats[0] !== "rest" && p.beats[0] !== "land") {
     plantPocket(g, ctx, Math.min(g.W - 8, 14));
   }
+  armTeethAlongPath(g, spine);
+  sealBasement(g, FY);
   return [...g];
 }

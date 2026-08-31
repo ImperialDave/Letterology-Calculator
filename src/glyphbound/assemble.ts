@@ -3,11 +3,12 @@ import { FROZEN_REMAINDER } from "./remainder-hand";
 import { remainderName, remainderObjective } from "./remainder-names";
 import { isBoss, recipeFor, rng, themeFor, type Recipe } from "./recipe";
 import { FY, paintPattern, pickPattern } from "./patterns";
-import { dressTerrain, fillDensity } from "./density";
+import { dressTerrain, ensureCounts, fillDensity } from "./density";
 import { validateLevel } from "./validate-level";
 import type { LevelId, TaskDef, ThemeId } from "./types";
 import { STAGE_COUNT } from "./types";
-import { sealBasement, type LevelMeta } from "./levels-story";
+import { localFloorY, sealBasement, type LevelMeta } from "./levels-story";
+import { repairPath } from "./sculpt";
 
 const WORDS: Record<number, string> = {
   6: "W",
@@ -113,15 +114,16 @@ function landmarkDress(rows: string[], deco: string, rand: () => number) {
   let placed = 0;
   for (let x = 4; x < W - 4; x += step) {
     const ox = x + Math.floor(rand() * 4);
-    const y = FY - 2;
+    const fy = localFloorY(rows, ox) || FY;
+    const y = fy - 2;
     if (y <= 0 || y >= H) continue;
     if (rows[y][ox] !== ".") continue;
     const below = rows[y + 1]?.[ox] ?? "#";
     if (below !== "#" && below !== "=" && below !== "_" && below !== "*") continue;
-    const blocked = "@%P!".includes(rows[FY - 1]?.[ox] ?? "");
+    const blocked = "@%P!".includes(rows[fy - 1]?.[ox] ?? "");
     if (blocked) continue;
     if (deco === "_") {
-      if (rows[FY - 2][ox] === ".") setCell(rows, ox, FY - 2, "_");
+      if (rows[y][ox] === ".") setCell(rows, ox, y, "_");
     } else {
       setCell(rows, ox, y, deco);
     }
@@ -150,20 +152,25 @@ function mutate(rows: string[]): string[] {
         for (let y = 0; y < rows.length; y++) {
           for (let x = 0; x < rows[y].length; x++) {
             if (rows[y][x] !== "|") continue;
-            if (y >= FY - 1) {
+            const fy = localFloorY(rows, x) || FY;
+            if (y >= fy - 1) {
               setCell(rows, x, y, ".");
-              setCell(rows, x, Math.max(1, FY - 3), "|");
+              setCell(rows, x, Math.max(1, fy - 3), "|");
             }
           }
         }
       } else if (issue.code === "pit" || issue.code === "pit-wide") {
         const m = issue.message.match(/(\d+)/);
         const x0 = m ? Number(m[1]) : 8;
-        setCell(rows, x0 + 1, FY, "#");
-        setCell(rows, x0 + 1, FY - 1, "T");
+        const fy = localFloorY(rows, x0) || FY;
+        setCell(rows, x0 + 1, fy, "#");
+        setCell(rows, x0 + 1, fy - 1, "T");
       } else if (issue.code === "path") {
         const W = rows[0]?.length ?? 0;
-        for (let x = 2; x < W - 2; x += 6) setCell(rows, x, FY - 2, "=");
+        for (let x = 2; x < W - 2; x += 6) {
+          const fy = localFloorY(rows, x) || FY;
+          setCell(rows, x, fy - 2, "=");
+        }
       } else if (issue.code === "rest-hazard" || issue.code === "teeth") {
         const x = rows.findIndex ? -1 : -1;
         for (let y = 0; y < rows.length; y++) {
@@ -229,6 +236,8 @@ export function assembleStage(n: number): LevelMeta {
   rows = dressTerrain(rows, { n, deco: recipe.deco, rand, fy: FY });
   rows = mutate(rows);
   sealBasement(rows, FY);
+  repairPath(rows);
+  ensureCounts(rows, n);
   const boss = isBoss(n);
   const tasks: TaskDef[] = [{ id: `clear-${n}`, text: boss ? "Defeat the warden" : "Reach the gate" }];
   if (n === 6) tasks.push({ id: "word-wall", text: "Pick up WALL" });

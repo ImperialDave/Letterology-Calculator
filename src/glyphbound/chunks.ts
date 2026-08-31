@@ -1,5 +1,6 @@
-import { grid, type Grid } from "./levels-story";
+import { grid, sealBasement, type Grid } from "./levels-story";
 import { REMAINDER_CHUNKS } from "./remainder-chunks";
+import { armTeethAlongPath, chunkLand, realizeLandform } from "./sculpt";
 import type { ThemeId } from "./types";
 
 export type Beat = "land" | "teach" | "mix" | "combat" | "rest" | "arena" | "gate";
@@ -17,8 +18,8 @@ export interface Chunk {
   maxStage: number;
 }
 
-const H = 12;
-const FY = 8;
+const H = 16;
+const FY = 11;
 
 function make(
   id: string,
@@ -31,7 +32,10 @@ function make(
   const w = opts.w ?? 20;
   const fy = opts.fy ?? FY;
   const g = grid(w, H, fy) as Grid;
+  const spine = realizeLandform(g, chunkLand(w, id));
   paint(g);
+  armTeethAlongPath(g, spine);
+  sealBasement(g, fy);
   return {
     id,
     name,

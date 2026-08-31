@@ -1,9 +1,10 @@
 /** Frozen Remainder showpieces. Glyphbound Doctrine: .grok/skills/glyphbound-ledgers/SKILL.md */
-import { fillDensity } from "./density";
+import { ensureCounts, fillDensity } from "./density";
 import { remainderName, remainderObjective } from "./remainder-names";
 import { decoFor, rng } from "./recipe";
 import { FIRST_BOOK, STAGE_COUNT, type LevelId, type TaskDef, type ThemeId } from "./types";
 import { grid, sealBasement, type Grid, type LevelMeta } from "./levels-story";
+import { landformFromSeed, realizeLandform, repairPath } from "./sculpt";
 
 function ledger(
   n: number,
@@ -13,12 +14,15 @@ function ledger(
   opts: { w?: number; h?: number; fy?: number; exit?: "hub" | "win" } = {},
 ): LevelMeta {
   const W = opts.w ?? 104;
-  const H = opts.h ?? 14;
-  const fy = opts.fy ?? 10;
+  const H = opts.h ?? 16;
+  const fy = opts.fy ?? 11;
   const g = grid(W, H, fy) as Grid;
+  realizeLandform(g, landformFromSeed(W, n * 9973 + 17));
   paint(g, fy);
   fillDensity(g, { n, deco: decoFor(theme), rand: rng(n * 9973 + 91), fy, theme, featured: SHOW_TOY[n] });
   sealBasement(g, fy);
+  repairPath(g);
+  ensureCounts(g, n);
   const tasks: TaskDef[] = boss
     ? [{ id: `clear-${n}`, text: n === FIRST_BOOK ? "Defeat End-Mark" : n === STAGE_COUNT ? "Defeat the Remainder" : "Defeat the warden" }]
     : [{ id: `clear-${n}`, text: "Reach the gate" }];

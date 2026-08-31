@@ -1,7 +1,7 @@
 import type { LevelId } from "./types";
 import { STAGE_COUNT, FIRST_BOOK } from "./types";
-import { armTeeth, slice, grid, type LevelMeta, type Grid } from "./levels-story";
-import { buildExchange, buildGutter, buildCoil, buildLedger } from "./levels-chapters";
+import { armTeeth, grid, type LevelMeta, type Grid } from "./levels-story";
+import { buildExchange, buildGutter, buildCoil, buildLedger, buildFort } from "./levels-chapters";
 import {
   buildAmpersand,
   buildApproach,
@@ -149,34 +149,7 @@ const hand: Record<string, LevelMeta> = {
       { id: "importer", text: "Defeat G" },
       { id: "gate-chapter", text: "Take the CHAPTER gate" },
     ],
-    rows: (() => {
-      const rows = slice(`
-################################################################################################
-#..............................................................................................#
-#.$..............vv..............|.............................................................#
-#................vv..............|...................b.....................R...................#
-#.........4.............*......F..............##########............========...................#
-#...................########.........8........#........#.........2.............................#
-#@..........====...z#..vv..#..z................#....*...#..z.....4..............o...............#
-#.............====..#..vv..#....^^^^..........#........#.........====.................!.P......#
-######^^............########......5...........##########...7........############################
-################################################################################################
-################################################################################################
-################################################################################################
-`);
-      const walk = 7;
-      const fy = 8;
-      const i = rows[walk].indexOf("^^^^");
-      if (i >= 0) {
-        rows[walk] = rows[walk].slice(0, i) + ".T.." + rows[walk].slice(i + 4);
-        rows[fy] = rows[fy].slice(0, i) + "...." + rows[fy].slice(i + 4);
-      }
-      const j = rows[walk].indexOf("|");
-      if (j >= 0 && walk - 1 > 0 && rows[walk - 1][j] === ".") {
-        rows[walk - 1] = rows[walk - 1].slice(0, j) + "|" + rows[walk - 1].slice(j + 1);
-      }
-      return armTeeth(rows, 8);
-    })(),
+    rows: buildFort(),
     exit: "hub",
     index: 2,
   },

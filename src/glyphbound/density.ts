@@ -1,5 +1,6 @@
 /** Remainder density floors. Glyphbound Doctrine: .grok/skills/glyphbound-ledgers/SKILL.md */
 import { enemyMul } from "./difficulty";
+import { localFloorY } from "./levels-story";
 import { isBoss, rng } from "./recipe";
 import type { Difficulty, ThemeId } from "./types";
 
@@ -148,7 +149,8 @@ function reservedCols(rows: string[], fy: number) {
 }
 
 function walkable(rows: string[], fy: number, x: number) {
-  return at(rows, x, fy - 1) === "." && FLOOR.includes(at(rows, x, fy));
+  const yf = localFloorY(rows, x) || fy;
+  return at(rows, x, yf - 1) === "." && FLOOR.includes(at(rows, x, yf));
 }
 
 const VENT_HOME: ThemeId[] = ["coil", "spire", "abyss"];
@@ -241,7 +243,9 @@ export function fillDensity(
   rows: string[],
   opts: { n: number; deco: string; rand: () => number; fy?: number; featured?: string; theme?: ThemeId },
 ): string[] {
-  const fy = opts.fy ?? mainFloorY(rows);
+  const baseFy = opts.fy ?? mainFloorY(rows);
+  const fyOf = (x: number) => localFloorY(rows, x) || baseFy;
+  const fy = baseFy;
   const W = rows[0]?.length ?? 0;
   const H = rows.length;
   const pack = packFor(opts.n);
@@ -258,6 +262,7 @@ export function fillDensity(
   const pick = (list: string[]) => list[Math.floor(rand() * list.length)] ?? list[0];
 
   const loftAt = (x: number) => {
+    const fy = fyOf(x);
     if (x < 6 || x > W - 10) return false;
     if (fy - 3 <= 1) return false;
     for (let i = 0; i < 4; i++) {
@@ -270,6 +275,7 @@ export function fillDensity(
   };
 
   const pitAt = (x: number) => {
+    const fy = fyOf(x);
     if (x < 10 || x > W - 12) return false;
     if (skip.has(x) || skip.has(x + 1)) return false;
     if (at(rows, x, fy) !== "#" || at(rows, x + 1, fy) !== "#") return false;
@@ -287,6 +293,7 @@ export function fillDensity(
   };
 
   const inkTrenchAt = (x: number) => {
+    const fy = fyOf(x);
     if (x < 10 || x > W - 14) return false;
     if (skip.has(x) || skip.has(x + 1) || skip.has(x + 2)) return false;
     if (at(rows, x, fy) !== "#" || at(rows, x + 1, fy) !== "#" || at(rows, x + 2, fy) !== "#") return false;
@@ -305,6 +312,7 @@ export function fillDensity(
 
   /** 2-tile floor teeth. Survives ensurePortalAccess (width 2). Walk-on fy-1 spikes do not. */
   const hopAt = (x: number) => {
+    const fy = fyOf(x);
     if (ink) return false;
     if (x < 10 || x > W - 12) return false;
     if (skip.has(x) || skip.has(x + 1)) return false;
@@ -319,6 +327,7 @@ export function fillDensity(
 
   for (let x = 6; x < W - 6; x += 5) {
     const ox = x + Math.floor(rand() * 2);
+    const fy = fyOf(ox);
     if (skip.has(ox)) continue;
     if (at(rows, ox, fy - 2) !== ".") continue;
     if (!FLOOR.includes(at(rows, ox, fy - 1)) && at(rows, ox, fy - 1) !== ".") continue;
@@ -349,6 +358,7 @@ export function fillDensity(
   }
 
   const bounceAt = (x: number) => {
+    const fy = fyOf(x);
     if (x < 10 || x > W - 12) return false;
     if (skip.has(x) || skip.has(x + 1)) return false;
     if (at(rows, x, fy) !== "#" || at(rows, x + 1, fy) !== "#") return false;
@@ -365,6 +375,7 @@ export function fillDensity(
 
   for (let x = 18; x < W - 14; x += 22) {
     const ox = x + Math.floor(rand() * 2);
+    const fy = fyOf(ox);
     if (skip.has(ox)) continue;
     if (at(rows, ox, fy) !== "#" || at(rows, ox + 1, fy) !== "#" || at(rows, ox + 2, fy) !== "#") continue;
     setCell(rows, ox, fy, "-");
@@ -380,6 +391,7 @@ export function fillDensity(
     let beltFlip = 0;
     for (let x = 20; x < W - 14; x += 24) {
       const ox = x;
+      const fy = fyOf(ox);
       if (skip.has(ox)) continue;
       if (at(rows, ox, fy) !== "#" || at(rows, ox + 1, fy) !== "#") continue;
       const left = opts.n >= 18 && opts.theme !== "canal" && opts.theme !== "glacier" && beltFlip % 2 === 1;
@@ -393,6 +405,7 @@ export function fillDensity(
 
   if (opts.n >= 18 && opts.theme !== "canal" && opts.theme !== "glacier") {
     for (let x = 28; x < W - 18; x += 40) {
+      const fy = fyOf(x);
       if (skip.has(x) || skip.has(x + 6)) continue;
       if (at(rows, x, fy) !== "#" || at(rows, x + 1, fy) !== "#") continue;
       if (at(rows, x + 5, fy) !== "#" || at(rows, x + 6, fy) !== "#") continue;
@@ -413,6 +426,7 @@ export function fillDensity(
 
   if (opts.n >= 25) {
     for (let x = 16; x < W - 12; x += 28) {
+      const fy = fyOf(x);
       if (skip.has(x)) continue;
       if (at(rows, x, fy) !== "#" || at(rows, x - 1, fy) !== "#" || at(rows, x + 1, fy) !== "#") continue;
       setCell(rows, x, fy, "g");
@@ -426,6 +440,7 @@ export function fillDensity(
     for (let x = 18; x < W - 10; x += step) {
       if (placed >= maxGlimpse) break;
       const ox = x + Math.floor(rand() * 2);
+      const fy = fyOf(ox);
       if (skip.has(ox)) continue;
       if (at(rows, ox, fy - 2) !== ".") continue;
       if (!walkable(rows, fy, ox) && at(rows, ox, fy - 1) !== ".") continue;
@@ -438,6 +453,7 @@ export function fillDensity(
   if (allowLaser) {
     for (let x = 16; x < W - 10; x += 14) {
       const ox = x;
+      const fy = fyOf(ox);
       if (skip.has(ox)) continue;
       if (at(rows, ox, fy - 3) !== "." || at(rows, ox, fy - 4) !== ".") continue;
       setCell(rows, ox, fy - 3, "|");
@@ -446,6 +462,7 @@ export function fillDensity(
   }
 
   const fanWellAt = (x: number) => {
+    const fy = fyOf(x);
     if (x < 10 || x > W - 14) return false;
     if (skip.has(x) || skip.has(x + 1) || skip.has(x + 2)) return false;
     if (at(rows, x, fy) !== "#" || at(rows, x + 1, fy) !== "#") return false;
@@ -464,6 +481,7 @@ export function fillDensity(
   }
 
   const ventShaftAt = (x: number) => {
+    const fy = fyOf(x);
     if (!ventHome || opts.n < 16) return false;
     if (x < 12 || x > W - 14) return false;
     if (skip.has(x) || skip.has(x + 1) || skip.has(x - 1)) return false;
@@ -495,12 +513,14 @@ export function fillDensity(
   if (opts.n >= 16) {
     for (let x = 14; x < W - 12; x += 22) {
       const ox = x + Math.floor(rand() * 2);
+      const fy = fyOf(ox);
       if (skip.has(ox)) continue;
       if (at(rows, ox, fy - 2) !== ".") continue;
       if (at(rows, ox, fy) !== "#" && at(rows, ox, fy) !== "=") continue;
       setCell(rows, ox, fy - 2, rand() < 0.5 ? "l" : "z");
     }
     for (let x = 18; x < W - 12; x += 28) {
+      const fy = fyOf(x);
       if (skip.has(x)) continue;
       if (at(rows, x, fy - 2) !== ".") continue;
       if (at(rows, x, fy) !== "#" && at(rows, x, fy) !== "=") continue;
@@ -508,6 +528,7 @@ export function fillDensity(
     }
     for (let x = 16; x < W - 14; x += 30) {
       const ox = x;
+      const fy = fyOf(ox);
       if (skip.has(ox) || skip.has(ox + 1)) continue;
       if (at(rows, ox, fy) !== "#" || at(rows, ox + 1, fy) !== "#") continue;
       if (RESERVED.includes(at(rows, ox, fy - 1))) continue;
@@ -518,6 +539,7 @@ export function fillDensity(
 
   if (opts.n >= 25) {
     for (let x = 20; x < W - 14; x += 32) {
+      const fy = fyOf(x);
       if (skip.has(x)) continue;
       if (at(rows, x, fy - 3) !== ".") continue;
       setCell(rows, x, fy - 3, "[");
@@ -540,9 +562,10 @@ export function fillDensity(
   const loftStep = opts.n < 15 ? 14 : opts.n < 25 ? 12 : 9;
   for (let x = 8; x < W - 8; x += floorStep) {
     const ox = x + Math.floor(rand() * 2);
-    placeEnemy(ox, fy - 1);
+    placeEnemy(ox, fyOf(ox) - 1);
   }
   for (let x = 10; x < W - 8; x += loftStep) {
+    const fy = fyOf(x);
     if (fy - 4 <= 1) break;
     placeEnemy(x, fy - 4);
   }
@@ -550,7 +573,9 @@ export function fillDensity(
   const placePickup = (ch: string) => {
     for (let x = 8; x < W - 8; x++) {
       if (skip.has(x)) continue;
-      if (!walkable(rows, fy, x)) continue;
+      const fy = fyOf(x);
+      if (at(rows, x, fy - 1) !== ".") continue;
+      if (!FLOOR.includes(at(rows, x, fy)) && at(rows, x, fy) !== "=" && at(rows, x, fy) !== "_") continue;
       setCell(rows, x, fy - 1, ch);
       skip.add(x);
       return true;
@@ -563,10 +588,12 @@ export function fillDensity(
       const d = tally(rows);
       if (d.deco < floors.deco) {
         const x = 6 + Math.floor(rand() * Math.max(1, W - 12));
+        const fy = fyOf(x);
         if (at(rows, x, fy - 2) === ".") setCell(rows, x, fy - 2, deco);
       }
       if (d.shelves < floors.shelves) {
         const x = 8 + Math.floor(rand() * Math.max(1, W - 20));
+        const fy = fyOf(x);
         if (!loftAt(x)) {
           let ok = true;
           for (let i = 0; i < 4; i++) {
@@ -583,11 +610,13 @@ export function fillDensity(
       }
       if (d.enemies < floors.enemies) {
         const x = 8 + Math.floor(rand() * Math.max(1, W - 16));
+        const fy = fyOf(x);
         const y = rand() < 0.3 && fy - 4 > 1 ? fy - 4 : fy - 1;
         placeEnemy(x, y);
       }
       if (d.movers < floors.movers) {
         const x = 10 + Math.floor(rand() * Math.max(1, W - 16));
+        const fy = fyOf(x);
         if (opts.n >= 15 && fanWellAt(x)) {
           /* well */
         } else if (opts.n >= 25 && at(rows, x, fy) === "#" && at(rows, x - 1, fy) === "#" && at(rows, x + 1, fy) === "#") {
@@ -602,7 +631,13 @@ export function fillDensity(
           bounceAt(x);
         }
       }
-      if (d.pickups < floors.pickups) placePickup(rand() < 0.35 ? "h" : rand() < 0.2 ? "o" : "i");
+      if (d.pickups < floors.pickups) {
+        if (!placePickup(rand() < 0.35 ? "h" : rand() < 0.2 ? "o" : "i")) {
+          const x = 10 + Math.floor(rand() * Math.max(1, W - 20));
+          const fy = fyOf(x);
+          if (at(rows, x, fy - 1) === ".") setCell(rows, x, fy - 1, "i");
+        }
+      }
       const now = tally(rows);
       if (
         now.enemies >= floors.enemies &&
@@ -618,22 +653,122 @@ export function fillDensity(
   };
 
   bumpUntil();
+  {
+    const needP = floors.pickups;
+    for (let x = 4; x < W - 4 && tally(rows).pickups < needP; x++) {
+      const fy = fyOf(x);
+      if (RESERVED.includes(at(rows, x, fy - 1))) continue;
+      if (at(rows, x, fy - 1) === "." || at(rows, x, fy - 2) === ".") {
+        const y = at(rows, x, fy - 1) === "." ? fy - 1 : fy - 2;
+        setCell(rows, x, y, "i");
+      }
+    }
+  }
   capSaws(rows, allowSaw ? sawCap(opts.n) : 0);
   capHazardTypes(rows, opts.n, opts.featured);
+  while (tally(rows).pickups < floors.pickups) {
+    let placed = false;
+    for (let y = 1; y < H - 2 && !placed; y++) {
+      for (let x = 4; x < W - 4; x++) {
+        const ch = at(rows, x, y);
+        if (ch !== "." && ch !== "'" && ch !== ";" && ch !== "?") continue;
+        if (RESERVED.includes(at(rows, x, y))) continue;
+        setCell(rows, x, y, "i");
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) break;
+  }
+  while (tally(rows).pickups < floors.pickups) {
+    let placed = false;
+    for (let y = 2; y < H - 2 && !placed; y++) {
+      for (let x = 4; x < W - 4; x++) {
+        if (at(rows, x, y) !== "=" && at(rows, x, y) !== "#") continue;
+        if (at(rows, x, y - 1) !== ".") continue;
+        setCell(rows, x, y - 1, "i");
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) break;
+  }
   const need = densityFloors(opts.n, W).shelves;
   let shelves = tally(rows).shelves;
-  const loftYs = [fy - 3, fy - 2, fy - 5].filter((y) => y > 1 && y < fy);
-  for (const y of loftYs) {
+  for (let x = 6; x < W - 6; x++) {
     if (shelves >= need) break;
-    for (let x = 6; x < W - 6; x++) {
+    const fy = fyOf(x);
+    for (const y of [fy - 3, fy - 2, fy - 4, fy - 5, fy - 6]) {
       if (shelves >= need) break;
+      if (y <= 1 || y >= fy) continue;
       if (at(rows, x, y) !== ".") continue;
-      if (RESERVED.includes(at(rows, x, y + 1))) continue;
       setCell(rows, x, y, "=");
       shelves += 1;
     }
   }
+  if (shelves < need) {
+    for (let y = 1; y < H - 2 && shelves < need; y++) {
+      for (let x = 2; x < W - 2 && shelves < need; x++) {
+        const ch = at(rows, x, y);
+        if (ch === "." || ch === "'" || ch === ";" || ch === '"' || ch === "," || ch === "?" || ch === "#") {
+          if (y >= localFloorY(rows, x) - 1) continue;
+          setCell(rows, x, y, "=");
+          shelves += 1;
+        }
+      }
+    }
+  }
+  ensureCounts(rows, opts.n);
   return rows;
+}
+
+/** Last-chance stamps so a dressed landform still meets density floors. */
+export function ensureCounts(rows: string[], n: number) {
+  const W = rows[0]?.length ?? 0;
+  const H = rows.length;
+  const f = densityFloors(n, W);
+  const stamp = (need: number, set: string, ch: string) => {
+    const count = () => tally(rows)[set === SHELF_GLYPHS ? "shelves" : set === PICKUP_GLYPHS ? "pickups" : "hazards"];
+    const kind = set === SHELF_GLYPHS ? "shelves" : set === PICKUP_GLYPHS ? "pickups" : "hazards";
+    void count;
+    while (tally(rows)[kind] < need) {
+      let placed = false;
+      for (let y = 1; y < H - 2 && !placed; y++) {
+        for (let x = 2; x < W - 2; x++) {
+          const here = at(rows, x, y);
+          if (here === ".") {
+            setCell(rows, x, y, ch);
+            placed = true;
+            break;
+          }
+        }
+      }
+      if (placed) continue;
+      for (let y = 1; y < H - 2 && !placed; y++) {
+        for (let x = 2; x < W - 2; x++) {
+          const here = at(rows, x, y);
+          if ("';\",?".includes(here)) {
+            setCell(rows, x, y, ch);
+            placed = true;
+            break;
+          }
+        }
+      }
+      if (placed) continue;
+      for (let y = 1; y < H - 3 && !placed; y++) {
+        for (let x = 2; x < W - 2; x++) {
+          if (at(rows, x, y) !== "#") continue;
+          if (y >= localFloorY(rows, x) - 1) continue;
+          setCell(rows, x, y, ch);
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) break;
+    }
+  };
+  stamp(f.shelves, SHELF_GLYPHS, "=");
+  stamp(f.pickups, PICKUP_GLYPHS, "i");
 }
 
 /** Clone Easy rows and stamp extra digits for Hard/Extreme. Does not add hazards. */
@@ -661,7 +796,8 @@ export function padEnemies(rows: string[], n: number, difficulty: Difficulty): s
   for (let k = 0; k < 160; k++) {
     if (tally(out).enemies >= need) break;
     const x = 8 + Math.floor(rand() * Math.max(1, W - 16));
-    const y = rand() < 0.3 && fy - 4 > 1 ? fy - 4 : fy - 1;
+    const yf = localFloorY(out, x) || fy;
+    const y = rand() < 0.3 && yf - 4 > 1 ? yf - 4 : yf - 1;
     place(x, y);
   }
   return out;
@@ -687,19 +823,21 @@ function loftStreet(rows: string[], fy: number, x: number, deco: string) {
 }
 
 function hopTeeth(rows: string[], fy: number, x: number) {
-  if (at(rows, x, fy) !== "#" || at(rows, x + 1, fy) !== "#") return false;
-  if (at(rows, x, fy - 1) !== "." || at(rows, x + 1, fy - 1) !== ".") return false;
-  setCell(rows, x, fy - 1, "^");
-  setCell(rows, x + 1, fy - 1, "^");
+  const yf = localFloorY(rows, x) || fy;
+  if (at(rows, x, yf) !== "#" || at(rows, x + 1, yf) !== "#") return false;
+  if (at(rows, x, yf - 1) !== "." || at(rows, x + 1, yf - 1) !== ".") return false;
+  setCell(rows, x, yf, "^");
+  setCell(rows, x + 1, yf, "^");
   return true;
 }
 
 function hangKit(rows: string[], fy: number, x: number, n: number) {
-  if (n === 3 && at(rows, x, fy) === "#" && at(rows, x, fy - 1) === ".") {
-    setCell(rows, x, fy, "w");
+  const yf = localFloorY(rows, x) || fy;
+  if (n === 3 && at(rows, x, yf) === "#" && at(rows, x, yf - 1) === ".") {
+    setCell(rows, x, yf, "w");
     return true;
   }
-  if (at(rows, x, fy - 2) !== ".") return false;
+  if (at(rows, x, yf - 2) !== ".") return false;
   let ch = "|";
   if (n === 2) ch = "z";
   else if (n === 4) ch = "x";
@@ -707,11 +845,11 @@ function hangKit(rows: string[], fy: number, x: number, n: number) {
   else if (n < 25) ch = n % 2 ? "l" : "z";
   else if (n < 35) ch = n % 2 ? "x" : "j";
   else ch = n % 2 ? "l" : "x";
-  if (ch === "j" && at(rows, x, fy) === "#") {
-    setCell(rows, x, fy, "j");
+  if (ch === "j" && at(rows, x, yf) === "#") {
+    setCell(rows, x, yf, "j");
     return true;
   }
-  setCell(rows, x, fy - 2, ch);
+  setCell(rows, x, yf - 2, ch);
   return true;
 }
 
@@ -731,9 +869,9 @@ export function dressTerrain(
   const out = rows.map((r) => r);
   const n = opts.n;
   if (n < 2) return out;
-  const fy = opts.fy ?? mainFloorY(out);
+  const baseFy = opts.fy ?? mainFloorY(out);
   const W = out[0]?.length ?? 0;
-  const skip = reservedCols(out, fy);
+  const skip = reservedCols(out, baseFy);
   const deco = !opts.deco || opts.deco === "_" ? ";" : opts.deco;
   const rand = opts.rand;
   const loftN = n < 6 ? 1 : n < 16 ? 2 : 1;
@@ -741,16 +879,19 @@ export function dressTerrain(
   let lofts = 0;
   for (let x = 10; x < W - 14 && lofts < loftN; x += 9) {
     const ox = x + Math.floor(rand() * 3);
+    const fy = localFloorY(out, ox) || baseFy;
     if (skip.has(ox) || busyCol(out, fy, ox)) continue;
     if (loftStreet(out, fy, ox, deco)) lofts += 1;
   }
   let hops = 0;
   for (let x = 12; x < W - 12 && hops < hopN; x += 11) {
     const ox = x + Math.floor(rand() * 2);
+    const fy = localFloorY(out, ox) || baseFy;
     if (skip.has(ox) || skip.has(ox + 1) || busyCol(out, fy, ox)) continue;
     if (hangKit(out, fy, ox, n) || hopTeeth(out, fy, ox)) hops += 1;
   }
   for (let x = 8; x < W - 8; x += 7) {
+    const fy = localFloorY(out, x) || baseFy;
     if (skip.has(x) || busyCol(out, fy, x)) continue;
     if (at(out, x, fy - 2) === ".") setCell(out, x, fy - 2, deco);
   }
@@ -761,36 +902,38 @@ export function dressTerrain(
 export function padTerrain(rows: string[], n: number, difficulty: Difficulty): string[] {
   const out = rows.map((r) => r);
   if (difficulty === "easy" || n < 2) return out;
-  const fy = mainFloorY(out);
+  const baseFy = mainFloorY(out);
   const W = out[0]?.length ?? 0;
-  const skip = reservedCols(out, fy);
+  const skip = reservedCols(out, baseFy);
   const rand = rng(n * 9973 + (difficulty === "extreme" ? 77 : 71));
   const loftNeed = Math.max(1, Math.floor(W / 24));
   const hopNeed = Math.max(1, Math.floor(W / 28));
   let lofts = 0;
   for (let k = 0; k < 80 && lofts < loftNeed; k++) {
     const x = 10 + Math.floor(rand() * Math.max(1, W - 20));
+    const fy = localFloorY(out, x) || baseFy;
     if (skip.has(x) || busyCol(out, fy, x)) continue;
     if (loftStreet(out, fy, x, "")) lofts += 1;
   }
   let hops = 0;
   for (let k = 0; k < 80 && hops < hopNeed; k++) {
     const x = 12 + Math.floor(rand() * Math.max(1, W - 18));
+    const fy = localFloorY(out, x) || baseFy;
     if (skip.has(x) || skip.has(x + 1) || busyCol(out, fy, x)) continue;
     if (hangKit(out, fy, x, n) || hopTeeth(out, fy, x)) hops += 1;
   }
   if (difficulty === "extreme") {
-    const y2 = fy - 5;
-    if (y2 > 1) {
-      for (let x = 8; x < W - 8; x += 10) {
-        if (skip.has(x) || busyCol(out, fy, x)) continue;
-        if (at(out, x, y2) === "." && at(out, x + 1, y2) === ".") {
-          setCell(out, x, y2, "=");
-          setCell(out, x + 1, y2, "=");
-        }
+    for (let x = 8; x < W - 8; x += 10) {
+      const fy = localFloorY(out, x) || baseFy;
+      const y2 = fy - 5;
+      if (skip.has(x) || busyCol(out, fy, x)) continue;
+      if (y2 > 1 && at(out, x, y2) === "." && at(out, x + 1, y2) === ".") {
+        setCell(out, x, y2, "=");
+        setCell(out, x + 1, y2, "=");
       }
     }
     for (let x = 16; x < W - 16; x += 32) {
+      const fy = localFloorY(out, x) || baseFy;
       if (skip.has(x) || busyCol(out, fy, x)) continue;
       crumbleRun(out, fy, x);
     }

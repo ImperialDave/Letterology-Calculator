@@ -44,7 +44,27 @@ export type Grid = string[] & {
   W: number;
   H: number;
   floorY: number;
+  spine?: number[];
+  along?: (x: number, y: number) => number;
 };
+
+const GROUND = "#*=_T/\\&-`)gjw[{";
+
+function isWalkAir(ch: string) {
+  if (!ch) return false;
+  if (ch === "^" || ch === "S" || ch === "~") return false;
+  if (GROUND.includes(ch)) return false;
+  return true;
+}
+
+/** Ground row under the walkway air at column x. Valleys and hills have their own floor. */
+export function localFloorY(rows: string[], x: number) {
+  const H = rows.length;
+  for (let y = H - 2; y >= 1; y--) {
+    if (isWalkAir(rows[y]?.[x] ?? "#")) return Math.min(H - 2, y + 1);
+  }
+  return Math.max(1, H - 3);
+}
 
 export function armTeeth<T extends string[]>(rows: T, floorY?: number): T {
   const H = rows.length;
@@ -187,26 +207,26 @@ export function hoistFromBasement<T extends string[]>(rows: T, fy: number): T {
   };
   const spawn = findMarks(rows, "@")[0];
   const walk = spawn?.y ?? Math.max(1, fy - 1);
-  const floorY = walk + 1 < H - 1 ? walk + 1 : fy;
-  const FLOOR = "#*=_T/\\&-`)g";
-  const takeCol = (preferRight: boolean) => {
+  const FLOOR = "#*=_T/\\&-`)gjw";
+  const takeCol = (preferRight: boolean, yf: number) => {
     const xs: number[] = [];
+    const wy = Math.max(1, yf - 1);
     if (preferRight) {
       for (let x = W - 5; x >= 8; x--) xs.push(x);
     } else {
       for (let x = 8; x <= W - 5; x++) xs.push(x);
     }
     for (const x of xs) {
-      if (WALK_MARKS.includes(rows[walk]?.[x] ?? SLAB)) continue;
-      const below = rows[floorY]?.[x] ?? SLAB;
-      if ((rows[walk]?.[x] === "." || rows[walk]?.[x] === ",") && FLOOR.includes(below) && below !== ".") {
+      if (WALK_MARKS.includes(rows[wy]?.[x] ?? SLAB)) continue;
+      const below = rows[yf]?.[x] ?? SLAB;
+      if ((rows[wy]?.[x] === "." || rows[wy]?.[x] === ",") && FLOOR.includes(below) && below !== ".") {
         return x;
       }
     }
     for (const x of xs) {
-      if (WALK_MARKS.includes(rows[walk]?.[x] ?? SLAB)) continue;
-      if (rows[walk]?.[x] === "." ) {
-        set(x, floorY, "#");
+      if (WALK_MARKS.includes(rows[wy]?.[x] ?? SLAB)) continue;
+      if (rows[wy]?.[x] === ".") {
+        set(x, yf, "#");
         return x;
       }
     }
@@ -214,13 +234,17 @@ export function hoistFromBasement<T extends string[]>(rows: T, fy: number): T {
   };
   for (const ch of ["P", "!", "%"] as const) {
     for (const hit of findMarks(rows, ch)) {
-      if (hit.y <= walk + 1) continue;
+      const yf = localFloorY(rows, hit.x);
+      if (hit.y <= yf) continue;
       set(hit.x, hit.y, SLAB);
-      const x = ch === "P" || ch === "!" ? takeCol(true) : takeCol(false);
-      set(x, walk, ch);
-      if (!FLOOR.includes(rows[floorY]?.[x] ?? "")) set(x, floorY, "#");
+      const x = ch === "P" || ch === "!" ? takeCol(true, yf) : takeCol(false, yf);
+      const wy = Math.max(1, localFloorY(rows, x) - 1);
+      set(x, wy, ch);
+      const gf = localFloorY(rows, x);
+      if (!FLOOR.includes(rows[gf]?.[x] ?? "")) set(x, gf, "#");
     }
   }
+  void walk;
   return rows;
 }
 
@@ -234,16 +258,17 @@ export function sealBasement<T extends string[]>(rows: T, fy: number): T {
     rows[y] = r.slice(0, x) + ch + r.slice(x + 1);
   };
   for (let x = 1; x < W - 1; x++) {
-    const floor = rows[fy]?.[x] ?? "#";
+    const yf = localFloorY(rows, x) || fy;
+    const floor = rows[yf]?.[x] ?? "#";
     const pit = floor === "." || floor === "^";
-    for (let y = fy + 1; y < H - 1; y++) {
+    for (let y = yf + (pit ? 0 : 1); y < H - 1; y++) {
       const here = rows[y]?.[x] ?? "#";
       if (here !== "." && here !== "#") continue;
       if (!pit) {
         if (here === ".") set(x, y, "#");
         continue;
       }
-      if (y === fy + 1 && (here === "." || here === "#")) set(x, y, "^");
+      if (y === yf && (here === "." || here === "#")) set(x, y, "^");
       else if (here === ".") set(x, y, "#");
     }
   }
@@ -313,6 +338,8 @@ export function ensurePortalAccess<T extends string[]>(rows: T): T {
   const lo = Math.max(1, Math.min(spawn.x, gate.x));
   const hi = Math.min(W - 2, Math.max(spawn.x, gate.x));
   for (let x = lo + 1; x < hi; x++) {
+    const yf = localFloorY(rows, x);
+    if (yf !== stand + 1) continue;
     const ch = atCell(rows, x, stand);
     if (ch === "&" || ch === "*" || ch === "^" || ch === "S") set(x, stand, ".");
     if (ch === "#" && x > 2 && x < W - 3) {
@@ -322,13 +349,23 @@ export function ensurePortalAccess<T extends string[]>(rows: T): T {
   }
   let x = lo;
   while (x <= hi) {
+    const yf = localFloorY(rows, x);
+    if (yf !== stand + 1) {
+      x += 1;
+      continue;
+    }
     const ground = atCell(rows, x, stand + 1);
     if (FLOOR_CH.includes(ground) && ground !== ".") {
       x += 1;
       continue;
     }
     let x2 = x;
-    while (x2 <= hi && (!FLOOR_CH.includes(atCell(rows, x2, stand + 1)) || atCell(rows, x2, stand + 1) === ".")) x2 += 1;
+    while (x2 <= hi) {
+      const y2 = localFloorY(rows, x2);
+      if (y2 !== stand + 1) break;
+      if (FLOOR_CH.includes(atCell(rows, x2, stand + 1)) && atCell(rows, x2, stand + 1) !== ".") break;
+      x2 += 1;
+    }
     if (x2 - x > 3) {
       for (let i = x; i < x2; i++) {
         if (!KEEP_PAD.includes(atCell(rows, i, stand + 1))) set(i, stand + 1, "#");
@@ -347,10 +384,13 @@ export function ensurePortalAccess<T extends string[]>(rows: T): T {
   if (atCell(rows, gate.x, stand) !== "P") set(gate.x, stand, "P");
   for (const hit of findMarks(rows, "!")) {
     if (hit.y === stand) continue;
+    const yf = localFloorY(rows, hit.x);
+    if (hit.y === yf - 1 || hit.y === yf) continue;
     if (hit.y > stand + 1 || hit.y < stand - 1) {
-      set(hit.x, hit.y, "#");
+      set(hit.x, hit.y, ".");
       const bx = Math.max(pad0, gate.x - 4);
       if (atCell(rows, bx, stand) === ".") set(bx, stand, "!");
+      else set(hit.x, Math.max(1, yf - 1), "!");
     }
   }
   return rows;

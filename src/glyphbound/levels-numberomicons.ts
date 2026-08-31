@@ -1,4 +1,5 @@
-import { grid, armTeeth, type Grid } from "./levels-story";
+import { grid, sealBasement, type Grid } from "./levels-story";
+import { armTeethAlongPath, dressPath, realizeLandform, repairPath, type LandOp } from "./sculpt";
 
 /**
  * Second Book painters. Glyphbound Doctrine:
@@ -7,10 +8,22 @@ import { grid, armTeeth, type Grid } from "./levels-story";
  * Spikes in pits or 2-tile jumps. Lasers off the walkway. P on the floor.
  */
 
-function paint(W: number, H: number, fy: number, fn: (g: Grid, fy: number) => void) {
+function paint(
+  W: number,
+  H: number,
+  fy: number,
+  fn: (g: Grid, fy: number) => void,
+  land: LandOp[] = [],
+  kit = "",
+) {
   const g = grid(W, H, fy) as Grid;
+  const spine = realizeLandform(g, land);
   fn(g, fy);
-  return armTeeth(g, fy);
+  if (kit) dressPath(g, kit);
+  armTeethAlongPath(g, spine);
+  sealBasement(g, fy);
+  repairPath(g);
+  return [...g];
 }
 
 function torches(g: Grid, y: number, x: number, n: number, ch: string, step = 2) {
@@ -147,7 +160,8 @@ function echoLoft(g: Grid, fy: number, x: number) {
 const KEEP = "@%PihkntOIF!>lzxfjdw}{[";
 
 function cell(g: Grid, x: number, y: number) {
-  return g[y]?.[x] ?? "#";
+  const ny = g.along ? g.along(x, y) : y;
+  return g[ny]?.[x] ?? "#";
 }
 
 function kept(ch: string) {
@@ -168,11 +182,15 @@ function pressure(g: Grid, fy: number, deco: string, kit: PressureKit = {}) {
   const ink = deco === "," || deco === "?";
   const busy = (x: number) => {
     for (let dx = -2; dx <= 3; dx++) {
-      for (let y = 1; y <= fy; y++) if (kept(cell(g, x + dx, y))) return true;
+      const xx = x + dx;
+      for (let y = 1; y < g.H - 1; y++) {
+        const ch = g[y]?.[xx] ?? "#";
+        if (kept(ch)) return true;
+      }
     }
     return false;
   };
-  for (let x = 12; x < W - 16; x += 10) {
+  for (let x = 12; x < W - 16; x += 9) {
     if (busy(x)) continue;
     let clear = true;
     for (let i = 0; i < 7; i++) if (cell(g, x + i, fy - 3) !== ".") clear = false;
@@ -183,7 +201,7 @@ function pressure(g: Grid, fy: number, deco: string, kit: PressureKit = {}) {
   }
   if (kit.hang) {
     let i = 0;
-    for (let x = 11; x < W - 10; x += 9) {
+    for (let x = 11; x < W - 10; x += 7) {
       if (busy(x)) continue;
       if (cell(g, x, fy - 2) !== ".") continue;
       g.put(x, fy - 2, kit.hang[i % kit.hang.length] ?? kit.hang[0]);
@@ -191,7 +209,7 @@ function pressure(g: Grid, fy: number, deco: string, kit: PressureKit = {}) {
     }
   }
   if (kit.floor) {
-    for (let x = 16; x < W - 12; x += 14) {
+    for (let x = 16; x < W - 12; x += 10) {
       if (busy(x) || busy(x + 1)) continue;
       if (cell(g, x, fy) !== "#" || cell(g, x + 1, fy) !== "#") continue;
       if (kept(cell(g, x, fy - 1)) || kept(cell(g, x + 1, fy - 1))) continue;
@@ -289,8 +307,16 @@ export function buildFoundry(): string[] {
     torches(g, fy - 2, 178, 4, d);
     put(W - 8, fy - 1, "i");
     put(W - 4, fy - 1, "P");
+    crumble(g, fy, 182, 4);
+    bouncePit(g, fy, 88);
     pressure(g, fy, d, { hang: "l" });
-  });
+  }, [
+    { t: "hill", at: 22, w: 14, h: 2 },
+    { t: "corridor", at: 52, w: 16 },
+    { t: "valley", at: 78, w: 12, d: 2 },
+    { t: "ridge", at: 108, w: 18 },
+    { t: "pass", at: 148, w: 20 },
+  ], "l");
 }
 
 /** VII — Keystroke. Rafter flyers, grate rescue, Stomp porch packed. */
@@ -350,7 +376,13 @@ export function buildKeystroke(): string[] {
     g.put(45, fy - 4, "^");
     g.put(46, fy - 4, "^");
     g.put(47, fy - 4, "^");
-  });
+  }, [
+    { t: "hill", at: 18, w: 12, h: 2 },
+    { t: "grate", at: 56, w: 4 },
+    { t: "valley", at: 88, w: 12, d: 2 },
+    { t: "ridge", at: 120, w: 16 },
+    { t: "pass", at: 154, w: 18 },
+  ], "lz");
 }
 
 /** VIII — Fourfold Keep. Plus splitway, packs on three arms, Tetrarch. */
@@ -393,7 +425,13 @@ export function buildFourfold(): string[] {
     put(W - 8, fy - 1, "i");
     put(W - 4, fy - 1, "P");
     pressure(g, fy, d, { hang: "zx", laser: true });
-  });
+  }, [
+    { t: "hill", at: 20, w: 12, h: 2 },
+    { t: "switchback", at: 80 },
+    { t: "valley", at: 118, w: 12, d: 2 },
+    { t: "pass", at: 150, w: 20 },
+    { t: "corridor", at: 176, w: 12 },
+  ], "zxf");
 }
 
 /** IX — Ligature Canal. Sluice zippers, belts, 8-packs. */
@@ -450,7 +488,14 @@ export function buildLigature(): string[] {
     put(W - 8, fy - 1, "i");
     put(W - 4, fy - 1, "P");
     pressure(g, fy, d, { floor: "w", ride: true });
-  });
+  }, [
+    { t: "valley", at: 26, w: 12, d: 2 },
+    { t: "sink", at: 28, n: 4 },
+    { t: "bridge", at: 76, w: 6 },
+    { t: "valley", at: 140, w: 12, d: 2 },
+    { t: "sink", at: 144, n: 4 },
+    { t: "hill", at: 168, w: 12, h: 1 },
+  ], "w{");
 }
 
 /** X — Ampersand Dock. 8-cage, Pin porch, FOLD terrace. */
@@ -497,7 +542,13 @@ export function buildAmpersand(): string[] {
     put(W - 8, fy - 1, "i");
     put(W - 4, fy - 1, "P");
     pressure(g, fy, d, { echo: true, ride: true });
-  });
+  }, [
+    { t: "hill", at: 22, w: 12, h: 1 },
+    { t: "valley", at: 78, w: 12, d: 2 },
+    { t: "switchback", at: 102 },
+    { t: "ridge", at: 138, w: 16 },
+    { t: "pass", at: 162, w: 16 },
+  ], "[{w");
 }
 
 /** XI — Iris Bind. Laser colonnade, Null-Rings, The Iris bowl. */
@@ -544,7 +595,12 @@ export function buildIrisBind(): string[] {
     put(W - 8, fy - 1, "h");
     put(W - 4, fy - 1, "P");
     pressure(g, fy, d, { hang: "d", laser: true });
-  });
+  }, [
+    { t: "corridor", at: 40, w: 18 },
+    { t: "valley", at: 126, w: 14, d: 2 },
+    { t: "hill", at: 154, w: 12, h: 2 },
+    { t: "pass", at: 172, w: 16 },
+  ], "d");
 }
 
 /** XII — Scriptorium. Cascade desks, bounce/Compose, recruit t. */
@@ -586,7 +642,13 @@ export function buildScriptorium(): string[] {
     put(W - 8, fy - 1, "i");
     put(W - 4, fy - 1, "P");
     pressure(g, fy, d, { floor: "j" });
-  });
+  }, [
+    { t: "grate", at: 18, n: 3 },
+    { t: "hill", at: 42, w: 14, h: 2 },
+    { t: "valley", at: 92, w: 10, d: 2 },
+    { t: "ridge", at: 128, w: 16 },
+    { t: "grate", at: 160, n: 3 },
+  ], "j");
 }
 
 /** XIII — Rule and Storm. Four packed clauses, two packs. */
@@ -637,7 +699,13 @@ export function buildRuleStorm(): string[] {
     put(W - 8, fy - 1, "h");
     put(W - 4, fy - 1, "P");
     pressure(g, fy, d, { hang: "l", floor: "j" });
-  });
+  }, [
+    { t: "grate", at: 22, n: 2 },
+    { t: "hill", at: 56, w: 14, h: 2 },
+    { t: "corridor", at: 100, w: 14 },
+    { t: "pass", at: 148, w: 18 },
+    { t: "grate", at: 188, n: 2 },
+  ], "lj");
 }
 
 /** XIV — Operator Approach. Lift, blink, geyser, TIDE switchback. */
@@ -686,7 +754,13 @@ export function buildApproach(): string[] {
     put(W - 8, fy - 1, "i");
     put(W - 4, fy - 1, "P");
     pressure(g, fy, d, { ride: true });
-  });
+  }, [
+    { t: "bridge", at: 24, w: 6 },
+    { t: "hill", at: 54, w: 14, h: 2 },
+    { t: "switchback", at: 108 },
+    { t: "valley", at: 140, w: 12, d: 2 },
+    { t: "bridge", at: 166, w: 6 },
+  ], "{g");
 }
 
 /** XV — Iconostasis. Crowded nave, loft packs, Archivant. */
@@ -729,5 +803,11 @@ export function buildIconostasis(): string[] {
     put(W - 8, fy - 1, "h");
     put(W - 4, fy - 1, "P");
     pressure(g, fy, d, { hang: "d", echo: true });
-  });
+  }, [
+    { t: "hill", at: 18, w: 12, h: 1 },
+    { t: "ridge", at: 48, w: 16 },
+    { t: "valley", at: 84, w: 12, d: 2 },
+    { t: "switchback", at: 108 },
+    { t: "pass", at: 140, w: 18 },
+  ], "d[");
 }
