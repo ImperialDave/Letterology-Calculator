@@ -3,7 +3,27 @@ import { DISTRICTS } from "./districts";
 import type { ThemeId } from "./types";
 import { STAGE_COUNT } from "./types";
 
-export type Verb = "T" | "-" | "=" | "|" | "/" | "`" | ")" | "g" | "S" | "~";
+export type Verb =
+  | "T"
+  | "-"
+  | "="
+  | "|"
+  | "/"
+  | "`"
+  | ")"
+  | "g"
+  | "S"
+  | "~"
+  | "l"
+  | "z"
+  | "x"
+  | "f"
+  | "j"
+  | "d"
+  | "w"
+  | "}"
+  | "{"
+  | "[";
 export type Pocket = "none" | "loft" | "vent";
 
 export interface Recipe {
@@ -56,10 +76,10 @@ export function decoFor(theme: ThemeId) {
 
 export function verbsFor(n: number): Verb[] {
   if (n < 15) return ["T", "-", "="];
-  if (n < 25) return ["|", "/", "T"];
-  if (n < 35) return ["`", ")", "g"];
-  if (n < 45) return ["S", "`", ")"];
-  return ["S", "g", "|", "`"];
+  if (n < 25) return ["|", "/", "T", "l", "z"];
+  if (n < 35) return ["`", ")", "g", "f", "{", "x"];
+  if (n < 45) return ["S", "`", ")", "j", "d", "}"];
+  return ["S", "g", "|", "`", "w", "[", "{"];
 }
 
 /** Mix pool. Sluice is mix-only — never featured, never before the Press, never glacier/orbit. */

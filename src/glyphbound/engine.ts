@@ -55,7 +55,8 @@ import { applyJump, gravityFor, heightTo, jumpVy } from "./enemy-move";
 import { bindKey as bindKeyMap, type KeyAction } from "./keys";
 import { SLOT_COUNT, activeSlot, clearSave, defaultSave, listSlots, loadSave, selectSlot, writeSave } from "./save";
 import { cycleDifficulty, livesFor, scaledHp } from "./difficulty";
-import { padEnemies } from "./density";
+import { dressTerrain, padEnemies, padTerrain } from "./density";
+import { decoFor, rng } from "./recipe";
 import {
   ART_HOLD,
   matchFf,
@@ -94,6 +95,21 @@ import {
 } from "./arts";
 import { preloadArt } from "./art";
 import { isMovingSolid, SolidGrid } from "./spatial";
+import {
+  carriageOffset,
+  censerOffset,
+  dropcapPose,
+  ECHO_DELAY,
+  ECHO_LIFE,
+  ECHO_WARN,
+  grateHot,
+  guillotinePose,
+  rotorHorizontal,
+  SINK_TIME,
+  shutterOpen,
+  shutterSlam,
+  stamperPose,
+} from "./toys";
 import {
   STEP,
   TILE,
@@ -193,6 +209,17 @@ export class GameEngine {
   checkY = 80;
   lastSafeX = 80;
   lastSafeY = 80;
+  private sinkT = 0;
+  private echoOn = new Set<Solid>();
+  private echoGhosts: Array<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    warnAt: number;
+    hurtAt: number;
+    until: number;
+  }> = [];
   inkWarn = 0;
   comboHits = 0;
   comboTimer = 0;
@@ -610,7 +637,15 @@ export class GameEngine {
     this.themeOverride = null;
     const n = this.stageIndex(id);
     const grade = this.sandbox ? "easy" : this.save.difficulty;
-    this.rows = this.sandbox ? meta.rows : padEnemies(meta.rows, n, grade);
+    if (this.sandbox) {
+      this.rows = meta.rows;
+    } else {
+      const base =
+        n >= 2 && n < 16
+          ? dressTerrain(meta.rows, { n, deco: decoFor(meta.theme), rand: rng(n * 9973 + 7) })
+          : meta.rows;
+      this.rows = padTerrain(padEnemies(base, n, grade), n, grade);
+    }
     this.syncLives(id, atCheck);
     this.objective = meta.objective;
     const parsed = parseRows(this.rows, {
@@ -630,6 +665,7 @@ export class GameEngine {
       progress: this.save.progress,
     });
     this.solids = parsed.solids;
+    this.resetToys();
     this.enemies = parsed.enemySpawns.map((s) => this.spawnEnemy(s.kind, s.x, s.y));
     this.bullets = [];
     this.pickups = parsed.pickups;
@@ -845,6 +881,7 @@ export class GameEngine {
     });
     this.rows = folio.rows;
     this.solids = parsed.solids;
+    this.resetToys();
     this.enemies = parsed.enemySpawns.map((s) => this.spawnEnemy(s.kind, s.x, s.y));
     this.bullets = [];
     this.pickups = parsed.pickups;
@@ -1504,6 +1541,7 @@ export class GameEngine {
     const fall = p.vy;
     this.moveActor(p, dt, large, a.down);
     this.touchHazards();
+    this.tickSinkEcho(dt);
     this.ejectFromHazards();
     this.markSafeGround();
     const wallL = this.blockedAt(p.x - 3, p.y + 6, 4, p.h - 12, large);
@@ -1614,7 +1652,19 @@ export class GameEngine {
     let top: number | null = null;
     const feet = a.y + a.h;
     for (const s of this.solidsNow(true, a)) {
-      if (s.type !== "solid" && s.type !== "oneway" && s.type !== "crumble" && s.type !== "conveyor" && s.type !== "lift" && s.type !== "blink") continue;
+      if (
+        s.type !== "solid" &&
+        s.type !== "oneway" &&
+        s.type !== "crumble" &&
+        s.type !== "conveyor" &&
+        s.type !== "lift" &&
+        s.type !== "blink" &&
+        s.type !== "grate" &&
+        s.type !== "carriage" &&
+        s.type !== "echo" &&
+        !(s.type === "dropcap" && dropcapPose(this.time, s.phase ?? 0).plat)
+      )
+        continue;
       if (s.broken) continue;
       if (a.x + a.w <= s.x + 2 || a.x >= s.x + s.w - 2) continue;
       if (feet > s.y - 6 && a.y < s.y + s.h) {
@@ -1638,16 +1688,22 @@ export class GameEngine {
     return out;
   }
 
+  private resetToys() {
+    this.sinkT = 0;
+    this.echoOn.clear();
+    this.echoGhosts = [];
+  }
+
   private tickToys(dt: number) {
     const t = this.time;
     const p = this.player;
+    const feet = { x: p.x + 2, y: p.y + p.h - 10, w: p.w - 4, h: 14 };
     for (const s of this.solids) {
       if (s.type === "lift") {
         const homeY = s.homeY ?? s.y;
         const homeX = s.homeX ?? s.x;
         const nextY = homeY - (0.5 + 0.5 * Math.sin(t * 1.05 + (s.phase ?? 0))) * TILE * 3;
         const dy = nextY - s.y;
-        const feet = { x: p.x + 2, y: p.y + p.h - 10, w: p.w - 4, h: 14 };
         if (p.grounded && aabb(feet, s)) p.y += dy;
         s.x = homeX;
         s.y = nextY;
@@ -1656,11 +1712,73 @@ export class GameEngine {
         s.x = homeX + Math.sin(t * 1.55 + (s.phase ?? 0)) * TILE * 2;
         s.y = s.homeY ?? s.y;
       } else if (s.type === "blink") {
-        const cycle = (t + (s.phase ?? 0)) % 2.6;
-        s.broken = cycle > 1.55;
+        const cyc = (t + (s.phase ?? 0)) % 2.6;
+        s.broken = cyc > 1.55;
+      } else if (s.type === "censer") {
+        const homeX = s.homeX ?? s.x;
+        s.x = homeX + censerOffset(t, s.phase ?? 0);
+        s.y = s.homeY ?? s.y;
+      } else if (s.type === "stamper") {
+        const pose = stamperPose(t, s.phase ?? 0);
+        s.x = s.homeX ?? s.x;
+        s.y = (s.homeY ?? s.y) + pose.yOff;
+      } else if (s.type === "guillotine") {
+        const pose = guillotinePose(t, s.phase ?? 0);
+        s.x = s.homeX ?? s.x;
+        s.y = s.homeY ?? s.y;
+        s.w = pose.w;
+      } else if (s.type === "dropcap") {
+        const pose = dropcapPose(t, s.phase ?? 0);
+        const nextY = (s.homeY ?? s.y) + pose.yOff;
+        const dy = nextY - s.y;
+        if (pose.plat && p.grounded && aabb(feet, s)) p.y += dy;
+        s.x = s.homeX ?? s.x;
+        s.y = nextY;
+      } else if (s.type === "rotor") {
+        const cx = s.homeX ?? s.x + s.w / 2;
+        const cy = s.homeY ?? s.y + s.h / 2;
+        if (rotorHorizontal(t, s.phase ?? 0)) {
+          s.x = cx - TILE * 1.5;
+          s.y = cy - 8;
+          s.w = TILE * 3;
+          s.h = 16;
+        } else {
+          s.x = cx - 8;
+          s.y = cy - TILE * 1.5;
+          s.w = 16;
+          s.h = TILE * 3;
+        }
+      } else if (s.type === "shutter") {
+        s.broken = shutterOpen(t, s.phase ?? 0);
+      } else if (s.type === "carriage") {
+        const homeX = s.homeX ?? s.x;
+        const nextX = homeX + carriageOffset(t, s.phase ?? 0);
+        const dx = nextX - s.x;
+        if (p.grounded && aabb(feet, s)) p.x += dx;
+        s.x = nextX;
+        s.y = s.homeY ?? s.y;
       }
     }
     void dt;
+  }
+
+  private walkOneway(s: Solid) {
+    if (
+      s.type === "oneway" ||
+      s.type === "crumble" ||
+      s.type === "bounce" ||
+      s.type === "conveyor" ||
+      s.type === "lift" ||
+      s.type === "blink" ||
+      s.type === "grate" ||
+      s.type === "sinkink" ||
+      s.type === "echo" ||
+      s.type === "carriage"
+    ) {
+      return true;
+    }
+    if (s.type === "dropcap") return dropcapPose(this.time, s.phase ?? 0).plat;
+    return false;
   }
 
   private geyserHot(s: Solid) {
@@ -1702,8 +1820,16 @@ export class GameEngine {
     for (const s of this.solidsNow(large, a)) {
       if (s.type === "spike") continue;
       if (!aabb(a, s)) continue;
-      if (s.type === "saw" || s.type === "geyser") continue;
-      if (s.type === "oneway" || s.type === "crumble" || s.type === "bounce" || s.type === "conveyor" || s.type === "lift" || s.type === "blink") {
+      if (
+        s.type === "saw" ||
+        s.type === "geyser" ||
+        s.type === "censer" ||
+        s.type === "stamper" ||
+        s.type === "guillotine"
+      )
+        continue;
+      if (s.type === "dropcap" && !dropcapPose(this.time, s.phase ?? 0).plat) continue;
+      if (this.walkOneway(s)) {
         if (axis !== "y" || a.vy < 0 || drop) continue;
         if (a.y + a.h - Math.max(8, a.vy * 0.02) > s.y + 10) continue;
       }
@@ -1757,7 +1883,7 @@ export class GameEngine {
   private blockedAt(x: number, y: number, w: number, h: number, large: boolean) {
     const box = { x, y, w, h };
     for (const s of this.solidsNow(large, box)) {
-      if (s.type === "spike" || s.type === "oneway" || s.type === "saw" || s.type === "geyser") continue;
+      if (s.type === "spike" || s.type === "saw" || s.type === "geyser" || this.walkOneway(s)) continue;
       if (aabb(box, s)) return true;
     }
     return false;
@@ -2735,12 +2861,31 @@ export class GameEngine {
     return s.type === "spike" && p.grounded && s.y + s.h <= p.y + p.h + 6;
   }
 
+  private toyHot(s: Solid) {
+    const t = this.time;
+    const ph = s.phase ?? 0;
+    if (s.type === "stamper") return stamperPose(t, ph).hot;
+    if (s.type === "guillotine") return guillotinePose(t, ph).hot;
+    if (s.type === "grate") return grateHot(t, ph);
+    if (s.type === "shutter") return shutterSlam(t, ph);
+    if (s.type === "censer" || s.type === "rotor") return true;
+    if (s.type === "dropcap") return dropcapPose(t, ph).hot;
+    return true;
+  }
+
   /** Apply spike/laser/saw/sluice HP after movement, before eject. */
   private touchHazards() {
     const p = this.player;
     if (this.debugGod) return;
     if (p.hazardCd > 0) return;
     const large = isLarge(p.letter, p.capital);
+    for (const g of this.echoGhosts) {
+      if (this.time < g.hurtAt || this.time > g.until) continue;
+      if (!aabb(p, g)) continue;
+      const dir = p.x + p.w / 2 < g.x + g.w / 2 ? -1 : 1;
+      this.hurt(HAZARD_DAMAGE, dir, "hazard");
+      return;
+    }
     for (const s of this.solidsNow(large, p, "hazard")) {
       if (!aabb(p, s)) continue;
       if (s.type === "spike") {
@@ -2754,12 +2899,69 @@ export class GameEngine {
           p.grounded = true;
           continue;
         }
-      } else if (s.type !== "saw") continue;
+      } else if (s.type === "saw") {
+        // always hot
+      } else if (
+        s.type === "censer" ||
+        s.type === "stamper" ||
+        s.type === "guillotine" ||
+        s.type === "grate" ||
+        s.type === "rotor" ||
+        s.type === "shutter" ||
+        s.type === "dropcap"
+      ) {
+        if (!this.toyHot(s)) continue;
+      } else continue;
       const dir = p.x + p.w / 2 < s.x + s.w / 2 ? -1 : 1;
       this.hurt(HAZARD_DAMAGE, s.type === "sluice" ? p.facing : dir, "hazard");
       if (s.type === "sluice") p.vy = Math.min(p.vy, -240);
       return;
     }
+  }
+
+  private tickSinkEcho(dt: number) {
+    const p = this.player;
+    const large = isLarge(p.letter, p.capital);
+    let inWell = false;
+    for (const s of this.solidsNow(large, p, "all")) {
+      if (s.type !== "sinkink" || !aabb(p, s)) continue;
+      inWell = true;
+      if (p.vy < -40) {
+        this.sinkT = 0;
+        continue;
+      }
+      this.sinkT += dt;
+      p.squash = Math.min(1.28, 1 + this.sinkT * 0.4);
+      p.y += 18 * dt;
+      if (this.sinkT >= SINK_TIME) {
+        this.sinkT = 0;
+        this.hurt(HAZARD_DAMAGE, p.facing, "hazard");
+        this.recallToMap();
+        return;
+      }
+    }
+    if (!inWell) this.sinkT = 0;
+
+    const on = new Set<Solid>();
+    const feet = { x: p.x + 2, y: p.y + p.h - 10, w: p.w - 4, h: 14 };
+    for (const s of this.solids) {
+      if (s.type !== "echo" || s.broken) continue;
+      if (aabb(feet, s) || aabb(p, s)) on.add(s);
+    }
+    for (const s of this.echoOn) {
+      if (on.has(s)) continue;
+      this.echoGhosts.push({
+        x: s.x + 4,
+        y: s.y - p.h,
+        w: p.w,
+        h: p.h,
+        warnAt: this.time + ECHO_DELAY - ECHO_WARN,
+        hurtAt: this.time + ECHO_DELAY,
+        until: this.time + ECHO_DELAY + ECHO_LIFE,
+      });
+    }
+    this.echoOn = on;
+    this.echoGhosts = this.echoGhosts.filter((g) => this.time < g.until);
   }
 
   private laserHot(s: Solid) {
@@ -3798,11 +4000,26 @@ export class GameEngine {
 
   private hazardAt(x: number, y: number, w: number, h: number) {
     const box = { x, y, w, h };
+    for (const g of this.echoGhosts) {
+      if (this.time >= g.hurtAt && this.time <= g.until && aabb(box, g)) return true;
+    }
     for (const s of this.solidsNow(true, box, "hazard")) {
-      if (s.type === "sluice" && aabb(box, s)) return true;
-      if (s.type === "laser" && aabb(box, s) && this.laserHot(s)) return true;
-      if (s.type === "spike" && aabb(box, s) && this.spikeHot(s)) return true;
-      if (s.type === "saw" && aabb(box, s)) return true;
+      if (!aabb(box, s)) continue;
+      if (s.type === "sluice") return true;
+      if (s.type === "laser" && this.laserHot(s)) return true;
+      if (s.type === "spike" && this.spikeHot(s)) return true;
+      if (s.type === "saw") return true;
+      if (
+        (s.type === "censer" ||
+          s.type === "stamper" ||
+          s.type === "guillotine" ||
+          s.type === "grate" ||
+          s.type === "rotor" ||
+          s.type === "shutter") &&
+        this.toyHot(s)
+      ) {
+        return true;
+      }
     }
     return false;
   }
@@ -3814,7 +4031,7 @@ export class GameEngine {
     for (let pass = 0; pass < 4; pass++) {
       let hit: Solid | null = null;
       for (const s of this.solidsNow(large, p, "hazard")) {
-        if (s.type !== "spike" && s.type !== "laser") continue;
+        if (s.type !== "spike" && s.type !== "laser" && s.type !== "stamper" && s.type !== "censer" && s.type !== "grate" && s.type !== "rotor") continue;
         if (!aabb(p, s)) continue;
         if (s.type === "spike") {
           if (this.floorAboveTeeth(p, s)) continue;
@@ -4392,7 +4609,18 @@ export class GameEngine {
     if (p.hurtFlash > 0.2) return;
     const box = { x: p.x - 8, y: p.y - 8, w: p.w + 16, h: p.h + 16 };
     for (const s of this.solidsNow(large, box)) {
-      if (s.type === "spike" || s.type === "saw" || s.type === "geyser" || s.type === "laser" || s.type === "sluice") continue;
+      if (
+        s.type === "spike" ||
+        s.type === "saw" ||
+        s.type === "geyser" ||
+        s.type === "laser" ||
+        s.type === "sluice" ||
+        s.type === "censer" ||
+        s.type === "stamper" ||
+        s.type === "guillotine" ||
+        s.type === "rotor"
+      )
+        continue;
       const lip = s.y;
       const hands = p.y + 8;
       if (hands > lip + 12 || hands < lip - 14) continue;
@@ -5233,6 +5461,7 @@ export class GameEngine {
       ctx.translate(sx, sy);
       drawTiles(ctx, this.rows, camX, camY, this.time, theme, this.broken);
       drawToys(ctx, this.solids, camX, camY, this.time, theme);
+      this.drawEchoGhosts(ctx, camX, camY);
       if (this.mode === "studio") this.drawStudioGrid(ctx);
       this.drawHubChrome(ctx);
       drawMarkers(ctx, this.markers, camX, camY, this.time);
@@ -5351,6 +5580,22 @@ export class GameEngine {
     ctx.fillStyle = "#c9b896";
     ctx.fillText(line2, 16, y + 28);
     ctx.restore();
+  }
+
+  private drawEchoGhosts(ctx: CanvasRenderingContext2D, camX: number, camY: number) {
+    for (const g of this.echoGhosts) {
+      const x = g.x - camX;
+      const y = g.y - camY;
+      const warn = this.time >= g.warnAt && this.time < g.hurtAt;
+      const hot = this.time >= g.hurtAt;
+      ctx.save();
+      ctx.globalAlpha = warn ? 0.35 + ((this.time - g.warnAt) / Math.max(0.05, ECHO_WARN)) * 0.4 : 0.7;
+      ctx.fillStyle = hot ? "#d45a4a" : "#5ee0c0";
+      ctx.fillRect(x, y, g.w, g.h);
+      ctx.strokeStyle = "#e8d48a";
+      ctx.strokeRect(x, y, g.w, g.h);
+      ctx.restore();
+    }
   }
 
   private drawHubChrome(ctx: CanvasRenderingContext2D) {

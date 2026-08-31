@@ -212,7 +212,17 @@ export type SolidType =
   | "lift"
   | "blink"
   | "saw"
-  | "geyser";
+  | "geyser"
+  | "censer"
+  | "stamper"
+  | "guillotine"
+  | "dropcap"
+  | "grate"
+  | "rotor"
+  | "sinkink"
+  | "shutter"
+  | "carriage"
+  | "echo";
 
 export interface Solid {
   x: number;

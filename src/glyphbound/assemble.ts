@@ -3,7 +3,7 @@ import { FROZEN_REMAINDER } from "./remainder-hand";
 import { remainderName, remainderObjective } from "./remainder-names";
 import { isBoss, recipeFor, rng, themeFor, type Recipe } from "./recipe";
 import { FY, paintPattern, pickPattern } from "./patterns";
-import { fillDensity } from "./density";
+import { dressTerrain, fillDensity } from "./density";
 import { validateLevel } from "./validate-level";
 import type { LevelId, TaskDef, ThemeId } from "./types";
 import { STAGE_COUNT } from "./types";
@@ -226,6 +226,7 @@ export function assembleStage(n: number): LevelMeta {
   let rows = stitch(parts);
   landmarkDress(rows, recipe.deco, rand);
   if (n >= 6) fillDensity(rows, { n, deco: recipe.deco, rand, fy: FY, featured: recipe.featured, theme: recipe.theme });
+  rows = dressTerrain(rows, { n, deco: recipe.deco, rand, fy: FY });
   rows = mutate(rows);
   sealBasement(rows, FY);
   const boss = isBoss(n);

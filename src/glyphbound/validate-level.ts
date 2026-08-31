@@ -1,11 +1,12 @@
 import { validateFolio, type Folio, type FolioIssue } from "./folio";
 
-const FLOOR = new Set("#*=_T/\\&-`)g".split(""));
+const FLOOR = new Set("#*=_T/\\&-`)gjw[".split(""));
 const SOLID = new Set(["#", "*", "&"]);
 const SPIKE = "^";
 const LASER = "|";
 const SLUICE = "~";
 const SAW = "S";
+const REST_HAZARD = new Set("^|Sjzl");
 
 function at(rows: string[], x: number, y: number) {
   if (y < 0 || y >= rows.length || x < 0 || x >= (rows[y]?.length ?? 0)) return "#";
@@ -21,7 +22,7 @@ function isSolid(ch: string) {
 }
 
 function isHazard(ch: string) {
-  return ch === SPIKE || ch === LASER || ch === SAW;
+  return REST_HAZARD.has(ch);
 }
 
 function canStand(rows: string[], x: number, y: number) {
@@ -190,8 +191,23 @@ function restHazardIssues(rows: string[]): FolioIssue[] {
   if (!p) return issues;
   const here = at(rows, p.x, p.y);
   const below = at(rows, p.x, p.y + 1);
-  if (isHazard(here) || isHazard(below) || below === SAW || here === SAW) {
+  if (isHazard(here) || isHazard(below) || below === SAW || here === SAW || here === "j" || below === "j") {
     issues.push({ code: "rest-hazard", message: "checkpoint sits on a hazard" });
+  }
+  return issues;
+}
+
+function stamperWaitIssues(rows: string[]): FolioIssue[] {
+  const issues: FolioIssue[] = [];
+  for (let y = 0; y < rows.length; y++) {
+    for (let x = 0; x < (rows[y]?.length ?? 0); x++) {
+      if (at(rows, x, y) !== "z") continue;
+      const left = isFloor(at(rows, x - 1, y + 2)) || isSolid(at(rows, x - 1, y));
+      const right = isFloor(at(rows, x + 1, y + 2)) || isSolid(at(rows, x + 1, y));
+      if (!left && !right) {
+        issues.push({ code: "wait-spot", message: `stamper at ${x},${y} has no wait-spot` });
+      }
+    }
   }
   return issues;
 }
@@ -212,6 +228,7 @@ export function validateLevel(rows: string[]): FolioIssue[] {
   issues.push(...laserFloorIssues(rows));
   issues.push(...sawPathIssues(rows));
   issues.push(...restHazardIssues(rows));
+  issues.push(...stamperWaitIssues(rows));
   if (spawn && gate && !reachable(rows)) {
     issues.push({ code: "path", message: "no walk/jump path from spawn to gate" });
   }

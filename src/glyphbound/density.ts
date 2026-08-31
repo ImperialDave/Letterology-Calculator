@@ -3,12 +3,12 @@ import { enemyMul } from "./difficulty";
 import { isBoss, rng } from "./recipe";
 import type { Difficulty, ThemeId } from "./types";
 
-const FLOOR = "#*=_T/\\&-`)g";
+const FLOOR = "#*=_T/\\&-`)gjw[";
 const RESERVED = "@%P!";
 
 export const ENEMY_GLYPHS = "1023456789ABCEYGHKQUNJLM";
-export const HAZARD_GLYPHS = "^|S~";
-export const MOVER_GLYPHS = "/\\T:`)g-";
+export const HAZARD_GLYPHS = "^|S~lzxjdw}[";
+export const MOVER_GLYPHS = "/\\T:`)g-f{";
 export const DECO_GLYPHS = "';\",?";
 export const SHELF_GLYPHS = "=_*&";
 export const PICKUP_GLYPHS = "ih$o+";
@@ -492,6 +492,38 @@ export function fillDensity(
     }
   }
 
+  if (opts.n >= 16) {
+    for (let x = 14; x < W - 12; x += 22) {
+      const ox = x + Math.floor(rand() * 2);
+      if (skip.has(ox)) continue;
+      if (at(rows, ox, fy - 2) !== ".") continue;
+      if (at(rows, ox, fy) !== "#" && at(rows, ox, fy) !== "=") continue;
+      setCell(rows, ox, fy - 2, rand() < 0.5 ? "l" : "z");
+    }
+    for (let x = 18; x < W - 12; x += 28) {
+      if (skip.has(x)) continue;
+      if (at(rows, x, fy - 2) !== ".") continue;
+      if (at(rows, x, fy) !== "#" && at(rows, x, fy) !== "=") continue;
+      setCell(rows, x, fy - 2, "x");
+    }
+    for (let x = 16; x < W - 14; x += 30) {
+      const ox = x;
+      if (skip.has(ox) || skip.has(ox + 1)) continue;
+      if (at(rows, ox, fy) !== "#" || at(rows, ox + 1, fy) !== "#") continue;
+      if (RESERVED.includes(at(rows, ox, fy - 1))) continue;
+      setCell(rows, ox, fy, "j");
+      setCell(rows, ox + 1, fy, "j");
+    }
+  }
+
+  if (opts.n >= 25) {
+    for (let x = 20; x < W - 14; x += 32) {
+      if (skip.has(x)) continue;
+      if (at(rows, x, fy - 3) !== ".") continue;
+      setCell(rows, x, fy - 3, "[");
+    }
+  }
+
   const placeEnemy = (x: number, y: number) => {
     if (skip.has(x)) return false;
     if (at(rows, x, y) !== ".") return false;
@@ -634,3 +666,114 @@ export function padEnemies(rows: string[], n: number, difficulty: Difficulty): s
   }
   return out;
 }
+
+const KEEP_DRESS = "@%P!lzxfjdw}{[kntOIF";
+
+function busyCol(rows: string[], fy: number, x: number) {
+  for (let dx = -2; dx <= 2; dx++) {
+    if (KEEP_DRESS.includes(at(rows, x + dx, fy - 1))) return true;
+  }
+  return false;
+}
+
+function loftStreet(rows: string[], fy: number, x: number, deco: string) {
+  if (fy - 3 <= 1) return false;
+  for (let i = 0; i < 4; i++) {
+    if (at(rows, x + i, fy - 3) !== ".") return false;
+  }
+  for (let i = 0; i < 4; i++) setCell(rows, x + i, fy - 3, "=");
+  if (deco && deco !== "_" && at(rows, x + 1, fy - 4) === ".") setCell(rows, x + 1, fy - 4, deco);
+  return true;
+}
+
+function hopTeeth(rows: string[], fy: number, x: number) {
+  if (at(rows, x, fy) !== "#" || at(rows, x + 1, fy) !== "#") return false;
+  if (at(rows, x, fy - 1) !== "." || at(rows, x + 1, fy - 1) !== ".") return false;
+  setCell(rows, x, fy - 1, "^");
+  setCell(rows, x + 1, fy - 1, "^");
+  return true;
+}
+
+function crumbleRun(rows: string[], fy: number, x: number) {
+  for (let i = 0; i < 4; i++) {
+    if (at(rows, x + i, fy) !== "#" || at(rows, x + i, fy - 1) !== ".") return false;
+  }
+  for (let i = 0; i < 4; i++) setCell(rows, x + i, fy, "-");
+  return true;
+}
+
+/** Seeded extra loft/deco/hops around an authored spine. Never mutates `@ % P`. Exchange is skipped. */
+export function dressTerrain(
+  rows: string[],
+  opts: { n: number; deco: string; rand: () => number; fy?: number },
+): string[] {
+  const out = rows.map((r) => r);
+  const n = opts.n;
+  if (n < 2) return out;
+  const fy = opts.fy ?? mainFloorY(out);
+  const W = out[0]?.length ?? 0;
+  const skip = reservedCols(out, fy);
+  const deco = !opts.deco || opts.deco === "_" ? ";" : opts.deco;
+  const rand = opts.rand;
+  const loftN = n < 6 ? 1 : n < 16 ? 2 : 1;
+  const hopN = n < 6 ? 0 : Math.max(1, Math.floor(W / (n < 16 ? 22 : 30)));
+  let lofts = 0;
+  for (let x = 10; x < W - 14 && lofts < loftN; x += 9) {
+    const ox = x + Math.floor(rand() * 3);
+    if (skip.has(ox) || busyCol(out, fy, ox)) continue;
+    if (loftStreet(out, fy, ox, deco)) lofts += 1;
+  }
+  let hops = 0;
+  for (let x = 12; x < W - 12 && hops < hopN; x += 11) {
+    const ox = x + Math.floor(rand() * 2);
+    if (skip.has(ox) || skip.has(ox + 1) || busyCol(out, fy, ox)) continue;
+    if (hopTeeth(out, fy, ox)) hops += 1;
+  }
+  for (let x = 8; x < W - 8; x += 7) {
+    if (skip.has(x) || busyCol(out, fy, x)) continue;
+    if (at(out, x, fy - 2) === ".") setCell(out, x, fy - 2, deco);
+  }
+  return out;
+}
+
+/** Hard/Extreme extra streets and teeth on a clone. Easy is a no-op. */
+export function padTerrain(rows: string[], n: number, difficulty: Difficulty): string[] {
+  const out = rows.map((r) => r);
+  if (difficulty === "easy" || n < 2) return out;
+  const fy = mainFloorY(out);
+  const W = out[0]?.length ?? 0;
+  const skip = reservedCols(out, fy);
+  const rand = rng(n * 9973 + (difficulty === "extreme" ? 77 : 71));
+  const loftNeed = Math.max(1, Math.floor(W / 24));
+  const hopNeed = Math.max(1, Math.floor(W / 28));
+  let lofts = 0;
+  for (let k = 0; k < 80 && lofts < loftNeed; k++) {
+    const x = 10 + Math.floor(rand() * Math.max(1, W - 20));
+    if (skip.has(x) || busyCol(out, fy, x)) continue;
+    if (loftStreet(out, fy, x, "")) lofts += 1;
+  }
+  let hops = 0;
+  for (let k = 0; k < 80 && hops < hopNeed; k++) {
+    const x = 12 + Math.floor(rand() * Math.max(1, W - 18));
+    if (skip.has(x) || skip.has(x + 1) || busyCol(out, fy, x)) continue;
+    if (hopTeeth(out, fy, x)) hops += 1;
+  }
+  if (difficulty === "extreme") {
+    const y2 = fy - 5;
+    if (y2 > 1) {
+      for (let x = 8; x < W - 8; x += 10) {
+        if (skip.has(x) || busyCol(out, fy, x)) continue;
+        if (at(out, x, y2) === "." && at(out, x + 1, y2) === ".") {
+          setCell(out, x, y2, "=");
+          setCell(out, x + 1, y2, "=");
+        }
+      }
+    }
+    for (let x = 16; x < W - 16; x += 32) {
+      if (skip.has(x) || busyCol(out, fy, x)) continue;
+      crumbleRun(out, fy, x);
+    }
+  }
+  return out;
+}
+

@@ -15,6 +15,36 @@ test("every manifest art file exists on disk", () => {
   }
 });
 
+test("toy sheets have no opaque magenta leftover", () => {
+  const names = [
+    "hazards/censer",
+    "hazards/stamper",
+    "hazards/guillotine",
+    "hazards/grate",
+    "hazards/rotor",
+    "hazards/sinkink",
+    "hazards/shutter",
+    "hazards/echo",
+    "movers/dropcap",
+    "movers/carriage",
+  ];
+  const py = `
+from PIL import Image
+from pathlib import Path
+root = Path(${JSON.stringify(join(root, "public/glyphbound"))})
+fail = []
+for rel in ${JSON.stringify(names)}:
+    im = Image.open(root / (rel + ".png")).convert("RGBA")
+    for r, g, b, a in im.getdata():
+        if a > 40 and r > 160 and b > 80 and g < 90:
+            fail.append(rel)
+            break
+print(",".join(fail))
+`;
+  const out = execFileSync("python3", ["-c", py], { encoding: "utf8" }).trim();
+  assert.equal(out, "", out);
+});
+
 test("fx sheet cells have no magenta frame on the outer 2px", () => {
   const fxDir = join(root, "public/glyphbound/fx");
   const grids = Object.fromEntries(

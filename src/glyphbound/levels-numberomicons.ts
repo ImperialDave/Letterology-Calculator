@@ -99,7 +99,51 @@ function pack(g: Grid, fy: number, x: number, glyphs: string) {
   g.put(x, fy - 1, glyphs);
 }
 
-const KEEP = "@%PihkntOIF!>";
+function hangCenser(g: Grid, fy: number, x: number) {
+  g.put(x, fy - 2, "l");
+}
+
+function hangStamper(g: Grid, fy: number, x: number) {
+  g.put(x, fy - 2, "z");
+}
+
+function hangGuillotine(g: Grid, fy: number, x: number) {
+  g.put(x, fy - 2, "x");
+}
+
+function hangDropcap(g: Grid, fy: number, x: number) {
+  g.put(x, fy - 2, "f");
+}
+
+function grateRun(g: Grid, fy: number, x: number, n = 3) {
+  g.fill(x, fy, n, "j");
+}
+
+function hangRotor(g: Grid, fy: number, x: number) {
+  g.put(x, fy - 2, "d");
+}
+
+function sinkWell(g: Grid, fy: number, x: number) {
+  g.fill(x, fy, 2, "w");
+}
+
+function shutterGate(g: Grid, fy: number, x: number) {
+  g.put(x, fy - 2, "}}}");
+  g.fill(x, fy - 4, 3, "=");
+}
+
+function rideCarriage(g: Grid, fy: number, x: number) {
+  g.put(x, fy - 1, "{");
+  g.fill(x, fy - 3, 4, "=");
+}
+
+function echoLoft(g: Grid, fy: number, x: number) {
+  g.put(x, fy - 3, "[");
+  g.put(x - 1, fy - 3, "=");
+  g.put(x + 1, fy - 3, "=");
+}
+
+const KEEP = "@%PihkntOIF!>lzxfjdw}{[";
 
 function cell(g: Grid, x: number, y: number) {
   return g[y]?.[x] ?? "#";
@@ -181,6 +225,7 @@ export function buildFoundry(): string[] {
     put(3, fy - 1, "i");
     torches(g, fy - 2, 5, 6, d);
     pack(g, fy, 8, "11");
+    hangCenser(g, fy, 11);
     // teach bounce
     bouncePit(g, fy, 14);
     shelf(g, fy - 3, 18, 5, "1", d);
@@ -229,6 +274,8 @@ export function buildKeystroke(): string[] {
     pack(g, fy, 8, "14");
     hop(g, fy, 12);
     bouncePit(g, fy, 14);
+    hangCenser(g, fy, 18);
+    hangStamper(g, fy, 22);
     shelf(g, fy - 4, 12, 8, "", d);
     put(14, fy - 5, "0");
     put(16, fy - 5, "7");
@@ -286,6 +333,7 @@ export function buildFourfold(): string[] {
     torches(g, fy - 2, 5, 6, d);
     pack(g, fy, 8, "414");
     bouncePit(g, fy, 14);
+    hangDropcap(g, fy, 18);
     hop(g, fy, 20);
     pack(g, fy, 24, "441");
     crumble(g, fy, 30, 5);
@@ -336,6 +384,7 @@ export function buildLigature(): string[] {
     pack(g, fy, 24, "181");
     shelf(g, fy - 3, 20, 6, "8", d);
     wet(28, 7);
+    rideCarriage(g, fy, 30);
     shelf(g, fy - 2, 30, 4, "1", d);
     pack(g, fy, 38, "8181");
     crumble(g, fy, 44, 5);
@@ -390,6 +439,7 @@ export function buildAmpersand(): string[] {
     hop(g, fy, 14);
     bouncePit(g, fy, 18);
     terrace(g, fy, 24, d, "n8i");
+    echoLoft(g, fy, 36);
     pack(g, fy, 40, "88818");
     crumble(g, fy, 48, 5);
     belt(g, fy, 54, 8, true);
@@ -451,6 +501,7 @@ export function buildIrisBind(): string[] {
     laserHang(g, fy, 124, 2);
     // bowl
     shelf(g, fy - 2, 126, 6, "", d);
+    hangRotor(g, fy, 132);
     put(136, fy - 1, "!");
     shelf(g, fy - 2, 140, 6, "", d);
     pack(g, fy, 148, "B10");
@@ -476,7 +527,8 @@ export function buildScriptorium(): string[] {
     torches(g, fy - 2, 5, 5, d);
     pack(g, fy, 8, "121");
     bouncePit(g, fy, 14);
-    shelf(g, fy - 2, 18, 6, "ti", d);
+    grateRun(g, fy, 18, 3);
+    shelf(g, fy - 2, 22, 6, "ti", d);
     shelf(g, fy - 4, 20, 4, d);
     pack(g, fy, 26, "123");
     hop(g, fy, 32);
@@ -522,6 +574,8 @@ export function buildRuleStorm(): string[] {
     fill(8, fy - 1, 2, "v");
     pack(g, fy, 12, "11");
     pack(g, fy, 16, "44414");
+    hangCenser(g, fy, 20);
+    grateRun(g, fy, 22, 2);
     hop(g, fy, 24);
     bouncePit(g, fy, 28);
     put(34, fy - 1, "%");
@@ -567,6 +621,7 @@ export function buildApproach(): string[] {
     pack(g, fy, 8, "171");
     bouncePit(g, fy, 14);
     liftPair(g, fy, 20);
+    rideCarriage(g, fy, 24);
     shelf(g, fy - 2, 24, 8, "I", d);
     pack(g, fy, 34, "125");
     hop(g, fy, 40);
@@ -630,6 +685,8 @@ export function buildIconostasis(): string[] {
     shelf(g, fy - 4, 90, 12, "QU1", d);
     pack(g, fy, 88, "Q1U");
     put(100, fy - 1, "!");
+    hangRotor(g, fy, 104);
+    echoLoft(g, fy, 106);
     pack(g, fy, 108, "UQ1");
     shelf(g, fy - 2, 112, 8, "U", d);
     hop(g, fy, 122);

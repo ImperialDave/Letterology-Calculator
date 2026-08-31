@@ -3,10 +3,10 @@ import test from "node:test";
 import { assembleRecipe, assembleStage } from "./assemble";
 import { chunksFor } from "./chunks";
 import { pickPattern } from "./patterns";
-import { isBoss, verbsFor } from "./recipe";
+import { isBoss, rng, verbsFor } from "./recipe";
 import { beatenLedgers, listLedgers, LEVELS } from "./levels";
 import { FROZEN_REMAINDER } from "./remainder-hand";
-import { densityFloors, tally } from "./density";
+import { densityFloors, dressTerrain, padTerrain, tally } from "./density";
 import { REMAINDER_NAMES, REMAINDER_OBJECTIVES } from "./remainder-names";
 import { validateLevel } from "./validate-level";
 import { HAZARD_COOLDOWN, HAZARD_DAMAGE, STAGE_COUNT } from "./types";
@@ -174,6 +174,35 @@ test("remainder 6-60 meet Glyphbound Doctrine density floors", () => {
     if (d.shelves < f.shelves) bits.push(`shelves ${d.shelves}<${f.shelves}`);
     if (d.pickups < f.pickups) bits.push(`pickups ${d.pickups}<${f.pickups}`);
     if (bits.length) failed.push(`stage${n} W=${d.W} ${bits.join("; ")}`);
+  }
+  assert.equal(failed.join("\n"), "");
+});
+
+test("Exchange is never dressed", () => {
+  const raw = LEVELS.stage1.rows.join("\n");
+  const dressed = dressTerrain(LEVELS.stage1.rows, { n: 1, deco: '"', rand: rng(1) }).join("\n");
+  assert.equal(dressed, raw);
+});
+
+test("Hard padTerrain adds loft streets on a clone", () => {
+  const easy = dressTerrain(LEVELS.stage8.rows, { n: 8, deco: "'", rand: rng(8) });
+  const hard = padTerrain(easy, 8, "hard");
+  assert.ok(tally(hard).shelves >= tally(easy).shelves);
+  const issues = validateLevel(hard).filter((i) =>
+    ["path", "laser-floor", "saw-path", "rest-hazard", "buried"].includes(i.code),
+  );
+  assert.equal(issues.map((i) => i.message).join("; "), "");
+});
+
+test("dressed First Book and Numberomicon stages still path", () => {
+  const failed: string[] = [];
+  for (const n of [2, 3, 4, 5, 8, 12, 15]) {
+    const meta = LEVELS[`stage${n}` as keyof typeof LEVELS];
+    const rows = dressTerrain(meta.rows, { n, deco: "'", rand: rng(n * 13) });
+    const issues = validateLevel(rows).filter((i) =>
+      ["path", "saw-path", "rest-hazard", "buried", "teeth"].includes(i.code),
+    );
+    if (issues.length) failed.push(`stage${n}: ${issues.map((i) => i.message).join("; ")}`);
   }
   assert.equal(failed.join("\n"), "");
 });

@@ -60,6 +60,14 @@ const BRUSHES: Brush[] = [
   { ch: "~", group: "hazard", label: "Sluice" },
   { ch: "|", group: "hazard", label: "Laser" },
   { ch: "S", group: "hazard", label: "Saw" },
+  { ch: "l", group: "hazard", label: "Censer" },
+  { ch: "z", group: "hazard", label: "Stamper" },
+  { ch: "x", group: "hazard", label: "Guillotine" },
+  { ch: "j", group: "hazard", label: "Ember grate" },
+  { ch: "d", group: "hazard", label: "Rotor" },
+  { ch: "w", group: "hazard", label: "Sinkink" },
+  { ch: "}", group: "hazard", label: "Shutter" },
+  { ch: "[", group: "hazard", label: "Echo plate" },
 
   { ch: "/", group: "mover", label: "Belt →" },
   { ch: "\\", group: "mover", label: "Belt ←" },
@@ -68,6 +76,8 @@ const BRUSHES: Brush[] = [
   { ch: "`", group: "mover", label: "Lift" },
   { ch: ")", group: "mover", label: "Blink" },
   { ch: "g", group: "mover", label: "Geyser" },
+  { ch: "f", group: "mover", label: "Drop-cap" },
+  { ch: "{", group: "mover", label: "Carriage" },
 
   { ch: "'", group: "deco", label: "Torch" },
   { ch: ";", group: "deco", label: "Lantern" },
@@ -111,10 +121,7 @@ const BRUSHES: Brush[] = [
   { ch: ">", group: "meta", label: "Arrow / Rest of book" },
   { ch: "<", group: "meta", label: "Arrow / Last page" },
   { ch: "V", group: "meta", label: "Down" },
-  { ch: "[", group: "meta", label: "Door Exchange" },
   { ch: "]", group: "meta", label: "Door Fort" },
-  { ch: "{", group: "meta", label: "Door Press" },
-  { ch: "}", group: "meta", label: "Door Coil" },
   { ch: "(", group: "meta", label: "Door Ledger" },
 ];
 

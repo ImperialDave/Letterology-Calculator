@@ -3,4 +3,6 @@ Style: gothic type-foundry, rain-wet cathedral stone, black type-metal,
 gold serifs, teal ink, clean HD painted 2D, not pixel art.
 Tiles are seamless fills. Sprites sit on chroma magenta then keyed.
 Chars: ` lift  ) blink  S saw  g geyser (floor tile; air g stays lore npc).
+Off-hub toys: l censer  z stamper  x guillotine  f drop-cap  j ember grate
+d rotor  w sinkink  } shutter  { carriage  [ echo plate.
 Code-drawn fallback remains if a PNG is missing.

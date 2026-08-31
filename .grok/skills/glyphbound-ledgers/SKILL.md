@@ -30,6 +30,10 @@ ASCII `rows` are the collision map. `TILE=48`. Do not infer collision from art. 
 
 Unlock schedule: 6–14 `T - =` · 15–24 `\| / T` · 25–34 `` ` ) g `` · 35–44 `S` + prior · 45–59 two prior verbs, never three new.
 
+Foundry toys (off-hub only; hub `[ { }` stay doors, hub `d f j w x` stay teachers): `l` censer · `z` stamper · `x` guillotine · `f` drop-cap · `j` ember grate · `d` rotor · `w` sinkink · `}` shutter · `{` carriage · `[` echo plate.
+
+Toy unlock: Fort `z` · Gutter `w` · Coil `x` · Ledger `}` · Foundry `l` · Fourfold `f` · Ligature `{` · Ampersand `[` · Iris `d` · Scriptorium `j`. Teach one, mix one known, never three new, never under `@ % P`, never the only path to `P`. Periods live in `src/glyphbound/toys.ts`.
+
 District landmarks: street `"` · fort `'` · coil/orbit/vault/spire `;` · canal `,` · remainder/abyss `?` · glacier `_`.
 
 ## Sentence
@@ -71,7 +75,9 @@ Floors for width `W` (see `src/glyphbound/density.ts`):
 | **15–24** | `max(6, W/14)` | `max(8, W/12)` + lasers off walkway; canal may mix sluice | `max(6, W/16)` add `\|` `/` | `max(10, W/10)` | `max(24, W/4)` | `max(3, W/26)` |
 | **25–29** | `max(8, W/12)` | `max(10, W/10)` | `max(8, W/14)` add `` ` ) g `` | `max(12, W/8)` | `max(28, W/4)` | `max(4, W/24)` |
 
-Author through themed patterns, `fillDensity`, or a frozen painter. Generated 6–29 must still look designed — do not freeze every room.
+Author through themed patterns, `fillDensity`, `dressTerrain`, or a frozen painter. Generated 6–29 must still look designed — do not freeze every room.
+
+`dressTerrain` may stamp extra loft streets, 2-tile hops, crumble, and district deco from the unlock band. It must not skip teach, must not plant three new toys, must not sit on `@ % P`, must not gate `P`. Hard/Extreme `padTerrain` adds more streets and teeth on a clone; Easy keeps the dressed baseline. Exchange is never dressed.
 
 ## Remainder density (30–60)
 

@@ -5,6 +5,7 @@ import { parseRows } from "./parse-map";
 import { isMovingSolid, SolidGrid } from "./spatial";
 import { TILE } from "./types";
 import { padRows } from "./folio";
+import { grateHot, gratePhase, shutterOpen, TELL, TOY_PERIOD } from "./toys";
 
 function blank(w = 24, h = 10): string[] {
   const rows = Array.from({ length: h }, () => ".".repeat(w));
@@ -52,6 +53,81 @@ test("air g remains a lore npc", () => {
   const parsed = parseRows(rows, { id: "user-g", isHub: false, index: 3, bossKind: "dualis" });
   assert.equal(parsed.solids.some((s) => s.type === "geyser"), false);
   assert.ok(parsed.npcs.some((n) => n.glyph === "g"));
+});
+
+test("catalog exposes the ten type-foundry toys", () => {
+  const chars = new Set(CATALOG.map((b) => b.ch));
+  for (const ch of "lzxfjdw}{[") assert.ok(chars.has(ch), ch);
+  assert.equal(CATALOG.find((b) => b.ch === "l")?.group, "hazard");
+  assert.equal(CATALOG.find((b) => b.ch === "f")?.group, "mover");
+  assert.equal(CATALOG.find((b) => b.ch === "{")?.group, "mover");
+});
+
+test("parse stamps ten toys off-hub", () => {
+  const rows = padRows(blank(36, 10));
+  set(rows, 2, 7, "@");
+  set(rows, 6, 6, "l");
+  set(rows, 8, 6, "z");
+  set(rows, 10, 6, "x");
+  set(rows, 12, 6, "f");
+  set(rows, 14, 8, "j");
+  set(rows, 16, 6, "d");
+  set(rows, 18, 8, "w");
+  set(rows, 20, 6, "}");
+  set(rows, 21, 6, "}");
+  set(rows, 22, 6, "}");
+  set(rows, 24, 7, "{");
+  set(rows, 26, 6, "[");
+  set(rows, 32, 7, "P");
+  const parsed = parseRows(rows, { id: "user-foundry", isHub: false, index: 12, bossKind: "dualis" });
+  const types = new Set(parsed.solids.map((s) => s.type));
+  for (const t of [
+    "censer",
+    "stamper",
+    "guillotine",
+    "dropcap",
+    "grate",
+    "rotor",
+    "sinkink",
+    "shutter",
+    "carriage",
+    "echo",
+  ]) {
+    assert.ok(types.has(t as (typeof parsed.solids)[number]["type"]), t);
+  }
+});
+
+test("hub still reads [ { } as doors and d as a teacher", () => {
+  const rows = padRows(blank());
+  set(rows, 2, 7, "@");
+  set(rows, 8, 7, "[");
+  set(rows, 10, 7, "{");
+  set(rows, 12, 7, "}");
+  set(rows, 14, 7, "d");
+  set(rows, 20, 7, "P");
+  const parsed = parseRows(rows, { id: "hub", isHub: true, index: 0, bossKind: "dualis", progress: 0 });
+  assert.ok(parsed.pickups.some((p) => p.kind === "door" && p.id === "stage1"));
+  assert.ok(parsed.pickups.some((p) => p.kind === "door" && p.id === "stage3"));
+  assert.ok(parsed.pickups.some((p) => p.kind === "door" && p.id === "stage4"));
+  assert.equal(parsed.solids.some((s) => s.type === "echo" || s.type === "carriage" || s.type === "shutter" || s.type === "rotor"), false);
+  assert.ok(parsed.npcs.some((n) => n.glyph === "d"));
+});
+
+test("grate hot window and shutter all-open are readable", () => {
+  let hot = 0;
+  let warn = 0;
+  const step = 0.05;
+  for (let t = 0; t < TOY_PERIOD.grate; t += step) {
+    if (grateHot(t, 0)) hot += step;
+    if (gratePhase(t, 0) === "warn") warn += step;
+  }
+  assert.ok(hot > 0.45 && hot < 0.7, `hot ${hot}`);
+  assert.ok(warn >= TELL, `warn ${warn}`);
+  let allOpen = 0;
+  for (let t = 0; t < TOY_PERIOD.shutter; t += step) {
+    if (shutterOpen(t, 0) && shutterOpen(t, 0.25) && shutterOpen(t, 0.5)) allOpen += step;
+  }
+  assert.ok(allOpen > 0.4 && allOpen < 0.7, `all-open ${allOpen}`);
 });
 
 test("saws stay out of the static walk grid", () => {

@@ -189,6 +189,110 @@ export function parseRows(rows: string[], ctx: Partial<ParseCtx> = {}): ParsedMa
         } else {
           pushNpc("g", x, y);
         }
+      } else if (!c.isHub && ch === "l") {
+        solids.push({
+          x: x + 10,
+          y: y + 8,
+          w: 28,
+          h: 28,
+          type: "censer",
+          homeX: x + 10,
+          homeY: y + 8,
+          phase: tx * 0.73,
+        });
+      } else if (!c.isHub && ch === "z") {
+        solids.push({
+          x,
+          y,
+          w: TILE,
+          h: TILE,
+          type: "stamper",
+          homeX: x,
+          homeY: y,
+          phase: tx * 0.61,
+        });
+      } else if (!c.isHub && ch === "x") {
+        solids.push({
+          x,
+          y: y + 8,
+          w: 12,
+          h: 32,
+          type: "guillotine",
+          homeX: x,
+          homeY: y + 8,
+          phase: tx * 0.43,
+        });
+      } else if (!c.isHub && ch === "f") {
+        solids.push({
+          x,
+          y: y + 28,
+          w: TILE,
+          h: 12,
+          type: "dropcap",
+          homeX: x,
+          homeY: y + 28,
+          phase: tx * 0.51,
+        });
+      } else if (!c.isHub && ch === "j") {
+        solids.push({
+          x,
+          y: y + 28,
+          w: TILE,
+          h: 12,
+          type: "grate",
+          phase: tx * 0.37,
+        });
+      } else if (!c.isHub && ch === "d") {
+        solids.push({
+          x: x - TILE,
+          y: y + TILE / 2 - 8,
+          w: TILE * 3,
+          h: 16,
+          type: "rotor",
+          homeX: x + TILE / 2,
+          homeY: y + TILE / 2,
+          phase: tx * 0.29,
+        });
+      } else if (!c.isHub && ch === "w") {
+        solids.push({
+          x,
+          y: y + 18,
+          w: TILE,
+          h: 30,
+          type: "sinkink",
+          phase: tx * 0.19,
+        });
+      } else if (!c.isHub && ch === "}") {
+        solids.push({
+          x: x + 16,
+          y: y - TILE,
+          w: 16,
+          h: TILE * 2,
+          type: "shutter",
+          homeX: x + 16,
+          homeY: y - TILE,
+          phase: (tx % 3) * 0.25,
+        });
+      } else if (!c.isHub && ch === "{") {
+        solids.push({
+          x,
+          y: y + 28,
+          w: TILE,
+          h: 12,
+          type: "carriage",
+          homeX: x,
+          homeY: y + 28,
+          phase: tx * 0.47,
+        });
+      } else if (!c.isHub && ch === "[") {
+        solids.push({
+          x,
+          y: y + 28,
+          w: TILE,
+          h: 12,
+          type: "echo",
+          phase: 0,
+        });
       } else if (ch === "@") {
         spawnX = x + 8;
         spawnY = y;

@@ -47,6 +47,37 @@ test("laser on the walkway fails", () => {
   assert.ok(validateLevel(f.rows).some((i) => i.code === "laser-floor"));
 });
 
+test("ember grate under a checkpoint fails rest-hazard", () => {
+  const f = blankFolio({ id: "folio-grate" });
+  let ax = 0;
+  let ay = 0;
+  for (let y = 0; y < f.rows.length; y++) {
+    const x = f.rows[y].indexOf("%");
+    if (x >= 0) {
+      ax = x;
+      ay = y;
+      break;
+    }
+  }
+  if (!f.rows[ay].includes("%")) {
+    for (let y = 0; y < f.rows.length; y++) {
+      const x = f.rows[y].indexOf("@");
+      if (x >= 0) {
+        ax = x + 3;
+        ay = y;
+        const row = f.rows[ay].split("");
+        row[ax] = "%";
+        f.rows[ay] = row.join("");
+        break;
+      }
+    }
+  }
+  const below = f.rows[ay + 1].split("");
+  below[ax] = "j";
+  f.rows[ay + 1] = below.join("");
+  assert.ok(validateLevel(f.rows).some((i) => i.code === "rest-hazard"));
+});
+
 test("spawn on spikes fails", () => {
   const f = blankFolio({ id: "folio-teeth" });
   let ax = 0;

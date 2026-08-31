@@ -104,6 +104,7 @@ export function buildGutter(): string[] {
   put(39, 5, "e");
   put(40, 8, "3");
   put(44, 5, "----");
+  fill(46, 9, 2, "w");
   put(48, 7, "====");
   put(50, 6, "0");
   put(52, 8, "1");
@@ -164,6 +165,7 @@ export function buildCoil(): string[] {
   put(16, 8, "1");
   bite(g, 9, 20, 2);
   hang(g, 9, 24, 2);
+  put(22, 7, "x");
   put(26, 6, "====");
   put(28, 5, "2");
   put(32, 7, "====");
@@ -296,6 +298,8 @@ export function buildLedger(): string[] {
   put(176, 10, "8");
   put(178, 10, "4");
   put(180, 9, "====");
+  put(184, 9, "}}}");
+  fill(184, 7, 3, "=");
   put(182, 8, "7");
   put(184, 10, "2");
   laserCol(188, 7, 10);

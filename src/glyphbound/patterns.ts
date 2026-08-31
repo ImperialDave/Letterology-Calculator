@@ -157,6 +157,162 @@ export const PATTERNS: Pattern[] = [
     },
   },
   {
+    id: "teach-censer",
+    beats: ["teach", "mix"],
+    verbs: ["l"],
+    paint(g, ctx) {
+      g.put(8, FY - 2, "l");
+      plantDeco(g, ctx, 5);
+      g.fill(12, FY - 3, 4, "=");
+    },
+  },
+  {
+    id: "teach-stamper",
+    beats: ["teach", "mix"],
+    verbs: ["z"],
+    paint(g, ctx) {
+      g.put(8, FY - 2, "z");
+      g.put(7, FY - 2, "#");
+      g.put(9, FY - 2, "#");
+      plantDeco(g, ctx, 12);
+    },
+  },
+  {
+    id: "teach-guillotine",
+    beats: ["teach", "mix"],
+    verbs: ["x"],
+    paint(g, ctx) {
+      g.put(8, FY - 2, "x");
+      g.fill(12, FY - 3, 4, "=");
+      plantDeco(g, ctx, 5);
+    },
+  },
+  {
+    id: "teach-dropcap",
+    beats: ["teach", "mix"],
+    verbs: ["f"],
+    paint(g, ctx) {
+      g.put(8, FY - 2, "f");
+      g.fill(12, FY - 3, 4, "=");
+      plantDeco(g, ctx, 5);
+    },
+  },
+  {
+    id: "teach-grate",
+    beats: ["teach", "mix"],
+    verbs: ["j"],
+    paint(g, ctx) {
+      g.fill(6, FY, 4, "j");
+      plantDeco(g, ctx, 12);
+    },
+  },
+  {
+    id: "teach-rotor",
+    beats: ["teach", "mix"],
+    verbs: ["d"],
+    paint(g, ctx) {
+      g.put(8, FY - 2, "d");
+      g.fill(12, FY - 3, 4, "=");
+      plantDeco(g, ctx, 4);
+    },
+  },
+  {
+    id: "teach-sinkink",
+    beats: ["teach", "mix"],
+    verbs: ["w"],
+    paint(g, ctx) {
+      g.fill(7, FY, 2, "w");
+      plantDeco(g, ctx, 5);
+      g.fill(12, FY - 3, 4, "=");
+    },
+  },
+  {
+    id: "teach-shutter",
+    beats: ["teach", "mix"],
+    verbs: ["}"],
+    paint(g, ctx) {
+      g.put(8, FY - 2, "}}}");
+      g.fill(8, FY - 4, 3, "=");
+      plantDeco(g, ctx, 5);
+    },
+  },
+  {
+    id: "teach-carriage",
+    beats: ["teach", "mix"],
+    verbs: ["{"],
+    paint(g, ctx) {
+      const w = pitW(ctx, 4, 5);
+      g.fill(6, FY, w, ".");
+      g.put(7, FY - 1, "{");
+      g.fill(6, FY - 3, w, "=");
+      plantDeco(g, ctx, 5);
+    },
+  },
+  {
+    id: "teach-echo",
+    beats: ["teach", "mix"],
+    verbs: ["["],
+    paint(g, ctx) {
+      g.put(8, FY - 3, "[");
+      g.put(7, FY - 3, "=");
+      g.put(9, FY - 3, "=");
+      plantDeco(g, ctx, 12);
+    },
+  },
+  {
+    id: "censer-lane",
+    beats: ["mix"],
+    verbs: ["l", "T"],
+    paint(g, ctx) {
+      g.put(7, FY - 2, "l");
+      g.fill(10, FY, 3, ".");
+      g.put(11, FY - 1, "T");
+      plantDeco(g, ctx, 5);
+    },
+  },
+  {
+    id: "stamper-well",
+    beats: ["mix"],
+    verbs: ["z", "-"],
+    paint(g, ctx) {
+      g.put(8, FY - 2, "z");
+      g.fill(12, FY, 4, "-");
+      plantDeco(g, ctx, 5);
+    },
+  },
+  {
+    id: "grate-run",
+    beats: ["mix"],
+    verbs: ["j", "/"],
+    paint(g, ctx) {
+      g.fill(6, FY, 3, "j");
+      g.fill(10, FY, 4, "/");
+      plantDeco(g, ctx, 16);
+    },
+  },
+  {
+    id: "carriage-gap",
+    beats: ["mix"],
+    verbs: ["{", "`"],
+    paint(g, ctx) {
+      g.fill(6, FY, 5, ".");
+      g.put(7, FY - 1, "{");
+      g.put(12, FY - 1, "`");
+      g.fill(6, FY - 3, 5, "=");
+    },
+  },
+  {
+    id: "rotor-court",
+    beats: ["mix"],
+    verbs: ["d", "|"],
+    paint(g, ctx) {
+      g.put(8, FY - 2, "d");
+      g.put(12, FY - 2, "|");
+      g.put(12, FY - 3, "|");
+      g.fill(14, FY - 4, 4, "=");
+    },
+  },
+  {
     id: "mix-bounce-laser",
     beats: ["mix"],
     verbs: ["T", "|"],
