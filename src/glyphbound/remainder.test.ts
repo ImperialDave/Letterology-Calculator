@@ -281,7 +281,7 @@ test("campaign density uses LEVELS, not assemble ghosts, for Numberomicons", () 
   for (let n = 6; n <= 15; n++) {
     const meta = LEVELS[`stage${n}`];
     const d = tally(meta.rows);
-    const f = densityFloors(30, d.W);
+    const f = densityFloors(n, d.W);
     const bits: string[] = [];
     if (d.hazards < f.hazards) bits.push(`hazards ${d.hazards}<${f.hazards}`);
     if (bits.length) failed.push(`stage${n} W=${d.W} ${bits.join("; ")}`);

@@ -403,7 +403,7 @@ export function armTeethAlongPath<T extends string[]>(rows: T, spine: number[]):
 
 export { localFloorY } from "./levels-story";
 
-const KEEP_PATH = "@%PihkntOIF!";
+const KEEP_PATH = "@%PihkntOIF!1023456789ABCEYGHKQUNJLM";
 
 /** Plant the stage's damage kit on the carved path — crests hang, valleys become floors. */
 export function dressPath(g: Grid, kit: string) {
@@ -412,13 +412,19 @@ export function dressPath(g: Grid, kit: string) {
   const fy = g.floorY;
   const W = g.W;
   let i = 0;
-  for (let x = 10; x < W - 10; x += 7) {
+  for (let x = 10; x < W - 10; x += 14) {
     const ch = kit[i % kit.length] ?? kit[0];
     i += 1;
     if (!ch) continue;
+    let blocked = false;
+    for (let d = -5; d <= 5; d++) {
+      const wy = (spine[x + d] ?? fy) - 1;
+      const here = g[wy]?.[x + d] ?? "#";
+      if (KEEP_PATH.includes(here)) blocked = true;
+    }
     const wy = (spine[x] ?? fy) - 1;
     const here = g[wy]?.[x] ?? "#";
-    if (KEEP_PATH.includes(here) || here !== ".") continue;
+    if (blocked || here !== ".") continue;
     if (ch === "j") grateStreet(g, spine, x, 2);
     else if (ch === "w") sinkValleyFloor(g, spine, x, 2);
     else if (ch === "g") g.put(x, fy, "g");

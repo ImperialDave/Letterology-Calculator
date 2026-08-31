@@ -1,3 +1,4 @@
+import { clearFightPorches, ensureCounts } from "./density";
 import { grid, sealBasement, type Grid } from "./levels-story";
 import { armTeethAlongPath, dressPath, realizeLandform, repairPath, type LandOp } from "./sculpt";
 
@@ -23,6 +24,8 @@ function paint(
   armTeethAlongPath(g, spine);
   sealBasement(g, fy);
   repairPath(g);
+  clearFightPorches(g);
+  ensureCounts(g, 30);
   return [...g];
 }
 
@@ -157,7 +160,7 @@ function echoLoft(g: Grid, fy: number, x: number) {
   g.put(x + 1, fy - 3, "=");
 }
 
-const KEEP = "@%PihkntOIF!>lzxfjdw}{[";
+const KEEP = "@%PihkntOIF!>lzxfjdw}{[1023456789ABCEYGHKQUNJLM";
 
 function cell(g: Grid, x: number, y: number) {
   const ny = g.along ? g.along(x, y) : y;
@@ -201,7 +204,7 @@ function pressure(g: Grid, fy: number, deco: string, kit: PressureKit = {}) {
   }
   if (kit.hang) {
     let i = 0;
-    for (let x = 11; x < W - 10; x += 7) {
+    for (let x = 11; x < W - 10; x += 16) {
       if (busy(x)) continue;
       if (cell(g, x, fy - 2) !== ".") continue;
       g.put(x, fy - 2, kit.hang[i % kit.hang.length] ?? kit.hang[0]);
@@ -209,7 +212,7 @@ function pressure(g: Grid, fy: number, deco: string, kit: PressureKit = {}) {
     }
   }
   if (kit.floor) {
-    for (let x = 16; x < W - 12; x += 10) {
+    for (let x = 16; x < W - 12; x += 20) {
       if (busy(x) || busy(x + 1)) continue;
       if (cell(g, x, fy) !== "#" || cell(g, x + 1, fy) !== "#") continue;
       if (kept(cell(g, x, fy - 1)) || kept(cell(g, x + 1, fy - 1))) continue;
@@ -378,7 +381,7 @@ export function buildKeystroke(): string[] {
     g.put(47, fy - 4, "^");
   }, [
     { t: "hill", at: 18, w: 12, h: 2 },
-    { t: "grate", at: 56, w: 4 },
+    { t: "grate", at: 56, w: 2 },
     { t: "valley", at: 88, w: 12, d: 2 },
     { t: "ridge", at: 120, w: 16 },
     { t: "pass", at: 154, w: 18 },
@@ -490,10 +493,10 @@ export function buildLigature(): string[] {
     pressure(g, fy, d, { floor: "w", ride: true });
   }, [
     { t: "valley", at: 26, w: 12, d: 2 },
-    { t: "sink", at: 28, n: 4 },
+    { t: "sink", at: 28, n: 2 },
     { t: "bridge", at: 76, w: 6 },
     { t: "valley", at: 140, w: 12, d: 2 },
-    { t: "sink", at: 144, n: 4 },
+    { t: "sink", at: 144, n: 2 },
     { t: "hill", at: 168, w: 12, h: 1 },
   ], "w{");
 }
@@ -542,6 +545,7 @@ export function buildAmpersand(): string[] {
     put(W - 8, fy - 1, "i");
     put(W - 4, fy - 1, "P");
     pressure(g, fy, d, { echo: true, ride: true });
+    g.put(27, fy - 1, "n");
   }, [
     { t: "hill", at: 22, w: 12, h: 1 },
     { t: "valley", at: 78, w: 12, d: 2 },
@@ -643,11 +647,11 @@ export function buildScriptorium(): string[] {
     put(W - 4, fy - 1, "P");
     pressure(g, fy, d, { floor: "j" });
   }, [
-    { t: "grate", at: 18, n: 3 },
+    { t: "grate", at: 18, n: 2 },
     { t: "hill", at: 42, w: 14, h: 2 },
     { t: "valley", at: 92, w: 10, d: 2 },
     { t: "ridge", at: 128, w: 16 },
-    { t: "grate", at: 160, n: 3 },
+    { t: "grate", at: 160, n: 2 },
   ], "j");
 }
 

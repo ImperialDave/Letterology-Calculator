@@ -148,6 +148,50 @@ function reservedCols(rows: string[], fy: number) {
   return skip;
 }
 
+const FIGHT = ENEMY_GLYPHS + "!knt";
+const PORCH_FLOOR = "jw";
+const PORCH_HANG = "lzxjdw}";
+
+function combatCols(rows: string[], radius = 3) {
+  const W = rows[0]?.length ?? 0;
+  const skip = reservedCols(rows, 0);
+  for (let y = 0; y < rows.length; y++) {
+    for (let x = 0; x < W; x++) {
+      if (!FIGHT.includes(at(rows, x, y))) continue;
+      for (let d = -radius; d <= radius; d++) skip.add(x + d);
+    }
+  }
+  return skip;
+}
+
+/** Restore a short # porch under each digit so packs are fightable. */
+export function clearFightPorches(rows: string[]): string[] {
+  const W = rows[0]?.length ?? 0;
+  const H = rows.length;
+  for (let y = 0; y < H; y++) {
+    for (let x = 1; x < W - 1; x++) {
+      if (!FIGHT.includes(at(rows, x, y))) continue;
+      for (let d = -2; d <= 2; d++) {
+        const xx = x + d;
+        if (xx < 1 || xx >= W - 1) continue;
+        const yf = localFloorY(rows, xx);
+        const floor = at(rows, xx, yf);
+        if (PORCH_FLOOR.includes(floor)) setCell(rows, xx, yf, "#");
+        if (d === 0 && floor === "^") setCell(rows, xx, yf, "#");
+        const walk = at(rows, xx, yf - 1);
+        if (PORCH_HANG.includes(walk) && !FIGHT.includes(walk) && !RESERVED.includes(walk)) {
+          setCell(rows, xx, yf - 1, ".");
+        }
+        if (Math.abs(d) <= 1) {
+          const hang = at(rows, xx, yf - 2);
+          if (PORCH_HANG.includes(hang)) setCell(rows, xx, yf - 2, ".");
+        }
+      }
+    }
+  }
+  return rows;
+}
+
 function walkable(rows: string[], fy: number, x: number) {
   const yf = localFloorY(rows, x) || fy;
   return at(rows, x, yf - 1) === "." && FLOOR.includes(at(rows, x, yf));
@@ -510,26 +554,27 @@ export function fillDensity(
     }
   }
 
+  const fight = combatCols(rows);
   if (opts.n >= 16) {
-    for (let x = 14; x < W - 12; x += 22) {
+    for (let x = 14; x < W - 12; x += 36) {
       const ox = x + Math.floor(rand() * 2);
       const fy = fyOf(ox);
-      if (skip.has(ox)) continue;
+      if (skip.has(ox) || fight.has(ox)) continue;
       if (at(rows, ox, fy - 2) !== ".") continue;
       if (at(rows, ox, fy) !== "#" && at(rows, ox, fy) !== "=") continue;
       setCell(rows, ox, fy - 2, rand() < 0.5 ? "l" : "z");
     }
-    for (let x = 18; x < W - 12; x += 28) {
+    for (let x = 18; x < W - 12; x += 40) {
       const fy = fyOf(x);
-      if (skip.has(x)) continue;
+      if (skip.has(x) || fight.has(x)) continue;
       if (at(rows, x, fy - 2) !== ".") continue;
       if (at(rows, x, fy) !== "#" && at(rows, x, fy) !== "=") continue;
       setCell(rows, x, fy - 2, "x");
     }
-    for (let x = 16; x < W - 14; x += 30) {
+    for (let x = 16; x < W - 14; x += 48) {
       const ox = x;
       const fy = fyOf(ox);
-      if (skip.has(ox) || skip.has(ox + 1)) continue;
+      if (skip.has(ox) || skip.has(ox + 1) || fight.has(ox)) continue;
       if (at(rows, ox, fy) !== "#" || at(rows, ox + 1, fy) !== "#") continue;
       if (RESERVED.includes(at(rows, ox, fy - 1))) continue;
       setCell(rows, ox, fy, "j");
@@ -719,6 +764,7 @@ export function fillDensity(
     }
   }
   ensureCounts(rows, opts.n);
+  clearFightPorches(rows);
   return rows;
 }
 
@@ -803,7 +849,7 @@ export function padEnemies(rows: string[], n: number, difficulty: Difficulty): s
   return out;
 }
 
-const KEEP_DRESS = "@%P!lzxfjdw}{[kntOIF";
+const KEEP_DRESS = "@%P!lzxfjdw}{[kntOIF1023456789ABCEYGHKQUNJLM";
 
 function busyCol(rows: string[], fy: number, x: number) {
   for (let dx = -2; dx <= 2; dx++) {
@@ -826,6 +872,7 @@ function hopTeeth(rows: string[], fy: number, x: number) {
   const yf = localFloorY(rows, x) || fy;
   if (at(rows, x, yf) !== "#" || at(rows, x + 1, yf) !== "#") return false;
   if (at(rows, x, yf - 1) !== "." || at(rows, x + 1, yf - 1) !== ".") return false;
+  if (FIGHT.includes(at(rows, x, yf - 1)) || FIGHT.includes(at(rows, x + 1, yf - 1))) return false;
   setCell(rows, x, yf, "^");
   setCell(rows, x + 1, yf, "^");
   return true;
@@ -833,10 +880,7 @@ function hopTeeth(rows: string[], fy: number, x: number) {
 
 function hangKit(rows: string[], fy: number, x: number, n: number) {
   const yf = localFloorY(rows, x) || fy;
-  if (n === 3 && at(rows, x, yf) === "#" && at(rows, x, yf - 1) === ".") {
-    setCell(rows, x, yf, "w");
-    return true;
-  }
+  if (FIGHT.includes(at(rows, x, yf - 1))) return false;
   if (at(rows, x, yf - 2) !== ".") return false;
   let ch = "|";
   if (n === 2) ch = "z";
@@ -845,10 +889,7 @@ function hangKit(rows: string[], fy: number, x: number, n: number) {
   else if (n < 25) ch = n % 2 ? "l" : "z";
   else if (n < 35) ch = n % 2 ? "x" : "j";
   else ch = n % 2 ? "l" : "x";
-  if (ch === "j" && at(rows, x, yf) === "#") {
-    setCell(rows, x, yf, "j");
-    return true;
-  }
+  if (ch === "j") ch = "l";
   setCell(rows, x, yf - 2, ch);
   return true;
 }
@@ -875,7 +916,8 @@ export function dressTerrain(
   const deco = !opts.deco || opts.deco === "_" ? ";" : opts.deco;
   const rand = opts.rand;
   const loftN = n < 6 ? 1 : n < 16 ? 2 : 1;
-  const hopN = n < 6 ? 0 : Math.max(1, Math.floor(W / (n < 16 ? 22 : 30)));
+  const hopN = n < 6 ? 0 : Math.max(1, Math.floor(W / (n < 16 ? 36 : 42)));
+  const fight = combatCols(out);
   let lofts = 0;
   for (let x = 10; x < W - 14 && lofts < loftN; x += 9) {
     const ox = x + Math.floor(rand() * 3);
@@ -884,10 +926,10 @@ export function dressTerrain(
     if (loftStreet(out, fy, ox, deco)) lofts += 1;
   }
   let hops = 0;
-  for (let x = 12; x < W - 12 && hops < hopN; x += 11) {
+  for (let x = 12; x < W - 12 && hops < hopN; x += 18) {
     const ox = x + Math.floor(rand() * 2);
     const fy = localFloorY(out, ox) || baseFy;
-    if (skip.has(ox) || skip.has(ox + 1) || busyCol(out, fy, ox)) continue;
+    if (skip.has(ox) || skip.has(ox + 1) || busyCol(out, fy, ox) || fight.has(ox)) continue;
     if (hangKit(out, fy, ox, n) || hopTeeth(out, fy, ox)) hops += 1;
   }
   for (let x = 8; x < W - 8; x += 7) {

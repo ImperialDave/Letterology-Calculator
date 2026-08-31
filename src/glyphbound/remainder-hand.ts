@@ -1,5 +1,5 @@
 /** Frozen Remainder showpieces. Glyphbound Doctrine: .grok/skills/glyphbound-ledgers/SKILL.md */
-import { ensureCounts, fillDensity } from "./density";
+import { clearFightPorches, ensureCounts, fillDensity } from "./density";
 import { remainderName, remainderObjective } from "./remainder-names";
 import { decoFor, rng } from "./recipe";
 import { FIRST_BOOK, STAGE_COUNT, type LevelId, type TaskDef, type ThemeId } from "./types";
@@ -23,6 +23,7 @@ function ledger(
   sealBasement(g, fy);
   repairPath(g);
   ensureCounts(g, n);
+  clearFightPorches(g);
   const tasks: TaskDef[] = boss
     ? [{ id: `clear-${n}`, text: n === FIRST_BOOK ? "Defeat End-Mark" : n === STAGE_COUNT ? "Defeat the Remainder" : "Defeat the warden" }]
     : [{ id: `clear-${n}`, text: "Reach the gate" }];

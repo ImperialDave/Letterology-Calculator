@@ -59,11 +59,11 @@ test("Numberomicon wallpaper is toys, not bounce halls", () => {
   const count = (n: number, ch: string) =>
     [...LEVELS[`stage${n}`].rows.join("")].filter((c) => c === ch).length;
   assert.equal(count(1, "l") + count(1, "z") + count(1, "w") + count(1, "x"), 0, "Exchange stays toy-free");
-  assert.ok(count(6, "l") >= 3, `foundry censers ${count(6, "l")}`);
+  assert.ok(count(6, "l") >= 2, `foundry censers ${count(6, "l")}`);
   assert.ok(count(6, "T") <= 6, `foundry bounce ${count(6, "T")}`);
-  assert.ok(count(7, "l") + count(7, "z") >= 4, "keystroke hang kit");
+  assert.ok(count(7, "l") + count(7, "z") >= 2, "keystroke hang kit");
   assert.ok(count(8, "f") >= 2, "fourfold drop-caps");
-  assert.ok(count(12, "j") >= 3, "scriptorium grates");
+  assert.ok(count(12, "j") >= 2, "scriptorium grates");
   for (const n of STORY) {
     assert.equal(count(n, "S"), 0, `stage${n} saw`);
   }
@@ -88,6 +88,36 @@ test("Numberomicon floors are hills and valleys, not a runway", () => {
   }
 });
 
+test("Numberomicon packs stand on fight porches, not trap carpet", () => {
+  const KILL = "^|S~lzxjdw}";
+  for (const n of STORY) {
+    const rows = LEVELS[`stage${n}`].rows;
+    const W = rows[0]?.length ?? 0;
+    let best = 0;
+    let run = 0;
+    let kill = 0;
+    let safe = 0;
+    for (let x = 2; x < W - 2; x++) {
+      const yf = localFloorY(rows, x);
+      const floor = rows[yf]?.[x] ?? "#";
+      const walk = rows[yf - 1]?.[x] ?? "#";
+      const hang = rows[yf - 2]?.[x] ?? "#";
+      const trapped = KILL.includes(floor) || KILL.includes(walk) || KILL.includes(hang);
+      if (trapped) {
+        kill += 1;
+        run = 0;
+      } else {
+        safe += 1;
+        run += 1;
+        if (run > best) best = run;
+      }
+    }
+    const ratio = kill / Math.max(1, kill + safe);
+    assert.ok(best >= 10, `stage${n} fight pad ${best}`);
+    assert.ok(ratio <= 0.22, `stage${n} walk-kill ${ratio.toFixed(2)}`);
+  }
+});
+
 test("foundry damage toys sit at more than one height", () => {
   const rows = LEVELS.stage6.rows;
   const ys = new Set<number>();
@@ -102,13 +132,14 @@ test("Numberomicon ledgers meet late-book density", () => {
   for (const n of STORY) {
     const meta = LEVELS[`stage${n}`];
     const d = tally(meta.rows);
-    const f = densityFloors(30, d.W);
+    const late = densityFloors(30, d.W);
+    const own = densityFloors(n, d.W);
     const bits: string[] = [];
-    if (d.enemies < f.enemies) bits.push(`enemies ${d.enemies}<${f.enemies}`);
-    if (d.hazards < f.hazards) bits.push(`hazards ${d.hazards}<${f.hazards}`);
-    if (d.movers < f.movers) bits.push(`movers ${d.movers}<${f.movers}`);
-    if (d.deco < f.deco) bits.push(`deco ${d.deco}<${f.deco}`);
-    if (d.shelves < f.shelves) bits.push(`shelves ${d.shelves}<${f.shelves}`);
+    if (d.enemies < late.enemies) bits.push(`enemies ${d.enemies}<${late.enemies}`);
+    if (d.hazards < own.hazards) bits.push(`hazards ${d.hazards}<${own.hazards}`);
+    if (d.movers < own.movers) bits.push(`movers ${d.movers}<${own.movers}`);
+    if (d.deco < late.deco) bits.push(`deco ${d.deco}<${late.deco}`);
+    if (d.shelves < late.shelves) bits.push(`shelves ${d.shelves}<${late.shelves}`);
     if (bits.length) failed.push(`stage${n} W=${d.W} ${bits.join("; ")}`);
   }
   assert.equal(failed.join("\n"), "");
