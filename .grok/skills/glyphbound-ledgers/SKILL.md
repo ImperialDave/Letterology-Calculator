@@ -67,9 +67,9 @@ Floors for width `W` (see `src/glyphbound/density.ts`):
 
 | Band | Enemies | Hazards | Movers | Landmarks | Loft tiles | Pickups |
 |---|---|---|---|---|---|---|
-| **6–14** | `max(4, W/18)` (boss `max(3, W/24)` plus `!`) | `max(4, W/20)` spikes/pits only | `max(4, W/20)` `T` `-` `=` only | `max(8, W/12)` | `max(16, W/6)` across **at least two** y-levels | `max(3, W/28)` |
-| **15–24** | `max(6, W/14)` | `max(6, W/16)` + lasers off walkway | `max(6, W/16)` add `\|` `/` | `max(10, W/10)` | `max(24, W/4)` | `max(3, W/26)` |
-| **25–29** | `max(8, W/12)` | `max(8, W/14)` | `max(8, W/14)` add `` ` ) g `` | `max(12, W/8)` | `max(28, W/4)` | `max(4, W/24)` |
+| **6–14** | `max(4, W/18)` (boss `max(3, W/24)` plus `!`) | `max(6, W/14)` pits, hops, lasers off walkway | `max(4, W/20)` `T` `-` `=` only | `max(8, W/12)` | `max(16, W/6)` across **at least two** y-levels | `max(3, W/28)` |
+| **15–24** | `max(6, W/14)` | `max(8, W/12)` + lasers off walkway; canal may mix sluice | `max(6, W/16)` add `\|` `/` | `max(10, W/10)` | `max(24, W/4)` | `max(3, W/26)` |
+| **25–29** | `max(8, W/12)` | `max(10, W/10)` | `max(8, W/14)` add `` ` ) g `` | `max(12, W/8)` | `max(28, W/4)` | `max(4, W/24)` |
 
 Author through themed patterns, `fillDensity`, or a frozen painter. Generated 6–29 must still look designed — do not freeze every room.
 
@@ -82,7 +82,7 @@ Floors for width `W` (see `src/glyphbound/density.ts`):
 | Kind | Minimum |
 |---|---|
 | Enemies (`0-9A-Y`) | `max(10, W/10)` non-boss; bosses `max(5, W/18)` plus `!` |
-| Obstacles (spikes, lasers, saws, sluice) | `max(8, W/12)` — spikes in pits (`fy+1`) or 2-tile jumps, never under `@ % P` |
+| Obstacles (spikes, lasers, saws, sluice) | `max(12, W/8)` — spikes in pits (`fy+1`) or 2-tile floor hops, never under `@ % P`. At most two of `^ | S ~` until n>45. `S` from 31 (one glimpse), uncapped mix from 46. |
 | Movers (bounce, crumble, belts, lift, blink, geyser, fan) | `max(8, W/12)` — reuse known verbs; never three *new* toys in one room |
 | Landmarks (`' ; " , ?`) | `max(12, W/8)` |
 | Loft tiles (`= _ * &`) | `max(32, W/3)` across **at least two** y-levels |

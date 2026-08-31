@@ -3,7 +3,7 @@ import { DISTRICTS } from "./districts";
 import type { ThemeId } from "./types";
 import { STAGE_COUNT } from "./types";
 
-export type Verb = "T" | "-" | "=" | "|" | "/" | "`" | ")" | "g" | "S";
+export type Verb = "T" | "-" | "=" | "|" | "/" | "`" | ")" | "g" | "S" | "~";
 export type Pocket = "none" | "loft" | "vent";
 
 export interface Recipe {
@@ -26,6 +26,8 @@ const ROLE_TIERS = [
   ["1", "0", "2", "5", "7", "8", "9", "A", "B"],
   ["2", "5", "7", "8", "9", "A", "B", "C", "E", "Y"],
 ];
+
+const VENT_HOME: ThemeId[] = ["coil", "spire", "abyss"];
 
 export function rng(seed: number) {
   let s = seed | 0;
@@ -58,6 +60,16 @@ export function verbsFor(n: number): Verb[] {
   if (n < 35) return ["`", ")", "g"];
   if (n < 45) return ["S", "`", ")"];
   return ["S", "g", "|", "`"];
+}
+
+/** Mix pool. Sluice is mix-only — never featured, never before the Press, never glacier/orbit. */
+export function mixVerbsFor(n: number, theme: ThemeId): Verb[] {
+  const base = verbsFor(n);
+  if (theme === "glacier" || theme === "orbit") return base;
+  if (n >= 12 && (theme === "canal" || (theme === "remainder" && n >= 34))) {
+    return [...base, "~"];
+  }
+  return base;
 }
 
 function pick<T>(rand: () => number, list: T[]): T {
@@ -116,11 +128,19 @@ export function recipeFor(n: number, rand: () => number): Recipe {
   const theme = themeFor(n);
   const pool = verbsFor(n);
   const featured = pick(rand, pool);
-  const others = pool.filter((v) => v !== featured);
+  const others = mixVerbsFor(n, theme).filter((v) => v !== featured);
   const mix = others.length ? pick(rand, others) : featured;
   const roles = ROLE_TIERS[Math.min(ROLE_TIERS.length - 1, Math.floor((n - 1) / 4))];
   const pocketRoll = rand();
-  const pocket: Pocket = n < 20 ? "none" : pocketRoll < 0.35 ? "loft" : pocketRoll < 0.45 ? "vent" : "none";
+  const ventHome = VENT_HOME.includes(theme);
+  const pocket: Pocket =
+    n < 16
+      ? "none"
+      : pocketRoll < 0.32
+        ? "loft"
+        : pocketRoll < (ventHome ? 0.58 : 0.44)
+          ? "vent"
+          : "none";
   return {
     beats: pick(rand, beatOptions(n)),
     featured,

@@ -1,5 +1,14 @@
 import { grid, armTeeth, type Grid } from "./levels-story";
 
+/** 2-tile pit. Walk-on ^ at fy-1 is stripped by ensurePortalAccess. */
+function bite(g: Grid, fy: number, x: number, n = 2) {
+  g.fill(x, fy, n, ".");
+}
+
+function hang(g: Grid, fy: number, x: number, h = 2) {
+  for (let i = 0; i < h; i++) g.put(x, fy - 2 - i, "|");
+}
+
 export function buildExchange(): string[] {
   const W = 184;
   const H = 13;
@@ -11,7 +20,7 @@ export function buildExchange(): string[] {
   put(8, 6, "==");
   put(14, 6, "####");
   put(20, 7, "1");
-  put(24, 7, "^^^");
+  bite(g, 8, 24, 2);
   put(28, 5, "====");
   put(30, 4, "0");
   put(36, 7, "i");
@@ -25,7 +34,8 @@ export function buildExchange(): string[] {
   put(58, 3, "====");
   put(60, 2, "3");
   put(72, 2, "0");
-  put(80, 7, "^^");
+  bite(g, 8, 80, 2);
+  hang(g, 8, 76, 2);
   put(84, 6, "####");
   put(86, 5, "s");
   put(90, 5, "q");
@@ -35,7 +45,8 @@ export function buildExchange(): string[] {
   put(102, 3, "*");
   put(104, 4, "a");
   put(106, 7, "7");
-  put(110, 7, "^^");
+  bite(g, 8, 110, 2);
+  hang(g, 8, 114, 2);
   put(96, 2, "0");
   put(116, 2, "====");
   put(118, 1, "i");
@@ -44,7 +55,7 @@ export function buildExchange(): string[] {
   put(128, 7, "1");
   put(132, 7, "2");
   put(134, 6, "%");
-  put(136, 7, "^^");
+  hang(g, 8, 144, 2);
   put(142, 7, "h");
   put(128, 4, "========");
   put(130, 3, "4");
@@ -82,7 +93,8 @@ export function buildGutter(): string[] {
   put(10, 8, "u");
   put(16, 8, "1");
   put(8, 7, "==");
-  put(18, 8, "^^");
+  bite(g, 9, 18, 2);
+  hang(g, 9, 28, 2);
   put(20, 6, "====");
   put(22, 5, "i");
   put(26, 8, "2");
@@ -100,7 +112,8 @@ export function buildGutter(): string[] {
   put(64, 8, "5");
   put(68, 5, "====");
   put(70, 4, "X");
-  put(72, 8, "^^^");
+  bite(g, 9, 72, 2);
+  hang(g, 9, 84, 2);
   put(76, 8, "g");
   put(80, 6, "====");
   put(82, 8, "%");
@@ -128,7 +141,7 @@ export function buildGutter(): string[] {
   put(152, 4, "5");
   put(156, 8, "P");
   put(160, 7, "+");
-  put(158, 8, "^^^");
+  hang(g, 9, 128, 2);
   put(40, 2, "0");
   put(100, 2, "0");
   put(24, 3, "====");
@@ -149,7 +162,8 @@ export function buildCoil(): string[] {
   put(1, 8, "@");
   put(10, 8, "p");
   put(16, 8, "1");
-  put(20, 8, "^^^^");
+  bite(g, 9, 20, 2);
+  hang(g, 9, 24, 2);
   put(26, 6, "====");
   put(28, 5, "2");
   put(32, 7, "====");
@@ -161,14 +175,15 @@ export function buildCoil(): string[] {
   fill(42, 8, 3, "v");
   put(48, 8, "1");
   put(50, 8, "5");
-  put(52, 8, "^^^");
+  bite(g, 9, 52, 2);
   put(56, 6, "====");
   put(58, 5, "Z");
   put(62, 8, "6");
   put(66, 7, "----");
   put(70, 5, "====");
   put(72, 4, "6");
-  put(76, 8, "^^^^^^^^");
+  bite(g, 9, 76, 2);
+  hang(g, 9, 88, 2);
   put(80, 6, "====");
   put(82, 5, "r");
   put(86, 7, "----");
@@ -193,7 +208,8 @@ export function buildCoil(): string[] {
   fill(132, 8, 2, "v");
   put(138, 7, "====");
   put(140, 6, "9");
-  put(142, 8, "^^^^^");
+  bite(g, 9, 142, 2);
+  hang(g, 9, 148, 2);
   put(148, 8, "3");
   put(152, 5, "----");
   put(156, 6, "========");
@@ -225,7 +241,8 @@ export function buildLedger(): string[] {
   put(4, 10, "@");
   put(8, 10, "n");
   put(14, 10, "1");
-  put(16, 10, "^^^");
+  bite(g, 11, 16, 2);
+  hang(g, 11, 36, 2);
   put(20, 9, "====");
   put(22, 8, "2");
   put(26, 10, "0");
@@ -243,7 +260,8 @@ export function buildLedger(): string[] {
   put(68, 9, "========");
   put(70, 8, "3");
   put(74, 10, "5");
-  put(76, 10, "^^");
+  bite(g, 11, 76, 2);
+  hang(g, 11, 108, 2);
   gap(82, 14);
   put(84, 8, "====");
   put(88, 6, "----");
@@ -255,7 +273,7 @@ export function buildLedger(): string[] {
   put(108, 10, "1");
   put(110, 8, "====");
   put(112, 7, "0");
-  put(116, 10, "^^^^^^^^");
+  bite(g, 11, 116, 2);
   put(126, 9, "====");
   put(128, 8, "8");
   fill(132, 6, 2, "v");
@@ -265,7 +283,8 @@ export function buildLedger(): string[] {
   fill(132, 10, 2, "v");
   put(138, 8, "====");
   put(140, 7, "9");
-  put(144, 10, "^^^^^^^^");
+  bite(g, 11, 144, 2);
+  hang(g, 11, 150, 2);
   put(154, 9, "========");
   put(156, 8, "3");
   put(158, 8, "%");

@@ -255,7 +255,7 @@ export const CHUNKS: Chunk[] = [
   make("teach-saw", "Cutting disc", ["teach"], ["any", "saw"], (g) => {
     g.put(8, FY - 2, "S");
     g.fill(12, FY - 2, 4, "=");
-  }, { w: 18, min: 14 }),
+  }, { w: 18, min: 31 }),
   make("teach-geyser", "Ink jet", ["teach"], ["any", "geyser"], (g) => {
     g.fill(8, FY, 1, "g");
     g.fill(12, FY - 4, 4, "=");
@@ -275,13 +275,13 @@ export const CHUNKS: Chunk[] = [
     g.put(7, FY - 1, "`");
     g.put(11, FY - 2, "S");
     g.fill(14, FY - 3, 4, "=");
-  }, { w: 22, min: 16 }),
+  }, { w: 22, min: 35 }),
   make("combat-saw", "Disc court", ["combat"], ["any", "saw"], (g) => {
     g.put(7, FY - 1, "1");
     g.put(10, FY - 2, "S");
     g.put(14, FY - 1, "2");
     g.fill(8, FY - 3, 4, "=");
-  }, { w: 20, min: 14 }),
+  }, { w: 20, min: 35 }),
   make("rest-geyser", "Warm jet", ["rest"], ["any", "geyser"], (g) => {
     g.put(5, FY - 1, "%");
     g.fill(8, FY, 1, "g");
@@ -300,6 +300,34 @@ export const CHUNKS: Chunk[] = [
     g.put(9, FY, "g");
     g.fill(12, FY - 3, 4, "=");
   }, { w: 20, min: 14, theme: "canal" }),
+  make("mix-sluice-laser", "Bar over ink", ["mix"], ["any", "sluice", "laser"], (g) => {
+    g.fill(6, FY, 3, ".");
+    g.fill(6, FY + 1, 3, "~");
+    g.put(7, FY - 1, "T");
+    g.put(8, FY - 3, "|");
+    g.put(8, FY - 4, "|");
+  }, { w: 22, min: 15 }),
+  make("mix-belts", "Crush belts", ["mix"], ["any", "conveyor"], (g) => {
+    g.fill(5, FY, 3, "/");
+    g.fill(9, FY, 2, ".");
+    g.fill(9, FY + 1, 2, "^");
+    g.put(9, FY - 1, "T");
+    g.fill(12, FY, 3, "\\");
+  }, { w: 22, min: 18 }),
+  make("mix-fan-laser", "Fan then bar", ["mix"], ["any", "laser"], (g) => {
+    g.fill(6, FY, 2, ".");
+    g.put(6, FY - 1, ":");
+    g.put(10, FY - 3, "|");
+    g.put(10, FY - 4, "|");
+    g.fill(12, FY - 3, 4, "=");
+  }, { w: 22, min: 15 }),
+  make("teach-vent", "Rising flue", ["teach", "mix"], ["coil", "spire", "abyss"], (g) => {
+    g.put(8, FY - 1, "v");
+    g.put(8, FY - 2, "v");
+    g.put(8, FY - 3, "v");
+    g.fill(10, FY - 2, 4, "=");
+    g.put(12, FY - 3, "i");
+  }, { w: 20, min: 16, theme: "abyss" }),
 
   ...REMAINDER_CHUNKS,
 ];

@@ -18,11 +18,28 @@ const WORDS: Record<number, string> = {
   40: "I",
 };
 
-function pickChunk(beat: Beat, n: number, theme: ThemeId, rand: () => number, used: Set<string>): Chunk {
+function tagFor(v: string): string {
+  if (v === "T") return "bounce";
+  if (v === "-") return "crumble";
+  if (v === "|") return "laser";
+  if (v === "/") return "conveyor";
+  if (v === "`") return "lift";
+  if (v === ")") return "blink";
+  if (v === "g") return "geyser";
+  if (v === "S") return "saw";
+  if (v === "~") return "sluice";
+  if (v === "=") return "loft";
+  return v;
+}
+
+function pickChunk(beat: Beat, n: number, theme: ThemeId, rand: () => number, used: Set<string>, prefer: string[] = []): Chunk {
   const all = chunksFor(beat, n, theme);
   const themed = all.filter((c) => (c.theme === theme || c.tags.includes(theme)) && !used.has(c.id));
   const unused = all.filter((c) => !used.has(c.id));
-  const list = themed.length ? themed : unused.length ? unused : all;
+  const liked = (themed.length ? themed : unused).filter((c) =>
+    prefer.some((p) => c.tags.includes(p) || c.rows.join("").includes(p)),
+  );
+  const list = liked.length ? liked : themed.length ? themed : unused.length ? unused : all;
   const c = list[Math.floor(rand() * list.length)] ?? chunksFor(beat, n, "street")[0];
   if (!c) throw new Error(`no chunk for ${beat} @ ${n}`);
   used.add(c.id);
@@ -185,7 +202,7 @@ function paintBeat(beat: Beat, recipe: Recipe, n: number, rand: () => number, us
     });
     return rows;
   }
-  const chunk = pickChunk(beat, n, recipe.theme, rand, used);
+  const chunk = pickChunk(beat, n, recipe.theme, rand, used, [tagFor(recipe.featured), tagFor(recipe.mix), recipe.featured, recipe.mix]);
   return cloneRows(chunk.rows);
 }
 
@@ -208,7 +225,7 @@ export function assembleStage(n: number): LevelMeta {
   }
   let rows = stitch(parts);
   landmarkDress(rows, recipe.deco, rand);
-  if (n >= 6) fillDensity(rows, { n, deco: recipe.deco, rand, fy: FY, featured: recipe.featured });
+  if (n >= 6) fillDensity(rows, { n, deco: recipe.deco, rand, fy: FY, featured: recipe.featured, theme: recipe.theme });
   rows = mutate(rows);
   sealBasement(rows, FY);
   const boss = isBoss(n);
