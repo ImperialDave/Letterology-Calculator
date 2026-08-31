@@ -118,8 +118,11 @@ export function toyDrawFrame(id: ToyId, t: number, phase: number): number {
   const n = TOY_SHEET[id].cols * TOY_SHEET[id].rows;
   if (id === "stamper") {
     const p = stamperPose(t, phase);
-    if (p.hot) return Math.min(2, n - 1);
+    const floor = TILE * 2;
     if (p.tell) return Math.min(1, n - 1);
+    if (p.hot && p.yOff < floor * 0.85) return Math.min(2, n - 1);
+    if (p.hot) return Math.min(3, n - 1);
+    if (p.yOff > 1) return Math.min(4, n - 1);
     return 0;
   }
   if (id === "guillotine") {
@@ -143,7 +146,12 @@ export function toyDrawFrame(id: ToyId, t: number, phase: number): number {
     if (p.tell) return Math.min(1, n - 1);
     return 0;
   }
-  if (id === "rotor") return rotorHorizontal(t, phase) ? 0 : Math.min(6, n - 1);
+  if (id === "rotor") {
+    const horiz = rotorHorizontal(t, phase);
+    const step = cycle(t, phase, TOY_PERIOD.rotor) % ROTOR_STEP;
+    if (step > ROTOR_STEP - 0.16) return horiz ? Math.min(1, n - 1) : Math.min(3, n - 1);
+    return horiz ? 0 : Math.min(2, n - 1);
+  }
   if (id === "censer") {
     const o = censerOffset(t, phase);
     if (o < -TILE * 0.55) return Math.min(4, n - 1);

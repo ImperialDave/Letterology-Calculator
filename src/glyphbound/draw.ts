@@ -29,7 +29,6 @@ import type { Solid } from "./types";
 import {
   CARRIAGE_SPAN,
   CENSER_SPAN,
-  censerOffset,
   cycle,
   dropcapPose,
   gratePhase,
@@ -43,6 +42,8 @@ import {
   TOY_SHEET,
   toyDrawFrame,
 } from "./toys";
+import { meleePhase, poseOf, type PoseInput } from "./pose";
+import { geyserIsHot, laserIsHot, spikeExtend } from "./hazard-pose";
 
 export function roundRect(
   ctx: CanvasRenderingContext2D,
@@ -173,8 +174,6 @@ export function drawTiles(
         drawCaseFont(ctx, x, y, t);
       } else if (ch === "/" || ch === "\\") {
         drawConveyor(ctx, x, y, t, ch === "/");
-      } else if (ch === "T") {
-        drawBounce(ctx, x, y, t, tx);
       } else if (ch === ":") {
         drawFan(ctx, x, y, t, tx);
       }
@@ -221,6 +220,7 @@ export function drawToys(
     else if (s.type === "shutter") drawShutter(ctx, x, y, t, s);
     else if (s.type === "carriage") drawCarriage(ctx, x, y, t, s, theme);
     else if (s.type === "echo") drawEcho(ctx, x, y, t, s);
+    else if (s.type === "bounce") drawBounce(ctx, x - 4, y - 28, t, s);
   }
 }
 
@@ -308,7 +308,7 @@ function drawCenser(ctx: CanvasRenderingContext2D, x: number, y: number, t: numb
   ctx.stroke();
   ctx.restore();
   halo(ctx, cx, cy, 22 + Math.sin(t * 7) * 4, "rgba(94,224,192,0.9)", t);
-  if (!blitToy(ctx, "censer", x - 10, y - 12, TILE, TILE, t, s.phase ?? 0, 0)) {
+  if (!blitToy(ctx, "censer", x - 10, y - 12, TILE, TILE, t, s.phase ?? 0)) {
     ctx.fillStyle = "#c9a227";
     ctx.beginPath();
     ctx.ellipse(cx, y + 16, 14, 11, 0, 0, Math.PI * 2);
@@ -333,15 +333,16 @@ function drawStamper(ctx: CanvasRenderingContext2D, x: number, y: number, t: num
   ctx.lineTo(x + TILE / 2, floorY);
   ctx.stroke();
   ctx.setLineDash([]);
-  blitToy(ctx, "stamper", x - 4, y - 8, TILE + 8, TILE + 16, t, s.phase ?? 0);
-  ctx.save();
-  ctx.shadowColor = pose.hot ? "#d45a4a" : "#e8d48a";
-  ctx.shadowBlur = pose.tell || pose.hot ? 18 : 6;
-  ctx.fillStyle = pose.hot ? "#6a2018" : pose.tell ? "#5a3830" : "#2a1c18";
-  ctx.fillRect(x + 4, y + 4, TILE - 8, 16);
-  ctx.fillStyle = pose.hot ? "#ff7a6a" : "#e8d48a";
-  ctx.fillRect(x + 10, y + 8, TILE - 20, 8);
-  ctx.restore();
+  if (!blitToy(ctx, "stamper", home.x - 10, home.y - 12, TILE + 20, TILE * 2 + 28, t, s.phase ?? 0)) {
+    ctx.save();
+    ctx.shadowColor = pose.hot ? "#d45a4a" : "#e8d48a";
+    ctx.shadowBlur = pose.tell || pose.hot ? 18 : 6;
+    ctx.fillStyle = pose.hot ? "#6a2018" : pose.tell ? "#5a3830" : "#2a1c18";
+    ctx.fillRect(x + 4, y + 4, TILE - 8, 16);
+    ctx.fillStyle = pose.hot ? "#ff7a6a" : "#e8d48a";
+    ctx.fillRect(x + 10, y + 8, TILE - 20, 8);
+    ctx.restore();
+  }
   if (pose.tell || pose.hot) {
     tellBand(ctx, x, floorY - 6, TILE, pose.hot, t);
     ctx.fillStyle = pose.hot ? "rgba(212,90,74,0.2)" : "rgba(232,212,138,0.14)";
@@ -427,23 +428,32 @@ function drawGrate(ctx: CanvasRenderingContext2D, x: number, y: number, t: numbe
 
 function drawRotor(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, s: Solid) {
   const horiz = rotorHorizontal(t, s.phase ?? 0);
-  const cx = x + s.w / 2;
-  const cy = y + s.h / 2;
+  const home = homeScreen(s, x, y);
+  const cx = home.x;
+  const cy = home.y;
   const step = cycle(t, s.phase ?? 0, TOY_PERIOD.rotor) % ROTOR_STEP;
-  const flipping = step < 0.16;
+  const flipping = step > ROTOR_STEP - 0.16;
   ctx.fillStyle = "rgba(232,212,138,0.16)";
   if (horiz) ctx.fillRect(cx - 10, cy - TILE * 1.5, 20, TILE * 3);
   else ctx.fillRect(cx - TILE * 1.5, cy - 10, TILE * 3, 20);
-  ctx.save();
-  ctx.shadowColor = flipping ? "#ffe08a" : "#5ee0c0";
-  ctx.shadowBlur = flipping ? 22 : 12;
-  ctx.fillStyle = "#1a1410";
-  ctx.fillRect(x, y, s.w, s.h);
-  ctx.fillStyle = flipping ? "#ffe08a" : "#c9a227";
-  ctx.fillRect(x + 2, y + 2, s.w - 4, s.h - 4);
-  ctx.fillStyle = "#2a1c18";
-  ctx.fillRect(x + 6, y + 5, s.w - 12, s.h - 10);
-  ctx.restore();
+  ctx.strokeStyle = "rgba(232,212,138,0.35)";
+  ctx.setLineDash([4, 5]);
+  ctx.strokeRect(cx - TILE * 1.5, cy - 8, TILE * 3, 16);
+  ctx.strokeRect(cx - 8, cy - TILE * 1.5, 16, TILE * 3);
+  ctx.setLineDash([]);
+  const arm = TILE * 3.2;
+  if (!blitToy(ctx, "rotor", cx - arm / 2, cy - arm / 2, arm, arm, t, s.phase ?? 0)) {
+    ctx.save();
+    ctx.shadowColor = flipping ? "#ffe08a" : "#5ee0c0";
+    ctx.shadowBlur = flipping ? 22 : 12;
+    ctx.fillStyle = "#1a1410";
+    ctx.fillRect(x, y, s.w, s.h);
+    ctx.fillStyle = flipping ? "#ffe08a" : "#c9a227";
+    ctx.fillRect(x + 2, y + 2, s.w - 4, s.h - 4);
+    ctx.fillStyle = "#2a1c18";
+    ctx.fillRect(x + 6, y + 5, s.w - 12, s.h - 10);
+    ctx.restore();
+  }
   halo(ctx, cx, cy, 18, "rgba(94,224,192,0.95)", t);
   ctx.fillStyle = "#5ee0c0";
   ctx.beginPath();
@@ -500,16 +510,13 @@ function drawShutter(ctx: CanvasRenderingContext2D, x: number, y: number, t: num
     ctx.strokeRect(x, y + 12, 16, TILE * 2 - 24);
     ctx.setLineDash([]);
   } else {
-    blitToy(ctx, "shutter", x - 8, y, 32, TILE * 2, t, s.phase ?? 0, 0);
-    ctx.save();
-    ctx.shadowColor = slam ? "#ff7a6a" : "#e8d48a";
-    ctx.shadowBlur = slam ? 24 : 8;
-    ctx.fillStyle = slam ? "#d45a4a" : "#1a1410";
-    ctx.fillRect(x, y, 16, TILE * 2);
-    ctx.fillStyle = slam ? "#ffe08a" : "#c9a227";
-    ctx.fillRect(x + 2, y + 6, 12, 5);
-    ctx.fillRect(x + 2, y + TILE * 2 - 12, 12, 5);
-    ctx.restore();
+    if (!blitToy(ctx, "shutter", x - 8, y, 32, TILE * 2, t, s.phase ?? 0, 0)) {
+      ctx.fillStyle = slam ? "#d45a4a" : "#1a1410";
+      ctx.fillRect(x, y, 16, TILE * 2);
+      ctx.fillStyle = slam ? "#ffe08a" : "#c9a227";
+      ctx.fillRect(x + 2, y + 6, 12, 5);
+      ctx.fillRect(x + 2, y + TILE * 2 - 12, 12, 5);
+    }
     outlineBox(ctx, x, y, 16, TILE * 2, slam ? "#ff7a6a" : "#e8d48a");
     if (slam) sparks(ctx, x + 8, y + TILE, t * 8, 8, "#ffb0a0", 16);
   }
@@ -597,12 +604,15 @@ function drawBlink(ctx: CanvasRenderingContext2D, x: number, y: number, t: numbe
 }
 
 function drawSaw(ctx: CanvasRenderingContext2D, x: number, y: number, t: number) {
-  if (blitArt(ctx, "hazards", "saw", x - 4, y - 8, TILE + 8, TILE, t)) return;
   const cx = x + TILE / 2;
   const cy = y + 12;
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(t * 8);
+  if (blitArt(ctx, "hazards", "saw", -TILE / 2 - 4, -20, TILE + 8, TILE, t)) {
+    ctx.restore();
+    return;
+  }
   ctx.fillStyle = "#2a1c18";
   ctx.beginPath();
   ctx.arc(0, 0, 16, 0, Math.PI * 2);
@@ -624,9 +634,8 @@ function drawSaw(ctx: CanvasRenderingContext2D, x: number, y: number, t: number)
 }
 
 function drawGeyser(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, s: Solid) {
-  if (blitArt(ctx, "movers", "geyser", x - 8, y, TILE, TILE, t)) return;
-  const cycle = (t + (s.phase ?? 0)) % 2.0;
-  const hot = cycle < 0.7;
+  const hot = geyserIsHot(t, s.phase ?? 0);
+  if (hot && blitArt(ctx, "movers", "geyser", x - 8, y, TILE, TILE, t)) return;
   ctx.fillStyle = "#3a2a18";
   ctx.fillRect(x + 6, y + 32, 20, 12);
   ctx.fillStyle = "#e8d48a";
@@ -1013,9 +1022,9 @@ function drawVent(ctx: CanvasRenderingContext2D, x: number, y: number, t: number
 }
 
 function drawLaser(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, tx: number) {
-  if (blitArt(ctx, "hazards", "laser", x, y, TILE, TILE, t)) return;
-  const cycle = (t + tx * 0.37) % 1.5;
-  const hot = cycle < 0.5;
+  const phase = tx * 0.37;
+  const hot = laserIsHot(t, phase);
+  const cycle = (t + phase) % 1.5;
   const warn = !hot && cycle > 1.22;
   ctx.save();
   ctx.globalAlpha = hot ? 0.9 : warn ? 0.45 : 0.16;
@@ -1040,11 +1049,12 @@ function drawLaser(ctx: CanvasRenderingContext2D, x: number, y: number, t: numbe
 }
 
 function drawConveyor(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, right: boolean) {
-  if (blitArt(ctx, "movers", "conveyor", x, y, TILE, TILE, t)) return;
-  ctx.fillStyle = "#1a2228";
-  ctx.fillRect(x, y + 28, TILE, 12);
-  ctx.fillStyle = "#e8d48a";
-  ctx.fillRect(x, y + 28, TILE, 3);
+  if (!blitArt(ctx, "movers", "conveyor", x, y, TILE, TILE, t)) {
+    ctx.fillStyle = "#1a2228";
+    ctx.fillRect(x, y + 28, TILE, 12);
+    ctx.fillStyle = "#e8d48a";
+    ctx.fillRect(x, y + 28, TILE, 3);
+  }
   const dir = right ? 1 : -1;
   ctx.fillStyle = "#5ee0c0";
   for (let i = 0; i < 4; i++) {
@@ -1057,17 +1067,25 @@ function drawConveyor(ctx: CanvasRenderingContext2D, x: number, y: number, t: nu
   }
 }
 
-function drawBounce(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, tx = 0) {
-  if (blitArt(ctx, "movers", "bounce", x, y, TILE, TILE, t)) return;
-  const pop = 1 + animWave(t, tx, 8) * 0.08;
-  ctx.fillStyle = "#2a2418";
-  ctx.fillRect(x + 4, y + 30, TILE - 8, 10);
-  ctx.fillStyle = "#e8d48a";
-  ctx.beginPath();
-  ctx.ellipse(x + TILE / 2, y + 30, 16 * pop, 7 * pop, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#5ee0c0";
-  ctx.fillRect(x + 18, y + 24, 12, 4);
+function drawBounce(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, s?: Solid, tx = 0) {
+  const since = s?.phase != null ? t - s.phase : 99;
+  const squash = since >= 0 && since < 0.18 ? 1 - (0.18 - since) * 2.2 : 1;
+  const pop = (1 + animWave(t, s?.x ?? tx, 8) * 0.08) * Math.max(0.55, squash);
+  ctx.save();
+  ctx.translate(x + TILE / 2, y + 34);
+  ctx.scale(1 + (1 - pop) * 0.35, pop);
+  ctx.translate(-(x + TILE / 2), -(y + 34));
+  if (!blitArt(ctx, "movers", "bounce", x, y, TILE, TILE, t)) {
+    ctx.fillStyle = "#2a2418";
+    ctx.fillRect(x + 4, y + 30, TILE - 8, 10);
+    ctx.fillStyle = "#e8d48a";
+    ctx.beginPath();
+    ctx.ellipse(x + TILE / 2, y + 30, 16 * pop, 7 * pop, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#5ee0c0";
+    ctx.fillRect(x + 18, y + 24, 12, 4);
+  }
+  ctx.restore();
 }
 
 function drawFan(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, tx = 0) {
@@ -1090,19 +1108,10 @@ function drawFan(ctx: CanvasRenderingContext2D, x: number, y: number, t: number,
 }
 
 function drawSpikes(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, tx = 0, ty = 0) {
-  if (blitArt(ctx, "hazards", "spike", x, y, TILE, TILE, t)) return;
-  // Match engine pulse rule: ~30% of teeth retract on a 1.8s cycle.
-  const pulse = ((tx * 17 + ty * 31) % 10) < 3;
-  let extend = 1;
-  if (pulse) {
-    const phase = tx * 0.41 + ty * 0.17;
-    const cycle = (t + phase) % 1.8;
-    // Smooth rise/fall so it reads as mechanical lizard-tech rather than a blink.
-    if (cycle < 0.2) extend = cycle / 0.2;
-    else if (cycle < 1.0) extend = 1;
-    else if (cycle < 1.25) extend = 1 - (cycle - 1.0) / 0.25;
-    else extend = 0;
-  }
+  const pulse = (tx * 17 + ty * 31) % 10 < 3;
+  const phase = pulse ? tx * 0.41 + ty * 0.17 : undefined;
+  const extend = spikeExtend(t, phase);
+  if (!pulse && blitArt(ctx, "hazards", "spike", x, y, TILE, TILE, t)) return;
   const tipY = y + TILE - (TILE - 10) * extend;
   const midY = y + TILE - (TILE - 14) * extend;
   for (let i = 0; i < 3; i++) {
@@ -1433,30 +1442,7 @@ function inkStride(
   foot(1, gait + Math.PI);
 }
 
-type Motion = { vx?: number; vy?: number; grounded?: boolean; special?: number; melee?: number };
-
-function poseOf(t: number, squash: number, motion: Motion) {
-  const vx = motion.vx ?? 0;
-  const vy = motion.vy ?? 0;
-  const grounded = motion.grounded ?? true;
-  const run = Math.min(1, Math.abs(vx) / 170);
-  const gait = t * (5.2 + run * 3.6);
-  const air = !grounded;
-  const step = Math.sin(gait);
-  const pass = Math.sin(gait * 2);
-  const contact = grounded ? Math.abs(step) : 0;
-  let sy = squash;
-  if (air) sy *= vy < 0 ? 0.92 : 1.06;
-  else sy *= 1 + contact * 0.035 * run;
-  sy = Math.max(0.78, Math.min(1.18, sy));
-  const lean = air
-    ? Math.max(-0.14, Math.min(0.14, vx * 0.00045))
-    : step * 0.042 * run;
-  const bob = air
-    ? (vy < 0 ? -1.2 : Math.min(3, vy * 0.004))
-    : contact * (1.4 + run * 1.1);
-  return { vx, vy, grounded, run, gait, air, step, pass, sy, lean, bob };
-}
+type Motion = PoseInput;
 
 function drawScalesAlongArc(
   ctx: CanvasRenderingContext2D,
@@ -1707,25 +1693,38 @@ function lizardLegs(
 ) {
   const limb = (hipX: number, hipY: number, phase: number) => {
     const a = Math.sin(phase);
-    const lift = grounded ? Math.max(0, -a) * (5.5 + run * 4) : 5;
-    const reach = a * (4.5 + run * 5.5);
-    const kneeX = hipX + reach * 0.4;
-    const kneeY = hipY + 5.2 * s - lift * 0.35;
+    const planted = grounded && a > 0.12;
+    const lift = grounded ? Math.max(0, -a) * (6.2 + run * 5) : 7;
+    const reach = planted ? a * (3.2 + run * 3) : a * (5.2 + run * 6);
+    const kneeX = hipX + reach * 0.42;
+    const kneeY = hipY + 5.2 * s - lift * 0.38;
+    const ankleX = hipX + reach * 0.82;
+    const ankleY = hipY + 8.6 * s - lift * 0.72;
     const footX = hipX + reach;
-    const footY = hipY + 11.2 * s - lift;
+    const footY = hipY + 11.4 * s - lift;
     ctx.strokeStyle = hide;
     ctx.lineWidth = 3.6 * s;
     ctx.beginPath();
     ctx.moveTo(hipX, hipY);
     ctx.lineTo(kneeX, kneeY);
+    ctx.lineTo(ankleX, ankleY);
     ctx.lineTo(footX, footY);
     ctx.stroke();
     ctx.strokeStyle = metal;
     ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(hipX, hipY);
+    ctx.lineTo(kneeX, kneeY);
+    ctx.lineTo(ankleX, ankleY);
+    ctx.lineTo(footX, footY);
     ctx.stroke();
     ctx.fillStyle = hide;
     ctx.beginPath();
     ctx.arc(kneeX, kneeY, 1.7 * s, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = planted ? visor : metal;
+    ctx.beginPath();
+    ctx.arc(ankleX, ankleY, 1.2 * s, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = visor;
     ctx.lineWidth = 1.15;
@@ -1782,26 +1781,33 @@ export function drawLetterForm(
   hurt: number,
   motion: Motion = {},
 ) {
-  const pose = poseOf(t, squash, motion);
+  const pose = poseOf({
+    ...motion,
+    gait: motion.gait ?? t,
+    squash,
+    attack: motion.attack ?? attack,
+    roll: motion.roll ?? roll,
+    hurt: motion.hurt ?? hurt,
+    hang: motion.hang,
+  });
   ctx.save();
   ctx.translate(cx, cy);
   ctx.scale(facing, 1);
-  ctx.rotate(pose.lean + (hurt > 0 ? Math.sin(t * 38) * 0.12 : 0) + (roll > 0 ? t * 14 : 0));
-  ctx.scale(1 / pose.sy, pose.sy);
+  ctx.rotate(pose.lean + (roll > 0 ? t * 14 : 0));
+  ctx.scale(pose.stretch / pose.sy, pose.sy);
   if (hurt > 0) ctx.globalAlpha = 0.5 + 0.5 * Math.sin(t * 42);
   ctx.translate(0, pose.bob);
   const pal = inkPalette(letter, capital);
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  const atk = Math.max(0, Math.min(1, attack / 0.16));
-  const wind = atk > 0.7 ? (atk - 0.7) / 0.3 : 0;
-  const snap = atk > 0 && atk <= 0.7 ? 1 - atk / 0.7 : 0;
-  const special = motion.special ?? 0;
+  const wind = pose.wind;
+  const snap = pose.snap;
+  const special = pose.special;
 
   if (letter === "c") {
     const r = capital ? 22 : 15.4;
     const thick = capital ? 7.2 : 4.8;
-    const jaw = 0.05 + snap * 0.22 - wind * 0.08 + Math.sin(t * 1.6) * 0.01;
+    const jaw = 0.05 + snap * 0.22 - wind * 0.08 + pose.contact * 0.05 + Math.sin(t * 1.6) * 0.01;
     const a0 = 0.5 - jaw;
     const a1 = Math.PI * 2 - 0.48 + jaw;
     strokeInk(ctx, pal.glow, pal.core, thick, () => {
@@ -1842,7 +1848,7 @@ export function drawLetterForm(
       ctx.stroke();
     }
   } else if (letter === "s") {
-    const rec = -wind * 6 + snap * 10;
+    const rec = -wind * 6 + snap * 10 + pose.step * 4 * Math.max(0.35, pose.run);
     const tail = pose.step * 1.8 * pose.run;
     const sc = capital ? 1.24 : 1;
     ctx.save();
@@ -1906,6 +1912,7 @@ export function drawLetterForm(
     }
   } else if (letter === "b") {
     const punch = snap * 5 - wind * 2;
+    const bowls = 1 - pose.contact * 0.08 * pose.run;
     const sc = capital ? 1.2 : 1;
     ctx.save();
     ctx.scale(sc, sc);
@@ -1913,9 +1920,9 @@ export function drawLetterForm(
       ctx.moveTo(-12, -19);
       ctx.lineTo(-12, 18);
       ctx.moveTo(-12, -17);
-      ctx.arc(2 + punch, -8, 10, -Math.PI * 0.5, Math.PI * 0.5);
+      ctx.arc(2 + punch, -8, 10 * bowls, -Math.PI * 0.5, Math.PI * 0.5);
       ctx.moveTo(-12, 0);
-      ctx.arc(4 + punch * 0.5, 9, 11, -Math.PI * 0.5, Math.PI * 0.5);
+      ctx.arc(4 + punch * 0.5, 9, 11 * bowls, -Math.PI * 0.5, Math.PI * 0.5);
     });
     if (capital) {
       ctx.fillStyle = pal.glow;
@@ -1942,7 +1949,7 @@ export function drawLetterForm(
     }
   } else if (letter === "e") {
     const sc = capital ? 1.22 : 1;
-    const drip = Math.sin(t * 3.2) * 1.4;
+    const drip = Math.sin(t * 3.2) * (1.4 + (pose.state === "idle" ? 1.6 : 0));
     ctx.save();
     ctx.scale(sc, sc);
     if (capital) {
@@ -1991,9 +1998,9 @@ export function drawLetterForm(
       ctx.stroke();
     }
   } else if (letter === "r") {
-    const kick = snap * 7 + (special > 0 ? 10 : 0);
+    const kick = snap * 7 + (special > 0 ? 10 : 0) + pose.step * 2 * pose.run;
     const sc = capital ? 1.22 : 1;
-    const flame = 3 + Math.sin(t * 14) * 1.6 + pose.run * 3;
+    const flame = 3 + Math.sin(t * 14) * 1.6 + pose.run * 3 + pose.contact * 2;
     ctx.save();
     ctx.scale(sc, sc);
     strokeInk(ctx, pal.glow, pal.core, capital ? 5.2 : 4, () => {
@@ -2039,6 +2046,7 @@ export function drawLetterForm(
     }
   } else if (letter === "k") {
     const kick = snap * 7 + (special > 0 ? 10 : 0);
+    const scissor = pose.step * 3 * Math.max(0.25, pose.run);
     const sc = capital ? 1.18 : 1;
     ctx.save();
     ctx.scale(sc, sc);
@@ -2046,9 +2054,9 @@ export function drawLetterForm(
       ctx.moveTo(-10, -18);
       ctx.lineTo(-10, 16);
       ctx.moveTo(-10, 0);
-      ctx.lineTo(10 + kick, -14);
+      ctx.lineTo(10 + kick + scissor, -14);
       ctx.moveTo(-4, -4);
-      ctx.lineTo(12 + kick * 0.4, 16);
+      ctx.lineTo(12 + kick * 0.4 - scissor, 16);
     });
     emberEye(ctx, -4, -12, pal.glow, t, 6);
     ctx.restore();
@@ -2062,7 +2070,7 @@ export function drawLetterForm(
       ctx.stroke();
     }
   } else if (letter === "n") {
-    const taut = special > 0 ? 4 : pose.step * 1.2;
+    const taut = special > 0 ? 4 : pose.step * 2.2 * Math.max(0.35, pose.run);
     const sc = capital ? 1.18 : 1;
     ctx.save();
     ctx.scale(sc, sc);
@@ -2103,8 +2111,8 @@ export function drawLetterForm(
         ctx.moveTo(2, -16);
         ctx.lineTo(2, 14);
         ctx.quadraticCurveTo(6, 18, 10, 16);
-        ctx.moveTo(-10, -6 + pose.step);
-        ctx.lineTo(12, -6);
+        ctx.moveTo(-10, -6 + pose.step * 2 + snap * 3);
+        ctx.lineTo(12, -6 + snap * 2);
       }
     });
     emberEye(ctx, capital ? 4 : 6, capital ? -8 : -10, pal.glow, t, 8);
@@ -2164,22 +2172,37 @@ export function drawEnemy(
   const cx = e.x + e.w / 2 - camX;
   const cy = e.y + e.h / 2 - camY;
   const vx = smoothEnemyVx(e);
-  const run = Math.min(1, Math.abs(vx) / 80);
-  const gait = e.t * (3.6 + run * 6.4);
-  const step = Math.sin(gait);
-  const bob = e.stun > 0 ? 2 : run > 0.1 ? Math.abs(step) * (2.8 + run * 2.4) : Math.sin(t * 2.4 + e.t) * 1.8;
-  const lean = Math.max(-0.3, Math.min(0.3, vx * e.facing * 0.0036));
-  const sq = e.hurt > 0 ? 1.16 : e.grounded ? 1 + Math.abs(step) * 0.09 * run : 0.88;
+  const flyKind =
+    e.kind === "zero" || e.kind === "nullis" || e.kind === "nullring" || e.kind === "iris" || e.kind === "mobius";
+  const pose = poseOf({
+    vx,
+    vy: e.vy,
+    grounded: e.grounded && !flyKind,
+    hurt: e.hurt,
+    squash: e.hurt > 0 ? 1.16 : e.grounded ? 1 : 0.88,
+    gait: e.t * (3.6 + Math.min(1, Math.abs(vx) / 80) * 6.4),
+    aux: e.aux,
+    recoil: e.hurt > 0 ? Math.sign(e.vx || e.facing) : 0,
+  });
+  const run = pose.run;
+  const gait = pose.gait;
+  const step = pose.step;
+  const bob = e.stun > 0 ? 2 : pose.bob;
+  const bank = flyKind ? Math.max(-0.22, Math.min(0.22, vx * e.facing * 0.0028)) : 0;
+  const lean = pose.lean * e.facing + bank;
+  const sq = pose.sy;
   const lag = step * -0.26 * run;
-  const bite = e.hurt > 0 ? 0.55 : e.aux < 0.18 ? 0.4 : 0.07 + Math.sin(t * 5.2 + e.t) * 0.06;
+  const bite = e.hurt > 0 ? 0.55 : e.aux < 0.18 ? 0.4 : e.aux < 0.35 ? 0.22 : 0.07 + Math.sin(t * 5.2 + e.t) * 0.06;
   const s = Math.max(0.72, e.h / 50);
-  const fly = e.kind === "zero" || e.kind === "nullis" || e.kind === "nullring" || e.kind === "iris" || e.kind === "mobius" || !e.grounded;
+  const fly = flyKind || !e.grounded;
   ctx.save();
   ctx.translate(cx, cy);
   ctx.scale(e.facing, 1);
+  ctx.translate(pose.lunge * 8 * s, 0);
   ctx.rotate(lean + (e.stun > 0 ? -0.16 : 0));
   ctx.scale(1 / sq, sq);
-  if (e.stun > 0) ctx.globalAlpha = calm ? 0.82 : 0.72 + 0.28 * Math.sin(t * 8);
+  if (e.dying > 0) ctx.globalAlpha = Math.max(0.08, e.dying / 0.14);
+  else if (e.stun > 0) ctx.globalAlpha = calm ? 0.82 : 0.72 + 0.28 * Math.sin(t * 8);
   else if (e.flash > 0) ctx.globalAlpha = 0.5;
   ctx.translate(0, bob);
   const hide = "#24382e";
@@ -3038,7 +3061,21 @@ function drawSuperFx(
 export function drawPlayer(ctx: CanvasRenderingContext2D, p: Player, camX: number, camY: number, t: number) {
   const cx = Math.round(p.x + p.w / 2 - camX);
   const cy = Math.round(p.y + p.h / 2 - camY);
-  const motion = { vx: p.vx, vy: p.vy, grounded: p.grounded, special: p.special };
+  const motion: Motion = {
+    vx: p.vx,
+    vy: p.vy,
+    grounded: p.grounded,
+    special: p.special,
+    melee: meleePhase(p.melee, p.meleeMax, p.flourish, p.flourishMax),
+    attack: p.attack,
+    hurt: p.hurtFlash,
+    roll: p.roll,
+    hang: p.ledgeHang !== "",
+    squash: p.squash * p.stretch,
+    stretch: 1,
+    gait: p.anim,
+    recoil: p.recoil * p.facing,
+  };
   const ghosts = p.roll > 0 ? (p.letter === "r" ? 3 : p.letter === "c" ? 5 : 2) : p.letter === "s" && Math.abs(p.vx) > 180 ? 1 : 0;
   for (let i = ghosts; i >= 1; i--) {
     ctx.save();
@@ -3052,7 +3089,7 @@ export function drawPlayer(ctx: CanvasRenderingContext2D, p: Player, camX: numbe
       cx + ox,
       cy + oy,
       p.facing,
-      t + p.anim,
+      t,
       p.squash * p.stretch,
       p.attack,
       0,
@@ -3068,7 +3105,7 @@ export function drawPlayer(ctx: CanvasRenderingContext2D, p: Player, camX: numbe
     cx,
     cy,
     p.facing,
-    t + p.anim,
+    t,
     p.squash * p.stretch,
     p.attack,
     p.roll,

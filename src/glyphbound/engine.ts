@@ -95,6 +95,8 @@ import {
 } from "./arts";
 import { preloadArt } from "./art";
 import { isMovingSolid, SolidGrid } from "./spatial";
+import { gaitPlanted, tickGait } from "./pose";
+import { geyserIsHot, laserIsHot, solidIsHot, spikeIsHot } from "./hazard-pose";
 import {
   carriageOffset,
   censerOffset,
@@ -102,12 +104,10 @@ import {
   ECHO_DELAY,
   ECHO_LIFE,
   ECHO_WARN,
-  grateHot,
   guillotinePose,
   rotorHorizontal,
   SINK_TIME,
   shutterOpen,
-  shutterSlam,
   stamperPose,
 } from "./toys";
 import {
@@ -492,6 +492,7 @@ export class GameEngine {
       stretch: 1,
       anim: 0,
       hurtFlash: 0,
+      recoil: 0,
       shield: Math.max(2, maxShield),
       maxShield: Math.max(2, maxShield),
       shieldCd: 3,
@@ -1048,6 +1049,7 @@ export class GameEngine {
       aux2: 0,
       armor: kind === "eight" ? 1 : 0,
       name: s.name,
+      dying: 0,
     };
   }
 
@@ -1526,7 +1528,7 @@ export class GameEngine {
     p.ink = Math.min(p.maxInk, p.ink + kit.inkRate * dt);
     const prevAnim = p.anim;
     const walkSpd = Math.abs(p.vx);
-    p.anim += dt * (walkSpd > 24 ? 7.5 + Math.min(6, walkSpd / 40) : 2.6);
+    p.anim = tickGait(p.anim, p.vx, p.grounded, dt);
     p.squash += (1 - p.squash) * Math.min(1, dt * 12);
     if (!p.grounded) {
       const want = p.vy < 0 ? 0.86 : 1.1;
@@ -1534,7 +1536,7 @@ export class GameEngine {
     } else {
       p.stretch += (1 - p.stretch) * Math.min(1, dt * 14);
     }
-    if (p.grounded && walkSpd > 46 && Math.floor(p.anim) !== Math.floor(prevAnim) && Math.floor(p.anim) % 2 === 0) {
+    if (p.grounded && walkSpd > 46 && gaitPlanted(prevAnim, p.anim)) {
       this.burst(p.x + p.w * 0.5, p.y + p.h - 2, "#8a908c", 2, "dust");
     }
     const wasGround = p.grounded;
@@ -1559,6 +1561,7 @@ export class GameEngine {
         p.vy = -560;
         p.grounded = false;
         p.squash = 0.78;
+        s.phase = this.time;
         this.audio.sfxJump();
         this.burst(p.x + p.w / 2, p.y + p.h, "#e8d48a", 5, "glyph");
       }
@@ -1567,7 +1570,7 @@ export class GameEngine {
         if (p.vy < -320) p.vy = -320;
         p.grounded = false;
       }
-      if (s.type === "geyser" && aabb(p, s) && this.geyserHot(s)) {
+      if (s.type === "geyser" && aabb(p, s) && geyserIsHot(this.time, s.phase ?? 0)) {
         p.vy -= 2600 * dt;
         if (p.vy < -380) p.vy = -380;
         p.grounded = false;
@@ -1779,11 +1782,6 @@ export class GameEngine {
     }
     if (s.type === "dropcap") return dropcapPose(this.time, s.phase ?? 0).plat;
     return false;
-  }
-
-  private geyserHot(s: Solid) {
-    const cycle = (this.time + (s.phase ?? 0)) % 2.0;
-    return cycle < 0.7;
   }
 
   private wallSolids(): Solid[] {
@@ -2861,18 +2859,6 @@ export class GameEngine {
     return s.type === "spike" && p.grounded && s.y + s.h <= p.y + p.h + 6;
   }
 
-  private toyHot(s: Solid) {
-    const t = this.time;
-    const ph = s.phase ?? 0;
-    if (s.type === "stamper") return stamperPose(t, ph).hot;
-    if (s.type === "guillotine") return guillotinePose(t, ph).hot;
-    if (s.type === "grate") return grateHot(t, ph);
-    if (s.type === "shutter") return shutterSlam(t, ph);
-    if (s.type === "censer" || s.type === "rotor") return true;
-    if (s.type === "dropcap") return dropcapPose(t, ph).hot;
-    return true;
-  }
-
   /** Apply spike/laser/saw/sluice HP after movement, before eject. */
   private touchHazards() {
     const p = this.player;
@@ -2910,7 +2896,7 @@ export class GameEngine {
         s.type === "shutter" ||
         s.type === "dropcap"
       ) {
-        if (!this.toyHot(s)) continue;
+        if (!solidIsHot(s, this.time)) continue;
       } else continue;
       const dir = p.x + p.w / 2 < s.x + s.w / 2 ? -1 : 1;
       this.hurt(HAZARD_DAMAGE, s.type === "sluice" ? p.facing : dir, "hazard");
@@ -2965,15 +2951,12 @@ export class GameEngine {
   }
 
   private laserHot(s: Solid) {
-    const cycle = (this.time + (s.phase ?? 0)) % 1.5;
-    return cycle < 0.5;
+    return laserIsHot(this.time, s.phase ?? 0);
   }
 
-  /** Retracting teeth: extended ~55% of a 1.8s cycle so the player can read the beat. */
+  /** Retracting teeth share spikeExtend with draw so cold teeth are gone. */
   private spikeHot(s: Solid) {
-    if (s.phase == null) return true;
-    const cycle = (this.time + s.phase) % 1.8;
-    return cycle < 1.0;
+    return spikeIsHot(this.time, s.phase);
   }
 
   private hitEnemy(
@@ -3034,6 +3017,7 @@ export class GameEngine {
     }
     if (e.hp <= 0) {
       e.alive = false;
+      e.dying = 0.14;
       this.player.ink = Math.min(this.player.maxInk, this.player.ink + (boss ? 12 : 4));
       this.burst(e.x + e.w / 2, e.y + e.h / 2, "#3d5a48", 16, "ink");
       this.audio.sfxDeath();
@@ -3046,6 +3030,7 @@ export class GameEngine {
       if (e.kind === "endmark" && e.phase < 2) {
         const feet = e.y + e.h;
         e.alive = true;
+        e.dying = 0;
         e.phase = 2;
         e.hp = Math.ceil(e.maxHp * 0.35);
         e.maxHp = e.hp;
@@ -3155,6 +3140,7 @@ export class GameEngine {
     p.hp -= n;
     p.invuln = 1.05;
     p.hurtFlash = 0.4;
+    p.recoil = dir === 0 ? -p.facing : dir;
     this.knockPlayer(dir * 160, -140);
     p.shieldCd = 1.8;
     this.audio.sfxHurt();
@@ -3171,6 +3157,7 @@ export class GameEngine {
     const p = this.player;
     const list = this.enemies;
     for (const e of list) {
+      if (e.dying > 0) e.dying = Math.max(0, e.dying - dt);
       if (!e.alive) continue;
       e.t += dt;
       tickTurnLock(e, dt);
@@ -4006,20 +3993,7 @@ export class GameEngine {
     for (const s of this.solidsNow(true, box, "hazard")) {
       if (!aabb(box, s)) continue;
       if (s.type === "sluice") return true;
-      if (s.type === "laser" && this.laserHot(s)) return true;
-      if (s.type === "spike" && this.spikeHot(s)) return true;
-      if (s.type === "saw") return true;
-      if (
-        (s.type === "censer" ||
-          s.type === "stamper" ||
-          s.type === "guillotine" ||
-          s.type === "grate" ||
-          s.type === "rotor" ||
-          s.type === "shutter") &&
-        this.toyHot(s)
-      ) {
-        return true;
-      }
+      if (solidIsHot(s, this.time)) return true;
     }
     return false;
   }
@@ -4033,11 +4007,8 @@ export class GameEngine {
       for (const s of this.solidsNow(large, p, "hazard")) {
         if (s.type !== "spike" && s.type !== "laser" && s.type !== "stamper" && s.type !== "censer" && s.type !== "grate" && s.type !== "rotor") continue;
         if (!aabb(p, s)) continue;
-        if (s.type === "spike") {
-          if (this.floorAboveTeeth(p, s)) continue;
-          if (s.phase != null && !this.spikeHot(s)) continue;
-        }
-        if (s.type === "laser" && !this.laserHot(s)) continue;
+        if (s.type === "spike" && this.floorAboveTeeth(p, s)) continue;
+        if (!solidIsHot(s, this.time)) continue;
         hit = s;
         break;
       }
@@ -5485,7 +5456,7 @@ export class GameEngine {
         else drawPickup(ctx, u.x + u.w / 2 - camX, u.y + u.h / 2 - camY, u.kind, u.label ?? "", this.time, u.x);
       }
       for (const e of this.enemies) {
-        if (!e.alive || !vis(e.x, e.y, e.w, e.h)) continue;
+        if ((!e.alive && e.dying <= 0) || !vis(e.x, e.y, e.w, e.h)) continue;
         drawEnemy(ctx, e, camX, camY, this.time, this.save.reducedMotion);
       }
       drawPlayer(ctx, this.player, camX, camY, this.time);
@@ -5902,6 +5873,7 @@ export class GameEngine {
       aux2: 0,
       armor: 0,
       name: "",
+      dying: 0,
     });
 
     ctx.save();

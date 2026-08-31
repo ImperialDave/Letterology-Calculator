@@ -150,6 +150,8 @@ export interface Enemy {
   aux2: number;
   armor: number;
   name: string;
+  /** Death dissolve; draw while > 0 even if !alive. */
+  dying: number;
 }
 
 export interface Pickup {
@@ -286,6 +288,8 @@ export interface Player {
   stretch: number;
   anim: number;
   hurtFlash: number;
+  /** Last hit direction in world x (−1 left, +1 right). */
+  recoil: number;
   shield: number;
   maxShield: number;
   shieldCd: number;

@@ -1,6 +1,6 @@
 import type { Solid } from "./types";
 
-const WALK_SKIP = new Set<Solid["type"]>([
+export const WALK_SKIP = new Set<Solid["type"]>([
   "sluice",
   "laser",
   "fan",
@@ -11,7 +11,7 @@ const WALK_SKIP = new Set<Solid["type"]>([
   "stamper",
   "guillotine",
 ]);
-const HAZARD = new Set<Solid["type"]>([
+export const HAZARD = new Set<Solid["type"]>([
   "sluice",
   "laser",
   "spike",
@@ -24,7 +24,7 @@ const HAZARD = new Set<Solid["type"]>([
   "shutter",
   "dropcap",
 ]);
-const MOVING = new Set<Solid["type"]>([
+export const MOVING = new Set<Solid["type"]>([
   "lift",
   "saw",
   "censer",
