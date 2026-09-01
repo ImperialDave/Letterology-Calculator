@@ -119,13 +119,14 @@ export function parseRows(rows: string[], ctx: Partial<ParseCtx> = {}): ParsedMa
       else if (ch === "*") solids.push({ x, y, w: TILE, h: TILE, type: "break" });
       else if (ch === "^") {
         const pulse = (tx * 17 + ty * 31) % 10 < 3;
+        const socket = ty + 1 < H && rows[ty + 1][tx] === "#";
         solids.push({
           x,
           y: y + 18,
           w: TILE,
           h: 22,
           type: "spike",
-          phase: pulse ? tx * 0.41 + ty * 0.17 : undefined,
+          phase: pulse && socket ? tx * 0.41 + ty * 0.17 : undefined,
         });
       } else if (ch === "~") solids.push({ x, y: y + 18, w: TILE, h: 30, type: "sluice" });
       else if (ch === "-") solids.push({ x, y, w: TILE, h: 10, type: "crumble", phase: 0 });

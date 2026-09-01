@@ -142,7 +142,7 @@ export function drawTiles(
       } else if (ch === "-") {
         drawCrumble(ctx, x, y, t, theme, tx);
       } else if (ch === "~") {
-        drawSluice(ctx, x, y, t, theme, tx);
+        drawSluice(ctx, x, y, t, theme, tx, tileChar(rows, tx - 1, ty), tileChar(rows, tx + 1, ty));
       } else if (ch === "." && !fxLite) {
         const left = tileChar(rows, tx - 1, ty);
         const right = tileChar(rows, tx + 1, ty);
@@ -964,7 +964,16 @@ function drawCrumble(ctx: CanvasRenderingContext2D, x: number, y: number, t: num
   ctx.restore();
 }
 
-function drawSluice(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, theme: string, tx = 0) {
+function drawSluice(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  t: number,
+  theme: string,
+  tx = 0,
+  left = "#",
+  right = "#",
+) {
   if (blitArt(ctx, "hazards", "sluice", x, y, TILE, TILE, t)) return;
   const ink =
     theme === "coil"
@@ -974,22 +983,24 @@ function drawSluice(ctx: CanvasRenderingContext2D, x: number, y: number, t: numb
         : theme === "glacier"
           ? "120,180,210"
           : "45,140,110";
-  // Deep residual ink
+  const x0 = left === "#" || left === "*" ? x + 5 : x + 2;
+  const x1 = right === "#" || right === "*" ? x + TILE - 5 : x + TILE - 2;
+  const w = Math.max(8, x1 - x0);
+  ctx.fillStyle = "#1a1814";
+  ctx.fillRect(x0 - 2, y + 16, w + 4, TILE - 14);
   ctx.fillStyle = `rgba(${ink},0.62)`;
-  ctx.fillRect(x, y + 18, TILE, TILE - 18);
-  // Surface film
+  ctx.fillRect(x0, y + 20, w, TILE - 22);
   ctx.fillStyle = `rgba(${ink},0.32)`;
-  ctx.fillRect(x, y + 10, TILE, 12);
+  ctx.fillRect(x0, y + 14, w, 10);
   // Moving surface wave
   ctx.strokeStyle = `rgba(232,236,232,${0.18 + animWave(t, tx, 3.2, 0.7) * 0.1})`;
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.moveTo(x, y + 20 + animWave(t, tx, 2.6, 0.8) * 2.5);
-  ctx.quadraticCurveTo(x + 16, y + 14 + Math.sin(t * 3.1) * 2, x + 32, y + 21);
-  ctx.quadraticCurveTo(x + 40, y + 24, x + TILE, y + 19 + Math.cos(t * 2.4 + tx) * 2);
+  ctx.moveTo(x0, y + 20 + animWave(t, tx, 2.6, 0.8) * 2.5);
+  ctx.quadraticCurveTo(x0 + w * 0.35, y + 14 + Math.sin(t * 3.1) * 2, x0 + w * 0.7, y + 21);
+  ctx.quadraticCurveTo(x0 + w * 0.85, y + 24, x0 + w, y + 19 + Math.cos(t * 2.4 + tx) * 2);
   ctx.stroke();
-  // Occasional ink bubble
-  const bx = x + 10 + ((animWave(t, tx, 1.7) + 1) * 0.5) * (TILE - 20);
+  const bx = x0 + 4 + ((animWave(t, tx, 1.7) + 1) * 0.5) * Math.max(8, w - 12);
   const by = y + 22 + animWave(t, tx, 4, 0.3) * 6;
   ctx.fillStyle = `rgba(232,236,232,${0.12 + animWave(t, tx, 5) * 0.06})`;
   ctx.beginPath();

@@ -1,6 +1,7 @@
 /** Path spines and landforms. Collision stays ASCII. */
 import { grid, localFloorY, sealBasement, type Grid } from "./levels-story";
 import { validateLevel } from "./validate-level";
+import { houseAfter, plantAt } from "./site";
 
 export type LandOp = {
   t: "hill" | "valley" | "ridge" | "pass" | "corridor" | "switchback" | "bridge" | "grate" | "sink";
@@ -161,6 +162,7 @@ export function sculptLevel(
   const spine = realizeLandform(g, ops);
   fn(g, fy, spine);
   armTeethAlongPath(g, spine);
+  houseAfter(g);
   sealBasement(g, fy);
   repairPath(g);
   return [...g];
@@ -365,14 +367,12 @@ export function sinkValleyFloor(g: Grid, spine: number[], x0: number, n: number)
   }
 }
 
-export function stampKit(g: Grid, spine: number[], x0: number, x1: number, hang: string, step = 6) {
+export function stampKit(g: Grid, _spine: number[], x0: number, x1: number, hang: string, step = 6) {
   let i = 0;
   for (let x = x0; x < x1 && x < g.W - 2; x += step) {
     const ch = hang[i % hang.length] ?? hang[0];
     if (!ch) continue;
-    if (ch === "j") grateStreet(g, spine, x, 2);
-    else if (ch === "w") sinkValleyFloor(g, spine, x, 2);
-    else hangAt(g, spine, x, ch, 1);
+    plantAt(g, x, ch);
     i += 1;
   }
 }
@@ -394,8 +394,8 @@ export function armTeethAlongPath<T extends string[]>(rows: T, spine: number[]):
       continue;
     }
     if (floor === "." && yf + 1 < H - 1) {
-      const below = rows[yf + 1][x];
-      if (below === "#" || below === ".") set(x, yf + 1, "^");
+      set(x, yf + 1, "^");
+      if (yf + 2 < H - 1 && (rows[yf + 2][x] === "." || rows[yf + 2][x] === "#")) set(x, yf + 2, "#");
     }
   }
   return rows;
@@ -425,20 +425,7 @@ export function dressPath(g: Grid, kit: string) {
     const wy = (spine[x] ?? fy) - 1;
     const here = g[wy]?.[x] ?? "#";
     if (blocked || here !== ".") continue;
-    if (ch === "j") grateStreet(g, spine, x, 2);
-    else if (ch === "w") sinkValleyFloor(g, spine, x, 2);
-    else if (ch === "g") g.put(x, fy, "g");
-    else if (ch === "{") {
-      g.put(x, fy - 1, "{");
-      g.fill(x, fy - 3, 4, "=");
-    } else if (ch === "[") {
-      g.put(x, fy - 3, "[");
-      g.put(x - 1, fy - 3, "=");
-      g.put(x + 1, fy - 3, "=");
-    } else if (ch === "}") {
-      g.put(x, fy - 2, "}");
-    } else {
-      hangAt(g, spine, x, ch, 1);
-    }
+    plantAt(g, x, ch);
   }
+  houseAfter(g);
 }

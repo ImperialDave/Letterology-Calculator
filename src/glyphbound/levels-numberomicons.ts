@@ -1,4 +1,5 @@
 import { clearFightPorches, ensureCounts } from "./density";
+import { houseAfter } from "./site";
 import { grid, sealBasement, type Grid } from "./levels-story";
 import { armTeethAlongPath, dressPath, realizeLandform, repairPath, type LandOp } from "./sculpt";
 
@@ -24,8 +25,9 @@ function paint(
   armTeethAlongPath(g, spine);
   sealBasement(g, fy);
   repairPath(g);
-  clearFightPorches(g);
   ensureCounts(g, 30);
+  houseAfter(g);
+  clearFightPorches(g);
   return [...g];
 }
 

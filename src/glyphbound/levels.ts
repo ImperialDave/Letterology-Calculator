@@ -15,6 +15,8 @@ import {
   buildScriptorium,
 } from "./levels-numberomicons";
 import { assembleStage } from "./assemble";
+import { clearFightPorches, ensureHazards, ensureMovers } from "./density";
+import { houseAfter } from "./site";
 
 export type { LevelId, LevelMeta };
 export type { ThemeId } from "./types";
@@ -297,6 +299,16 @@ export const LEVELS: Record<string, LevelMeta> = { ...hand };
 for (let n = 16; n <= STAGE_COUNT; n++) {
   const meta = assembleStage(n);
   LEVELS[meta.id] = meta;
+}
+
+for (const id of Object.keys(LEVELS)) {
+  if (id === "hub") continue;
+  houseAfter(LEVELS[id].rows);
+  const n = LEVELS[id].index || 1;
+  if (n >= 16) ensureHazards(LEVELS[id].rows, n);
+  ensureMovers(LEVELS[id].rows, n);
+  houseAfter(LEVELS[id].rows);
+  clearFightPorches(LEVELS[id].rows);
 }
 
 export function getLevel(id: string): LevelMeta {

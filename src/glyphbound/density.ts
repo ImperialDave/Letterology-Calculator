@@ -2,6 +2,7 @@
 import { enemyMul } from "./difficulty";
 import { localFloorY } from "./levels-story";
 import { isBoss, rng } from "./recipe";
+import { houseAfter, plantAt } from "./site";
 import type { Difficulty, ThemeId } from "./types";
 
 const FLOOR = "#*=_T/\\&-`)gjw[";
@@ -473,7 +474,7 @@ export function fillDensity(
       const fy = fyOf(x);
       if (skip.has(x)) continue;
       if (at(rows, x, fy) !== "#" || at(rows, x - 1, fy) !== "#" || at(rows, x + 1, fy) !== "#") continue;
-      setCell(rows, x, fy, "g");
+      plantAt(rows, x, "g");
     }
   }
 
@@ -488,8 +489,8 @@ export function fillDensity(
       if (skip.has(ox)) continue;
       if (at(rows, ox, fy - 2) !== ".") continue;
       if (!walkable(rows, fy, ox) && at(rows, ox, fy - 1) !== ".") continue;
-      setCell(rows, ox, fy - 2, "S");
-      placed += 1;
+      if (plantAt(rows, ox, "S")) placed += 1;
+      else continue;
       if (opts.n < 35) break;
     }
   }
@@ -497,11 +498,8 @@ export function fillDensity(
   if (allowLaser) {
     for (let x = 16; x < W - 10; x += 14) {
       const ox = x;
-      const fy = fyOf(ox);
       if (skip.has(ox)) continue;
-      if (at(rows, ox, fy - 3) !== "." || at(rows, ox, fy - 4) !== ".") continue;
-      setCell(rows, ox, fy - 3, "|");
-      setCell(rows, ox, fy - 4, "|");
+      plantAt(rows, ox, "|");
     }
   }
 
@@ -558,36 +556,24 @@ export function fillDensity(
   if (opts.n >= 16) {
     for (let x = 14; x < W - 12; x += 36) {
       const ox = x + Math.floor(rand() * 2);
-      const fy = fyOf(ox);
       if (skip.has(ox) || fight.has(ox)) continue;
-      if (at(rows, ox, fy - 2) !== ".") continue;
-      if (at(rows, ox, fy) !== "#" && at(rows, ox, fy) !== "=") continue;
-      setCell(rows, ox, fy - 2, rand() < 0.5 ? "l" : "z");
+      plantAt(rows, ox, rand() < 0.5 ? "l" : "z");
     }
     for (let x = 18; x < W - 12; x += 40) {
-      const fy = fyOf(x);
       if (skip.has(x) || fight.has(x)) continue;
-      if (at(rows, x, fy - 2) !== ".") continue;
-      if (at(rows, x, fy) !== "#" && at(rows, x, fy) !== "=") continue;
-      setCell(rows, x, fy - 2, "x");
+      plantAt(rows, x, "x");
     }
     for (let x = 16; x < W - 14; x += 48) {
       const ox = x;
-      const fy = fyOf(ox);
       if (skip.has(ox) || skip.has(ox + 1) || fight.has(ox)) continue;
-      if (at(rows, ox, fy) !== "#" || at(rows, ox + 1, fy) !== "#") continue;
-      if (RESERVED.includes(at(rows, ox, fy - 1))) continue;
-      setCell(rows, ox, fy, "j");
-      setCell(rows, ox + 1, fy, "j");
+      plantAt(rows, ox, "j");
     }
   }
 
   if (opts.n >= 25) {
     for (let x = 20; x < W - 14; x += 32) {
-      const fy = fyOf(x);
-      if (skip.has(x)) continue;
-      if (at(rows, x, fy - 3) !== ".") continue;
-      setCell(rows, x, fy - 3, "[");
+      if (skip.has(x) || fight.has(x)) continue;
+      plantAt(rows, x, "[");
     }
   }
 
@@ -764,6 +750,7 @@ export function fillDensity(
     }
   }
   ensureCounts(rows, opts.n);
+  houseAfter(rows);
   clearFightPorches(rows);
   return rows;
 }
@@ -815,6 +802,51 @@ export function ensureCounts(rows: string[], n: number) {
   };
   stamp(f.shelves, SHELF_GLYPHS, "=");
   stamp(f.pickups, PICKUP_GLYPHS, "i");
+  ensureMovers(rows, n);
+}
+
+function hazardKit(n: number): string[] {
+  if (n < 15) return ["^", "|"];
+  if (n < 31) return ["^", "|"];
+  return ["^", "|", "S"];
+}
+
+/** Plant legal hazards after Housing strips illegal teeth and bounce. */
+export function ensureHazards(rows: string[], n: number) {
+  if (n < 16) return;
+  const W = rows[0]?.length ?? 0;
+  const need = densityFloors(n, W).hazards;
+  const kit = hazardKit(n);
+  let i = 0;
+  for (let x = 4; x < W - 4 && tally(rows).hazards < need; x += 1) {
+    plantAt(rows, x, kit[i % kit.length]);
+    i += 1;
+  }
+}
+
+function moverKit(n: number): string[] {
+  if (n <= 1) return ["T", "-"];
+  if (n < 9) return ["T", "-"];
+  if (n < 12) return ["T", "-", "/"];
+  if (n < 16) return ["T", "-", "/", "`", ")", "g"];
+  if (n < 25) return ["T", "-", "/", "`", ")"];
+  return ["T", "-", "/", "`", ")", "g", "{"];
+}
+
+/** Plant legal movers after bounce-halls are stripped. Uses plantAt seats. */
+export function ensureMovers(rows: string[], n: number) {
+  const W = rows[0]?.length ?? 0;
+  const need = densityFloors(n, W).movers;
+  const kit = moverKit(n);
+  let i = 0;
+  for (let x = 6; x < W - 6 && tally(rows).movers < need; x += 3) {
+    plantAt(rows, x, kit[i % kit.length]);
+    i += 1;
+  }
+  for (let x = 4; x < W - 4 && tally(rows).movers < need; x++) {
+    if (plantAt(rows, x, "T")) continue;
+    plantAt(rows, x, "-");
+  }
 }
 
 /** Clone Easy rows and stamp extra digits for Hard/Extreme. Does not add hazards. */
@@ -873,25 +905,27 @@ function hopTeeth(rows: string[], fy: number, x: number) {
   if (at(rows, x, yf) !== "#" || at(rows, x + 1, yf) !== "#") return false;
   if (at(rows, x, yf - 1) !== "." || at(rows, x + 1, yf - 1) !== ".") return false;
   if (FIGHT.includes(at(rows, x, yf - 1)) || FIGHT.includes(at(rows, x + 1, yf - 1))) return false;
-  setCell(rows, x, yf, "^");
-  setCell(rows, x + 1, yf, "^");
+  if (yf + 2 >= rows.length - 1) return false;
+  setCell(rows, x, yf, ".");
+  setCell(rows, x + 1, yf, ".");
+  setCell(rows, x, yf + 1, "^");
+  setCell(rows, x + 1, yf + 1, "^");
+  setCell(rows, x, yf + 2, "#");
+  setCell(rows, x + 1, yf + 2, "#");
   return true;
 }
 
 function hangKit(rows: string[], fy: number, x: number, n: number) {
   const yf = localFloorY(rows, x) || fy;
   if (FIGHT.includes(at(rows, x, yf - 1))) return false;
-  if (at(rows, x, yf - 2) !== ".") return false;
   let ch = "|";
   if (n === 2) ch = "z";
   else if (n === 4) ch = "x";
   else if (n === 5) ch = "}";
   else if (n < 25) ch = n % 2 ? "l" : "z";
-  else if (n < 35) ch = n % 2 ? "x" : "j";
+  else if (n < 35) ch = n % 2 ? "x" : "l";
   else ch = n % 2 ? "l" : "x";
-  if (ch === "j") ch = "l";
-  setCell(rows, x, yf - 2, ch);
-  return true;
+  return plantAt(rows, x, ch);
 }
 
 function crumbleRun(rows: string[], fy: number, x: number) {
@@ -937,6 +971,7 @@ export function dressTerrain(
     if (skip.has(x) || busyCol(out, fy, x)) continue;
     if (at(out, x, fy - 2) === ".") setCell(out, x, fy - 2, deco);
   }
+  houseAfter(out);
   return out;
 }
 
@@ -980,6 +1015,7 @@ export function padTerrain(rows: string[], n: number, difficulty: Difficulty): s
       crumbleRun(out, fy, x);
     }
   }
+  houseAfter(out);
   return out;
 }
 
