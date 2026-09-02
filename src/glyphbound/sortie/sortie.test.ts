@@ -369,6 +369,19 @@ test("boost and brake change speed quickly", () => {
   assert.ok(s.speed < 40, `brake ${s.speed}`);
 });
 
+test("holding A to steer does not barrel", () => {
+  const k = new SortieKeys();
+  for (let i = 0; i < 20; i++) {
+    k.setKeys(["KeyA"]);
+    k.poll(0.016);
+  }
+  k.setKeys([]);
+  k.poll(0.016);
+  k.setKeys(["KeyA"]);
+  const again = k.poll(0.016);
+  assert.equal(again.barrel, 0);
+});
+
 test("double-tap A within a wide window barrels", () => {
   const k = new SortieKeys();
   k.setKeys(["KeyA"]);

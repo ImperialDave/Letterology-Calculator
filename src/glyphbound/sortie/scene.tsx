@@ -5,7 +5,7 @@ THREE.ColorManagement.enabled = true;
 import { makeCWing, poseCWing } from "./cwing";
 import { makeDigit } from "./digits";
 import { makeLizard, poseLizard } from "./lizards";
-import type { EnemyKind, PickupKind, SortieState } from "./sim";
+import { BARREL_T, type EnemyKind, type PickupKind, type SortieState } from "./sim";
 import { makeSky, makeWorld } from "./world";
 
 function fwd(yaw: number, pitch: number) {
@@ -40,6 +40,7 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
   const root = useRef<THREE.Group>(null);
   const tmp = useMemo(() => new THREE.Vector3(), []);
   const look = useMemo(() => new THREE.Vector3(), []);
+  const lookT = useMemo(() => new THREE.Vector3(), []);
 
   useFrame((state, dt) => {
     const d = Math.min(dt, 0.05);
@@ -49,15 +50,18 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
     ship.rotation.order = "YXZ";
     ship.rotation.y = s.yaw;
     ship.rotation.x = -s.pitch;
-    ship.rotation.z = s.roll;
+    const spin = s.barrel > 0 ? s.barrelDir * Math.PI * 2 * (1 - s.barrel / BARREL_T) : 0;
+    ship.rotation.z = s.roll + spin;
     poseCWing(ship, s);
 
     tmp.set(s.x, s.y, s.z).addScaledVector(f, -21);
     tmp.y += 6.4;
-    state.camera.position.lerp(tmp, 1 - Math.exp(-5.2 * d));
-    look.set(s.x, s.y, s.z).addScaledVector(f, 16);
+    state.camera.position.lerp(tmp, 1 - Math.exp(-4.2 * d));
+    lookT.set(s.x, s.y, s.z).addScaledVector(f, 16);
+    if (look.lengthSq() < 0.01) look.copy(lookT);
+    else look.lerp(lookT, 1 - Math.exp(-6.5 * d));
     state.camera.lookAt(look);
-    state.camera.fov = (s.speed > 70 ? 64 : 52) + s.flash * 4;
+    state.camera.fov = s.speed > 70 ? 62 : 52;
     state.camera.updateProjectionMatrix();
 
     world.waterMap.offset.x = s.t * 0.03;

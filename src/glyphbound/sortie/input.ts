@@ -37,13 +37,13 @@ export class SortieKeys {
   touchBarrel = 0;
   private lastA = -9;
   private lastD = -9;
-  private lastFlick = -9;
-  private lastFlickSign = 0;
-  private prevRoll = 0;
+  private lastAUp = -9;
+  private lastDUp = -9;
   private prevA = false;
   private prevD = false;
   private prevR = false;
   private prevBomb = false;
+  private prevPause = false;
   touchBomb = false;
   t = 0;
 
@@ -87,24 +87,20 @@ export class SortieKeys {
     const a = has("KeyA") || has("ArrowLeft") || pad.left;
     const d = has("KeyD") || has("ArrowRight") || pad.right;
     let barrel = 0;
-    const tapWindow = 0.42;
+    const tapWindow = 0.38;
+    const shortTap = 0.16;
+    if (!a && this.prevA) this.lastAUp = this.t;
+    if (!d && this.prevD) this.lastDUp = this.t;
     if (a && !this.prevA) {
-      if (this.t - this.lastA < tapWindow) barrel = 1;
+      if (this.t - this.lastA < tapWindow && this.lastAUp - this.lastA < shortTap) barrel = 1;
       this.lastA = this.t;
     }
     if (d && !this.prevD) {
-      if (this.t - this.lastD < tapWindow) barrel = -1;
+      if (this.t - this.lastD < tapWindow && this.lastDUp - this.lastD < shortTap) barrel = -1;
       this.lastD = this.t;
     }
     this.prevA = a;
     this.prevD = d;
-    if (Math.abs(roll) > 0.7 && Math.abs(this.prevRoll) < 0.28) {
-      const sign = roll > 0 ? 1 : -1;
-      if (this.t - this.lastFlick < tapWindow && sign === this.lastFlickSign) barrel = sign;
-      this.lastFlick = this.t;
-      this.lastFlickSign = sign;
-    }
-    this.prevRoll = roll;
     const rKey = has("KeyR") || has("KeyC");
     if (rKey && !this.prevR && barrel === 0) barrel = roll >= 0 ? 1 : -1;
     this.prevR = rKey;
@@ -129,7 +125,10 @@ export class SortieKeys {
     this.prevBomb = bombHeld;
     this.touchBomb = false;
     this.injected = null;
-    return { ...out, pause: has("Escape") || pad.pause };
+    const pauseHeld = has("Escape") || pad.pause;
+    const pause = pauseHeld && !this.prevPause;
+    this.prevPause = pauseHeld;
+    return { ...out, pause };
   }
 
   private pad() {

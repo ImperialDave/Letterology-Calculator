@@ -118,6 +118,9 @@ export interface SortieState {
   hull: number;
   invuln: number;
   barrel: number;
+  barrelDir: number;
+  cmdRoll: number;
+  cmdPitch: number;
   charge: number;
   lockId: number;
   score: number;
@@ -154,11 +157,13 @@ export interface SortieState {
 const CRUISE = 52;
 const BOOST = 110;
 const BRAKE = 12;
-const TURN = 3.2;
-const PITCH_R = 2.55;
-const BANK = 0.85;
+const PITCH_R = 2.35;
+const BANK = 0.92;
+const YAW_FROM_BANK = 3.85;
 const CEIL_Y = 260;
 const AUTO_LEVEL = 0.72;
+const CMD_K = 11;
+const BANK_K = 8;
 const HEAT_PER_SHOT = 0.048;
 const RAPID_CD = 0.08;
 const HEAT_CD = 0.06;
@@ -193,14 +198,21 @@ function wrapPi(a: number) {
   return Math.atan2(Math.sin(a), Math.cos(a));
 }
 
+function follow(cur: number, want: number, k: number, dt: number) {
+  return cur + (want - cur) * (1 - Math.exp(-k * dt));
+}
+
 function flyCraft(s: SortieState, input: SortieInput, dt: number) {
+  s.cmdRoll = follow(s.cmdRoll, input.roll, CMD_K, dt);
+  s.cmdPitch = follow(s.cmdPitch, input.pitch, CMD_K, dt);
+
   if (s.flight === "corridor" && s.shift <= 0 && s.path.length >= 2) {
     const len = pathLength(s.path) || 1;
     s.pathT = Math.min(1, s.pathT + (s.speed * dt) / len);
-    s.offsetX = Math.max(-ENVELOPE_X, Math.min(ENVELOPE_X, s.offsetX + input.roll * 78 * dt + input.rudder * 32 * dt));
-    s.offsetY = Math.max(-ENVELOPE_Y, Math.min(ENVELOPE_Y, s.offsetY + input.pitch * 62 * dt));
-    if (Math.abs(input.roll) < 0.12) s.offsetX *= Math.exp(-0.7 * dt);
-    if (Math.abs(input.pitch) < 0.12) s.offsetY *= Math.exp(-0.7 * dt);
+    s.offsetX = Math.max(-ENVELOPE_X, Math.min(ENVELOPE_X, s.offsetX + s.cmdRoll * 64 * dt + input.rudder * 24 * dt));
+    s.offsetY = Math.max(-ENVELOPE_Y, Math.min(ENVELOPE_Y, s.offsetY + s.cmdPitch * 52 * dt));
+    if (Math.abs(s.cmdRoll) < 0.12) s.offsetX *= Math.exp(-0.7 * dt);
+    if (Math.abs(s.cmdPitch) < 0.12) s.offsetY *= Math.exp(-0.7 * dt);
     const sample = samplePath(s.path, s.pathT);
     const posed = pathFrame(sample, s.offsetX, s.offsetY);
     s.x = posed.x;
@@ -208,9 +220,7 @@ function flyCraft(s: SortieState, input: SortieInput, dt: number) {
     s.z = posed.z;
     s.yaw = posed.yaw;
     s.pitch = Math.max(-0.55, Math.min(0.55, s.offsetY * 0.02));
-    const wantBank = input.roll * BANK;
-    s.roll += (wantBank - s.roll) * Math.min(1, dt * 12);
-    if (s.barrel > 0) s.roll += input.barrel >= 0 ? dt * 22 : dt * -22;
+    s.roll = follow(s.roll, s.cmdRoll * BANK, BANK_K, dt);
     if (s.pathT >= 1) {
       s.shift = SHIFT_T;
       s.radio = { who: "s", text: "All-range. Break.", until: s.t + 2.4 };
@@ -233,28 +243,24 @@ function flyCraft(s: SortieState, input: SortieInput, dt: number) {
     while (dYaw < -Math.PI) dYaw += Math.PI * 2;
     s.yaw += dYaw * Math.min(1, dt * 4.2);
     s.pitch = Math.sin(t * Math.PI) * 0.5;
-    s.roll += (0 - s.roll) * Math.min(1, dt * 6);
+    s.roll = follow(s.roll, 0, 6, dt);
     const fU = fwd(s);
     s.x += fU.x * s.speed * dt;
     s.y += fU.y * s.speed * dt;
     s.z += fU.z * s.speed * dt;
-    if (s.barrel > 0) s.roll += input.barrel >= 0 ? dt * 22 : dt * -22;
     return;
   }
 
-  const turnMul = s.speed > CRUISE ? 0.9 : s.speed < CRUISE ? 1.55 : 1;
-  s.yaw += input.roll * TURN * turnMul * dt;
-  s.yaw += input.rudder * 1.65 * dt;
-  if (Math.abs(input.pitch) >= 0.08) {
-    s.pitch += input.pitch * PITCH_R * dt;
-  } else if (Math.abs(s.pitch) < AUTO_LEVEL) {
-    s.pitch *= Math.exp(-1.8 * dt);
+  const turnMul = s.speed > CRUISE ? 0.92 : s.speed < CRUISE ? 1.35 : 1;
+  s.roll = follow(s.roll, s.cmdRoll * BANK, BANK_K, dt);
+  s.yaw += s.roll * YAW_FROM_BANK * turnMul * dt;
+  s.yaw += input.rudder * 1.35 * dt;
+  if (Math.abs(s.cmdPitch) >= 0.06) {
+    s.pitch += s.cmdPitch * PITCH_R * dt;
+  } else {
+    const w = wrapPi(s.pitch);
+    if (Math.abs(w) < AUTO_LEVEL) s.pitch = follow(s.pitch, s.pitch - w, 2.4, dt);
   }
-  s.pitch = wrapPi(s.pitch);
-  const wantBank = input.roll * BANK;
-  s.roll += (wantBank - s.roll) * Math.min(1, dt * 12);
-  if (Math.abs(input.roll) < 0.12 && s.barrel <= 0) s.roll *= Math.exp(-2.8 * dt);
-  if (s.barrel > 0) s.roll += input.barrel >= 0 ? dt * 22 : dt * -22;
 
   const f = fwd(s);
   s.x += f.x * s.speed * dt;
@@ -307,6 +313,9 @@ export function createSortie(opts?: {
     hull: HULL_MAX,
     invuln: 1.2,
     barrel: 0,
+    barrelDir: 1,
+    cmdRoll: 0,
+    cmdPitch: 0,
     charge: 0,
     lockId: -1,
     score: 0,
@@ -587,10 +596,7 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
     s.t += dt;
     return s;
   }
-  if (s.hitStop > 0) {
-    s.hitStop -= dt;
-    return s;
-  }
+  if (s.hitStop > 0) s.hitStop = Math.max(0, s.hitStop - dt);
 
   s.t += dt;
   s.invuln = Math.max(0, s.invuln - dt);
@@ -600,28 +606,31 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
   s.flash = Math.max(0, s.flash - dt * 4);
   if (s.radio && s.t > s.radio.until) s.radio = null;
 
-  if (input.barrel !== 0 && s.barrel <= 0) s.barrel = BARREL_T;
+  if (input.barrel !== 0 && s.barrel <= 0) {
+    s.barrel = BARREL_T;
+    s.barrelDir = input.barrel >= 0 ? 1 : -1;
+  }
   if (s.barrel > 0) s.barrel = Math.max(0, s.barrel - dt);
 
   const want = input.boost ? BOOST : input.brake ? BRAKE : CRUISE;
-  const speedK = input.boost || input.brake ? 7.2 : 4.4;
+  const speedK = input.boost || input.brake ? 5.6 : 3.8;
   s.speed += (want - s.speed) * Math.min(1, dt * speedK);
 
   flyCraft(s, input, dt);
   if (s.wings === 1) s.yaw += 0.28 * dt;
-  if (s.wings === 0) s.pitch = wrapPi(s.pitch - 0.22 * dt);
+  if (s.wings === 0) s.pitch -= 0.22 * dt;
   const f = fwd(s);
 
   const ground = islandHeight(s, s.x, s.z);
   if (s.y < ground + 6) {
     s.y = ground + 6;
-    s.pitch = Math.max(s.pitch, 0.18);
+    if (s.pitch < 0.22) s.pitch = follow(s.pitch, 0.22, 8, dt);
     hurt(s, 1, ground > 2);
     s.splash = 0.35;
   }
   if (s.y < WATER_Y + 5) {
     s.y = WATER_Y + 8;
-    s.pitch = Math.abs(s.pitch) + 0.2;
+    if (s.pitch < 0.28) s.pitch = follow(s.pitch, 0.28, 8, dt);
     hurt(s, 1);
     s.splash = 0.5;
   }

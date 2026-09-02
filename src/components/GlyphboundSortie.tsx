@@ -89,7 +89,10 @@ export function GlyphboundSortie({
       const dt = Math.min(0.05, (now - prev) / 1000);
       prev = now;
       const k = keys.current.poll(dt);
-      if (k.pause && sim.current.mode === "play") sim.current.mode = "pause";
+      if (k.pause) {
+        if (sim.current.mode === "play") sim.current.mode = "pause";
+        else if (sim.current.mode === "pause") sim.current.mode = "play";
+      }
       const before = sim.current.shots.length;
       const barrel = sim.current.barrel;
       stepSortie(sim.current, k, dt);

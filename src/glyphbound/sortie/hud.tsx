@@ -3,6 +3,21 @@ import type { SortieState } from "./sim";
 import { HULL_MAX } from "./sim";
 import { analogFromDelta } from "./stick";
 
+const SORTIE_CONTROLS: { keys: string; does: string }[] = [
+  { keys: "A D  ← →", does: "Bank. Nose follows the bank." },
+  { keys: "W  ↑", does: "Pull-up. Hold to loop." },
+  { keys: "S  ↓", does: "Dive." },
+  { keys: "Q E", does: "Rudder." },
+  { keys: "Hold J Z Space", does: "Rapid Stem fire." },
+  { keys: "Release at LOCK", does: "Charge bolt." },
+  { keys: "K  Shift", does: "Boost." },
+  { keys: "X  Ctrl", does: "Brake." },
+  { keys: "R C", does: "Barrel roll." },
+  { keys: "Double-tap A or D", does: "Barrel roll." },
+  { keys: "B M", does: "Em-dash bomb." },
+  { keys: "Esc", does: "Pause / resume." },
+];
+
 export function SortieHud({
   s,
   best,
@@ -83,6 +98,16 @@ export function SortieHud({
             {s.mode === "win" ? "Press clear" : s.mode === "dead" ? "Hull gone" : "Hold"}
           </p>
           <p className="mt-2 text-[#e8d48a]">{s.score} scored</p>
+          {s.mode === "pause" && (
+            <dl className="mt-5 grid max-h-[42vh] w-[min(94%,36rem)] grid-cols-1 gap-x-8 gap-y-1.5 overflow-y-auto px-4 text-left text-[12px] leading-snug sm:grid-cols-2">
+              {SORTIE_CONTROLS.map((row) => (
+                <div key={row.keys} className="flex gap-3 border-b border-[#e8d48a]/15 py-1">
+                  <dt className="w-[9.5rem] shrink-0 font-display tracking-wide text-[#5ee0c0]">{row.keys}</dt>
+                  <dd className="text-[#f4f0e4]/90">{row.does}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
           <div className="mt-5 flex gap-2">
             {s.mode === "pause" && (
               <button
