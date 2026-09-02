@@ -153,6 +153,7 @@ export function makeLizard(kind: EnemyKind) {
     }
     add(g, new THREE.ConeGeometry(0.7, 1.1, 6), m.skin, 0, 0.15, 2.6, { rx: -Math.PI / 2 });
     add(g, new THREE.SphereGeometry(0.38, 6, 5), m.ink, 0, 0.35, 3.15, { name: "eye" });
+    add(g, new THREE.ConeGeometry(0.85, 2.8, 7), m.rust, 0, -0.15, 1.6, { rx: Math.PI / 2, name: "drill" });
     for (const z of [-1.2, 0, 1.2]) {
       add(g, new THREE.ConeGeometry(0.35, 0.7, 6), m.ink, 0, -0.55, z, { rx: Math.PI, name: z === 0 ? "engine" : undefined });
     }
@@ -186,7 +187,7 @@ export function makeLizard(kind: EnemyKind) {
   return raptor(1.18, 1.95, 1, "rust");
 }
 
-export function poseLizard(g: THREE.Object3D, t: number, kind: EnemyKind) {
+export function poseLizard(g: THREE.Object3D, t: number, kind: EnemyKind, hp = 24) {
   const flap = Math.sin(t * (kind === "cork" ? 8 : 4.5)) * 0.18;
   const wL = g.getObjectByName("wingL");
   const wR = g.getObjectByName("wingR");
@@ -198,7 +199,14 @@ export function poseLizard(g: THREE.Object3D, t: number, kind: EnemyKind) {
     engine.scale.setScalar(pulse);
   }
   if (kind === "cork") g.rotation.z = Math.sin(t * 3.2) * 0.35;
-  if (kind === "mothership") g.rotation.z = Math.sin(t * 0.6) * 0.08;
+  if (kind === "mothership") {
+    g.rotation.z = Math.sin(t * (hp <= 8 ? 2.4 : 0.6)) * (hp <= 8 ? 0.16 : 0.08);
+    const drill = g.getObjectByName("drill");
+    if (drill) {
+      drill.rotation.z = t * 5;
+      drill.visible = hp > 16;
+    }
+  }
   if (kind === "aster") g.rotation.set(t * 0.35, t * 0.5, t * 0.2);
   if (kind === "mech") {
     const step = Math.sin(t * 2.4);

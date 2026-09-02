@@ -671,7 +671,7 @@ test("small sorts die to a laser", () => {
   assert.ok(!rock?.alive || (rock.hp ?? 1) <= 0, `aster hp ${rock?.hp} alive ${rock?.alive}`);
 });
 
-test("seven Sorts rings warp and fork", () => {
+test("seven Sorts rings open a warp corridor then win", () => {
   const s = createSortie({ corridor: true, path: SORTS_PATH, missionId: "sorts", biome: "sorts" });
   s.wave = 99;
   s.flight = "allrange";
@@ -687,7 +687,51 @@ test("seven Sorts rings warp and fork", () => {
     stepSortie(s, emptyInput(), 1 / 60);
   }
   assert.equal(s.fork, true);
+  assert.equal(s.mode, "play");
+  assert.ok(s.warpT > 0, `warpT ${s.warpT}`);
+  assert.ok(s.enemies.some((e) => e.kind === "aster" && e.alive), "warp field should seed sorts");
+  s.t = s.warpT + 8;
+  stepSortie(s, emptyInput(), 0.05);
   assert.equal(s.mode, "win");
+});
+
+test("the quoin sheds its bit then lies", () => {
+  const s = createSortie({ missionId: "sorts", biome: "sorts" });
+  s.wave = 99;
+  s.winKind = "mothership";
+  s.invuln = 99;
+  s.enemies.push({
+    id: 9,
+    kind: "mothership",
+    x: 0,
+    y: 48,
+    z: -40,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    hp: 24,
+    t: 0,
+    alive: true,
+  });
+  s.x = 0;
+  s.y = 48;
+  s.z = 0;
+  s.yaw = 0;
+  s.speed = 0;
+  const hit = emptyInput();
+  hit.fire = true;
+  for (let i = 0; i < 40; i++) {
+    s.cooldown = 0;
+    s.speed = 0;
+    stepSortie(s, hit, 1 / 60);
+  }
+  assert.ok(s.bossPhase >= 1, `phase ${s.bossPhase}`);
+  for (let i = 0; i < 40; i++) {
+    s.cooldown = 0;
+    s.speed = 0;
+    stepSortie(s, hit, 1 / 60);
+  }
+  assert.ok(s.bossPhase >= 2, `phase ${s.bossPhase}`);
 });
 
 test("low flight over water sets skim", () => {

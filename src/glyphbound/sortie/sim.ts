@@ -183,6 +183,7 @@ export interface SortieState {
   bossAt: number;
   split: boolean;
   takenLandmarks: string[];
+  warpT: number;
 }
 
 const CRUISE = 52;
@@ -445,6 +446,7 @@ export function createSortie(opts?: {
     bossAt: 0,
     split: false,
     takenLandmarks: [],
+    warpT: 0,
   };
 }
 
@@ -454,6 +456,22 @@ function defaultArmed(kind: EnemyKind) {
 
 function flyerKind(kind: EnemyKind) {
   return kind === "fighter" || kind === "cork" || kind === "bomber" || kind === "ace";
+}
+
+function seedWarpField(s: SortieState) {
+  const d = railDir(s);
+  const side = sideOf(d);
+  for (let i = 0; i < 22; i++) {
+    const ahead = 36 + i * 16;
+    spawnEnemy(
+      s,
+      "aster",
+      s.x + d.x * ahead + side.x * ((i % 5) - 2) * 18,
+      s.y + ((i % 4) - 1.5) * 11,
+      s.z + d.z * ahead + side.z * ((i % 5) - 2) * 18,
+      { hp: i % 5 === 0 ? 12 : 1, staged: false, armed: false },
+    );
+  }
 }
 
 export function spawnEnemy(
@@ -878,8 +896,23 @@ function steerEnemy(s: SortieState, e: Enemy, dt: number) {
     return;
   }
 
-  if (e.kind === "turret" || e.kind === "mech" || e.kind === "mothership") {
-    if (armed && e.t % (e.kind === "mothership" ? 0.7 : 1.4) < dt + 0.02) fireShot(s, "orb", false, e.x, e.y, e.z, toP, 44);
+  if (e.kind === "mothership") {
+    if (!armed) return;
+    const phase = e.hp > 16 ? 0 : e.hp > 8 ? 1 : 2;
+    if (phase < 2 && e.t % (phase === 0 ? 1.35 : 0.85) < dt + 0.02) {
+      fireShot(s, "orb", false, e.x, e.y, e.z, toP, 48);
+    }
+    if (phase === 2 && e.t % 1.05 < dt + 0.02) {
+      for (let i = 0; i < 4; i++) {
+        const a = (i / 4) * Math.PI * 2 + e.t;
+        fireShot(s, "orb", false, e.x + Math.cos(a) * 14, e.y + Math.sin(a) * 8, e.z, toP, 42);
+      }
+    }
+    return;
+  }
+
+  if (e.kind === "turret" || e.kind === "mech") {
+    if (armed && e.t % 1.4 < dt + 0.02) fireShot(s, "orb", false, e.x, e.y, e.z, toP, 44);
     return;
   }
 
@@ -1057,6 +1090,11 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
 
   payLandmarks(s);
 
+  if (s.missionId === "sorts" && s.warpT > 0 && s.mode === "play" && s.t - s.warpT > 7) {
+    s.mode = "win";
+    s.radio = { who: "s", text: "Seven rings. Warp. Ice is open.", until: s.t + 4 };
+  }
+
   for (const r of s.rings) {
     if (r.taken) continue;
     if (dist2(s, r) < 13 * 13) {
@@ -1065,10 +1103,12 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
       s.hull = Math.min(HULL_MAX + s.golds, s.hull + 1);
       if (s.missionId === "sorts") {
         s.archHits += 1;
-        if (s.archHits >= 7) {
+        s.speed = Math.min(110, s.speed + 16);
+        if (s.archHits >= 7 && !s.warpT) {
           s.fork = true;
-          s.mode = "win";
-          s.radio = { who: "s", text: "Seven rings. Warp. Ice is open.", until: s.t + 4 };
+          s.warpT = s.t;
+          s.radio = { who: "s", text: "Warp corridor. The sorts run thick.", until: s.t + 3 };
+          seedWarpField(s);
         }
       }
     }
@@ -1234,6 +1274,17 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
               if (e.hp <= 8 && s.bossPhase < 2) {
                 s.bossPhase = 2;
                 s.radio = { who: "s", text: "Frill off. Core!", until: s.t + 2.4 };
+              }
+            }
+            if (e.kind === "mothership") {
+              if (!s.bossAt) s.bossAt = s.t;
+              if (e.hp <= 16 && s.bossPhase < 1) {
+                s.bossPhase = 1;
+                s.radio = { who: "s", text: "The bit sheared. Core in the well.", until: s.t + 2.6 };
+              }
+              if (e.hp <= 8 && s.bossPhase < 2) {
+                s.bossPhase = 2;
+                s.radio = { who: "s", text: "It lied. Ring fire — stay off the plane.", until: s.t + 2.8 };
               }
             }
             if (e.kind === "dualis" && e.hp <= 9 && e.hp > 0 && !s.split) {

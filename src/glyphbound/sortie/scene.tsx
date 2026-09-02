@@ -209,7 +209,7 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
         else node.lookAt(e.x, e.y, e.z - 10);
       }
       const body = node.children[0];
-      if (body) poseLizard(body, s.t + e.t, e.kind);
+      if (body) poseLizard(body, s.t + e.t, e.kind, e.hp);
     }
 
     while (shots.current.length < s.shots.length) {
