@@ -144,6 +144,10 @@ export function SortieHud({
                 e.stopPropagation();
                 onTitle();
               }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onTitle();
+              }}
             >
               {leaveLabel}
             </button>

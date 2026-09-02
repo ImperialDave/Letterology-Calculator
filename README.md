@@ -13,7 +13,7 @@ A letter does not change its nature — only its willingness. That is luck.
 3. Take the three moves: **do this / wait on / ask**.
 4. Letterize an act (`quit`, `ask them`, `ship the launch`) to see if the day will have it.
 5. Compare two handles. Write an amount as letters. Flip to Greek if you want the second tongue.
-6. Play Glyphbound (`/glyphbound`) — a side-scroller. Letters against numbers. Progress stays in this browser.
+6. Play Glyphbound (`/glyphbound`) — a side-scroller. Letters against numbers. Play StarWords (`/starwords`) — fly the C-wing. Progress stays in this browser.
 
 ## Doctrine, short
 
@@ -26,6 +26,10 @@ A letter does not change its nature — only its willingness. That is luck.
 ## Glyphbound
 
 Glyphbound lives at `/glyphbound`. A side-scroller on Calculara: living letters against the Decimal Dominion. The club chrome steps aside so the game can fill the screen; **Back to the club** returns you to CC33. Progress stays in this browser.
+
+## StarWords
+
+StarWords lives at `/starwords`. Arcade flight: the C-wing against lizards of the count, Dualis at the Press. The Glyphbound hangar still opens it from the Stacks. **Back to the club** returns you to CC33. Progress stays in this browser.
 
 ## Develop
 

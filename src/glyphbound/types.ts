@@ -377,9 +377,9 @@ export interface SaveData {
   talked: string[];
   visited: string[];
   letter: LetterId;
-  /** Best Drop Cap Sortie score. */
+  /** Best StarWords score. */
   sortieBest: number;
-  /** Missions written in Drop Cap Sortie. */
+  /** Missions written in StarWords. */
   sortieCleared: string[];
   /** Missions that met the Proof hit count. */
   sortieProofs: string[];

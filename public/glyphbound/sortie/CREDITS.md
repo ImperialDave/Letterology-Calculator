@@ -1,4 +1,4 @@
-# Drop Cap Sortie — credits
+# StarWords — credits
 
 N64-style textures in this folder (and any canvas-generated 64px tiles) are
 original Glyphbound work or CC0 sources downsampled to nearest-neighbor.

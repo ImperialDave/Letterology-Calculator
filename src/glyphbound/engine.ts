@@ -4165,7 +4165,7 @@ export class GameEngine {
       return { title: "LAST PAGE", sub: `${this.save.progress} closed · last ${name}` };
     }
     if (id === "studio") return { title: "STUDIO", sub: "write a ledger · the book does not turn" };
-    if (id === "sortie") return { title: "HANGAR", sub: "Drop Cap Sortie · fly the C-wing" };
+    if (id === "sortie") return { title: "HANGAR", sub: "StarWords · fly the C-wing" };
     const chapters: Record<string, { title: string; sub: string }> = {
       stage1: { title: "I  EXCHANGE", sub: "one ledger · never changes" },
       stage2: { title: "II  FORT", sub: "one ledger · never changes" },
@@ -4283,7 +4283,7 @@ export class GameEngine {
       } else if (u.id === "studio") {
         this.nearHint = "E  Studio — write a ledger of your own";
       } else if (u.id === "sortie") {
-        this.nearHint = "E  Hangar — fly the C-wing over the ink sea";
+        this.nearHint = "E  Hangar — StarWords. Fly the C-wing over the ink sea";
       } else
         this.nearHint = "E  " + (u.label ?? "chapter") + " — one ledger. This door always opens the same page.";
     }

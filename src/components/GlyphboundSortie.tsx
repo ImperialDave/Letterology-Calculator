@@ -22,17 +22,19 @@ declare global {
   }
 }
 
-export function GlyphboundSortie({
+export function StarWords({
   onLeave,
-  leaveLabel = "Title",
+  leaveLabel = "Back to the club",
+  embedded = false,
 }: {
   onLeave?: () => void;
   leaveLabel?: string;
+  embedded?: boolean;
 } = {}) {
   const nav = useNavigate();
   const leave = () => {
     if (onLeave) onLeave();
-    else void nav({ to: "/glyphbound" });
+    else void nav({ to: "/", search: { n: undefined, name: undefined, tongue: undefined, club: true } });
   };
   const sim = useRef<SortieState>(createSortie());
   const keys = useRef(new SortieKeys());
@@ -144,7 +146,7 @@ export function GlyphboundSortie({
   };
 
   return (
-    <div className={`relative w-full overflow-hidden bg-[#b8e8f0] [touch-action:none] ${onLeave ? "h-full" : "h-[100dvh]"}`}>
+    <div className={`relative w-full overflow-hidden bg-[#b8e8f0] [touch-action:none] ${embedded ? "h-full" : "h-[100dvh]"}`}>
       {!picked ? (
         <RegisterMap
           cleared={cleared}

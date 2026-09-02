@@ -174,13 +174,7 @@ function ClubHome() {
             </div>
             <p className="mt-2 text-sm text-muted">{VOICE.nameFormHint}</p>
           </form>
-          <p className="mt-16 text-sm text-muted">{VOICE.glyphHome}</p>
-          <Link
-            to="/glyphbound"
-            className="mt-2 inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
-          >
-            Glyphbound
-          </Link>
+          <ClubGames />
         </section>
       ) : (
         <div className="space-y-8">
@@ -208,5 +202,62 @@ function ClubHome() {
         </div>
       )}
     </AppShell>
+  );
+}
+
+function ClubGames() {
+  return (
+    <section className="mt-16 text-left" aria-label="Games">
+      <p className="text-center text-sm text-muted">{VOICE.gamesHome}</p>
+      <div className="mt-4 space-y-3">
+        <GameCard
+          to="/glyphbound"
+          title="Glyphbound"
+          lede={VOICE.glyphLede}
+          image="/glyphbound.jpg"
+          alt="Glyphbound — the letter c facing a mechanical number wyrm in the rain"
+        />
+        <GameCard
+          to="/starwords"
+          title="StarWords"
+          lede={VOICE.starWordsLede}
+          image="/starwords.jpg"
+          alt="StarWords — the C-wing banking through an asteroid field"
+        />
+      </div>
+    </section>
+  );
+}
+
+function GameCard({
+  to,
+  title,
+  lede,
+  image,
+  alt,
+}: {
+  to: "/glyphbound" | "/starwords";
+  title: string;
+  lede: string;
+  image: string;
+  alt: string;
+}) {
+  return (
+    <Link
+      to={to}
+      className="block overflow-hidden rounded-lg bg-raised shadow-border transition-[box-shadow] duration-150 ease-out hover:shadow-border-hover"
+    >
+      <img
+        src={image}
+        alt={alt}
+        width={1200}
+        height={630}
+        className="h-40 w-full object-cover outline outline-1 -outline-offset-1 outline-ink/10"
+      />
+      <div className="px-4 py-3">
+        <p className="font-display text-xl text-ink">{title}</p>
+        <p className="mt-1 text-sm leading-relaxed text-muted">{lede}</p>
+      </div>
+    </Link>
   );
 }

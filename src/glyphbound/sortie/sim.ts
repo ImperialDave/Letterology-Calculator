@@ -1,4 +1,4 @@
-/** Drop Cap Sortie — arcade flight. No three.js. */
+/** StarWords — arcade flight. No three.js. */
 
 import { scriptMissionWaves } from "./missions";
 import { ENVELOPE_X, ENVELOPE_Y, SHIFT_T, SKY_CORRIDOR, UTURN_T, pathLength, pathFrame, samplePath, type PathPoint } from "./path";

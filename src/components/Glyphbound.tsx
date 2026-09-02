@@ -9,7 +9,7 @@ import { KITS, skillName } from "@/glyphbound/roster";
 import { KEY_DEFS, prettyCode, type KeyAction } from "@/glyphbound/keys";
 import { WEAPONS } from "@/glyphbound/weapons";
 import { GlyphboundStudio } from "@/components/GlyphboundStudio";
-import { GlyphboundSortie } from "@/components/GlyphboundSortie";
+import { StarWords } from "@/components/GlyphboundSortie";
 import { GlyphboundProof } from "@/components/GlyphboundProof";
 import { GlyphboundReplay } from "@/components/GlyphboundReplay";
 
@@ -331,7 +331,7 @@ export function Glyphbound() {
       {ui.replayOpen && <GlyphboundReplay game={g} progress={ui.progress} />}
       {ui.sortieOpen && (
         <div data-ui="sortie" className="pointer-events-auto absolute inset-0 z-50">
-          <GlyphboundSortie onLeave={() => g()?.leaveSortie()} leaveLabel="Stacks" />
+          <StarWords onLeave={() => g()?.leaveSortie()} leaveLabel="Stacks" embedded />
         </div>
       )}
 

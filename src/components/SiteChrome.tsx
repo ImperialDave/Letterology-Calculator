@@ -322,6 +322,12 @@ export function AppShell({
             Glyphbound
           </Link>
           <Link
+            to="/starwords"
+            className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+          >
+            StarWords
+          </Link>
+          <Link
             to="/why"
             search={{ tongue: tongue === "el" ? "el" : "la" }}
             hash={tongue === "el" ? "greek" : "latin"}
