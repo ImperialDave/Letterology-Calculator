@@ -9,6 +9,7 @@ import { RegisterMap } from "@/glyphbound/sortie/map";
 import { createSortie, stepSortie, type SortieState } from "@/glyphbound/sortie/sim";
 import { loadSave, writeSave } from "@/glyphbound/save";
 import { SKY_CORRIDOR } from "@/glyphbound/sortie/path";
+import { CREW_LINE, crewOf } from "@/glyphbound/sortie/story";
 
 declare global {
   interface Window {
@@ -95,7 +96,7 @@ export function StarWords({
     const loop = (now: number) => {
       const dt = Math.min(0.05, (now - prev) / 1000);
       prev = now;
-      const k = keys.current.poll(dt);
+      const k = keys.current.poll(dt, sim.current.flight === "allrange");
       if (k.pause) {
         if (sim.current.mode === "play") {
           sim.current.mode = "pause";
@@ -184,7 +185,27 @@ export function StarWords({
           <span className="absolute bottom-2 right-2 h-4 w-4 border-b border-r border-[#5ee0c0]" />
           <p className="text-[11px] uppercase tracking-[0.4em] text-[#e8d48a]">{picked.roman} · C-wing</p>
           <h1 className="font-display text-6xl">{picked.name}</h1>
-          <p className="mt-3 max-w-sm px-6 text-center text-sm text-[#c9b896]">{picked.blurb}</p>
+          <p className="mt-3 max-w-md px-6 text-center text-sm leading-relaxed text-[#c9b896]">{picked.brief}</p>
+          <div className="mt-5 flex justify-center gap-3">
+            {CREW_LINE.map((id) => {
+              const crew = crewOf(id);
+              return (
+                <div key={id} className="w-16 text-center">
+                  <img
+                    src={crew.portrait}
+                    alt=""
+                    width={64}
+                    height={64}
+                    className="mx-auto size-14 rounded-md object-cover outline outline-1 -outline-offset-1"
+                    style={{ outlineColor: crew.color }}
+                  />
+                  <p className="mt-1 text-[9px] uppercase tracking-[0.18em]" style={{ color: crew.color }}>
+                    {crew.title}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
           <p className="mt-6 text-sm text-[#5ee0c0]">Tap to take off</p>
           <p className="mt-8 max-w-md px-6 text-center text-[12px] leading-relaxed text-[#c8c4b8]">
             <span className="text-[#f4f0e4]">A D</span> bank · <span className="text-[#f4f0e4]">W</span> pull-up ·{" "}

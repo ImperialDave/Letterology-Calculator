@@ -1,4 +1,5 @@
 import { MISSIONS, unlockedIds, type MissionDef } from "./missions";
+import { CAMPAIGN, CREW_LINE, crewOf } from "./story";
 
 export function RegisterMap({
   cleared,
@@ -20,10 +21,25 @@ export function RegisterMap({
     <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-[#121018] text-[#f4f0e4]">
       <p className="text-[11px] uppercase tracking-[0.4em] text-[#e8d48a]">StarWords</p>
       <h1 className="font-display text-5xl">The Register</h1>
-      <p className="mt-2 max-w-md px-6 text-center text-sm text-[#c9b896]">
-        Letters on the wing. Lizards in the count. Dualis waits at the Press.
-      </p>
-      <div className="mt-8 grid w-full max-w-xl gap-2 px-5">
+      <p className="mt-2 max-w-md px-6 text-center text-sm text-[#c9b896]">{CAMPAIGN}</p>
+      <div className="mt-4 flex justify-center gap-3">
+        {CREW_LINE.map((id) => {
+          const crew = crewOf(id);
+          return (
+            <img
+              key={id}
+              src={crew.portrait}
+              alt={crew.title}
+              title={`${crew.title} — ${crew.job}`}
+              width={48}
+              height={48}
+              className="size-12 rounded-md object-cover outline outline-1 -outline-offset-1"
+              style={{ outlineColor: crew.color }}
+            />
+          );
+        })}
+      </div>
+      <div className="mt-6 grid w-full max-w-xl gap-2 px-5">
         {MISSIONS.map((m) => {
           const locked = !open.has(m.id);
           const proof = proofs.includes(m.id);

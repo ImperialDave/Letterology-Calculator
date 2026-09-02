@@ -40,6 +40,7 @@ export class SortieKeys {
   mouseFire = false;
   private mx = 0;
   private my = 0;
+  private mouseMoved = false;
   private prevQ = false;
   private prevE = false;
   private prevFire = false;
@@ -63,6 +64,7 @@ export class SortieKeys {
       if (typeof document === "undefined" || document.pointerLockElement == null) return;
       this.mx += e.movementX * 0.004;
       this.my += e.movementY * 0.004;
+      this.mouseMoved = true;
       const m = Math.hypot(this.mx, this.my);
       if (m > 1) {
         this.mx /= m;
@@ -108,16 +110,23 @@ export class SortieKeys {
     this.injected = codes;
   }
 
-  poll(dt: number): SortieInput & { pause: boolean } {
+  poll(dt: number, allRange = false): SortieInput & { pause: boolean } {
     this.t += dt;
     const has = (c: string) => (this.injected ? this.injected.includes(c) : this.keys.has(c));
     const pad = this.pad();
+    if (!this.mouseMoved) {
+      const spring = Math.exp(-8 * dt);
+      this.mx *= spring;
+      this.my *= spring;
+    }
+    this.mouseMoved = false;
+    const keyScale = allRange ? 0.62 : 1;
     let roll = this.stick.x;
     let pitch = this.stick.y;
-    if (has("KeyA") || has("ArrowLeft") || pad.left) roll += 1;
-    if (has("KeyD") || has("ArrowRight") || pad.right) roll -= 1;
-    if (has("KeyW") || has("ArrowUp") || pad.up) pitch += 1;
-    if (has("KeyS") || has("ArrowDown") || pad.down) pitch -= 1;
+    if (has("KeyA") || has("ArrowLeft") || pad.left) roll += keyScale;
+    if (has("KeyD") || has("ArrowRight") || pad.right) roll -= keyScale;
+    if (has("KeyW") || has("ArrowUp") || pad.up) pitch += keyScale;
+    if (has("KeyS") || has("ArrowDown") || pad.down) pitch -= keyScale;
     roll = Math.max(-1, Math.min(1, roll + pad.ax));
     pitch = Math.max(-1, Math.min(1, pitch - pad.ay));
 

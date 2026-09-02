@@ -9,6 +9,8 @@ export interface MissionDef {
   roman: string;
   name: string;
   blurb: string;
+  brief: string;
+  debrief: string;
   biome: BiomeId;
   corridor: boolean;
   path: PathPoint[];
@@ -23,6 +25,9 @@ export const MISSIONS: MissionDef[] = [
     roman: "I",
     name: "Exchange Coast",
     blurb: "Sea, canyon, type-city, seven n-arches. Scale on the plaza.",
+    brief:
+      "Gale has the wind. The Coast is the first clause — sea, canyon, type-city. Seven n-arches complete a letter. Scale is Dualis’s first stamp, waiting on the plaza. Write this page before it is filed.",
+    debrief: "The Coast holds. Dualis missed a clause. Sorts is the filing room. Ice is the stock he froze. The fork is yours.",
     biome: "coast",
     corridor: true,
     path: COAST_PATH,
@@ -35,6 +40,9 @@ export const MISSIONS: MissionDef[] = [
     roman: "II",
     name: "The Sorts",
     blurb: "Shoot the type-metal. Brake the crushers. Seven rings warp.",
+    brief:
+      "Well: this is where Dualis sorts type. Small metal dies to a tap. Crushers do not. Three holes pay. Seven rings warp you off the page. Miss a ring and the quoin — his binding press — stays to lie to you.",
+    debrief: "The Sorts are a remainder. Warp or quoin, the slug field still opens. Dualis has fewer drawers.",
     biome: "sorts",
     corridor: true,
     path: SORTS_PATH,
@@ -47,6 +55,9 @@ export const MISSIONS: MissionDef[] = [
     roman: "III",
     name: "Slug Field",
     blurb: "Brake the slugs. Thread seven gold rings. Bomber in the bowl.",
+    brief:
+      "Brace: lead slugs. The big ones are type that has already been melted. Brake. Seven gold rings are letters Dualis has not spent. The bomber in the bowl is how he ships the rest.",
+    debrief: "The slugs are remainder. The gutter is still wet. Dualis is running out of ink, not of will.",
     biome: "slug",
     corridor: true,
     path: SLUG_PATH,
@@ -59,6 +70,9 @@ export const MISSIONS: MissionDef[] = [
     roman: "IV",
     name: "Gutter Refinery",
     blurb: "Stay in the ink. Through the tanker. Belly, then core.",
+    brief:
+      "Well: the gutter is the Press’s overflow. Stay in the ink — the lights above bite. Through the tanker. The mothership is a press that has not yet closed. Belly, then core. Dualis can hear this page turning.",
+    debrief: "The gutter is dry. One ledger left. Dualis is the last digit.",
     biome: "gutter",
     corridor: true,
     path: GUTTER_PATH,
@@ -71,6 +85,9 @@ export const MISSIONS: MissionDef[] = [
     roman: "V",
     name: "Em-Quad Ice",
     blurb: "Hold the pad. The Serifs come in threes.",
+    brief:
+      "Brace: Dualis froze the unused stock. Hold the green pad — that ground is still a letter. The Serifs are his proofreaders. They come in threes. Do not let them file you.",
+    debrief: "The Serifs are remainder. Unused letters thaw. The gutter still inks.",
     biome: "ice",
     corridor: false,
     path: [],
@@ -83,6 +100,9 @@ export const MISSIONS: MissionDef[] = [
     roman: "VI",
     name: "The Press",
     blurb: "Crater road. Dualis splits when the bar breaks.",
+    brief:
+      "Gale: crater road, then Dualis. He is a bar that thinks it is a period. Hit it until it splits. The Dominion ends when the last digit falls. c — write the last sentence.",
+    debrief: "The Press is clear. Dualis is a remainder. The sky is letters again. Willingness, not fate, turned the page.",
     biome: "press",
     corridor: true,
     path: PRESS_PATH,

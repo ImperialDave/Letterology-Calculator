@@ -420,8 +420,23 @@
   }
 }
 
+@keyframes sw-talk {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.22);
+  }
+}
+
+.sw-talk {
+  animation: sw-talk 0.9s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .gb-motion {
+  .gb-motion,
+  .sw-talk {
     animation: none !important;
     transition: none !important;
   }

@@ -2,6 +2,8 @@ import { useRef, useState, type PointerEvent } from "react";
 import type { SortieState } from "./sim";
 import { CHARGE_LOCK, HULL_MAX, INNER_R, OUTER_R } from "./sim";
 import { analogFromDelta } from "./stick";
+import { missionById } from "./missions";
+import { crewOf } from "./story";
 
 const SORTIE_CONTROLS: { keys: string; does: string }[] = [
   { keys: "A D  ← →", does: "Stick left / right. Bank. On a rail, sit in the window." },
@@ -92,20 +94,25 @@ export function SortieHud({
           />
         </div>
       </div>
-      {s.radio && (
-        <div className="absolute bottom-10 left-1/2 w-[min(92%,28rem)] -translate-x-1/2 rounded-md border border-[#e8d48a]/30 bg-[#121018]/80 px-3 py-2 text-center text-sm">
-          <span className="mr-2 uppercase tracking-[0.2em] text-[#5ee0c0]">{s.radio.who}</span>
-          {s.radio.text}
-        </div>
-      )}
+      {s.radio && <RadioCall who={s.radio.who} text={s.radio.text} />}
       <Reticle s={s} />
       {s.flight === "allrange" && <Radar s={s} />}
       {(s.mode === "win" || s.mode === "dead" || s.mode === "pause") && (
         <div className="pointer-events-auto absolute inset-0 flex flex-col items-center justify-center bg-[#07080c]/70">
           <p className="font-display text-4xl text-[#f4f0e4]">
-            {s.mode === "win" ? "Press clear" : s.mode === "dead" ? "Hull gone" : "Hold"}
+            {s.mode === "win" ? (s.proofLive ? "Proof" : "Written") : s.mode === "dead" ? "Hull gone" : "Hold"}
           </p>
-          <p className="mt-2 text-[#e8d48a]">{s.score} scored</p>
+          <p className="mt-2 text-[#e8d48a]">{s.score} scored · {s.hits} hits</p>
+          {s.mode === "win" ? (
+            <p className="mt-3 max-w-md px-6 text-center text-sm leading-relaxed text-[#c9b896]">
+              {missionById(s.missionId).debrief}
+            </p>
+          ) : null}
+          {s.mode === "dead" ? (
+            <p className="mt-3 max-w-md px-6 text-center text-sm text-[#c9b896]">
+              The census took a bite. Wake at the Register.
+            </p>
+          ) : null}
           {s.mode === "pause" && (
             <dl className="mt-5 grid max-h-[42vh] w-[min(94%,36rem)] grid-cols-1 gap-x-8 gap-y-1.5 overflow-y-auto px-4 text-left text-[12px] leading-snug sm:grid-cols-2">
               {SORTIE_CONTROLS.map((row) => (
@@ -156,6 +163,28 @@ export function SortieHud({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function RadioCall({ who, text }: { who: string; text: string }) {
+  const crew = crewOf(who);
+  return (
+    <div className="absolute bottom-10 left-1/2 flex w-[min(92%,30rem)] -translate-x-1/2 items-center gap-3 rounded-md border border-[#e8d48a]/30 bg-[#121018]/88 px-3 py-2">
+      <img
+        src={crew.portrait}
+        alt=""
+        width={48}
+        height={48}
+        className="sw-talk h-12 w-12 shrink-0 rounded-md object-cover outline outline-1 -outline-offset-1"
+        style={{ outlineColor: crew.color }}
+      />
+      <div className="min-w-0 text-left">
+        <p className="text-[10px] uppercase tracking-[0.28em]" style={{ color: crew.color }}>
+          {crew.title}
+        </p>
+        <p className="text-sm leading-snug text-[#f4f0e4]">{text}</p>
+      </div>
     </div>
   );
 }

@@ -20,8 +20,6 @@ export const KEEP_R = 0.3;
 export const MAGNET = 0.32;
 const NUDGE_STICK = 0.35;
 const NUDGE_SIT = 12;
-const NUDGE_YAW = 1.2;
-const NUDGE_PITCH = 1;
 
 export type EnemyKind = "fighter" | "cork" | "bomber" | "turret" | "ace" | "mech" | "mothership" | "dualis" | "aster";
 export type FormName = "v" | "line" | "cross" | "guide" | "hold";
@@ -198,12 +196,13 @@ export interface SortieState {
 const CRUISE = 52;
 const BOOST = 110;
 const BRAKE = 12;
-const PITCH_R = 2.35;
+const PITCH_R = 1.35;
+const PITCH_MAX = 0.55;
 const BANK = 0.92;
-const YAW_FROM_BANK = 4.15;
+const YAW_FROM_BANK = 2.2;
 const CEIL_Y = 260;
-const AUTO_LEVEL = 0.72;
 const CMD_K = 22;
+const CMD_K_RANGE = 12;
 const BANK_K = 14;
 const STICK_POS_K = 20;
 const HEAT_PER_SHOT = 0.012;
@@ -242,10 +241,6 @@ function inwardYaw(x: number, z: number) {
   return Math.atan2(x, z);
 }
 
-function wrapPi(a: number) {
-  return Math.atan2(Math.sin(a), Math.cos(a));
-}
-
 function follow(cur: number, want: number, k: number, dt: number) {
   return cur + (want - cur) * (1 - Math.exp(-k * dt));
 }
@@ -256,10 +251,16 @@ function snapFollow(cur: number, want: number, dt: number) {
 }
 
 function flyCraft(s: SortieState, input: SortieInput, dt: number) {
-  s.cmdRoll = snapFollow(s.cmdRoll, input.roll, dt);
-  s.cmdPitch = snapFollow(s.cmdPitch, input.pitch, dt);
+  const onRail = s.flight === "corridor" && s.shift <= 0 && s.path.length >= 2;
+  if (onRail) {
+    s.cmdRoll = snapFollow(s.cmdRoll, input.roll, dt);
+    s.cmdPitch = snapFollow(s.cmdPitch, input.pitch, dt);
+  } else {
+    s.cmdRoll = follow(s.cmdRoll, input.roll, CMD_K_RANGE, dt);
+    s.cmdPitch = follow(s.cmdPitch, input.pitch, CMD_K_RANGE, dt);
+  }
 
-  if (s.flight === "corridor" && s.shift <= 0 && s.path.length >= 2) {
+  if (onRail) {
     const len = pathLength(s.path) || 1;
     s.pathT = Math.min(1, s.pathT + (s.speed * dt) / len);
     const stickX = Math.max(-1, Math.min(1, input.roll + input.rudder * 0.25));
@@ -292,10 +293,22 @@ function flyCraft(s: SortieState, input: SortieInput, dt: number) {
 
   if (s.shift > 0) {
     s.shift = Math.max(0, s.shift - dt);
+    s.cmdRoll = follow(s.cmdRoll, 0, 10, dt);
+    s.cmdPitch = follow(s.cmdPitch, 0, 10, dt);
+    s.roll = follow(s.roll, 0, 8, dt);
+    s.pitch = follow(s.pitch, 0, 5, dt);
+    const fBreak = fwd(s);
+    s.x += fBreak.x * s.speed * dt;
+    s.y += fBreak.y * s.speed * dt;
+    s.z += fBreak.z * s.speed * dt;
     if (s.shift <= 0) {
       s.flight = "allrange";
+      s.cmdRoll = 0;
+      s.cmdPitch = 0;
+      s.pitch = Math.max(-PITCH_MAX, Math.min(PITCH_MAX, s.pitch));
       if (!s.arenaT) s.arenaT = s.t;
     }
+    return;
   }
 
   if (s.uturn > 0) {
@@ -333,20 +346,16 @@ function flyCraft(s: SortieState, input: SortieInput, dt: number) {
     return;
   }
 
-  const turnMul = s.speed > CRUISE ? 0.92 : s.speed < CRUISE ? 1.35 : 1.12;
+  const turnMul = s.speed > CRUISE ? 0.85 : s.speed < CRUISE ? 1.25 : 1;
   s.roll = follow(s.roll, s.cmdRoll * BANK, BANK_K, dt);
   s.yaw += s.roll * YAW_FROM_BANK * turnMul * dt;
   s.yaw += input.rudder * 1.35 * dt;
-  const quiet = Math.abs(input.roll) < NUDGE_STICK && Math.abs(input.pitch) < NUDGE_STICK;
-  if (quiet && s.lockOn) {
-    s.yaw -= s.lockSx * NUDGE_YAW * dt;
-    s.pitch += s.lockSy * NUDGE_PITCH * dt;
-  } else if (Math.abs(s.cmdPitch) >= 0.06) {
+  if (Math.abs(input.pitch) >= 0.06) {
     s.pitch += s.cmdPitch * PITCH_R * dt;
   } else {
-    const w = wrapPi(s.pitch);
-    if (Math.abs(w) < AUTO_LEVEL) s.pitch = follow(s.pitch, s.pitch - w, 2.4, dt);
+    s.pitch = follow(s.pitch, 0, 5, dt);
   }
+  s.pitch = Math.max(-PITCH_MAX, Math.min(PITCH_MAX, s.pitch));
 
   const f = fwd(s);
   s.x += f.x * s.speed * dt;

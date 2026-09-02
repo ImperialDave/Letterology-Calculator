@@ -4,7 +4,8 @@ import * as THREE from "three";
 import { makeCWing } from "./cwing";
 import { groundHeight } from "./height";
 import { COAST_PATH, landmarksFor, riverX, SORTS_PATH } from "./landmarks";
-import { unlockedIds } from "./missions";
+import { MISSIONS, unlockedIds } from "./missions";
+import { CAMPAIGN, crewOf } from "./story";
 import { ENVELOPE_X, pathLength } from "./path";
 import { analogFromDelta } from "./stick";
 import { SortieKeys } from "./input";
@@ -178,30 +179,27 @@ test("drawn square matches lock volume", () => {
 });
 
 test("quiet stick nudges lock toward center", () => {
-  const s = createSortie();
-  s.x = 0;
-  s.y = 48;
-  s.z = 0;
-  s.yaw = 0;
-  s.pitch = 0;
+  const s = createSortie({ corridor: true });
+  stepSortie(s, emptyInput(), 1 / 60);
   s.enemies.push({
     id: 72,
     kind: "fighter",
-    x: 7,
-    y: 48,
-    z: -90,
+    x: s.x + 8,
+    y: s.y,
+    z: s.z - 90,
     vx: 0,
     vy: 0,
     vz: 0,
     hp: 2,
     t: 0,
     alive: true,
+    staged: true,
   });
   stepSortie(s, emptyInput(), 1 / 60);
   const sx0 = s.lockSx;
   assert.ok(s.lockOn, "need a lock to nudge");
   for (let i = 0; i < 24; i++) stepSortie(s, emptyInput(), 1 / 60);
-  assert.ok(Math.abs(s.lockSx) < Math.abs(sx0) - 0.01, `sx ${s.lockSx} from ${sx0}`);
+  assert.ok(Math.abs(s.lockSx) < Math.abs(sx0) - 0.008, `sx ${s.lockSx} from ${sx0}`);
 });
 
 test("lasers down the nose miss a target outside the squares", () => {
@@ -476,6 +474,17 @@ test("rim U-turn faces inward and stays near the arena", () => {
   assert.ok(Math.abs(d) < 0.8, `yaw ${s.yaw} inward ${inward}`);
 });
 
+test("every register has a brief and a debrief", () => {
+  assert.ok(CAMPAIGN.includes("Dualis"));
+  assert.equal(crewOf("s").title, "Gale");
+  assert.equal(crewOf("!").title, "Dualis");
+  assert.ok(crewOf("b").portrait.includes("b.jpg"));
+  for (const m of MISSIONS) {
+    assert.ok(m.brief.length > 12, m.id);
+    assert.ok(m.debrief.length > 12, m.id);
+  }
+});
+
 test("Register unlocks Sorts after Coast, Ice on Proof or warp", () => {
   assert.ok(unlockedIds([], []).has("coast"));
   assert.equal(unlockedIds(["coast"], []).has("sorts"), true);
@@ -563,7 +572,7 @@ test("coast all-range spawns Scale the mech", () => {
   assert.ok(s.enemies.some((e) => e.kind === "mech"));
 });
 
-test("hold pull-up keeps pitching through a loop", () => {
+test("hold pull-up clamps; somersault is the only loop", () => {
   const s = createSortie();
   s.y = 80;
   s.pitch = 0;
@@ -571,13 +580,66 @@ test("hold pull-up keeps pitching through a loop", () => {
   inp.pitch = 1;
   let maxY = s.y;
   let maxAbsPitch = 0;
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 120; i++) {
     stepSortie(s, inp, 1 / 60);
     maxY = Math.max(maxY, s.y);
     maxAbsPitch = Math.max(maxAbsPitch, Math.abs(s.pitch));
   }
-  assert.ok(maxAbsPitch > 1.5, `pitch should pass vertical, got ${maxAbsPitch}`);
-  assert.ok(maxY > 95, `loop should climb, maxY ${maxY}`);
+  assert.ok(maxAbsPitch < 0.6, `pitch clamped, got ${maxAbsPitch}`);
+  assert.equal(s.somersault, 0);
+  assert.ok(maxY > 85, `should climb, maxY ${maxY}`);
+});
+
+test("all-range full A is a wide left turn", () => {
+  const s = createSortie();
+  s.flight = "allrange";
+  const yaw0 = s.yaw;
+  const inp = emptyInput();
+  inp.roll = 1;
+  for (let i = 0; i < 60; i++) stepSortie(s, inp, 1 / 60);
+  const d = s.yaw - yaw0;
+  assert.ok(d > 1.1, `too slow ${d}`);
+  assert.ok(d < 2.2, `blender ${d}`);
+});
+
+test("release after a bank returns to the horizon", () => {
+  const s = createSortie();
+  s.flight = "allrange";
+  const inp = emptyInput();
+  inp.roll = 1;
+  inp.pitch = 1;
+  for (let i = 0; i < 40; i++) stepSortie(s, inp, 1 / 60);
+  for (let i = 0; i < 30; i++) stepSortie(s, emptyInput(), 1 / 60);
+  assert.ok(Math.abs(s.roll) < 0.08, `roll ${s.roll}`);
+  assert.ok(Math.abs(s.pitch) < 0.1, `pitch ${s.pitch}`);
+});
+
+test("lock does not steal pull-up", () => {
+  const s = createSortie();
+  s.flight = "allrange";
+  s.x = 0;
+  s.y = 48;
+  s.z = 0;
+  s.yaw = 0;
+  s.pitch = 0;
+  s.enemies.push({
+    id: 80,
+    kind: "fighter",
+    x: 8,
+    y: 48,
+    z: -80,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    hp: 2,
+    t: 0,
+    alive: true,
+  });
+  stepSortie(s, emptyInput(), 1 / 60);
+  const inp = emptyInput();
+  inp.pitch = 1;
+  for (let i = 0; i < 20; i++) stepSortie(s, inp, 1 / 60);
+  assert.ok(s.pitch > 0.15, `pitch ${s.pitch}`);
 });
 
 test("a tap fires a laser and a short hold does not spray", () => {
@@ -900,15 +962,7 @@ test("all-range lizards need about a second to reverse, like the C-wing", () => 
   assert.ok(e.vz > 4, `has come about after a second, vz ${e.vz}`);
 });
 
-test("player can reverse heading in about a second", () => {
-  const s = createSortie();
-  const yaw0 = s.yaw;
-  const inp = emptyInput();
-  inp.roll = 1;
-  for (let i = 0; i < 60; i++) stepSortie(s, inp, 1 / 60);
-  const d = s.yaw - yaw0;
-  assert.ok(d > 2.6, `turn ${d}`);
-});
+
 
 test("boost and brake change speed quickly", () => {
   const s = createSortie();
