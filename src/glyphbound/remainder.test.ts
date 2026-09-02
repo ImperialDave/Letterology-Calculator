@@ -64,7 +64,7 @@ test("keystone remainder stages are frozen and reachable", () => {
     assert.ok(meta, `frozen ${n}`);
     const issues = validateLevel(meta.rows).filter((i) => i.code === "path" || i.code === "spawn" || i.code === "hang" || i.code === "embed");
     assert.equal(issues.join("; "), "", `stage${n}`);
-    if (n === 60) assert.equal(meta.exit, "win");
+    if (n === 60) assert.equal(meta.exit, "hub");
     assert.ok(meta.rows.some((r) => r.includes("!")));
   }
 });

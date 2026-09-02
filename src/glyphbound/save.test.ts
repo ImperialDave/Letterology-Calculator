@@ -65,6 +65,15 @@ test("empty default is an empty file", () => {
   assert.equal(isEmptySave({ ...defaultSave(), visited: ["hub"] }), false);
 });
 
+test("missing arcadeBest migrates to 0", () => {
+  const m = memoryStore();
+  const raw = { ...defaultSave(), progress: 12, visited: ["hub"] };
+  delete (raw as { arcadeBest?: number }).arcadeBest;
+  m.set("glyphbound-slot-0", JSON.stringify(raw));
+  const loaded = loadSave(0);
+  assert.equal(loaded.arcadeBest, 0);
+});
+
 test("legacy Precision Grid flag becomes Hard", () => {
   const m = memoryStore();
   const raw = { ...defaultSave(), hard: true, progress: 4, visited: ["hub"] };

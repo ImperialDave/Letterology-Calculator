@@ -69,7 +69,7 @@ export const VOICE = {
   askHint:
     "Ask in ordinary words. Should, will, how, when, who — or two options split by or. We read the letters of the matter, not the mood word.",
   glyphLede:
-    "Play as the letter c against living numbers. Five closed chapters, then the Numberomicons. Sixty ledgers.",
+    "Play as the letter c against living numbers. Five closed chapters, then the Numberomicons. One hundred sixty ledgers.",
   gamesHome: "The club keeps two games.",
   starWordsLede:
     "Pilot the C-wing. Letters on the wing. Lizards in the count. Dualis waits at the Press.",

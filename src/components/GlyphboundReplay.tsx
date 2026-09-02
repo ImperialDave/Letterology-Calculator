@@ -1,10 +1,13 @@
 import type { GameEngine } from "@/glyphbound/engine";
-import { beatenLedgers, lastClearedId } from "@/glyphbound/levels";
+import { DECADES, decadePlaque } from "@/glyphbound/arcade";
+import { beatenLedgers, lastClearedId, nextStageId } from "@/glyphbound/levels";
+import { STAGE_COUNT } from "@/glyphbound/types";
 
 const BANDS: { title: string; from: number; to: number }[] = [
   { title: "First Book", from: 1, to: 5 },
   { title: "Unbound Sentence", from: 6, to: 30 },
   { title: "The Remainder", from: 31, to: 60 },
+  ...DECADES.map((d) => ({ title: decadePlaque(d.lo), from: d.lo, to: d.hi })),
 ];
 
 export function GlyphboundReplay({
@@ -32,7 +35,7 @@ export function GlyphboundReplay({
             <p className="text-[10px] uppercase tracking-[0.28em] text-accent">Last Page</p>
             <h2 className="font-display text-2xl text-fg">Reread a closed ledger</h2>
             <p className="mt-1 max-w-xl text-sm text-muted">
-              These pages are already written. The Rest of the Book still holds the next unread one.
+              Closed pages, the next unread, and the Second Century by decade. The Rest of the Book still turns the campaign.
             </p>
           </div>
           <button
@@ -43,6 +46,25 @@ export function GlyphboundReplay({
             Close
           </button>
         </div>
+
+        {progress < STAGE_COUNT && (
+          <div className="border-b border-border px-4 py-3">
+            <button
+              type="button"
+              data-ui="replay-next"
+              className="flex h-12 w-full items-center justify-between rounded-md border border-accent/40 bg-accent/10 px-3 text-left"
+              onClick={() => open(nextStageId(progress))}
+            >
+              <span>
+                <span className="block text-[10px] uppercase tracking-[0.2em] text-accent">Next unread</span>
+                <span className="font-display text-lg text-fg">
+                  {progress + 1}. Walk the Rest of the Book from here
+                </span>
+              </span>
+              <span className="text-sm text-accent">Enter</span>
+            </button>
+          </div>
+        )}
 
         {last && lastMeta && (
           <div className="border-b border-border px-4 py-3">

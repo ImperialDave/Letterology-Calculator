@@ -46,7 +46,7 @@ export const THEME_IDS: ThemeId[] = [
 /** hub + stage1..stageN. N is STAGE_COUNT. */
 export type LevelId = "hub" | `stage${number}`;
 
-export const STAGE_COUNT = 60;
+export const STAGE_COUNT = 160;
 export const FIRST_BOOK = 30;
 /** Last hand-authored Numberomicon ledger. Unbound Sentence starts at 16. */
 export const SECOND_BOOK = 15;
@@ -168,7 +168,13 @@ export interface Pickup {
     | "fang"
     | "scale"
     | "portal"
-    | "secret";
+    | "secret"
+    | "quoin"
+    | "ligature"
+    | "caret"
+    | "emdash"
+    | "tilde"
+    | "wake";
   id: string;
   x: number;
   y: number;
@@ -384,6 +390,8 @@ export interface SaveData {
   /** Missions that met the Proof hit count. */
   sortieProofs: string[];
   sortieForks: string[];
+  /** Best Endurance clear count. Campaign progress is never this. */
+  arcadeBest: number;
 }
 
 export interface UiSnap {
@@ -437,6 +445,9 @@ export interface UiSnap {
   sortieOpen: boolean;
   slot: number;
   slots: SlotInfo[];
+  runMode: "campaign" | "shuffle" | "arcade";
+  arcadeCleared: number;
+  arcadeBest: number;
 }
 
 export interface SlotInfo {

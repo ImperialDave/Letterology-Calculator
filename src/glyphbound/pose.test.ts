@@ -46,6 +46,17 @@ test("meleePhase is 0–1 from remaining time", () => {
   assert.ok(Math.abs(meleePhase(0, 1, 0.1, 0.4) - 0.75) < 1e-6);
 });
 
+test("idle breathes and melee follow-through comes after snap", () => {
+  const idle = poseOf({ vx: 0, grounded: true, gait: 1.2 });
+  assert.equal(idle.state, "idle");
+  assert.ok(idle.breath >= 0 && idle.breath <= 1);
+  const follow = poseOf({ grounded: true, melee: 0.75, gait: 0 });
+  assert.ok(follow.follow > 0.2, `follow ${follow.follow}`);
+  assert.ok(follow.snap < 0.2, `snap after ${follow.snap}`);
+  const dash = poseOf({ grounded: true, dash: 0.8, gait: 0 });
+  assert.equal(dash.state, "dash");
+});
+
 test("contact alternates on a grounded run", () => {
   const a = poseOf({ vx: 160, grounded: true, gait: Math.PI / 2 });
   const b = poseOf({ vx: 160, grounded: true, gait: Math.PI * 1.5 });

@@ -1,4 +1,5 @@
 import { chunksFor, type Beat, type Chunk } from "./chunks";
+import { FROZEN_CENTURY } from "./century";
 import { FROZEN_REMAINDER } from "./remainder-hand";
 import { remainderName, remainderObjective } from "./remainder-names";
 import { isBoss, recipeFor, rng, themeFor, type Recipe } from "./recipe";
@@ -214,7 +215,7 @@ function paintBeat(beat: Beat, recipe: Recipe, n: number, rand: () => number, us
 }
 
 export function assembleStage(n: number): LevelMeta {
-  const frozen = FROZEN_REMAINDER[n];
+  const frozen = FROZEN_REMAINDER[n] ?? FROZEN_CENTURY[n];
   if (frozen) return frozen;
   const rand = rng(n * 9973 + 42);
   const recipe = recipeFor(n, rand);

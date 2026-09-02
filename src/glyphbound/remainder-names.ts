@@ -1,4 +1,5 @@
 /** Unique Remainder ledger titles. Index matches stage number. */
+import { CENTURY } from "./century-catalog";
 export const REMAINDER_NAMES: Record<number, string> = {
   6: "Foundry Margin",
   7: "Keystroke Yard",
@@ -112,8 +113,13 @@ export const REMAINDER_OBJECTIVES: Record<number, string> = {
   57: "Lift into the laser, then the recovery shelf.",
   58: "Ember lattice. Known heat, known teeth.",
   59: "Same blink as night lattice. The pocket is on the far side.",
-  60: "The last ledger. Blink, saw, geyser, lift — then the Remainder. Take the FINAL gate.",
+  60: "Blink, saw, geyser, lift — then the Remainder. The book still has a second century.",
 };
+
+for (const spec of CENTURY) {
+  REMAINDER_NAMES[spec.n] = spec.name;
+  REMAINDER_OBJECTIVES[spec.n] = spec.objective;
+}
 
 export function remainderName(n: number, boss: boolean) {
   return REMAINDER_NAMES[n] ?? (boss ? `Warden ${n}` : `Ledger ${n}`);

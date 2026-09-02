@@ -1,3 +1,4 @@
+import { DECADES } from "./arcade";
 import { ENEMY_CHAR_LIST, ENEMY_CHARS } from "./catalog";
 import { LORE, loreIdFromGlyph } from "./lore";
 import { RECRUIT_LETTERS } from "./roster";
@@ -480,7 +481,7 @@ export function parseRows(rows: string[], ctx: Partial<ParseCtx> = {}): ParsedMa
     }
   }
 
-  if (c.isHub) injectHubExtras(pickups);
+  if (c.isHub) injectHubExtras(pickups, c.progress);
 
   return {
     solids,
@@ -495,8 +496,8 @@ export function parseRows(rows: string[], ctx: Partial<ParseCtx> = {}): ParsedMa
   };
 }
 
-/** Studio desk and Sortie hangar sit beside The Rest of the Book. Not ASCII, so hub glyphs stay doors. */
-export function injectHubExtras(pickups: Pickup[]) {
+/** Studio, Hangar, Shuffle, Endurance, and Second Century decades. Not ASCII, so hub glyphs stay doors. */
+export function injectHubExtras(pickups: Pickup[], _progress = 0) {
   const cont = pickups.find((u) => u.id === "continue");
   const y = cont ? cont.y + 8 : 7 * TILE + TILE - 96;
   if (!pickups.some((u) => u.id === "studio")) {
@@ -521,6 +522,46 @@ export function injectHubExtras(pickups: Pickup[]) {
       h: 88,
       taken: false,
       label: "HANGAR",
+    });
+  }
+  const studio = pickups.find((u) => u.id === "studio");
+  const shuffleX = studio ? studio.x + studio.w + 16 : (cont ? cont.x + cont.w + 100 : 80 * TILE);
+  if (!pickups.some((u) => u.id === "shuffle")) {
+    pickups.push({
+      kind: "door",
+      id: "shuffle",
+      x: shuffleX,
+      y,
+      w: 80,
+      h: 88,
+      taken: false,
+      label: "SHUFFLE",
+    });
+  }
+  if (!pickups.some((u) => u.id === "endurance")) {
+    pickups.push({
+      kind: "door",
+      id: "endurance",
+      x: shuffleX + 92,
+      y,
+      w: 80,
+      h: 88,
+      taken: false,
+      label: "ENDURANCE",
+    });
+  }
+  for (let i = 0; i < DECADES.length; i++) {
+    const d = DECADES[i]!;
+    if (pickups.some((u) => u.id === d.id)) continue;
+    pickups.push({
+      kind: "door",
+      id: d.id,
+      x: (92 + i * 4) * TILE + 4,
+      y,
+      w: 72,
+      h: 88,
+      taken: false,
+      label: `${d.lo}–${d.hi}`,
     });
   }
 }

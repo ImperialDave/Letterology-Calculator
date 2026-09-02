@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { ALLOWED_CHARS, CATALOG, ENEMY_CHARS } from "./catalog";
 import { folioFromMeta, folioOk, padRows, validateFolio, type Folio } from "./folio";
-import { LEVELS } from "./levels";
+import { LEVELS, nextStageId } from "./levels";
 import { injectHubExtras, parseRows } from "./parse-map";
 import { TILE } from "./types";
 
@@ -37,20 +37,38 @@ test("hub folio is valid and parse matches tile size", () => {
   assert.ok(parsed.solids.length > 100);
   assert.ok(parsed.pickups.some((p) => p.id === "continue"));
   assert.ok(parsed.spawnX > 0);
-  assert.ok(LEVELS.hub.rows[0].length <= 90, "hub should still be one hall");
+  assert.ok(LEVELS.hub.rows[0].length <= 145, "hub should still be one hall");
+  assert.ok(LEVELS.hub.rows[0].length >= 130, "second century wing has room");
   const hangar = parsed.pickups.find((p) => p.id === "sortie");
   const studio = parsed.pickups.find((p) => p.id === "studio");
   const cont = parsed.pickups.find((p) => p.id === "continue");
+  const shuffle = parsed.pickups.find((p) => p.id === "shuffle");
+  const endurance = parsed.pickups.find((p) => p.id === "endurance");
+  const decade61 = parsed.pickups.find((p) => p.id === "decade-61");
+  const decade151 = parsed.pickups.find((p) => p.id === "decade-151");
   assert.ok(hangar && hangar.kind === "door", "hub hangar door");
   assert.ok(studio && studio.kind === "door", "hub studio door");
   assert.ok(cont);
+  assert.ok(shuffle && shuffle.kind === "door", "hub shuffle door");
+  assert.ok(endurance && endurance.kind === "door", "hub endurance door");
+  assert.ok(decade61 && decade61.kind === "door", "second century 61–70");
+  assert.ok(decade151 && decade151.kind === "door", "second century 151–160");
   assert.ok(hangar.x + hangar.w <= cont.x - 40, "hangar sits left of the rest of the book");
   assert.ok(studio.x >= cont.x + cont.w, "studio sits right of the rest of the book");
+  assert.ok(shuffle.x >= studio.x + studio.w, "shuffle sits past studio");
+  assert.ok(endurance.x >= shuffle.x + shuffle.w, "endurance sits past shuffle");
+  assert.ok(decade61.x > endurance.x, "second century sits past endurance");
   const doors = parsed.pickups.filter((p) => p.kind === "door" && /^stage\d+$/.test(p.id)).sort((a, b) => a.x - b.x);
   assert.deepEqual(
     doors.map((d) => d.id),
     ["stage1", "stage3", "stage4", "stage2", "stage5", "stage7", "stage8", "stage10", "stage12", "stage15"],
   );
+});
+
+test("continue at progress 60 opens ledger 61", () => {
+  assert.equal(nextStageId(60), "stage61");
+  assert.equal(nextStageId(159), "stage160");
+  assert.equal(nextStageId(160), "stage160");
 });
 
 test("hub extras inject once", () => {

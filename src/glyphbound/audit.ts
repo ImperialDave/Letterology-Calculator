@@ -44,6 +44,11 @@ export const AUDIT_BANDS: Record<string, string[]> = {
   "25-29": ids(25, 29),
   "30-44": ids(30, 44),
   "45-60": ids(45, 60),
+  "61-80": ids(61, 80),
+  "81-100": ids(81, 100),
+  "101-120": ids(101, 120),
+  "121-140": ids(121, 140),
+  "141-160": ids(141, 160),
 };
 
 function ids(a: number, b: number) {

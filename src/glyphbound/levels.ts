@@ -15,6 +15,7 @@ import {
   buildScriptorium,
 } from "./levels-numberomicons";
 import { assembleStage } from "./assemble";
+import { polishCentury } from "./century";
 import { finishLedger } from "./density";
 
 export type { LevelId, LevelMeta };
@@ -22,7 +23,7 @@ export type { ThemeId } from "./types";
 export { STAGE_COUNT, FIRST_BOOK };
 
 function buildHub(): string[] {
-  const W = 86;
+  const W = 138;
   const H = 11;
   const fy = 8;
   const g = grid(W, H, fy) as Grid;
@@ -61,9 +62,14 @@ function buildHub(): string[] {
   put(59, fy - 1, "B");
   put(64, fy - 1, "C");
   fill(43, fy - 4, 24, "=");
+  put(66, fy - 1, "h");
   put(72, fy - 1, ">");
-  put(80, fy - 1, "<");
-  put(77, fy - 1, "h");
+  for (let y = 1; y <= fy - 3; y++) {
+    put(90, y, "#");
+    put(92, y, "#");
+  }
+  fill(94, fy - 4, 38, "=");
+  put(132, fy - 1, "<");
   return armTeeth(g, fy);
 }
 
@@ -72,7 +78,7 @@ const hand: Record<string, LevelMeta> = {
     id: "hub",
     name: "Lower Register Stacks",
     theme: "hub",
-    objective: "Five chapter doors, then the Numberomicons. Past the icon: the Unbound Sentence, the Hangar, and the Studio desk.",
+    objective: "Five chapter doors, then the Numberomicons. Past the icon: the Unbound Sentence, Shuffle, Endurance, then the Second Century through 160.",
     tasks: [
       { id: "talk-e", text: "Talk to e" },
       { id: "talk-t", text: "Learn scribing from t" },
@@ -86,7 +92,10 @@ const hand: Record<string, LevelMeta> = {
       { id: "enter-ampersand", text: "Enter Ampersand Dock — recruit n", need: 9 },
       { id: "enter-scriptorium", text: "Enter the Scriptorium — recruit t", need: 11 },
       { id: "enter-iconostasis", text: "Enter the Iconostasis — Archivant", need: 14 },
-      { id: "continue", text: "Walk the next unread ledger — Numberomicons, then the Unbound Sentence", need: 5 },
+      { id: "continue", text: "Walk the next unread ledger — Numberomicons, Unbound, then the Second Century", need: 5 },
+      { id: "shuffle", text: "Shuffle a written ledger", need: 15 },
+      { id: "endurance", text: "Walk Endurance until the wakes run out", need: 30 },
+      { id: "century", text: "Enter the Second Century", need: 60 },
     ],
     rows: buildHub(),
     index: 0,
@@ -303,6 +312,7 @@ for (let n = 16; n <= STAGE_COUNT; n++) {
 for (const id of Object.keys(LEVELS)) {
   if (id === "hub") continue;
   finishLedger(LEVELS[id].rows, LEVELS[id].index || 1);
+  polishCentury(LEVELS[id]);
 }
 
 export function getLevel(id: string): LevelMeta {

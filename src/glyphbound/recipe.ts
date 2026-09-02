@@ -1,5 +1,5 @@
 import type { Beat } from "./chunks";
-import { DISTRICTS } from "./districts";
+import { districtFor } from "./districts";
 import type { ThemeId } from "./types";
 import { STAGE_COUNT } from "./types";
 
@@ -62,7 +62,7 @@ export function isBoss(n: number) {
 }
 
 export function themeFor(n: number): ThemeId {
-  return DISTRICTS[Math.min(DISTRICTS.length - 1, n)]?.theme ?? "street";
+  return districtFor(n).theme;
 }
 
 export function decoFor(theme: ThemeId) {
