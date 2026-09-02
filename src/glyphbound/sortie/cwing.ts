@@ -110,6 +110,17 @@ export function makeCWing() {
   muzzleLight.position.set(2.0, 0, 0);
   g.add(muzzleLight);
 
+  const chargeBall = add(
+    g,
+    new THREE.SphereGeometry(0.22, 6, 6),
+    new THREE.MeshBasicMaterial({ color: 0xe8d48a, transparent: true, opacity: 0 }),
+    1.95,
+    0.02,
+    0,
+    { name: "chargeBall", cast: false },
+  );
+  chargeBall.visible = false;
+
   const engines = new THREE.Group();
   engines.name = "engine";
   engines.position.set(-1.62, 0, 0);
@@ -143,6 +154,7 @@ export function makeCWing() {
   g.userData.muzzleLight = muzzleLight;
   g.userData.engineLight = engLight;
   g.userData.canopy = canopy;
+  g.userData.chargeBall = chargeBall;
   return g;
 }
 
@@ -206,6 +218,15 @@ export function poseCWing(g: THREE.Group, s: SortieState) {
     muzzle.scale.setScalar(0.75 + s.flash * 1.7);
   }
   if (muzzleLight) muzzleLight.intensity = s.flash * 8;
+  const chargeBall = g.userData.chargeBall as THREE.Mesh;
+  if (chargeBall) {
+    const on = s.charge > 0.12;
+    chargeBall.visible = on;
+    const mat = chargeBall.material as THREE.MeshBasicMaterial;
+    mat.opacity = Math.min(0.95, s.charge * 0.9);
+    mat.color.setHex(s.lockHard ? 0xd45a4a : 0xe8d48a);
+    chargeBall.scale.setScalar(0.7 + s.charge * 1.4);
+  }
   const canopy = g.userData.canopy as THREE.Mesh;
   if (canopy) {
     const mat = canopy.material as THREE.MeshLambertMaterial;

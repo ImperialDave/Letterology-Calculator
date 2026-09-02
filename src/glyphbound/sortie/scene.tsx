@@ -54,14 +54,21 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
     ship.rotation.z = s.roll + spin;
     poseCWing(ship, s);
 
-    tmp.set(s.x, s.y, s.z).addScaledVector(f, -21);
-    tmp.y += 6.4;
+    if (s.cockpit) {
+      tmp.set(s.x, s.y, s.z).addScaledVector(f, 1.35);
+      tmp.y += 0.55;
+      lookT.set(s.x, s.y, s.z).addScaledVector(f, 22);
+      state.camera.fov = 68;
+    } else {
+      tmp.set(s.x, s.y, s.z).addScaledVector(f, -21);
+      tmp.y += 6.4;
+      lookT.set(s.x, s.y, s.z).addScaledVector(f, 16);
+      state.camera.fov = s.speed > 70 ? 62 : 52;
+    }
     state.camera.position.lerp(tmp, 1 - Math.exp(-4.2 * d));
-    lookT.set(s.x, s.y, s.z).addScaledVector(f, 16);
     if (look.lengthSq() < 0.01) look.copy(lookT);
     else look.lerp(lookT, 1 - Math.exp(-6.5 * d));
     state.camera.lookAt(look);
-    state.camera.fov = s.speed > 70 ? 62 : 52;
     state.camera.updateProjectionMatrix();
 
     world.waterMap.offset.x = s.t * 0.03;

@@ -4,7 +4,7 @@ import { groundHeight } from "./height";
 import { unlockedIds } from "./missions";
 import { analogFromDelta } from "./stick";
 import { SortieKeys } from "./input";
-import { BARREL_T, CHARGE_LOCK, createSortie, emptyInput, stepSortie } from "./sim";
+import { BARREL_T, CHARGE_LOCK, MAGNET, SOMERSAULT_T, createSortie, emptyInput, stepSortie } from "./sim";
 import { fillTex, paintBrass, paintGrass, paintHull, paintInkWater, paintLead, paintScale, type Plot } from "./tex-paint";
 
 function meanLuma(paint: (plot: Plot, n: number) => void) {
@@ -72,12 +72,12 @@ test("D (roll -1) yaws right", () => {
   assert.ok(s.yaw < -0.05, `yaw ${s.yaw}`);
 });
 
-test("soft lock pulls lasers toward a target off the nose", () => {
+test("soft lock pulls lasers toward a target in the inner square", () => {
   const s = createSortie();
   s.enemies.push({
     id: 50,
     kind: "fighter",
-    x: 40,
+    x: 16,
     y: 48,
     z: -80,
     vx: 0,
@@ -99,7 +99,65 @@ test("soft lock pulls lasers toward a target off the nose", () => {
   stepSortie(s, inp, 1 / 60);
   const shot = s.shots.find((q) => q.kind === "laser");
   assert.ok(shot);
-  assert.ok(shot!.vx > 8, `aim-assist vx ${shot!.vx}`);
+  assert.ok(shot!.vx > 4, `magnetism vx ${shot!.vx}`);
+  assert.ok(shot!.vx < 240 * MAGNET + 40, `not full home ${shot!.vx}`);
+});
+
+test("lasers down the nose miss a target outside the squares", () => {
+  const s = createSortie();
+  s.enemies.push({
+    id: 51,
+    kind: "fighter",
+    x: 90,
+    y: 48,
+    z: -80,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    hp: 2,
+    t: 0,
+    alive: true,
+  });
+  s.x = 0;
+  s.y = 48;
+  s.z = 0;
+  s.yaw = 0;
+  s.pitch = 0;
+  stepSortie(s, emptyInput(), 1 / 60);
+  assert.notEqual(s.lockId, 51);
+  const inp = emptyInput();
+  inp.fire = true;
+  stepSortie(s, inp, 1 / 60);
+  const shot = s.shots.find((q) => q.kind === "laser");
+  assert.ok(shot);
+  assert.ok(Math.abs(shot!.vx) < 8, `no magnet vx ${shot!.vx}`);
+});
+
+test("Dualis cannot be lock-on targeted", () => {
+  const s = createSortie();
+  s.enemies.push({
+    id: 9,
+    kind: "dualis",
+    x: 0,
+    y: 48,
+    z: -40,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    hp: 18,
+    t: 0,
+    alive: true,
+  });
+  s.x = 0;
+  s.y = 48;
+  s.z = 0;
+  s.yaw = 0;
+  s.pitch = 0;
+  const held = emptyInput();
+  held.fireHeld = true;
+  for (let i = 0; i < 40; i++) stepSortie(s, held, 1 / 60);
+  assert.notEqual(s.lockId, 9);
+  assert.equal(s.lockHard, false);
 });
 
 test("pitch auto-levels when stick is released", () => {
@@ -319,6 +377,48 @@ test("hold pull-up keeps pitching through a loop", () => {
   }
   assert.ok(maxAbsPitch > 1.5, `pitch should pass vertical, got ${maxAbsPitch}`);
   assert.ok(maxY > 95, `loop should climb, maxY ${maxY}`);
+});
+
+test("short hold sprays and does not dump a charge bolt", () => {
+  const s = createSortie();
+  const inp = emptyInput();
+  inp.fireHeld = true;
+  for (let i = 0; i < 20; i++) stepSortie(s, inp, 1 / 60);
+  assert.ok(s.shots.some((q) => q.kind === "laser"));
+  assert.ok(!s.shots.some((q) => q.kind === "charge"));
+  assert.ok(s.charge < CHARGE_LOCK);
+});
+
+test("boost drains the meter", () => {
+  const s = createSortie();
+  const inp = emptyInput();
+  inp.boost = true;
+  for (let i = 0; i < 40; i++) stepSortie(s, inp, 1 / 60);
+  assert.ok(s.boostMeter < 0.85, `meter ${s.boostMeter}`);
+});
+
+test("somersault loops with i-frames", () => {
+  const s = createSortie();
+  s.pitch = 0;
+  const inp = emptyInput();
+  inp.somersault = true;
+  stepSortie(s, inp, 1 / 60);
+  assert.ok(s.somersault > 0);
+  const p0 = s.pitch;
+  for (let i = 0; i < 20; i++) stepSortie(s, emptyInput(), 1 / 60);
+  assert.ok(Math.abs(s.pitch - p0) > 1.2, `pitch ${s.pitch}`);
+  assert.equal(SOMERSAULT_T > 0, true);
+});
+
+test("brake and pull-up U-turns in all-range", () => {
+  const s = createSortie();
+  s.flight = "allrange";
+  const yaw0 = s.yaw;
+  const inp = emptyInput();
+  inp.brake = true;
+  inp.pitch = 1;
+  for (let i = 0; i < 50; i++) stepSortie(s, inp, 1 / 60);
+  assert.ok(Math.abs(s.yaw - yaw0) > 2.2, `yaw ${s.yaw} from ${yaw0}`);
 });
 
 test("hold fire sprays lasers with a short cooldown", () => {

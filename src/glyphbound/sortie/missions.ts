@@ -129,12 +129,12 @@ export function scriptMissionWaves(s: SortieState) {
   if (id === "sky") return false;
   if (id === "coast") {
     if (s.flight === "corridor") {
-      if (s.wave < 1 && s.pathT > 0.08) {
-        spawn(s, "fighter", s.x - 20, s.y + 6, s.z - 50);
-        spawn(s, "fighter", s.x + 20, s.y + 6, s.z - 50);
-        spawn(s, "fighter", s.x, s.y + 8, s.z - 70);
+      if (s.wave < 1 && s.pathT > 0.04) {
+        spawn(s, "fighter", s.x, s.y + 2, s.z - 36);
+        spawn(s, "fighter", s.x - 16, s.y + 4, s.z - 48);
+        spawn(s, "fighter", s.x + 16, s.y + 4, s.z - 48);
         s.wave = 1;
-        s.radio = { who: "s", text: "V on the water. Cut the lead.", until: s.t + 2.6 };
+        s.radio = { who: "s", text: "Hold J. Squares go rust, then release.", until: s.t + 3.2 };
       }
       if (s.wave < 2 && s.pathT > 0.28) {
         spawn(s, "turret", s.x + 30, 8, s.z - 40);

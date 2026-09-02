@@ -1,20 +1,22 @@
 import { useRef, useState, type PointerEvent } from "react";
 import type { SortieState } from "./sim";
-import { HULL_MAX } from "./sim";
+import { CHARGE_LOCK, HULL_MAX } from "./sim";
 import { analogFromDelta } from "./stick";
 
 const SORTIE_CONTROLS: { keys: string; does: string }[] = [
   { keys: "A D  ← →", does: "Bank. Nose follows the bank." },
   { keys: "W  ↑", does: "Pull-up. Hold to loop." },
   { keys: "S  ↓", does: "Dive." },
-  { keys: "Q E", does: "Rudder." },
-  { keys: "Hold J Z Space", does: "Rapid Stem fire." },
-  { keys: "Release at LOCK", does: "Charge bolt." },
-  { keys: "K  Shift", does: "Boost." },
-  { keys: "X  Ctrl", does: "Brake." },
-  { keys: "R C", does: "Barrel roll." },
-  { keys: "Double-tap A or D", does: "Barrel roll." },
+  { keys: "Q E", does: "Rudder. Both: break lock." },
+  { keys: "Hold J Z Space", does: "Spray, then charge." },
+  { keys: "Release at LOCK", does: "Homing charge bolt." },
+  { keys: "K  Shift", does: "Boost (meter)." },
+  { keys: "X  Ctrl", does: "Brake (meter)." },
+  { keys: "Boost + W", does: "Somersault." },
+  { keys: "Brake + W", does: "U-turn (all-range)." },
+  { keys: "R C / double A D", does: "Barrel roll." },
   { keys: "B M", does: "Em-dash bomb." },
+  { keys: "V", does: "Cockpit cam." },
   { keys: "Esc", does: "Pause / resume." },
 ];
 
@@ -72,7 +74,13 @@ export function SortieHud({
       </div>
       <div className="absolute bottom-6 right-6 flex flex-col items-end gap-1">
         <div className="h-1.5 w-28 overflow-hidden rounded-sm border border-[#e8d48a]/40">
-          <div className="h-full bg-[#e8d48a]" style={{ width: `${Math.min(100, (s.charge / 0.6) * 100)}%` }} />
+          <div
+            className="h-full"
+            style={{
+              width: `${Math.min(100, s.boostMeter * 100)}%`,
+              background: s.boostMeter < 0.2 ? "#d45a4a" : "#e8d48a",
+            }}
+          />
         </div>
         <div className="h-1 w-28 overflow-hidden rounded-sm border border-[#5ee0c0]/35">
           <div
@@ -150,23 +158,35 @@ export function SortieHud({
 
 function Reticle({ s }: { s: SortieState }) {
   if (s.mode !== "play") return null;
-  const hard = s.lockId >= 0 && s.charge >= 0.2 && s.lockOn;
+  const hard = s.lockHard;
   const soft = s.lockId >= 0 && s.lockOn;
-  const color = hard ? "#d45a4a" : soft ? "#e8d48a" : "#f4f0e4";
+  const charging = s.charge >= CHARGE_LOCK * 0.35;
+  const color = hard ? "#d45a4a" : charging ? "#e8d48a" : soft ? "#5ee0c0" : "#f4f0e4";
   const left = 50 + s.lockSx * 42;
   const top = 50 - s.lockSy * 42;
+  const off = soft && (Math.abs(s.lockSx) > 1.05 || Math.abs(s.lockSy) > 0.9);
   return (
     <div className="pointer-events-none absolute inset-0">
       <div
-        className="absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2 rotate-45"
-        style={{ border: `1.5px solid ${soft ? "transparent" : "rgba(244,240,228,0.7)"}` }}
+        className="absolute left-1/2 top-1/2 h-[4.6rem] w-[4.6rem] -translate-x-1/2 -translate-y-1/2"
+        style={{ border: `2px solid ${hard ? "#d45a4a" : charging ? "#e8d48a" : "rgba(244,240,228,0.75)"}` }}
       />
-      <div className="absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2">
-        <span className="absolute left-1/2 top-0 h-2.5 w-px -translate-x-1/2 -translate-y-3 bg-[#5ee0c0]/80" />
-        <span className="absolute bottom-0 left-1/2 h-2.5 w-px -translate-x-1/2 translate-y-3 bg-[#5ee0c0]/80" />
-        <span className="absolute left-0 top-1/2 h-px w-2.5 -translate-x-3 -translate-y-1/2 bg-[#5ee0c0]/80" />
-        <span className="absolute right-0 top-1/2 h-px w-2.5 -translate-y-1/2 translate-x-3 bg-[#5ee0c0]/80" />
-      </div>
+      <div
+        className="absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2"
+        style={{ border: `1.5px solid ${hard ? "#d45a4a" : charging ? "#e8d48a" : "rgba(94,224,192,0.85)"}` }}
+      />
+      <div
+        className="absolute left-1/2 top-1/2 h-14 w-14 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#e8d48a]/50"
+        style={{
+          clipPath: `inset(${100 - Math.min(100, (s.charge / CHARGE_LOCK) * 100)}% 0 0 0)`,
+          opacity: s.charge > 0.05 ? 1 : 0.25,
+        }}
+      />
+      {s.incoming > 0 && (
+        <div className="absolute left-1/2 top-[38%] -translate-x-1/2 text-[11px] uppercase tracking-[0.28em] text-[#d45a4a]">
+          Break
+        </div>
+      )}
       {soft && (
         <div
           className="absolute h-12 w-12 -translate-x-1/2 -translate-y-1/2"
@@ -176,6 +196,15 @@ function Reticle({ s }: { s: SortieState }) {
             {hard ? "LOCK" : "TGT"}
           </span>
         </div>
+      )}
+      {off && (
+        <div
+          className="absolute h-0 w-0 border-x-[6px] border-x-transparent border-b-[10px] border-b-[#e8d48a]"
+          style={{
+            left: `${Math.max(8, Math.min(92, 50 + Math.sign(s.lockSx) * 42))}%`,
+            top: `${Math.max(10, Math.min(88, 50 - Math.sign(s.lockSy) * 36))}%`,
+          }}
+        />
       )}
     </div>
   );

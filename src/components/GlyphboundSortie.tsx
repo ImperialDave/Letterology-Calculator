@@ -44,6 +44,8 @@ export function GlyphboundSortie({
   const [cleared, setCleared] = useState<string[]>([]);
   const [proofs, setProofs] = useState<string[]>([]);
   const lastMode = useRef(sim.current.mode);
+  const lastHard = useRef(false);
+  const lastIncoming = useRef(0);
 
   const bootMission = (m: MissionDef) => {
     const next = createSortie({
@@ -96,7 +98,12 @@ export function GlyphboundSortie({
       const before = sim.current.shots.length;
       const barrel = sim.current.barrel;
       stepSortie(sim.current, k, dt);
-      if (sim.current.shots.length > before && k.fire) sortieSfx.laser();
+      if (sim.current.shots.length > before && k.fireHeld && sim.current.charge < 0.5) sortieSfx.laser();
+      if (sim.current.shots.length > before && !k.fireHeld) sortieSfx.charge();
+      if (sim.current.lockHard && !lastHard.current) sortieSfx.lock();
+      lastHard.current = sim.current.lockHard;
+      if (sim.current.incoming > 0.3 && lastIncoming.current <= 0) sortieSfx.warn();
+      lastIncoming.current = sim.current.incoming;
       if (sim.current.barrel > barrel) sortieSfx.roll();
       if (sim.current.splash > 0.4) sortieSfx.splash();
       if (lastMode.current !== sim.current.mode) {
@@ -162,10 +169,11 @@ export function GlyphboundSortie({
           <p className="mt-3 max-w-sm px-6 text-center text-sm text-[#c9b896]">{picked.blurb}</p>
           <p className="mt-6 text-sm text-[#5ee0c0]">Tap to take off</p>
           <p className="mt-8 max-w-md px-6 text-center text-[12px] leading-relaxed text-[#c8c4b8]">
-            <span className="text-[#f4f0e4]">A D</span> bank · hold <span className="text-[#f4f0e4]">W</span> for a loop ·{" "}
-            <span className="text-[#f4f0e4]">S</span> dive · hold <span className="text-[#f4f0e4]">J</span> spray · release
-            after LOCK for a charge · double-tap <span className="text-[#f4f0e4]">A/D</span> or <span className="text-[#f4f0e4]">R</span> barrel
-            · <span className="text-[#f4f0e4]">K</span> boost · <span className="text-[#f4f0e4]">X</span> brake
+            <span className="text-[#f4f0e4]">A D</span> bank · <span className="text-[#f4f0e4]">W</span> pull-up · hold{" "}
+            <span className="text-[#f4f0e4]">J</span> spray then LOCK · <span className="text-[#f4f0e4]">K</span>+
+            <span className="text-[#f4f0e4]">W</span> somersault · <span className="text-[#f4f0e4]">X</span>+
+            <span className="text-[#f4f0e4]">W</span> U-turn · <span className="text-[#f4f0e4]">R</span> barrel ·{" "}
+            <span className="text-[#f4f0e4]">V</span> cockpit
           </p>
           </button>
           <button

@@ -24,6 +24,7 @@ const GAME = new Set([
   "KeyC",
   "KeyB",
   "KeyM",
+  "KeyV",
   "Escape",
 ]);
 
@@ -37,13 +38,17 @@ export class SortieKeys {
   touchBarrel = 0;
   private lastA = -9;
   private lastD = -9;
+  private lastW = -9;
   private lastAUp = -9;
   private lastDUp = -9;
+  private lastWUp = -9;
   private prevA = false;
   private prevD = false;
+  private prevW = false;
   private prevR = false;
   private prevBomb = false;
   private prevPause = false;
+  private prevV = false;
   touchBomb = false;
   t = 0;
 
@@ -107,9 +112,21 @@ export class SortieKeys {
     if (this.touchBarrel && barrel === 0) barrel = this.touchBarrel;
     this.touchBarrel = 0;
 
+    const w = has("KeyW") || has("ArrowUp") || pad.up;
+    let somersault = false;
+    if (!w && this.prevW) this.lastWUp = this.t;
+    if (w && !this.prevW) {
+      if (this.t - this.lastW < 0.38 && this.lastWUp - this.lastW < 0.16) somersault = true;
+      this.lastW = this.t;
+    }
+    this.prevW = w;
+
     const fireHeld =
       has("KeyJ") || has("KeyZ") || has("Space") || pad.fire || this.touchFire;
     const fire = fireHeld;
+    const vKey = has("KeyV");
+    const cockpit = vKey && !this.prevV;
+    this.prevV = vKey;
 
     const out = emptyInput();
     out.roll = roll;
@@ -120,6 +137,9 @@ export class SortieKeys {
     out.boost = has("KeyK") || has("ShiftLeft") || has("ShiftRight") || pad.boost || this.touchBoost;
     out.brake = has("KeyX") || has("ControlLeft") || has("ControlRight") || pad.brake || this.touchBrake;
     out.barrel = barrel;
+    out.lockBreak = has("KeyQ") && has("KeyE");
+    out.cockpit = cockpit;
+    out.somersault = somersault;
     const bombHeld = has("KeyB") || has("KeyM");
     out.bomb = (bombHeld && !this.prevBomb) || this.touchBomb;
     this.prevBomb = bombHeld;
