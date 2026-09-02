@@ -129,7 +129,7 @@ export function GlyphboundSortie({
   };
 
   return (
-    <div className={`relative w-full overflow-hidden bg-[#6a9080] [touch-action:none] ${onLeave ? "h-full" : "h-[100dvh]"}`}>
+    <div className={`relative w-full overflow-hidden bg-[#b8e8f0] [touch-action:none] ${onLeave ? "h-full" : "h-[100dvh]"}`}>
       {!picked ? (
         <RegisterMap
           cleared={cleared}

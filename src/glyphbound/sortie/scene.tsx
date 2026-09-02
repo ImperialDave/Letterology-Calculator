@@ -1,6 +1,7 @@
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useMemo, useRef, type MutableRefObject } from "react";
 import * as THREE from "three";
+THREE.ColorManagement.enabled = true;
 import { makeCWing, poseCWing } from "./cwing";
 import { makeDigit } from "./digits";
 import { makeLizard, poseLizard } from "./lizards";
@@ -171,12 +172,12 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
       <primitive object={sky} />
       <primitive object={world.root} />
       <primitive object={ship} />
-      <hemisphereLight args={[0xd8f4ec, 0x243028, 0.72]} />
-      <ambientLight intensity={0.22} />
+      <hemisphereLight args={[0xfff6dc, 0x88d060, 1.15]} />
+      <ambientLight intensity={0.62} />
       <directionalLight
         position={[90, 150, 55]}
-        intensity={1.65}
-        color="#fff2d0"
+        intensity={1.45}
+        color="#fff8e8"
         castShadow
         shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}
@@ -186,9 +187,10 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
         shadow-camera-right={160}
         shadow-camera-top={160}
         shadow-camera-bottom={-160}
+        shadow-intensity={0.28}
       />
-      <pointLight position={[0, 90, 0]} intensity={0.35} color="#5ee0c0" />
-      <fog attach="fog" args={[world.fog, 90, 520]} />
+      <pointLight position={[0, 90, 0]} intensity={0.55} color="#fff0c0" />
+      <fog attach="fog" args={[world.fog, 160, 620]} />
     </group>
   );
 }
@@ -199,10 +201,12 @@ export function SortieCanvas({ sim }: { sim: MutableRefObject<SortieState> }) {
     <Canvas
       key={biome}
       dpr={1}
-      gl={{ antialias: false, powerPreference: "high-performance" }}
+      gl={{ antialias: false, powerPreference: "high-performance", toneMapping: THREE.NoToneMapping }}
       camera={{ fov: 52, near: 0.4, far: 980, position: [0, 54, 140] }}
       onCreated={({ gl }) => {
         const world = makeWorld(biome);
+        gl.toneMapping = THREE.NoToneMapping;
+        gl.outputColorSpace = THREE.SRGBColorSpace;
         gl.setClearColor(world.fog, 1);
         gl.shadowMap.enabled = true;
       }}

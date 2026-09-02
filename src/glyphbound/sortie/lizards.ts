@@ -29,8 +29,8 @@ function mats() {
     brass: n64Mat(BRASS, { map: brassTex() }),
     rust: n64Mat(RUST, { map: rustTex() }),
     ink: n64Mat(INK, { emissive: INK, glow: 1.1 }),
-    dark: n64Mat(0x1a1410),
-    gold: n64Mat(0xe8d48a, { emissive: 0x6a5428, glow: 0.35 }),
+    dark: n64Mat(0x6a5848),
+    gold: n64Mat(0xffe08a, { emissive: 0xc8a040, glow: 0.45 }),
   };
 }
 

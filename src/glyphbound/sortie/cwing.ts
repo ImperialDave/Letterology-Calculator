@@ -47,10 +47,10 @@ export function makeCWing() {
   g.name = "cwing";
   const brass = n64Mat(0xe8d48a, { map: brassTex() });
   const hull = n64Mat(0xb8924a, { map: hullTex() });
-  const dark = n64Mat(0x12181c, { emissive: INK, glow: 0.18 });
+  const dark = n64Mat(0x4a6070, { emissive: INK, glow: 0.22 });
   const ink = n64Mat(INK, { emissive: INK, glow: 0.95 });
-  const glass = n64Mat(0x7af0d4, { emissive: INK, glow: 0.55 });
-  const lead = n64Mat(0x2a3238, { map: hullTex() });
+  const glass = n64Mat(0x9af8e8, { emissive: INK, glow: 0.7 });
+  const lead = n64Mat(0xd8e0e8, { map: hullTex() });
   const gunMat = n64Mat(INK, { emissive: INK, glow: 0.5 });
 
   const letter = add(g, crescentGeo(), hull, 0, 0.02, 0, { name: "letter" });

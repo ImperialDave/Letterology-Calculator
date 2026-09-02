@@ -5,6 +5,34 @@ import { unlockedIds } from "./missions";
 import { analogFromDelta } from "./stick";
 import { SortieKeys } from "./input";
 import { BARREL_T, CHARGE_LOCK, createSortie, emptyInput, stepSortie } from "./sim";
+import { fillTex, paintBrass, paintGrass, paintHull, paintInkWater, paintLead, paintScale, type Plot } from "./tex-paint";
+
+function meanLuma(paint: (plot: Plot, n: number) => void) {
+  const buf = fillTex(64, paint);
+  let s = 0;
+  let n = 0;
+  for (let i = 0; i < buf.length; i += 4) {
+    if (buf[i + 3] < 16) continue;
+    s += 0.2126 * buf[i] + 0.7152 * buf[i + 1] + 0.0722 * buf[i + 2];
+    n += 1;
+  }
+  return s / n;
+}
+
+test("sortie paints are daytime-bright", () => {
+  const grass = meanLuma(paintGrass);
+  const hull = meanLuma(paintHull);
+  const water = meanLuma(paintInkWater);
+  const lead = meanLuma(paintLead);
+  const scale = meanLuma(paintScale);
+  const brass = meanLuma(paintBrass);
+  assert.ok(grass > 110, `grass ${grass}`);
+  assert.ok(hull > 140, `hull ${hull}`);
+  assert.ok(water > 110, `water ${water}`);
+  assert.ok(lead > 140, `lead ${lead}`);
+  assert.ok(scale > 100, `scale ${scale}`);
+  assert.ok(brass > 150, `brass ${brass}`);
+});
 
 test("stick left is roll left (screen left), stick up is pull-up", () => {
   const left = analogFromDelta(-40, 0, 64);

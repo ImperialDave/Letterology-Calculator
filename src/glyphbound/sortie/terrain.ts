@@ -18,12 +18,12 @@ export interface BiomeKit {
 }
 
 export const BIOMES: Record<BiomeId, BiomeKit> = {
-  sky: { id: "sky", fog: FOG, sky: 0x6aa8a0, water: 0x0e6a62, waterTex: inkWaterTex, ground: 0x2f8a3a, groundTex: grassLeadTex, metal: 0xe8d48a },
-  coast: { id: "coast", fog: 0x7ab8c0, sky: 0x8ec8d4, water: 0x0e6a62, waterTex: inkWaterTex, ground: 0xc9b896, groundTex: leadTex, metal: 0xe8d48a },
-  slug: { id: "slug", fog: 0x5a5048, sky: 0x3a3830, water: 0x2a1810, waterTex: slagWaterTex, ground: 0x5a6a74, groundTex: leadTex, metal: 0xe8d48a },
-  gutter: { id: "gutter", fog: 0x3a6860, sky: 0x4a8078, water: 0x072a32, waterTex: inkWaterTex, ground: 0x6a4030, groundTex: ashTex, metal: 0xd45a4a },
-  ice: { id: "ice", fog: 0xc8e4ec, sky: 0xd8f0f4, water: 0x7aa8b8, waterTex: iceWaterTex, ground: 0xe8f6fa, groundTex: iceGroundTex, metal: 0xe8d48a },
-  press: { id: "press", fog: 0x6a3828, sky: 0x8a4830, water: 0x1a100c, waterTex: slagWaterTex, ground: 0x6a4030, groundTex: ashTex, metal: 0xd45a4a },
+  sky: { id: "sky", fog: FOG, sky: 0x7ad4f0, water: 0x4ae8dc, waterTex: inkWaterTex, ground: 0x6ae050, groundTex: grassLeadTex, metal: 0xffe08a },
+  coast: { id: "coast", fog: 0xc8eef8, sky: 0x88d8f8, water: 0x48e0d8, waterTex: inkWaterTex, ground: 0xf0dcb0, groundTex: leadTex, metal: 0xffe08a },
+  slug: { id: "slug", fog: 0xe8d0a8, sky: 0xf0c878, water: 0xe88850, waterTex: slagWaterTex, ground: 0xd8c090, groundTex: leadTex, metal: 0xffe08a },
+  gutter: { id: "gutter", fog: 0xf0c8a0, sky: 0xf0a868, water: 0x48d0c8, waterTex: inkWaterTex, ground: 0xe8a070, groundTex: ashTex, metal: 0xff8060 },
+  ice: { id: "ice", fog: 0xe0f4fc, sky: 0xd8f4ff, water: 0xa8e0f0, waterTex: iceWaterTex, ground: 0xf4ffff, groundTex: iceGroundTex, metal: 0xffe08a },
+  press: { id: "press", fog: 0xf0c090, sky: 0xf0a060, water: 0xe07848, waterTex: slagWaterTex, ground: 0xe89860, groundTex: ashTex, metal: 0xff8060 },
 };
 
 function sit(biome: BiomeId, x: number, z: number) {

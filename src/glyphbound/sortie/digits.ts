@@ -77,7 +77,7 @@ export function makeDigit(ch: "1" | "0" | "2" | "!") {
   const g = new THREE.Group();
   const rust = n64Mat(ch === "0" ? PAPER : RUST, { map: rustTex(), emissive: RUST, glow: 0.25 });
   const brass = n64Mat(BRASS, { map: brassTex() });
-  const dark = n64Mat(0x1a1210);
+  const dark = n64Mat(0x8a6a50);
   const ink = n64Mat(INK, { emissive: INK, glow: 1.15 });
 
   if (ch !== "!") {
