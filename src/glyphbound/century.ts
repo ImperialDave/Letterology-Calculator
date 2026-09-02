@@ -523,28 +523,310 @@ for (const spec of CENTURY) {
 export function polishCentury(meta: LevelMeta) {
   const spec = centurySpec(meta.index);
   if (!spec) return;
-  padShelves(meta.rows, spec.n);
-  ensureFeatured(meta.rows, spec, 11);
-  capMainPits(meta.rows);
-  healPath(meta.rows);
-  stampDeco(meta.rows, decoOf(spec.theme), Math.max(16, Math.floor((meta.rows[0]?.length ?? 80) / 7)));
-  padHazards(meta.rows, spec.n);
-  houseAfter(meta.rows);
-  clearFightPorches(meta.rows);
-  houseAfter(meta.rows);
-  footToys(meta.rows);
-  houseKit(meta.rows);
-  openLids(meta.rows);
-  stripBounceHall(meta.rows);
-  ensureFeatured(meta.rows, spec, 11);
-  footToys(meta.rows);
-  houseKit(meta.rows);
-  openLids(meta.rows);
-  healPath(meta.rows);
-  clearWalk(meta.rows);
-  padHazards(meta.rows, spec.n);
-  padShelves(meta.rows, spec.n);
-  ensureFeatured(meta.rows, spec, 11);
+  const rows = meta.rows;
+  for (let i = 0; i < 4; i++) {
+    houseAfter(rows);
+    clearFightPorches(rows);
+    doctrinePolish(rows);
+    capMainPits(rows);
+    healPath(rows);
+    clearWalk(rows);
+    repairPath(rows);
+  }
+  padShelves(rows, spec.n);
+  stampDeco(rows, decoOf(spec.theme), Math.max(16, Math.floor((rows[0]?.length ?? 80) / 7)));
+  ensureFeatured(rows, spec, 11);
+  doctrinePolish(rows);
+  houseAfter(rows);
+  doctrinePolish(rows);
+  healPath(rows);
+  clearWalk(rows);
+  padHazards(rows, spec.n);
+  padShelves(rows, spec.n);
+  ensureFeatured(rows, spec, 11);
+  doctrinePolish(rows);
+  houseLeftovers(rows);
+  unlid(rows);
+  padHazards(rows, spec.n);
+  doctrinePolish(rows);
+  unlid(rows);
+  stripBadT(rows);
+  houseLeftovers(rows);
+  unlid(rows);
+}
+
+function stripBadT(rows: string[]) {
+  const H = rows.length;
+  const W = rows[0]?.length ?? 0;
+  for (let y = 1; y < H - 2; y++) {
+    for (let x = 1; x < W - 1; x++) {
+      if (cell(rows, x, y) !== "T") continue;
+      const below = cell(rows, x, y + 1);
+      if (below === "^") {
+        if (!isSolid(cell(rows, x, y + 2))) writeCell(rows, x, y + 2, "#");
+        continue;
+      }
+      if (!isSolid(below)) {
+        writeCell(rows, x, y, ".");
+        continue;
+      }
+      const gap =
+        cell(rows, x - 1, y + 1) === "." ||
+        cell(rows, x - 1, y + 1) === "^" ||
+        cell(rows, x + 1, y + 1) === "." ||
+        cell(rows, x + 1, y + 1) === "^";
+      if (!gap) writeCell(rows, x, y, ".");
+    }
+  }
+}
+
+function houseLeftovers(rows: string[]) {
+  const H = rows.length;
+  const W = rows[0]?.length ?? 0;
+  for (let y = 1; y < H - 1; y++) {
+    for (let x = 1; x < W - 1; x++) {
+      const ch = cell(rows, x, y);
+      if (ch === "x") {
+        const jamb = cell(rows, x - 1, y);
+        if (!isSolid(jamb) && jamb !== "=") writeCell(rows, x - 1, y, "#");
+      }
+      if (ch === "z") {
+        const left = isSolid(cell(rows, x - 1, y)) || isSolid(cell(rows, x - 1, y + 2));
+        const right = isSolid(cell(rows, x + 1, y)) || isSolid(cell(rows, x + 1, y + 2));
+        if (!left && !right) writeCell(rows, x + 1, y, "#");
+      }
+      if (ch === "w" || ch === "~") {
+        if (cell(rows, x - 1, y) === ch) continue;
+        let x1 = x;
+        while (cell(rows, x1 + 1, y) === ch) x1 += 1;
+        if (!isSolid(cell(rows, x - 1, y))) writeCell(rows, x - 1, y, "#");
+        if (!isSolid(cell(rows, x1 + 1, y))) writeCell(rows, x1 + 1, y, "#");
+      }
+    }
+  }
+}
+
+/** Last pass: packed traps under dirt are either wells or gone. */
+function unlid(rows: string[]) {
+  const H = rows.length;
+  const W = rows[0]?.length ?? 0;
+  const traps = "^w~jg";
+  for (let y = 2; y < H - 1; y++) {
+    for (let x = 1; x < W - 1; x++) {
+      const ch = cell(rows, x, y);
+      if (!traps.includes(ch)) continue;
+      const lid = cell(rows, x, y - 1);
+      if (lid !== "#" && lid !== "*") continue;
+      if (HANG.includes(cell(rows, x - 1, y - 1)) || HANG.includes(cell(rows, x + 1, y - 1))) {
+        writeCell(rows, x, y, "#");
+        continue;
+      }
+      const above = cell(rows, x, y - 2);
+      const walkish = above === "." || above === "T" || above === "v" || above === "`" || above === ")" || above === "i" || above === "h";
+      if (!walkish) {
+        writeCell(rows, x, y, "#");
+        continue;
+      }
+      let span = 1;
+      while (x + span < W - 1 && traps.includes(cell(rows, x + span, y)) && (cell(rows, x + span, y - 1) === "#" || cell(rows, x + span, y - 1) === "*")) {
+        span += 1;
+      }
+      if (span <= 3) writeCell(rows, x, y - 1, ".");
+      else writeCell(rows, x, y, "#");
+    }
+  }
+}
+
+const SOLID = "#*&";
+const HANG = "lzxSfd";
+const FLOOR_TOY = "jw~";
+
+function cell(rows: string[], x: number, y: number) {
+  if (y < 0 || y >= rows.length || x < 0 || x >= (rows[y]?.length ?? 0)) return "#";
+  return rows[y][x] ?? "#";
+}
+
+function isSolid(ch: string) {
+  return SOLID.includes(ch);
+}
+
+/** One pass: lids, sockets, seats, beams, rails. Does not flatten the room. */
+function doctrinePolish(rows: string[]) {
+  const H = rows.length;
+  const W = rows[0]?.length ?? 0;
+
+  // reveal-lid: short buried teeth become wells; long slabs lose teeth
+  for (const trap of ["^", "w", "~", "j", "g", "T"]) {
+    for (let y = 2; y < H - 1; y++) {
+      let x = 1;
+      while (x < W - 1) {
+        if (cell(rows, x, y) !== trap || (cell(rows, x, y - 1) !== "#" && cell(rows, x, y - 1) !== "*")) {
+          x += 1;
+          continue;
+        }
+        const x0 = x;
+        while (
+          x < W - 1 &&
+          cell(rows, x, y) === trap &&
+          (cell(rows, x, y - 1) === "#" || cell(rows, x, y - 1) === "*")
+        ) {
+          x += 1;
+        }
+        const span = x - x0;
+        if (span <= 3) {
+          for (let i = x0; i < x; i++) writeCell(rows, i, y - 1, ".");
+        } else if (trap === "^") {
+          for (let i = x0; i < x; i++) writeCell(rows, i, y, "#");
+        } else {
+          for (let i = x0; i < x; i++) writeCell(rows, i, y - 1, ".");
+        }
+      }
+    }
+  }
+
+  for (let y = 1; y < H - 2; y++) {
+    for (let x = 1; x < W - 1; x++) {
+      const ch = cell(rows, x, y);
+      const yf = localFloorY(rows, x);
+
+      if (ch === "^") {
+        const lid = cell(rows, x, y - 1);
+        if (lid === "#" || lid === "*") {
+          const above = cell(rows, x, y - 2);
+          if (above === "." || above === "T" || above === "v" || above === "`" || above === ")") {
+            writeCell(rows, x, y - 1, ".");
+          } else {
+            writeCell(rows, x, y, "#");
+          }
+        }
+        if (!isSolid(cell(rows, x, y + 1))) writeCell(rows, x, y + 1, "#");
+        const airAbove = cell(rows, x, y - 1) === "." || cell(rows, x, y - 1) === "v";
+        if (airAbove) {
+          let nub = false;
+          for (const d of [-1, 1]) {
+            if (!isSolid(cell(rows, x + d, y))) continue;
+            const above = cell(rows, x + d, y - 1);
+            if (above !== "." && above !== "v") continue;
+            if (localFloorY(rows, x + d) === y) nub = true;
+          }
+          if (nub) {
+            writeCell(rows, x, y, ".");
+            writeCell(rows, x, y + 1, "^");
+            writeCell(rows, x, y + 2, "#");
+          }
+        }
+      }
+
+      if (ch === "T") {
+        const below = cell(rows, x, y + 1);
+        const deep = cell(rows, x, y + 2);
+        if (deep === "^" || below === "^") {
+          writeCell(rows, x, y, ".");
+          if (below === "#") writeCell(rows, x, y + 1, ".");
+          const lip = isSolid(cell(rows, x - 1, y + 1)) ? x - 1 : x + 1;
+          if (cell(rows, lip, y) === ".") writeCell(rows, lip, y, "T");
+          if (!isSolid(cell(rows, x, y + 2)) && cell(rows, x, y + 2) === "^") {
+            /* socket stays below teeth */
+          }
+        } else if (!isSolid(below)) {
+          const gap =
+            cell(rows, x - 1, y + 1) === "." ||
+            cell(rows, x - 1, y + 1) === "^" ||
+            cell(rows, x + 1, y + 1) === "." ||
+            cell(rows, x + 1, y + 1) === "^";
+          if (gap) writeCell(rows, x, y + 1, "#");
+          else writeCell(rows, x, y, ".");
+        } else {
+          const gap =
+            cell(rows, x - 1, y + 1) === "." ||
+            cell(rows, x - 1, y + 1) === "^" ||
+            cell(rows, x + 1, y + 1) === "." ||
+            cell(rows, x + 1, y + 1) === "^";
+          if (!gap) writeCell(rows, x, y, ".");
+        }
+      }
+
+      if (ch === "|") {
+        if (y >= yf - 1) {
+          writeCell(rows, x, y, ".");
+          writeCell(rows, x, Math.max(1, yf - 3), "|");
+          writeCell(rows, x, Math.max(1, yf - 4), "|");
+          writeCell(rows, x, Math.max(1, yf - 5), "#");
+        } else if (cell(rows, x, y - 1) !== "|" && cell(rows, x, y - 1) !== "#" && cell(rows, x, y - 1) !== "=" && cell(rows, x, y - 1) !== "&") {
+          writeCell(rows, x, y - 1, "#");
+        }
+      }
+
+      if (HANG.includes(ch) && (y === yf || y === yf - 1)) {
+        const dest = Math.max(1, yf - 2);
+        if (cell(rows, x, dest) === "." || cell(rows, x, dest) === ch) {
+          writeCell(rows, x, y, ".");
+          writeCell(rows, x, dest, ch);
+        } else {
+          writeCell(rows, x, y, ".");
+        }
+      }
+
+      if (FLOOR_TOY.includes(ch) && y < yf - 1 && cell(rows, x, y + 1) === ".") {
+        writeCell(rows, x, y, ".");
+        writeCell(rows, x, yf, ch);
+      }
+
+      if (ch === "l" || ch === "z" || ch === "f") {
+        const up = cell(rows, x, y - 1);
+        if (up !== "=" && up !== "#") writeCell(rows, x, y - 1, "=");
+        if (!isSolid(cell(rows, x, yf))) writeCell(rows, x, yf, "#");
+      }
+      if (ch === "z") {
+        const left = isSolid(cell(rows, x - 1, y)) || isSolid(cell(rows, x - 1, y + 2));
+        const right = isSolid(cell(rows, x + 1, y)) || isSolid(cell(rows, x + 1, y + 2));
+        if (!left && !right) writeCell(rows, x + 1, y + 2, "#");
+      }
+      if (ch === "x") {
+        const jamb = cell(rows, x - 1, y);
+        if (!isSolid(jamb) && jamb !== "=") writeCell(rows, x - 1, y, "#");
+      }
+      if (ch === "S") {
+        for (const d of [-2, -1, 1, 2]) {
+          if (cell(rows, x + d, y) === ".") writeCell(rows, x + d, y, "=");
+        }
+      }
+      if (ch === "d") {
+        if (cell(rows, x, yf) === "#") writeCell(rows, x, yf, "&");
+        else if (!isSolid(cell(rows, x, yf))) writeCell(rows, x, yf, "&");
+      }
+      if (ch === "}") {
+        if (cell(rows, x, y - 1) !== "=" && cell(rows, x, y - 1) !== "#") writeCell(rows, x, y - 1, "=");
+        if (!isSolid(cell(rows, x, yf))) writeCell(rows, x, yf, "#");
+      }
+      if (ch === "{") {
+        for (let d = -3; d <= 3; d++) {
+          if (cell(rows, x + d, y - 2) === ".") writeCell(rows, x + d, y - 2, "=");
+        }
+      }
+      if (ch === "[") {
+        const under = cell(rows, x, y + 1);
+        const loft = cell(rows, x - 1, y) === "=" && cell(rows, x + 1, y) === "=";
+        if (!"#*=_T/\\&-`)gjw[".includes(under) && !loft) writeCell(rows, x, y + 1, "#");
+      }
+      if (ch === "`" || ch === ":") {
+        const left = isSolid(cell(rows, x - 1, y)) || isSolid(cell(rows, x - 1, y + 1));
+        const right = isSolid(cell(rows, x + 1, y)) || isSolid(cell(rows, x + 1, y + 1));
+        if (!left && !right) writeCell(rows, x - 1, y, "#");
+      }
+      if (ch === "g") {
+        if (!isSolid(cell(rows, x - 1, y)) && !isSolid(cell(rows, x + 1, y))) {
+          writeCell(rows, x - 1, y, "#");
+          writeCell(rows, x + 1, y, "#");
+        }
+      }
+      if (ch === "w" || ch === "~") {
+        if (!isSolid(cell(rows, x, y + 1)) && cell(rows, x, y + 1) !== ch) writeCell(rows, x, y + 1, "#");
+        if (!isSolid(cell(rows, x - 1, y))) writeCell(rows, x - 1, y, "#");
+        if (!isSolid(cell(rows, x + 1, y))) writeCell(rows, x + 1, y, "#");
+      }
+    }
+  }
 }
 
 function clearWalk(rows: string[]) {

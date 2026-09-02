@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { assembleStage } from "./assemble";
+import { auditLevel } from "./audit";
 import { CENTURY } from "./century-catalog";
 import { FROZEN_CENTURY } from "./century";
 import { densityFloors, tally } from "./density";
@@ -69,6 +70,16 @@ test("second century bosses carry a warden; others do not", () => {
     if (isBoss(n)) assert.equal(rows.includes("!"), true, `stage${n} boss`);
     else assert.equal(rows.includes("!"), false, `stage${n} extra warden`);
   }
+});
+
+test("second century housing and site audit clean", () => {
+  const failed: string[] = [];
+  for (let n = 61; n <= STAGE_COUNT; n++) {
+    const meta = LEVELS[`stage${n}`];
+    const fails = auditLevel(meta.rows, { id: meta.id }).filter((i) => i.severity === "fail");
+    if (fails.length) failed.push(`stage${n}: ${fails.map((i) => i.code).join(",")}`);
+  }
+  assert.equal(failed.join("\n"), "");
 });
 
 test("second century meets density floors", () => {
