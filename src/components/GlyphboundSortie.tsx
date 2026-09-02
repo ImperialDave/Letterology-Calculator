@@ -155,11 +155,10 @@ export function GlyphboundSortie({
           <p className="mt-3 max-w-sm px-6 text-center text-sm text-[#c9b896]">{picked.blurb}</p>
           <p className="mt-6 text-sm text-[#5ee0c0]">Tap to take off</p>
           <p className="mt-8 max-w-md px-6 text-center text-[12px] leading-relaxed text-[#c8c4b8]">
-            <span className="text-[#f4f0e4]">A D</span> bank · <span className="text-[#f4f0e4]">W</span> pull-up ·{" "}
-            <span className="text-[#f4f0e4]">S</span> dive · <span className="text-[#f4f0e4]">J</span> laser · hold{" "}
-            <span className="text-[#f4f0e4]">J</span> lock · double-tap <span className="text-[#f4f0e4]">A/D</span> barrel
-            · <span className="text-[#f4f0e4]">K</span> boost · <span className="text-[#f4f0e4]">X</span> brake ·{" "}
-            <span className="text-[#f4f0e4]">R</span> barrel · hold <span className="text-[#f4f0e4]">J</span> until TGT turns LOCK
+            <span className="text-[#f4f0e4]">A D</span> bank · hold <span className="text-[#f4f0e4]">W</span> for a loop ·{" "}
+            <span className="text-[#f4f0e4]">S</span> dive · hold <span className="text-[#f4f0e4]">J</span> spray · release
+            after LOCK for a charge · double-tap <span className="text-[#f4f0e4]">A/D</span> or <span className="text-[#f4f0e4]">R</span> barrel
+            · <span className="text-[#f4f0e4]">K</span> boost · <span className="text-[#f4f0e4]">X</span> brake
           </p>
           </button>
           <button

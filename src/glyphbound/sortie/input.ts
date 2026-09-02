@@ -37,10 +37,12 @@ export class SortieKeys {
   touchBarrel = 0;
   private lastA = -9;
   private lastD = -9;
+  private lastFlick = -9;
+  private lastFlickSign = 0;
+  private prevRoll = 0;
   private prevA = false;
   private prevD = false;
   private prevR = false;
-  private prevFire = false;
   private prevBomb = false;
   touchBomb = false;
   t = 0;
@@ -85,16 +87,24 @@ export class SortieKeys {
     const a = has("KeyA") || has("ArrowLeft") || pad.left;
     const d = has("KeyD") || has("ArrowRight") || pad.right;
     let barrel = 0;
+    const tapWindow = 0.42;
     if (a && !this.prevA) {
-      if (this.t - this.lastA < 0.28) barrel = 1;
+      if (this.t - this.lastA < tapWindow) barrel = 1;
       this.lastA = this.t;
     }
     if (d && !this.prevD) {
-      if (this.t - this.lastD < 0.28) barrel = -1;
+      if (this.t - this.lastD < tapWindow) barrel = -1;
       this.lastD = this.t;
     }
     this.prevA = a;
     this.prevD = d;
+    if (Math.abs(roll) > 0.7 && Math.abs(this.prevRoll) < 0.28) {
+      const sign = roll > 0 ? 1 : -1;
+      if (this.t - this.lastFlick < tapWindow && sign === this.lastFlickSign) barrel = sign;
+      this.lastFlick = this.t;
+      this.lastFlickSign = sign;
+    }
+    this.prevRoll = roll;
     const rKey = has("KeyR") || has("KeyC");
     if (rKey && !this.prevR && barrel === 0) barrel = roll >= 0 ? 1 : -1;
     this.prevR = rKey;
@@ -103,8 +113,7 @@ export class SortieKeys {
 
     const fireHeld =
       has("KeyJ") || has("KeyZ") || has("Space") || pad.fire || this.touchFire;
-    const fire = fireHeld && !this.prevFire;
-    this.prevFire = fireHeld;
+    const fire = fireHeld;
 
     const out = emptyInput();
     out.roll = roll;

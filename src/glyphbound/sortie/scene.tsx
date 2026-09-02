@@ -47,7 +47,7 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
     state.camera.position.lerp(tmp, 1 - Math.exp(-5.2 * d));
     look.set(s.x, s.y, s.z).addScaledVector(f, 14);
     state.camera.lookAt(look);
-    state.camera.fov = s.speed > 70 ? 62 : 54;
+    state.camera.fov = (s.speed > 70 ? 62 : 54) + s.flash * 4;
     state.camera.updateProjectionMatrix();
 
     world.waterMap.offset.x = s.t * 0.03;
@@ -77,7 +77,7 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
 
     while (shots.current.length < s.shots.length) {
       const m = new THREE.Mesh(
-        new THREE.SphereGeometry(0.35, 6, 6),
+        new THREE.SphereGeometry(0.28, 6, 6),
         new THREE.MeshBasicMaterial({ color: 0x5ee0c0 }),
       );
       g.add(m);
@@ -89,9 +89,24 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
       m.visible = Boolean(sh);
       if (!sh) continue;
       m.position.set(sh.x, sh.y, sh.z);
-      m.scale.setScalar(sh.kind === "bomb" ? 4 : 1);
+      if (sh.kind === "laser") {
+        m.scale.set(0.45, 0.45, 9.5);
+        tmp.set(sh.x + sh.vx, sh.y + sh.vy, sh.z + sh.vz);
+        m.lookAt(tmp);
+      } else if (sh.kind === "charge") {
+        m.scale.set(1.15, 1.15, 4.2);
+        tmp.set(sh.x + sh.vx, sh.y + sh.vy, sh.z + sh.vz);
+        m.lookAt(tmp);
+      } else if (sh.kind === "bomb") {
+        m.scale.setScalar(4);
+        m.rotation.set(0, 0, 0);
+      } else {
+        m.scale.set(0.85, 0.85, 1.6);
+        tmp.set(sh.x + sh.vx, sh.y + sh.vy, sh.z + sh.vz);
+        m.lookAt(tmp);
+      }
       (m.material as THREE.MeshBasicMaterial).color.set(
-        sh.kind === "bomb" ? 0xe8d48a : sh.friendly ? (sh.kind === "charge" ? 0xe8d48a : 0x5ee0c0) : 0xd45a4a,
+        sh.kind === "bomb" ? 0xe8d48a : sh.friendly ? (sh.kind === "charge" ? 0xe8d48a : 0xb8fff0) : 0xd45a4a,
       );
     }
 

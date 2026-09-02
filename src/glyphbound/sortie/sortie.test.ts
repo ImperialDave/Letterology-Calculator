@@ -3,6 +3,7 @@ import test from "node:test";
 import { groundHeight } from "./height";
 import { unlockedIds } from "./missions";
 import { analogFromDelta } from "./stick";
+import { SortieKeys } from "./input";
 import { BARREL_T, CHARGE_LOCK, createSortie, emptyInput, stepSortie } from "./sim";
 
 test("stick left is roll left (screen left), stick up is pull-up", () => {
@@ -273,6 +274,84 @@ test("coast all-range spawns Scale the mech", () => {
   assert.equal(s.flight, "allrange");
   for (let i = 0; i < 5; i++) stepSortie(s, emptyInput(), 0.2);
   assert.ok(s.enemies.some((e) => e.kind === "mech"));
+});
+
+test("hold pull-up keeps pitching through a loop", () => {
+  const s = createSortie();
+  s.y = 80;
+  s.pitch = 0;
+  const inp = emptyInput();
+  inp.pitch = 1;
+  let maxY = s.y;
+  let maxAbsPitch = 0;
+  for (let i = 0; i < 100; i++) {
+    stepSortie(s, inp, 1 / 60);
+    maxY = Math.max(maxY, s.y);
+    maxAbsPitch = Math.max(maxAbsPitch, Math.abs(s.pitch));
+  }
+  assert.ok(maxAbsPitch > 1.5, `pitch should pass vertical, got ${maxAbsPitch}`);
+  assert.ok(maxY > 95, `loop should climb, maxY ${maxY}`);
+});
+
+test("hold fire sprays lasers with a short cooldown", () => {
+  const s = createSortie();
+  const inp = emptyInput();
+  inp.fireHeld = true;
+  let volleys = 0;
+  for (let i = 0; i < 45; i++) {
+    const id = s.shotId;
+    stepSortie(s, inp, 1 / 60);
+    if (s.shotId > id) volleys += 1;
+  }
+  assert.ok(volleys >= 5, `rapid volleys ${volleys}`);
+  assert.ok(volleys <= 14, `cooldown should space shots, got ${volleys}`);
+  assert.ok(s.gunHeat > 0.1, `heat ${s.gunHeat}`);
+});
+
+test("rapid-fire heat hitch is brief, then guns recover", () => {
+  const s = createSortie();
+  const inp = emptyInput();
+  inp.fireHeld = true;
+  for (let i = 0; i < 240; i++) stepSortie(s, inp, 1 / 60);
+  assert.ok(s.gunHeat < 1, `heat should not stick at max ${s.gunHeat}`);
+  const cooling = emptyInput();
+  for (let i = 0; i < 90; i++) stepSortie(s, cooling, 1 / 60);
+  assert.ok(s.gunHeat < 0.2, `forgiving recovery ${s.gunHeat}`);
+});
+
+test("player can reverse heading in about a second", () => {
+  const s = createSortie();
+  const yaw0 = s.yaw;
+  const inp = emptyInput();
+  inp.roll = 1;
+  for (let i = 0; i < 60; i++) stepSortie(s, inp, 1 / 60);
+  const d = s.yaw - yaw0;
+  assert.ok(d > 2.6, `turn ${d}`);
+});
+
+test("boost and brake change speed quickly", () => {
+  const s = createSortie();
+  const inp = emptyInput();
+  inp.boost = true;
+  for (let i = 0; i < 24; i++) stepSortie(s, inp, 1 / 60);
+  assert.ok(s.speed > 85, `boost ${s.speed}`);
+  inp.boost = false;
+  inp.brake = true;
+  for (let i = 0; i < 24; i++) stepSortie(s, inp, 1 / 60);
+  assert.ok(s.speed < 40, `brake ${s.speed}`);
+});
+
+test("double-tap A within a wide window barrels", () => {
+  const k = new SortieKeys();
+  k.setKeys(["KeyA"]);
+  const first = k.poll(0.016);
+  assert.equal(first.barrel, 0);
+  k.setKeys([]);
+  k.poll(0.016);
+  for (let i = 0; i < 20; i++) k.poll(0.016);
+  k.setKeys(["KeyA"]);
+  const second = k.poll(0.016);
+  assert.equal(second.barrel, 1);
 });
 
 test("Dualis death wins the sortie", () => {

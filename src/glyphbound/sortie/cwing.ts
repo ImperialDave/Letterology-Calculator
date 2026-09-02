@@ -56,7 +56,8 @@ export function makeCWing() {
   tipR.position.set(0.15, 0.08, -2.35);
   g.add(tipL, tipR);
 
-  const gun = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.08, 0.08), ink);
+  const gunMat = n64Mat(INK, { emissive: INK, glow: 0.45 });
+  const gun = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.08, 0.08), gunMat);
   const gL = gun.clone();
   const gR = gun.clone();
   gL.name = "gunL";
@@ -64,6 +65,25 @@ export function makeCWing() {
   gL.position.set(0.95, -0.04, 0.32);
   gR.position.set(0.95, -0.04, -0.32);
   g.add(gL, gR);
+
+  const muzzleMat = new THREE.MeshBasicMaterial({ color: 0x9af8de, transparent: true, opacity: 0 });
+  const muzzleGeo = new THREE.ConeGeometry(0.22, 0.95, 5);
+  const muzzleL = new THREE.Mesh(muzzleGeo, muzzleMat);
+  const muzzleR = new THREE.Mesh(muzzleGeo, muzzleMat.clone());
+  muzzleL.name = "muzzleL";
+  muzzleR.name = "muzzleR";
+  muzzleL.rotation.z = -Math.PI / 2;
+  muzzleR.rotation.z = -Math.PI / 2;
+  muzzleL.position.set(1.42, -0.04, 0.32);
+  muzzleR.position.set(1.42, -0.04, -0.32);
+  muzzleL.visible = false;
+  muzzleR.visible = false;
+  g.add(muzzleL, muzzleR);
+
+  const muzzleLight = new THREE.PointLight(0x9af8de, 0, 22);
+  muzzleLight.name = "muzzleLight";
+  muzzleLight.position.set(1.7, 0, 0);
+  g.add(muzzleLight);
 
   const engine = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.7, 6), n64Mat(INK, { emissive: INK, glow: 1.2 }));
   engine.rotation.z = Math.PI / 2;
@@ -87,6 +107,9 @@ export function makeCWing() {
   g.userData.trail = trail;
   g.userData.gunL = gL;
   g.userData.gunR = gR;
+  g.userData.muzzleL = muzzleL;
+  g.userData.muzzleR = muzzleR;
+  g.userData.muzzleLight = muzzleLight;
   return g;
 }
 
@@ -115,14 +138,26 @@ export function poseCWing(g: THREE.Group, s: SortieState) {
     wL.rotation.x = 0.14 + Math.abs(s.roll) * 0.08;
     wR.rotation.x = -0.14 - Math.abs(s.roll) * 0.08;
   }
-  if (s.flash > 0) {
-    const gunL = g.userData.gunL as THREE.Mesh;
-    const gunR = g.userData.gunR as THREE.Mesh;
-    const glow = 0.4 + s.flash * 4;
-    for (const gun of [gunL, gunR]) {
-      if (!gun) continue;
-      const mat = gun.material as THREE.MeshLambertMaterial;
-      mat.emissiveIntensity = glow;
-    }
+  const gunL = g.userData.gunL as THREE.Mesh;
+  const gunR = g.userData.gunR as THREE.Mesh;
+  const muzzleL = g.userData.muzzleL as THREE.Mesh;
+  const muzzleR = g.userData.muzzleR as THREE.Mesh;
+  const muzzleLight = g.userData.muzzleLight as THREE.PointLight;
+  const kick = s.flash * 0.28;
+  const glow = 0.35 + s.flash * 5.5;
+  for (const gun of [gunL, gunR]) {
+    if (!gun) continue;
+    gun.position.x = 0.95 - kick;
+    const mat = gun.material as THREE.MeshLambertMaterial;
+    mat.emissiveIntensity = glow;
+    gun.scale.set(1 + s.flash * 0.55, 1 + s.flash * 1.4, 1 + s.flash * 0.8);
   }
+  for (const muzzle of [muzzleL, muzzleR]) {
+    if (!muzzle) continue;
+    muzzle.visible = s.flash > 0.04;
+    const mat = muzzle.material as THREE.MeshBasicMaterial;
+    mat.opacity = s.flash * 0.95;
+    muzzle.scale.setScalar(0.7 + s.flash * 1.6);
+  }
+  if (muzzleLight) muzzleLight.intensity = s.flash * 7;
 }

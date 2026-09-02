@@ -50,8 +50,19 @@ export function SortieHud({
           ))}
         </span>
       </div>
-      <div className="absolute bottom-3 right-3 h-1.5 w-28 overflow-hidden rounded-sm border border-[#e8d48a]/40">
-        <div className="h-full bg-[#e8d48a]" style={{ width: `${Math.min(100, (s.charge / 0.6) * 100)}%` }} />
+      <div className="absolute bottom-3 right-3 flex flex-col items-end gap-1">
+        <div className="h-1.5 w-28 overflow-hidden rounded-sm border border-[#e8d48a]/40">
+          <div className="h-full bg-[#e8d48a]" style={{ width: `${Math.min(100, (s.charge / 0.6) * 100)}%` }} />
+        </div>
+        <div className="h-1 w-28 overflow-hidden rounded-sm border border-[#5ee0c0]/35">
+          <div
+            className="h-full"
+            style={{
+              width: `${Math.min(100, s.gunHeat * 100)}%`,
+              background: s.gunHeat > 0.85 ? "#d45a4a" : "#5ee0c0",
+            }}
+          />
+        </div>
       </div>
       {s.radio && (
         <div className="absolute bottom-10 left-1/2 w-[min(92%,28rem)] -translate-x-1/2 rounded-md border border-[#e8d48a]/30 bg-[#121018]/80 px-3 py-2 text-center text-sm">

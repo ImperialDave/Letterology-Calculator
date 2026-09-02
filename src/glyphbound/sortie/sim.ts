@@ -137,6 +137,7 @@ export interface SortieState {
   hits: number;
   winKind: EnemyKind | "aces";
   flash: number;
+  gunHeat: number;
   lockDist: number;
   lockSx: number;
   lockSy: number;
@@ -150,12 +151,18 @@ export interface SortieState {
   proofLive: boolean;
 }
 
-const CRUISE = 48;
-const BOOST = 82;
-const BRAKE = 22;
-const TURN = 1.85;
-const PITCH_R = 1.05;
-const BANK = 0.68;
+const CRUISE = 52;
+const BOOST = 110;
+const BRAKE = 12;
+const TURN = 3.2;
+const PITCH_R = 2.55;
+const BANK = 0.85;
+const CEIL_Y = 260;
+const AUTO_LEVEL = 0.72;
+const HEAT_PER_SHOT = 0.048;
+const RAPID_CD = 0.08;
+const HEAT_CD = 0.06;
+const OVERHEAT_CD = 0.28;
 
 export const ISLANDS: Island[] = [
   { id: "press", x: 0, z: -180, r: 78, h: 38 },
@@ -182,24 +189,28 @@ function inwardYaw(x: number, z: number) {
   return Math.atan2(x, z);
 }
 
+function wrapPi(a: number) {
+  return Math.atan2(Math.sin(a), Math.cos(a));
+}
+
 function flyCraft(s: SortieState, input: SortieInput, dt: number) {
   if (s.flight === "corridor" && s.shift <= 0 && s.path.length >= 2) {
     const len = pathLength(s.path) || 1;
     s.pathT = Math.min(1, s.pathT + (s.speed * dt) / len);
-    s.offsetX = Math.max(-ENVELOPE_X, Math.min(ENVELOPE_X, s.offsetX + input.roll * 48 * dt + input.rudder * 18 * dt));
-    s.offsetY = Math.max(-ENVELOPE_Y, Math.min(ENVELOPE_Y, s.offsetY + input.pitch * 38 * dt));
-    if (Math.abs(input.roll) < 0.15) s.offsetX *= Math.exp(-1.4 * dt);
-    if (Math.abs(input.pitch) < 0.15) s.offsetY *= Math.exp(-1.4 * dt);
+    s.offsetX = Math.max(-ENVELOPE_X, Math.min(ENVELOPE_X, s.offsetX + input.roll * 78 * dt + input.rudder * 32 * dt));
+    s.offsetY = Math.max(-ENVELOPE_Y, Math.min(ENVELOPE_Y, s.offsetY + input.pitch * 62 * dt));
+    if (Math.abs(input.roll) < 0.12) s.offsetX *= Math.exp(-0.7 * dt);
+    if (Math.abs(input.pitch) < 0.12) s.offsetY *= Math.exp(-0.7 * dt);
     const sample = samplePath(s.path, s.pathT);
     const posed = pathFrame(sample, s.offsetX, s.offsetY);
     s.x = posed.x;
     s.y = posed.y;
     s.z = posed.z;
     s.yaw = posed.yaw;
-    s.pitch = Math.max(-0.35, Math.min(0.35, s.offsetY * 0.012));
+    s.pitch = Math.max(-0.55, Math.min(0.55, s.offsetY * 0.02));
     const wantBank = input.roll * BANK;
-    s.roll += (wantBank - s.roll) * Math.min(1, dt * 8);
-    if (s.barrel > 0) s.roll += input.barrel >= 0 ? dt * 16 : dt * -16;
+    s.roll += (wantBank - s.roll) * Math.min(1, dt * 12);
+    if (s.barrel > 0) s.roll += input.barrel >= 0 ? dt * 22 : dt * -22;
     if (s.pathT >= 1) {
       s.shift = SHIFT_T;
       s.radio = { who: "s", text: "All-range. Break.", until: s.t + 2.4 };
@@ -227,20 +238,23 @@ function flyCraft(s: SortieState, input: SortieInput, dt: number) {
     s.x += fU.x * s.speed * dt;
     s.y += fU.y * s.speed * dt;
     s.z += fU.z * s.speed * dt;
-    if (s.barrel > 0) s.roll += input.barrel >= 0 ? dt * 16 : dt * -16;
+    if (s.barrel > 0) s.roll += input.barrel >= 0 ? dt * 22 : dt * -22;
     return;
   }
 
-  const turnMul = s.speed > CRUISE ? 0.78 : s.speed < CRUISE ? 1.38 : 1;
+  const turnMul = s.speed > CRUISE ? 0.9 : s.speed < CRUISE ? 1.55 : 1;
   s.yaw += input.roll * TURN * turnMul * dt;
-  s.yaw += input.rudder * 0.7 * dt;
-  if (Math.abs(input.pitch) < 0.12) s.pitch *= Math.exp(-1.6 * dt);
-  else s.pitch += input.pitch * PITCH_R * dt;
-  s.pitch = Math.max(-0.68, Math.min(0.68, s.pitch));
+  s.yaw += input.rudder * 1.65 * dt;
+  if (Math.abs(input.pitch) >= 0.08) {
+    s.pitch += input.pitch * PITCH_R * dt;
+  } else if (Math.abs(s.pitch) < AUTO_LEVEL) {
+    s.pitch *= Math.exp(-1.8 * dt);
+  }
+  s.pitch = wrapPi(s.pitch);
   const wantBank = input.roll * BANK;
-  s.roll += (wantBank - s.roll) * Math.min(1, dt * 8);
-  if (Math.abs(input.roll) < 0.12 && s.barrel <= 0) s.roll *= Math.exp(-2.4 * dt);
-  if (s.barrel > 0) s.roll += input.barrel >= 0 ? dt * 16 : dt * -16;
+  s.roll += (wantBank - s.roll) * Math.min(1, dt * 12);
+  if (Math.abs(input.roll) < 0.12 && s.barrel <= 0) s.roll *= Math.exp(-2.8 * dt);
+  if (s.barrel > 0) s.roll += input.barrel >= 0 ? dt * 22 : dt * -22;
 
   const f = fwd(s);
   s.x += f.x * s.speed * dt;
@@ -320,6 +334,7 @@ export function createSortie(opts?: {
     hits: 0,
     winKind: "dualis",
     flash: 0,
+    gunHeat: 0,
     lockDist: 0,
     lockSx: 0,
     lockSy: 0,
@@ -511,7 +526,7 @@ function scriptWaves(s: SortieState) {
     spawnEnemy(s, "bomber", -130, 90, -80);
     spawnEnemy(s, "bomber", -100, 95, -50);
     s.wave = 2;
-    s.radio = { who: "c", text: "Hold J to lock. Corkscrews inbound.", until: s.t + 3 };
+    s.radio = { who: "c", text: "Hold J to spray. Corkscrews inbound.", until: s.t + 3 };
   }
   if (s.wave < 3 && s.t > 38 && s.mode === "play") {
     const live = s.enemies.filter((e) => e.alive && e.kind !== "dualis").length;
@@ -528,7 +543,7 @@ function steerEnemy(s: SortieState, e: Enemy, dt: number) {
   const toP = { x: s.x - e.x, y: s.y - e.y, z: s.z - e.z };
   const n = Math.hypot(toP.x, toP.y, toP.z) || 1;
   if (e.kind === "fighter" || e.kind === "ace") {
-    const spd = e.kind === "ace" ? 38 : 28;
+    const spd = e.kind === "ace" ? 30 : 22;
     e.vx = (toP.x / n) * spd;
     e.vy = (toP.y / n) * 12;
     e.vz = (toP.z / n) * spd;
@@ -589,11 +604,12 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
   if (s.barrel > 0) s.barrel = Math.max(0, s.barrel - dt);
 
   const want = input.boost ? BOOST : input.brake ? BRAKE : CRUISE;
-  s.speed += (want - s.speed) * Math.min(1, dt * 2.4);
+  const speedK = input.boost || input.brake ? 7.2 : 4.4;
+  s.speed += (want - s.speed) * Math.min(1, dt * speedK);
 
   flyCraft(s, input, dt);
   if (s.wings === 1) s.yaw += 0.28 * dt;
-  if (s.wings === 0) s.pitch = Math.max(-0.68, s.pitch - 0.22 * dt);
+  if (s.wings === 0) s.pitch = wrapPi(s.pitch - 0.22 * dt);
   const f = fwd(s);
 
   const ground = islandHeight(s, s.x, s.z);
@@ -609,10 +625,7 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
     hurt(s, 1);
     s.splash = 0.5;
   }
-  if (s.y > 160) {
-    s.y = 160;
-    s.pitch = Math.min(s.pitch, 0);
-  }
+  if (s.y > CEIL_Y) s.y = CEIL_Y;
 
   const radial = Math.hypot(s.x, s.z);
   if (s.flight === "allrange" && s.uturn <= 0 && radial > ARENA_R) {
@@ -692,21 +705,26 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
     }
   }
 
-  if (input.fire && s.cooldown <= 0) {
+  const trigger = input.fire || input.fireHeld;
+  if (trigger && s.cooldown <= 0) {
     const r = right(s);
     const dir = aimDir(s, f);
     const dmgLife = s.stem >= 2 ? 1.6 : 1.35;
     if (s.stem === 0) {
-      fireShot(s, "laser", true, s.x, s.y, s.z, dir, 220);
+      fireShot(s, "laser", true, s.x, s.y, s.z, dir, 240);
     } else {
-      fireShot(s, "laser", true, s.x + r.x * 2.2, s.y, s.z + r.z * 2.2, dir, 220);
-      fireShot(s, "laser", true, s.x - r.x * 2.2, s.y, s.z - r.z * 2.2, dir, 220);
+      fireShot(s, "laser", true, s.x + r.x * 2.2, s.y, s.z + r.z * 2.2, dir, 240);
+      fireShot(s, "laser", true, s.x - r.x * 2.2, s.y, s.z - r.z * 2.2, dir, 240);
     }
     s.shots.filter((q) => q.kind === "laser" && q.life > 1.3).forEach((q) => {
       q.life = dmgLife;
     });
-    s.cooldown = s.stem >= 2 ? 0.08 : 0.1;
+    s.gunHeat = Math.min(1, s.gunHeat + HEAT_PER_SHOT);
+    s.cooldown = s.gunHeat >= 1 ? OVERHEAT_CD : RAPID_CD + s.gunHeat * HEAT_CD;
+    if (s.gunHeat >= 1) s.gunHeat = 0.38;
     s.flash = 1;
+  } else if (!trigger) {
+    s.gunHeat = Math.max(0, s.gunHeat - dt * 0.95);
   }
 
   scriptWaves(s);
