@@ -268,6 +268,7 @@ export class GameEngine {
   sandbox = false;
   proof = false;
   replayMenu = false;
+  hangarOpen = false;
   debugGod = false;
   debugKit = true;
   debugWrite = false;
@@ -670,19 +671,6 @@ export class GameEngine {
     this.enemies = parsed.enemySpawns.map((s) => this.spawnEnemy(s.kind, s.x, s.y));
     this.bullets = [];
     this.pickups = parsed.pickups;
-    if (id === "hub" && !this.pickups.some((u) => u.id === "studio")) {
-      const cont = this.pickups.find((u) => u.id === "continue");
-      this.pickups.push({
-        kind: "door",
-        id: "studio",
-        x: cont ? cont.x + cont.w + 10 : 44 * TILE,
-        y: cont ? cont.y + 8 : 7 * TILE + TILE - 96,
-        w: 72,
-        h: 88,
-        taken: false,
-        label: "STUDIO",
-      });
-    }
     this.npcs = parsed.npcs;
     this.markers = parsed.markers;
     this.walls = [];
@@ -1098,6 +1086,8 @@ export class GameEngine {
 
   toTitle() {
     if (this.sandbox) this.leaveStudio();
+    this.hangarOpen = false;
+    this.input.enabled = true;
     this.persist();
     this.mode = "title";
     this.cheatBuf = "";
@@ -1223,6 +1213,7 @@ export class GameEngine {
       if (a.pause) this.closeReplay();
       return;
     }
+    if (this.hangarOpen) return;
     if (this.mode === "pause" || this.mode === "codex") {
       if (a.pause) this.resume();
       return;
@@ -4113,6 +4104,21 @@ export class GameEngine {
     return this.enemies.some((e) => e.alive && this.isBossKind(e.kind));
   }
 
+  private nearestDoor(padX = 28, padY = 16) {
+    const p = this.player;
+    let best: Pickup | null = null;
+    let dist = Infinity;
+    for (const u of this.pickups) {
+      if (u.kind !== "door" || !aabb(p, padBox(u, padX, padY))) continue;
+      const d = Math.abs(u.x + u.w / 2 - (p.x + p.w / 2));
+      if (d < dist) {
+        best = u;
+        dist = d;
+      }
+    }
+    return best;
+  }
+
   private doorLocked(id: string): boolean {
     if (id === "stage1") return false;
     if (id === "stage3") return !this.save.stage1;
@@ -4122,6 +4128,7 @@ export class GameEngine {
     if (id === "continue") return this.save.progress < 5;
     if (id === "replay") return this.save.progress < 1;
     if (id === "studio") return false;
+    if (id === "sortie") return false;
     const m = /^stage(\d+)$/.exec(id);
     if (m) return this.save.progress < Number(m[1]) - 1;
     return false;
@@ -4158,6 +4165,7 @@ export class GameEngine {
       return { title: "LAST PAGE", sub: `${this.save.progress} closed · last ${name}` };
     }
     if (id === "studio") return { title: "STUDIO", sub: "write a ledger · the book does not turn" };
+    if (id === "sortie") return { title: "HANGAR", sub: "Drop Cap Sortie · fly the C-wing" };
     const chapters: Record<string, { title: string; sub: string }> = {
       stage1: { title: "I  EXCHANGE", sub: "one ledger · never changes" },
       stage2: { title: "II  FORT", sub: "one ledger · never changes" },
@@ -4258,24 +4266,28 @@ export class GameEngine {
         this.nearHint = this.save.stage1 ? "Drop to the STACKS gate" : "Drop down — Dualis rings below";
       }
     }
+    const door = this.nearestDoor();
+    if (door) {
+      const u = door;
+      if (this.doorLocked(u.id)) this.nearHint = this.doorShutLine(u.id);
+      else if (u.id === "continue") {
+        this.nearHint =
+          this.save.progress >= STAGE_COUNT
+            ? "All 60 written. Last Page rereads any closed ledger."
+            : "E  The Rest of the Book — the only door that keeps opening new ledgers until 60";
+      } else if (u.id === "replay") {
+        this.nearHint =
+          this.save.progress < 1
+            ? "Last Page — close a ledger first"
+            : `E  Last Page — reread any of ${this.save.progress} closed ledger${this.save.progress === 1 ? "" : "s"}`;
+      } else if (u.id === "studio") {
+        this.nearHint = "E  Studio — write a ledger of your own";
+      } else if (u.id === "sortie") {
+        this.nearHint = "E  Hangar — fly the C-wing over the ink sea";
+      } else
+        this.nearHint = "E  " + (u.label ?? "chapter") + " — one ledger. This door always opens the same page.";
+    }
     for (const u of this.pickups) {
-      if (u.kind === "door" && aabb(p, padBox(u, 28, 16))) {
-        if (this.doorLocked(u.id)) this.nearHint = this.doorShutLine(u.id);
-        else if (u.id === "continue") {
-          this.nearHint =
-            this.save.progress >= STAGE_COUNT
-              ? "All 60 written. Last Page rereads any closed ledger."
-              : "E  The Rest of the Book — the only door that keeps opening new ledgers until 60";
-        } else if (u.id === "replay") {
-          this.nearHint =
-            this.save.progress < 1
-              ? "Last Page — close a ledger first"
-              : `E  Last Page — reread any of ${this.save.progress} closed ledger${this.save.progress === 1 ? "" : "s"}`;
-        } else if (u.id === "studio") {
-          this.nearHint = "E  Studio — write a ledger of your own";
-        } else
-          this.nearHint = "E  " + (u.label ?? "chapter") + " — one ledger. This door always opens the same page.";
-      }
       if (u.kind === "portal" && aabb(p, padBox(u, 18, 12))) {
         this.nearHint = this.portalLocked() ? "Gate counted shut — drop the warden" : "E  enter  " + (u.label ?? "GATE");
       }
@@ -4451,24 +4463,27 @@ export class GameEngine {
         return true;
       }
     }
-    for (const u of this.pickups) {
-      if (u.kind === "door" && aabb(p, padBox(u, 28, 16))) {
-        if (this.doorLocked(u.id)) {
-          this.say(this.doorShutLine(u.id));
-          return true;
-        }
-        if (u.id === "continue") {
-          if (this.save.progress >= STAGE_COUNT) {
-            this.say("All sixty ledgers are written. Last Page rereads any closed ledger.");
-          } else this.loadLevel(nextStageId(this.save.progress));
-        }
-        else if (u.id === "replay") {
-          this.openReplay();
-        } else if (u.id === "studio") {
-          this.enterStudio();
-        } else this.loadLevel(u.id as LevelId);
+    const door = this.nearestDoor();
+    if (door) {
+      const u = door;
+      if (this.doorLocked(u.id)) {
+        this.say(this.doorShutLine(u.id));
         return true;
       }
+      if (u.id === "continue") {
+        if (this.save.progress >= STAGE_COUNT) {
+          this.say("All sixty ledgers are written. Last Page rereads any closed ledger.");
+        } else this.loadLevel(nextStageId(this.save.progress));
+      } else if (u.id === "replay") {
+        this.openReplay();
+      } else if (u.id === "studio") {
+        this.enterStudio();
+      } else if (u.id === "sortie") {
+        this.enterSortie();
+      } else this.loadLevel(u.id as LevelId);
+      return true;
+    }
+    for (const u of this.pickups) {
       if (u.kind === "portal" && aabb(p, padBox(u, 20, 12))) {
         this.enterPortal(u);
         return true;
@@ -4910,6 +4925,25 @@ export class GameEngine {
     this.emit();
   }
 
+  enterSortie() {
+    if (this.hangarOpen) return;
+    this.hangarOpen = true;
+    this.input.enabled = false;
+    this.audio.unlock();
+    this.audio.sfxUi();
+    this.say("Hangar. The C-wing is on the ink.");
+    this.emit();
+  }
+
+  leaveSortie() {
+    if (!this.hangarOpen) return;
+    this.hangarOpen = false;
+    this.input.enabled = true;
+    this.audio.sfxUi();
+    this.say("Back on the stacks.");
+    this.emit();
+  }
+
   replayEnter(id: string) {
     const n = this.stageIndex(id);
     if (n < 1 || n > this.save.progress || !LEVELS[id]) {
@@ -5305,6 +5339,7 @@ export class GameEngine {
       proof: this.proof,
       god: this.debugGod,
       replayOpen: this.replayMenu,
+      sortieOpen: this.hangarOpen,
       slot: this.slot,
       slots: listSlots(),
     });
@@ -5356,6 +5391,10 @@ export class GameEngine {
       load: (id: string) => self.debugEnter(id),
       begin: () => self.begin(),
       snapshot: () => self.snapshot(),
+      hangar: {
+        enter: () => self.enterSortie(),
+        leave: () => self.leaveSortie(),
+      },
       studio: {
         enter: (folio?: Folio) => self.enterStudio(folio),
         leave: () => self.leaveStudio(),
@@ -5603,7 +5642,7 @@ export class GameEngine {
     ctx.fillText("THE UNBOUND SENTENCE", wx(70), wy(1) + 22);
     ctx.fillStyle = "#b08a4a";
     ctx.font = "600 10px 'Source Sans 3', sans-serif";
-    ctx.fillText("next ledger  ·  last page  ·  studio desk", wx(70), wy(1) + 38);
+    ctx.fillText("hangar  ·  next ledger  ·  last page  ·  studio", wx(70), wy(1) + 38);
 
     ctx.strokeStyle = "rgba(201,184,150,0.45)";
     ctx.lineWidth = 2;
@@ -5708,6 +5747,7 @@ export class GameEngine {
     if (u.id === "continue" && !locked) ctx.fillStyle = `rgba(232,212,138,${0.2 + pulse})`;
     if (u.id === "replay") ctx.fillStyle = locked ? "rgba(80,70,60,0.3)" : "rgba(140,120,90,0.22)";
     if (u.id === "studio") ctx.fillStyle = `rgba(94,224,192,${0.14 + pulse})`;
+    if (u.id === "sortie") ctx.fillStyle = `rgba(94,224,192,${0.16 + pulse})`;
     const chapter = /^stage[1-5]$/.test(u.id);
     if (u.id === "continue") {
       const cx = x + u.w / 2;
@@ -5769,6 +5809,33 @@ export class GameEngine {
       ctx.closePath();
       ctx.fill();
       ctx.restore();
+    } else if (u.id === "sortie") {
+      const cx = x + u.w / 2;
+      const cy = y + u.h * 0.58;
+      ctx.save();
+      ctx.strokeStyle = "#5ee0c0";
+      ctx.shadowColor = "#5ee0c0";
+      ctx.shadowBlur = 14;
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.moveTo(x + 8, y + u.h - 2);
+      ctx.lineTo(x + 8, y + 34);
+      ctx.quadraticCurveTo(cx, y + 2, x + u.w - 8, y + 34);
+      ctx.lineTo(x + u.w - 8, y + u.h - 2);
+      ctx.closePath();
+      ctx.fillStyle = `rgba(16,36,28,${0.55 + pulse})`;
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#9af8de";
+      ctx.beginPath();
+      ctx.moveTo(cx + 14, cy - 2);
+      ctx.lineTo(cx - 10, cy - 8);
+      ctx.lineTo(cx - 6, cy + 2);
+      ctx.lineTo(cx - 14, cy + 8);
+      ctx.lineTo(cx + 10, cy + 4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
     } else {
       ctx.fillRect(x + 8, y + 16, u.w - 16, u.h - 16);
       ctx.strokeStyle = locked ? "#7a8b96" : "#8a7a62";
@@ -5781,8 +5848,8 @@ export class GameEngine {
     }
     const plaque = this.doorPlaque(u.id);
     const title = plaque.title || u.label || "";
-    ctx.fillStyle = u.id === "continue" ? "#e8d48a" : u.id === "studio" ? "#9af8de" : "#e8ece8";
-    ctx.font = u.id === "continue" || u.id === "studio" ? "700 13px 'Cormorant Garamond', serif" : "700 11px 'Source Sans 3', sans-serif";
+    ctx.fillStyle = u.id === "continue" ? "#e8d48a" : u.id === "studio" || u.id === "sortie" ? "#9af8de" : "#e8ece8";
+    ctx.font = u.id === "continue" || u.id === "studio" || u.id === "sortie" ? "700 13px 'Cormorant Garamond', serif" : "700 11px 'Source Sans 3', sans-serif";
     ctx.textAlign = "center";
     ctx.fillText(title, x + u.w / 2, y - (plaque.sub ? 22 : 10));
     if (plaque.sub) {

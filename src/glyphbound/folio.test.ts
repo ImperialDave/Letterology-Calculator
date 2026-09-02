@@ -3,7 +3,7 @@ import test from "node:test";
 import { ALLOWED_CHARS, CATALOG, ENEMY_CHARS } from "./catalog";
 import { folioFromMeta, folioOk, padRows, validateFolio, type Folio } from "./folio";
 import { LEVELS } from "./levels";
-import { parseRows } from "./parse-map";
+import { injectHubExtras, parseRows } from "./parse-map";
 import { TILE } from "./types";
 
 function blank(w = 24, h = 10): string[] {
@@ -38,11 +38,26 @@ test("hub folio is valid and parse matches tile size", () => {
   assert.ok(parsed.pickups.some((p) => p.id === "continue"));
   assert.ok(parsed.spawnX > 0);
   assert.ok(LEVELS.hub.rows[0].length <= 90, "hub should still be one hall");
+  const hangar = parsed.pickups.find((p) => p.id === "sortie");
+  const studio = parsed.pickups.find((p) => p.id === "studio");
+  const cont = parsed.pickups.find((p) => p.id === "continue");
+  assert.ok(hangar && hangar.kind === "door", "hub hangar door");
+  assert.ok(studio && studio.kind === "door", "hub studio door");
+  assert.ok(cont);
+  assert.ok(hangar.x + hangar.w <= cont.x - 40, "hangar sits left of the rest of the book");
+  assert.ok(studio.x >= cont.x + cont.w, "studio sits right of the rest of the book");
   const doors = parsed.pickups.filter((p) => p.kind === "door" && /^stage\d+$/.test(p.id)).sort((a, b) => a.x - b.x);
   assert.deepEqual(
     doors.map((d) => d.id),
     ["stage1", "stage3", "stage4", "stage2", "stage5", "stage7", "stage8", "stage10", "stage12", "stage15"],
   );
+});
+
+test("hub extras inject once", () => {
+  const parsed = parseRows(LEVELS.hub.rows, { id: "hub", isHub: true, index: 0, bossKind: "dualis" });
+  const before = parsed.pickups.filter((p) => p.id === "sortie" || p.id === "studio").length;
+  injectHubExtras(parsed.pickups);
+  assert.equal(parsed.pickups.filter((p) => p.id === "sortie" || p.id === "studio").length, before);
 });
 
 test("stage1 has spawn, recruit, and dualis from !", () => {
@@ -56,6 +71,7 @@ test("stage1 has spawn, recruit, and dualis from !", () => {
   assert.ok(parsed.enemySpawns.some((e) => e.kind === "dualis"));
   assert.ok(parsed.pickups.some((p) => p.kind === "recruit" && p.id === "s"));
   assert.ok(parsed.pickups.some((p) => p.kind === "portal"));
+  assert.equal(parsed.pickups.some((p) => p.id === "sortie" || p.id === "studio"), false);
   assert.equal(folioOk(folioFromMeta(LEVELS.stage1)), true);
 });
 

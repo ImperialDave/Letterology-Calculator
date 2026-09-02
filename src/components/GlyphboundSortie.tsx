@@ -19,8 +19,18 @@ declare global {
   }
 }
 
-export function GlyphboundSortie() {
+export function GlyphboundSortie({
+  onLeave,
+  leaveLabel = "Title",
+}: {
+  onLeave?: () => void;
+  leaveLabel?: string;
+} = {}) {
   const nav = useNavigate();
+  const leave = () => {
+    if (onLeave) onLeave();
+    else void nav({ to: "/glyphbound" });
+  };
   const sim = useRef<SortieState>(createSortie());
   const keys = useRef(new SortieKeys());
   const [snap, setSnap] = useState(() => sim.current);
@@ -84,16 +94,19 @@ export function GlyphboundSortie() {
   };
 
   return (
-    <div className="relative h-[100dvh] w-full overflow-hidden bg-[#6a9080] [touch-action:none]">
+    <div className={`relative w-full overflow-hidden bg-[#6a9080] [touch-action:none] ${onLeave ? "h-full" : "h-[100dvh]"}`}>
       {!ready ? (
-        <button
-          type="button"
-          className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-[#121018] text-[#f4f0e4]"
-          onClick={() => {
-            unlockSortieAudio();
-            setReady(true);
-          }}
-        >
+        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-[#121018] text-[#f4f0e4]">
+          <button
+            type="button"
+            className="flex flex-col items-center"
+            onPointerUp={(e) => {
+              if (e.pointerType === "mouse" && e.button !== 0) return;
+              e.stopPropagation();
+              unlockSortieAudio();
+              setReady(true);
+            }}
+          >
           <p className="text-[11px] uppercase tracking-[0.4em] text-[#e8d48a]">Drop Cap</p>
           <h1 className="font-display text-6xl">Sortie</h1>
           <p className="mt-3 max-w-sm px-6 text-center text-sm text-[#c9b896]">
@@ -106,7 +119,20 @@ export function GlyphboundSortie() {
             <span className="text-[#f4f0e4]">J</span> lock · double-tap <span className="text-[#f4f0e4]">A/D</span> barrel
             · <span className="text-[#f4f0e4]">K</span> boost · <span className="text-[#f4f0e4]">X</span> brake
           </p>
-        </button>
+          </button>
+          {onLeave && (
+            <button
+              type="button"
+              className="mt-8 h-11 rounded-md border border-[#f4f0e4]/40 px-4 text-sm"
+              onPointerUp={(e) => {
+                e.stopPropagation();
+                leave();
+              }}
+            >
+              {leaveLabel}
+            </button>
+          )}
+        </div>
       ) : (
         <>
           <div className="h-full w-full origin-top-left scale-[1] [image-rendering:pixelated]">
@@ -116,7 +142,8 @@ export function GlyphboundSortie() {
             s={snap}
             best={best}
             onRetry={retry}
-            onTitle={() => void nav({ to: "/glyphbound" })}
+            onTitle={leave}
+            leaveLabel={leaveLabel}
             onResume={() => {
               sim.current.mode = "play";
               setSnap({ ...sim.current });

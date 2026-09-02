@@ -7,12 +7,14 @@ export function SortieHud({
   onRetry,
   onTitle,
   onResume,
+  leaveLabel = "Title",
 }: {
   s: SortieState;
   best: number;
   onRetry: () => void;
   onTitle: () => void;
   onResume: () => void;
+  leaveLabel?: string;
 }) {
   return (
     <div className="pointer-events-none absolute inset-0 z-10 font-display text-[#f4f0e4]">
@@ -53,15 +55,36 @@ export function SortieHud({
           <p className="mt-2 text-[#e8d48a]">{s.score} scored</p>
           <div className="mt-5 flex gap-2">
             {s.mode === "pause" && (
-              <button type="button" className="h-11 rounded-md bg-[#f4f0e4] px-4 text-[#121018]" onClick={onResume}>
+              <button
+                type="button"
+                className="h-11 rounded-md bg-[#f4f0e4] px-4 text-[#121018]"
+                onPointerUp={(e) => {
+                  e.stopPropagation();
+                  onResume();
+                }}
+              >
                 Resume
               </button>
             )}
-            <button type="button" className="h-11 rounded-md bg-[#5ee0c0] px-4 text-[#121018]" onClick={onRetry}>
+            <button
+              type="button"
+              className="h-11 rounded-md bg-[#5ee0c0] px-4 text-[#121018]"
+              onPointerUp={(e) => {
+                e.stopPropagation();
+                onRetry();
+              }}
+            >
               Fly again
             </button>
-            <button type="button" className="h-11 rounded-md border border-[#f4f0e4]/40 px-4" onClick={onTitle}>
-              Title
+            <button
+              type="button"
+              className="h-11 rounded-md border border-[#f4f0e4]/40 px-4"
+              onPointerUp={(e) => {
+                e.stopPropagation();
+                onTitle();
+              }}
+            >
+              {leaveLabel}
             </button>
           </div>
         </div>

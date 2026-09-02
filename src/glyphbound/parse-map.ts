@@ -480,6 +480,8 @@ export function parseRows(rows: string[], ctx: Partial<ParseCtx> = {}): ParsedMa
     }
   }
 
+  if (c.isHub) injectHubExtras(pickups);
+
   return {
     solids,
     enemySpawns,
@@ -491,4 +493,34 @@ export function parseRows(rows: string[], ctx: Partial<ParseCtx> = {}): ParsedMa
     worldW: W * TILE,
     worldH: H * TILE,
   };
+}
+
+/** Studio desk and Sortie hangar sit beside The Rest of the Book. Not ASCII, so hub glyphs stay doors. */
+export function injectHubExtras(pickups: Pickup[]) {
+  const cont = pickups.find((u) => u.id === "continue");
+  const y = cont ? cont.y + 8 : 7 * TILE + TILE - 96;
+  if (!pickups.some((u) => u.id === "studio")) {
+    pickups.push({
+      kind: "door",
+      id: "studio",
+      x: cont ? cont.x + cont.w + 10 : 44 * TILE,
+      y,
+      w: 72,
+      h: 88,
+      taken: false,
+      label: "STUDIO",
+    });
+  }
+  if (!pickups.some((u) => u.id === "sortie")) {
+    pickups.push({
+      kind: "door",
+      id: "sortie",
+      x: cont ? cont.x - 140 : 70 * TILE,
+      y,
+      w: 80,
+      h: 88,
+      taken: false,
+      label: "HANGAR",
+    });
+  }
 }

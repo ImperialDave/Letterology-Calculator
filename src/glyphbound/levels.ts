@@ -72,7 +72,7 @@ const hand: Record<string, LevelMeta> = {
     id: "hub",
     name: "Lower Register Stacks",
     theme: "hub",
-    objective: "Five chapter doors, then the Numberomicons. Past the icon: the Unbound Sentence and the Studio desk.",
+    objective: "Five chapter doors, then the Numberomicons. Past the icon: the Unbound Sentence, the Hangar, and the Studio desk.",
     tasks: [
       { id: "talk-e", text: "Talk to e" },
       { id: "talk-t", text: "Learn scribing from t" },

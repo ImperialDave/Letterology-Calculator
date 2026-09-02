@@ -8,8 +8,8 @@ import { Pause, Volume2, VolumeX } from "lucide-react";
 import { KITS, skillName } from "@/glyphbound/roster";
 import { KEY_DEFS, prettyCode, type KeyAction } from "@/glyphbound/keys";
 import { WEAPONS } from "@/glyphbound/weapons";
-import { Link } from "@tanstack/react-router";
 import { GlyphboundStudio } from "@/components/GlyphboundStudio";
+import { GlyphboundSortie } from "@/components/GlyphboundSortie";
 import { GlyphboundProof } from "@/components/GlyphboundProof";
 import { GlyphboundReplay } from "@/components/GlyphboundReplay";
 
@@ -191,6 +191,7 @@ const emptyUi = (): UiSnap => ({
   proof: false,
   god: false,
   replayOpen: false,
+  sortieOpen: false,
   slot: 0,
   slots: [],
 });
@@ -309,8 +310,9 @@ export function Glyphbound() {
   }, []);
 
   const g = () => gameRef.current;
-  const playing = ui.mode === "play" || ui.mode === "hub" || ui.mode === "transform" || ui.mode === "dialogue";
-  const padOn = (ui.mode === "play" || ui.mode === "hub") && !ui.sandbox;
+  const playing =
+    !ui.sortieOpen && (ui.mode === "play" || ui.mode === "hub" || ui.mode === "transform" || ui.mode === "dialogue");
+  const padOn = (ui.mode === "play" || ui.mode === "hub") && !ui.sandbox && !ui.sortieOpen;
 
   return (
     <div
@@ -327,6 +329,11 @@ export function Glyphbound() {
       {ui.mode === "studio" && <GlyphboundStudio game={g} />}
       {showProof && <GlyphboundProof game={g} onClose={() => setShowProof(false)} />}
       {ui.replayOpen && <GlyphboundReplay game={g} progress={ui.progress} />}
+      {ui.sortieOpen && (
+        <div data-ui="sortie" className="pointer-events-auto absolute inset-0 z-50">
+          <GlyphboundSortie onLeave={() => g()?.leaveSortie()} leaveLabel="Stacks" />
+        </div>
+      )}
 
       {ui.proof && playing && !showProof && (
         <div className="pointer-events-auto absolute left-1/2 top-2 z-30 flex -translate-x-1/2 flex-wrap items-center justify-center gap-1.5">
@@ -475,12 +482,6 @@ export function Glyphbound() {
                 {ui.muted ? "Sound off" : "Sound on"}
               </button>
             </div>
-            <Link
-              to="/glyphbound/sortie"
-              className="flex h-11 items-center justify-center rounded-md border border-[#5ee0c0]/50 bg-[#10241c]/90 text-sm text-[#9af8de]"
-            >
-              Sortie · C-wing
-            </Link>
             <button
               type="button"
               data-ui="studio"

@@ -429,6 +429,7 @@ export interface UiSnap {
   proof: boolean;
   god: boolean;
   replayOpen: boolean;
+  sortieOpen: boolean;
   slot: number;
   slots: SlotInfo[];
 }

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Outlet, createFileRoute, useChildMatches } from "@tanstack/react-router";
 import { Glyphbound } from "@/components/Glyphbound";
 import { pageCardMeta } from "@/lib/letterology/share";
 import { VOICE } from "@/lib/letterology/voice";
@@ -43,5 +43,7 @@ export const Route = createFileRoute("/glyphbound")({
 });
 
 function PlayGlyphbound() {
+  const children = useChildMatches();
+  if (children.length) return <Outlet />;
   return <Glyphbound />;
 }
