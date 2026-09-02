@@ -1,4 +1,5 @@
 import { useRef, useState, type PointerEvent } from "react";
+import { aimScreen } from "./cam";
 import type { SortieState } from "./sim";
 import { CHARGE_LOCK, HULL_MAX, INNER_R, OUTER_R } from "./sim";
 import { analogFromDelta } from "./stick";
@@ -20,6 +21,7 @@ const SORTIE_CONTROLS: { keys: string; does: string }[] = [
   { keys: "V", does: "Cockpit cam." },
   { keys: "Esc", does: "Pause / resume." },
   { keys: "Two squares", does: "Sit a lizard in both. Hold fire to lock. Lasers go through the tunnel." },
+  { keys: "Blue box", does: "Lizards and rocks. Sit the box in the two squares." },
 ];
 
 export function SortieHud({
@@ -229,19 +231,12 @@ function Reticle({ s }: { s: SortieState }) {
             opacity: s.charge > 0.05 ? 1 : 0.22,
           }}
         />
-        {soft && (
-          <span
-            className="absolute -top-4 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-[0.2em]"
-            style={{ color: innerC }}
-          >
-            {hard ? "LOCK" : "TGT"}
-          </span>
-        )}
       </div>
       <div
         className="absolute h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#e8d48a]"
         style={{ left: `${cx}%`, top: `${cy}%` }}
       />
+      <TargetBoxes s={s} />
       {s.incoming > 0 && (
         <div className="absolute left-1/2 top-[38%] -translate-x-1/2 text-[11px] uppercase tracking-[0.28em] text-[#d45a4a]">
           Break
@@ -264,6 +259,43 @@ function Reticle({ s }: { s: SortieState }) {
       )}
     </div>
   );
+}
+
+function TargetBoxes({ s }: { s: SortieState }) {
+  const marks = [];
+  for (const e of s.enemies) {
+    if (!e.alive || e.kind === "dualis") continue;
+    const pip = aimScreen(s, e.x, e.y, e.z);
+    if (!pip.on || pip.z < 10 || pip.z > 320) continue;
+    const locked = e.id === s.lockId && s.lockOn;
+    const hard = locked && s.lockHard;
+    const color = hard ? "#d45a4a" : "#4aa3ff";
+    const px = Math.max(18, Math.min(52, 2800 / pip.z));
+    marks.push(
+      <div
+        key={e.id}
+        className="absolute -translate-x-1/2 -translate-y-1/2"
+        style={{
+          left: `${50 + pip.sx * 50}%`,
+          top: `${50 - pip.sy * 50}%`,
+          width: px,
+          height: px,
+          border: `${hard ? 2 : 1.5}px solid ${color}`,
+          boxShadow: `0 0 0 1px rgba(10,18,32,0.45)`,
+        }}
+      >
+        {locked && (
+          <span
+            className="absolute -top-3.5 left-1/2 -translate-x-1/2 text-[9px] uppercase tracking-[0.18em]"
+            style={{ color }}
+          >
+            {hard ? "LOCK" : "TGT"}
+          </span>
+        )}
+      </div>,
+    );
+  }
+  return <>{marks}</>;
 }
 
 function Radar({ s }: { s: SortieState }) {

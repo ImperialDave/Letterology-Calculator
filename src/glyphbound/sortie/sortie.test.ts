@@ -355,7 +355,7 @@ test("keyboard stick eases in instead of slamming", () => {
   const keys = new SortieKeys();
   keys.setKeys(["KeyA"]);
   const first = keys.poll(1 / 60, false);
-  assert.ok(first.roll > 0.05 && first.roll < 0.3, `first frame ${first.roll}`);
+  assert.ok(first.roll > 0.02 && first.roll < 0.22, `first frame ${first.roll}`);
   for (let i = 0; i < 20; i++) {
     keys.setKeys(["KeyA"]);
     keys.poll(1 / 60, false);
