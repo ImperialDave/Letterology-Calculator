@@ -1,5 +1,5 @@
 import { TILE, type EnemyKind } from "./types";
-import { commitFacing, desiredFacing, type FacingActor, type FacingBody } from "./enemy-facing";
+import { FACE_DEADZONE, commitFacing, desiredFacing, type FacingActor, type FacingBody } from "./enemy-facing";
 
 /** Walker air gravity used by one/two/three/four/five/seven. */
 export const ENEMY_G = 1800;
@@ -11,6 +11,16 @@ export const JUMP_CLEAR = 12;
 const MOVE_CD = 0.55;
 const UNSTUCK_T = 1.1;
 const UNSTUCK_PX = 10;
+
+const GOALS = new WeakMap<object, number | null>();
+
+export function setMoveGoal(e: object, x: number | null) {
+  GOALS.set(e, x);
+}
+
+export function moveGoal(e: object): number | null {
+  return GOALS.has(e) ? (GOALS.get(e) ?? null) : null;
+}
 
 export interface MoveWorld {
   blockedAt: (x: number, y: number, w: number, h: number, large: boolean) => boolean;
@@ -254,7 +264,15 @@ export function tryLocomote(world: MoveWorld, e: Mover, p: FacingBody, dt = 0): 
   const g = gravityFor(e.kind);
   const cap = jumpCap(e.kind);
   const probe = probeAhead(world, e);
-  const want = desiredFacing(e, p);
+  const goal = moveGoal(e);
+  const want =
+    goal == null
+      ? desiredFacing(e, p)
+      : Math.abs(goal - (e.x + e.w / 2)) < FACE_DEADZONE
+        ? 0
+        : goal > e.x + e.w / 2
+          ? 1
+          : -1;
   const toward = want === e.facing || want === 0;
 
   if (stance.vault && probe.wallAhead && probe.stepHeight > 0 && probe.stepHeight <= stance.vaultMax && toward) {

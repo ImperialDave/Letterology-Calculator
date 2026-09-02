@@ -1448,24 +1448,32 @@ function inkStride(
   yBase: number,
   glow: string,
   core: string,
+  weight = 1,
 ) {
-  const amp = 0.12 + run * 0.88;
+  const amp = 0.1 + run * 0.92;
+  const plant = Math.max(0, -Math.sin(gait));
   const foot = (side: number, phase: number) => {
-    const lift = Math.max(0, Math.sin(phase)) * 5.5 * amp;
-    const slide = -Math.cos(phase) * 4.2 * amp;
-    const x0 = side * 4.5 + slide;
+    const lift = Math.max(0, Math.sin(phase)) * (5.2 + weight) * amp;
+    const slide = -Math.cos(phase) * (4 + weight * 0.6) * amp;
+    const squash = plant * side === Math.sign(Math.sin(phase) || side) ? plant * 1.4 * weight : 0;
+    const x0 = side * (4.2 + weight) + slide;
     ctx.beginPath();
     ctx.moveTo(x0, yBase - 2 - lift);
-    ctx.quadraticCurveTo(x0 + side * 2, yBase + 1 - lift * 0.35, x0 + side * 5 + 1, yBase + 3.2 - lift * 0.15);
+    ctx.quadraticCurveTo(
+      x0 + side * 2,
+      yBase + 1 - lift * 0.35 + squash,
+      x0 + side * 5 + 1,
+      yBase + 3.2 - lift * 0.15 + squash,
+    );
     ctx.stroke();
   };
   ctx.lineCap = "round";
   ctx.strokeStyle = glow;
-  ctx.lineWidth = 2.6;
+  ctx.lineWidth = 2.4 + weight * 0.5;
   foot(-1, gait);
   foot(1, gait + Math.PI);
   ctx.strokeStyle = core;
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = 1.4 + weight * 0.3;
   foot(-1, gait);
   foot(1, gait + Math.PI);
 }
@@ -1718,8 +1726,11 @@ function lizardLegs(
   hide: string,
   metal: string,
   visor: string,
+  wind = 0,
 ) {
+  const crouch = wind * 3.2 * s;
   const limb = (hipX: number, hipY: number, phase: number) => {
+    hipY += crouch;
     const a = Math.sin(phase);
     const planted = grounded && a > 0.12;
     const lift = grounded ? Math.max(0, -a) * (6.2 + run * 5) : 7;
@@ -1966,7 +1977,7 @@ export function drawLetterForm(
     }
     emberEye(ctx, -4, -12, pal.glow, t, 3);
     ctx.restore();
-    if (pose.grounded) inkStride(ctx, pose.gait, pose.run, 18, pal.glow, pal.core);
+    if (pose.grounded) inkStride(ctx, pose.gait, pose.run, 18, pal.glow, pal.core, 1.7);
     orbitMotes(ctx, t, pal.glow, 18, pose.run);
     if (special > 0) {
       ctx.strokeStyle = "rgba(196,180,154,0.5)";
@@ -2087,6 +2098,17 @@ export function drawLetterForm(
       ctx.lineTo(12 + kick * 0.4 - scissor, 16);
     });
     emberEye(ctx, -4, -12, pal.glow, t, 6);
+    ctx.strokeStyle = pal.glow;
+    ctx.globalAlpha = 0.45 + pose.run * 0.3;
+    ctx.lineWidth = 1.2;
+    for (let i = 0; i < 3; i++) {
+      const px = 4 + i * 4 + pose.step;
+      ctx.beginPath();
+      ctx.moveTo(px, -8 - i);
+      ctx.lineTo(px + 3, -12 - i - pose.contact);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
     ctx.restore();
     if (pose.grounded) inkStride(ctx, pose.gait, pose.run, 17, pal.glow, pal.core);
     orbitMotes(ctx, t, pal.glow, 17, pose.run);
@@ -2114,6 +2136,15 @@ export function drawLetterForm(
       }
     });
     emberEye(ctx, -5, -10, pal.glow, t, 7);
+    if (snap > 0.15 || special > 0) {
+      ctx.strokeStyle = pal.glow;
+      ctx.globalAlpha = 0.35 + snap * 0.4;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 14 + snap * 8, 10, t * 2, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
     ctx.restore();
     if (pose.grounded) inkStride(ctx, pose.gait, pose.run, 16, pal.glow, pal.core);
     orbitMotes(ctx, t, pal.glow, 16, pose.run);
@@ -2144,6 +2175,16 @@ export function drawLetterForm(
       }
     });
     emberEye(ctx, capital ? 4 : 6, capital ? -8 : -10, pal.glow, t, 8);
+    if (pose.wind > 0.15 || attack > 0) {
+      ctx.strokeStyle = pal.glow;
+      ctx.globalAlpha = 0.5;
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(2, 14);
+      ctx.quadraticCurveTo(8, 18 + pose.wind * 6, 4, 22);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
     ctx.restore();
     if (pose.grounded) inkStride(ctx, pose.gait, pose.run, 15, pal.glow, pal.core);
     orbitMotes(ctx, t, pal.glow, 16, pose.run);
@@ -2238,6 +2279,16 @@ export function drawEnemy(
   const metal = "#b7c4c8";
   const visor = "#d45a4a";
   const aether = "#5ee0c0";
+  if (pose.wind > 0.22) {
+    ctx.save();
+    ctx.globalAlpha = 0.28 + pose.wind * 0.45;
+    ctx.strokeStyle = visor;
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.ellipse(0, -8 * s, 13 * s, 6 * s, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
   if (e.phase === 1 || (e.aux > 0.7 && e.vx * e.vx < 900)) {
     ctx.save();
     ctx.globalAlpha = 0.22 + Math.sin(t * 14) * 0.1;
@@ -2273,7 +2324,7 @@ export function drawEnemy(
     drawWyrmHead(ctx, x, y, rot, sc, visor, hide2, t, boss, tongue, lag, bite);
   const legs = () => {
     if (fly) return;
-    lizardLegs(ctx, s, gait, run, e.grounded, hide, metal, visor);
+    lizardLegs(ctx, s, gait, run, e.grounded, hide, metal, visor, pose.wind + (e.aux < 0.35 ? 0.45 : 0));
   };
   const tail = (ox: number, oy: number) => lizardTail(ctx, ox, oy, s, gait, run, hide, visor);
   const jets = (x: number, y: number) => {

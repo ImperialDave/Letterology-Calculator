@@ -51,6 +51,7 @@ import {
   type MeleeMoveId,
 } from "./melee";
 import { commitFacing, faceToward, reverseAtLedge, tickTurnLock } from "./enemy-facing";
+import { applyIntent, tickBrain, usesBrain } from "./enemy-brain";
 import { applyJump, gravityFor, heightTo, jumpVy } from "./enemy-move";
 import { bindKey as bindKeyMap, type KeyAction } from "./keys";
 import { SLOT_COUNT, activeSlot, clearSave, defaultSave, listSlots, loadSave, selectSlot, writeSave } from "./save";
@@ -3219,12 +3220,10 @@ export class GameEngine {
             e.aux = 0;
           }
         } else {
-          faceToward(e, p);
-          e.vx = e.facing * 55;
+          const intent = this.steer(e, p, dt);
           this.moveActor(e, dt, large);
           if (e.grounded && this.atLedge(e)) reverseAtLedge(e, p);
-          if (e.aux > 0.75 && Math.abs(p.x - e.x) < 120 && Math.abs(p.y - e.y) < 70) e.vx *= 0.2;
-          if (e.aux > 1.05 && Math.abs(p.x - e.x) < 120 && Math.abs(p.y - e.y) < 70) {
+          if (intent.commit && e.aux > 1.05 && Math.abs(p.x - e.x) < 120 && Math.abs(p.y - e.y) < 70) {
             e.phase = 1;
             e.aux = 0;
             if (p.y + 18 < e.y) applyJump(e, jumpVy(gravityFor(e.kind), heightTo(e, p) + 12));
@@ -3233,8 +3232,7 @@ export class GameEngine {
         }
       } else if (e.kind === "two") {
         if (!e.grounded) e.vy += 1800 * dt;
-        faceToward(e, p);
-        e.vx = e.facing * 62;
+        this.steer(e, p, dt);
         this.moveActor(e, dt, large);
         if (e.grounded && this.atLedge(e)) reverseAtLedge(e, p);
         if (this.windFire(e, 1.55)) {
@@ -3247,8 +3245,7 @@ export class GameEngine {
         }
       } else if (e.kind === "four") {
         if (!e.grounded) e.vy += 1800 * dt;
-        faceToward(e, p);
-        e.vx = e.facing * 38;
+        this.steer(e, p, dt);
         this.moveActor(e, dt, large);
         if (e.grounded && this.atLedge(e)) reverseAtLedge(e, p);
         if (this.windFire(e, 1.9)) {
@@ -3256,7 +3253,6 @@ export class GameEngine {
         }
       } else if (e.kind === "five") {
         if (!e.grounded) e.vy += 1800 * dt;
-        faceToward(e, p);
         if (e.phase === 1) {
           this.moveActor(e, dt, large);
           if (e.grounded) {
@@ -3266,7 +3262,7 @@ export class GameEngine {
             e.aux = 0;
           }
         } else {
-          e.vx = e.facing * 30;
+          this.steer(e, p, dt);
           this.moveActor(e, dt, large);
           if (e.grounded && this.atLedge(e)) reverseAtLedge(e, p);
           if (e.grounded && this.windFire(e, 2.15)) {
@@ -3276,14 +3272,7 @@ export class GameEngine {
         }
       } else if (e.kind === "three" || e.kind === "seven" || e.kind === "triad") {
         if (!e.grounded) e.vy += 1800 * dt;
-        const spd = e.kind === "seven" ? 48 : 58;
-        if (Math.abs(p.x - e.x) < 300) {
-          faceToward(e, p);
-          e.vx = e.facing * spd;
-        } else {
-          e.vx = e.facing * 40;
-          if (Math.random() < 0.005) commitFacing(e, e.facing < 0 ? 1 : -1);
-        }
+        this.steer(e, p, dt);
         this.moveActor(e, dt, large);
         if (e.grounded && this.atLedge(e)) reverseAtLedge(e, p);
         if ((e.kind === "three" || e.kind === "triad") && e.grounded && e.aux > 0.9 && Math.abs(p.x - e.x) < 220) {
@@ -3665,8 +3654,7 @@ export class GameEngine {
       if (e.grounded && Math.random() < 0.014) e.vy = -360;
     } else if (e.kind === "plus" || e.kind === "summand") {
       if (!e.grounded) e.vy += 1600 * dt;
-      faceToward(e, p);
-      e.vx = e.facing * (e.kind === "summand" ? 72 : 40);
+      this.steer(e, p, dt);
       this.moveActor(e, dt, e.kind === "summand");
       if (e.aux > (e.kind === "summand" ? 1.15 : 1.6)) {
         e.aux = 0;
@@ -3687,8 +3675,7 @@ export class GameEngine {
       }
     } else if (e.kind === "minus" || e.kind === "difference") {
       if (!e.grounded) e.vy += 1600 * dt;
-      faceToward(e, p);
-      e.vx = e.facing * (e.kind === "difference" ? 96 : 55);
+      this.steer(e, p, dt);
       this.moveActor(e, dt, e.kind === "difference");
       if (e.aux > (e.kind === "difference" ? 0.95 : 1.4)) {
         e.aux = 0;
@@ -3710,8 +3697,7 @@ export class GameEngine {
       }
     } else if (e.kind === "times" || e.kind === "product") {
       if (!e.grounded) e.vy += 1500 * dt;
-      faceToward(e, p);
-      e.vx = e.facing * (e.kind === "product" ? 50 : 35);
+      this.steer(e, p, dt);
       this.moveActor(e, dt, e.kind === "product");
       const cap = e.kind === "product" ? 16 : 14;
       if (e.aux > (e.kind === "product" ? 1.5 : 2.6) && this.enemies.filter((x) => x.alive).length < cap) {
@@ -3943,6 +3929,16 @@ export class GameEngine {
       alive: true,
       pierce: 0,
     });
+  }
+
+  private steer(e: Enemy, p: Player, dt: number) {
+    if (!usesBrain(e.kind)) return { vx: e.vx, face: 0 as const, commit: false, wind: 0, role: "rush" as const };
+    const intent = tickBrain(e, p, this.enemies, dt, {
+      atLedge: (x) => this.atLedge(x),
+      inSight: (x) => this.inSight(x),
+    });
+    applyIntent(e, intent);
+    return intent;
   }
 
   private atLedge(e: Enemy) {
