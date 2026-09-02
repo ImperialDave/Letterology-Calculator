@@ -45,6 +45,12 @@ function crescentGeo() {
 export function makeCWing() {
   const g = new THREE.Group();
   g.name = "cwing";
+  // Parts are built with +X as the nose. Scene Euler is YXZ for a craft whose
+  // nose is parent −Z (yaw 0 flies world −Z). +90° Y sends model +X to −Z.
+  const body = new THREE.Group();
+  body.name = "cwing-body";
+  body.rotation.y = Math.PI / 2;
+  g.add(body);
   const brass = n64Mat(0xe8d48a, { map: brassTex() });
   const hull = n64Mat(0xb8924a, { map: hullTex() });
   const dark = n64Mat(0x4a6070, { emissive: INK, glow: 0.22 });
@@ -53,24 +59,24 @@ export function makeCWing() {
   const lead = n64Mat(0xd8e0e8, { map: hullTex() });
   const gunMat = n64Mat(INK, { emissive: INK, glow: 0.5 });
 
-  const letter = add(g, crescentGeo(), hull, 0, 0.02, 0, { name: "letter" });
+  const letter = add(body, crescentGeo(), hull, 0, 0.02, 0, { name: "letter" });
   letter.scale.set(1.08, 1.15, 1.08);
 
-  add(g, new THREE.BoxGeometry(3.4, 0.42, 0.62), dark, 0.15, 0, 0);
-  add(g, new THREE.BoxGeometry(2.2, 0.18, 0.92), lead, 0.05, 0.22, 0);
-  add(g, new THREE.BoxGeometry(1.6, 0.22, 0.38), brass, -0.2, -0.28, 0);
-  add(g, new THREE.ConeGeometry(0.38, 1.55, 6), hull, 1.72, 0, 0, { rz: -Math.PI / 2 });
-  add(g, new THREE.BoxGeometry(0.7, 0.16, 0.7), dark, 1.15, -0.18, 0);
-  add(g, new THREE.CylinderGeometry(0.16, 0.22, 0.7, 6), lead, 0.85, 0.08, 0.42, { rz: Math.PI / 2 });
-  add(g, new THREE.CylinderGeometry(0.16, 0.22, 0.7, 6), lead, 0.85, 0.08, -0.42, { rz: Math.PI / 2 });
+  add(body, new THREE.BoxGeometry(3.4, 0.42, 0.62), dark, 0.15, 0, 0);
+  add(body, new THREE.BoxGeometry(2.2, 0.18, 0.92), lead, 0.05, 0.22, 0);
+  add(body, new THREE.BoxGeometry(1.6, 0.22, 0.38), brass, -0.2, -0.28, 0);
+  add(body, new THREE.ConeGeometry(0.38, 1.55, 6), hull, 1.72, 0, 0, { rz: -Math.PI / 2 });
+  add(body, new THREE.BoxGeometry(0.7, 0.16, 0.7), dark, 1.15, -0.18, 0);
+  add(body, new THREE.CylinderGeometry(0.16, 0.22, 0.7, 6), lead, 0.85, 0.08, 0.42, { rz: Math.PI / 2 });
+  add(body, new THREE.CylinderGeometry(0.16, 0.22, 0.7, 6), lead, 0.85, 0.08, -0.42, { rz: Math.PI / 2 });
 
-  const canopy = add(g, new THREE.SphereGeometry(0.36, 7, 5, 0, Math.PI * 2, 0, Math.PI * 0.58), glass, 0.72, 0.32, 0, { sx: 1.55, sy: 0.72, sz: 0.78 });
+  const canopy = add(body, new THREE.SphereGeometry(0.36, 7, 5, 0, Math.PI * 2, 0, Math.PI * 0.58), glass, 0.72, 0.32, 0, { sx: 1.55, sy: 0.72, sz: 0.78 });
   canopy.name = "canopy";
-  add(g, new THREE.BoxGeometry(0.5, 0.08, 0.42), dark, 0.55, 0.18, 0);
+  add(body, new THREE.BoxGeometry(0.5, 0.08, 0.42), dark, 0.55, 0.18, 0);
 
-  add(g, new THREE.BoxGeometry(0.18, 0.55, 0.7), brass, -0.15, 0.42, 0);
-  add(g, new THREE.BoxGeometry(0.12, 0.7, 0.22), brass, -0.85, 0.38, 0.18);
-  add(g, new THREE.BoxGeometry(0.12, 0.7, 0.22), brass, -0.85, 0.38, -0.18);
+  add(body, new THREE.BoxGeometry(0.18, 0.55, 0.7), brass, -0.15, 0.42, 0);
+  add(body, new THREE.BoxGeometry(0.12, 0.7, 0.22), brass, -0.85, 0.38, 0.18);
+  add(body, new THREE.BoxGeometry(0.12, 0.7, 0.22), brass, -0.85, 0.38, -0.18);
 
   const wingL = new THREE.Group();
   const wingR = new THREE.Group();
@@ -80,7 +86,7 @@ export function makeCWing() {
   wingR.position.set(0.05, 0.06, -1.42);
   wingL.rotation.x = 0.16;
   wingR.rotation.x = -0.16;
-  g.add(wingL, wingR);
+  body.add(wingL, wingR);
 
   add(wingL, new THREE.BoxGeometry(1.15, 0.09, 2.55), brass, 0, 0, 0.55);
   add(wingR, new THREE.BoxGeometry(1.15, 0.09, 2.55), brass, 0, 0, -0.55);
@@ -91,27 +97,27 @@ export function makeCWing() {
   add(wingL, new THREE.BoxGeometry(0.35, 0.28, 0.08), dark, -0.2, 0.12, 0.9);
   add(wingR, new THREE.BoxGeometry(0.35, 0.28, 0.08), dark, -0.2, 0.12, -0.9);
 
-  const gL = add(g, new THREE.BoxGeometry(1.05, 0.12, 0.12), gunMat, 1.22, -0.12, 0.48, { name: "gunL" });
-  const gR = add(g, new THREE.BoxGeometry(1.05, 0.12, 0.12), gunMat, 1.22, -0.12, -0.48, { name: "gunR" });
+  const gL = add(body, new THREE.BoxGeometry(1.05, 0.12, 0.12), gunMat, 1.22, -0.12, 0.48, { name: "gunL" });
+  const gR = add(body, new THREE.BoxGeometry(1.05, 0.12, 0.12), gunMat, 1.22, -0.12, -0.48, { name: "gunR" });
   gL.userData.home = { x: 1.22, y: -0.12, z: 0.48 };
   gR.userData.home = { x: 1.22, y: -0.12, z: -0.48 };
-  add(g, new THREE.CylinderGeometry(0.07, 0.09, 0.35, 5), dark, 1.72, -0.12, 0.48, { rz: Math.PI / 2 });
-  add(g, new THREE.CylinderGeometry(0.07, 0.09, 0.35, 5), dark, 1.72, -0.12, -0.48, { rz: Math.PI / 2 });
+  add(body, new THREE.CylinderGeometry(0.07, 0.09, 0.35, 5), dark, 1.72, -0.12, 0.48, { rz: Math.PI / 2 });
+  add(body, new THREE.CylinderGeometry(0.07, 0.09, 0.35, 5), dark, 1.72, -0.12, -0.48, { rz: Math.PI / 2 });
 
   const muzzleMat = new THREE.MeshBasicMaterial({ color: 0x9af8de, transparent: true, opacity: 0 });
   const muzzleGeo = new THREE.ConeGeometry(0.2, 0.95, 5);
-  const muzzleL = add(g, muzzleGeo, muzzleMat, 1.85, -0.12, 0.48, { rz: -Math.PI / 2, name: "muzzleL", cast: false });
-  const muzzleR = add(g, muzzleGeo, muzzleMat.clone(), 1.85, -0.12, -0.48, { rz: -Math.PI / 2, name: "muzzleR", cast: false });
+  const muzzleL = add(body, muzzleGeo, muzzleMat, 1.85, -0.12, 0.48, { rz: -Math.PI / 2, name: "muzzleL", cast: false });
+  const muzzleR = add(body, muzzleGeo, muzzleMat.clone(), 1.85, -0.12, -0.48, { rz: -Math.PI / 2, name: "muzzleR", cast: false });
   muzzleL.visible = false;
   muzzleR.visible = false;
 
   const muzzleLight = new THREE.PointLight(0x9af8de, 0, 26);
   muzzleLight.name = "muzzleLight";
   muzzleLight.position.set(2.0, 0, 0);
-  g.add(muzzleLight);
+  body.add(muzzleLight);
 
   const chargeBall = add(
-    g,
+    body,
     new THREE.SphereGeometry(0.22, 6, 6),
     new THREE.MeshBasicMaterial({ color: 0xe8d48a, transparent: true, opacity: 0 }),
     1.95,
@@ -124,7 +130,7 @@ export function makeCWing() {
   const engines = new THREE.Group();
   engines.name = "engine";
   engines.position.set(-1.62, 0, 0);
-  g.add(engines);
+  body.add(engines);
   add(engines, new THREE.CylinderGeometry(0.28, 0.34, 0.55, 6), dark, 0, 0, 0.38, { rz: Math.PI / 2 });
   add(engines, new THREE.CylinderGeometry(0.28, 0.34, 0.55, 6), dark, 0, 0, -0.38, { rz: Math.PI / 2 });
   add(engines, new THREE.ConeGeometry(0.26, 0.55, 6), ink, -0.38, 0, 0.38, { rz: Math.PI / 2, name: "bellL" });
@@ -137,7 +143,7 @@ export function makeCWing() {
   const trail = new THREE.Group();
   trail.name = "trail";
   trail.position.set(-2.35, 0, 0);
-  g.add(trail);
+  body.add(trail);
   const trailMat = new THREE.MeshBasicMaterial({ color: 0x9af8de, transparent: true, opacity: 0.55 });
   add(trail, new THREE.ConeGeometry(0.18, 1.7, 5), trailMat, 0, 0, 0.38, { rz: -Math.PI / 2, cast: false });
   add(trail, new THREE.ConeGeometry(0.18, 1.7, 5), trailMat, 0, 0, -0.38, { rz: -Math.PI / 2, cast: false });
@@ -146,7 +152,7 @@ export function makeCWing() {
 
   const sparkle = new THREE.Group();
   sparkle.name = "sparkle";
-  g.add(sparkle);
+  body.add(sparkle);
   const sparkMat = new THREE.MeshBasicMaterial({ color: 0xe8d48a, transparent: true, opacity: 0.85 });
   for (let i = 0; i < 10; i++) {
     const p = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 0.9), sparkMat.clone());

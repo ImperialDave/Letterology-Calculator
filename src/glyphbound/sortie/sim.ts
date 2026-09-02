@@ -194,8 +194,9 @@ const BANK = 0.92;
 const YAW_FROM_BANK = 3.85;
 const CEIL_Y = 260;
 const AUTO_LEVEL = 0.72;
-const CMD_K = 11;
-const BANK_K = 8;
+const CMD_K = 22;
+const BANK_K = 14;
+const STICK_POS_K = 20;
 const HEAT_PER_SHOT = 0.012;
 const RAPID_CD = 0.08;
 const HEAT_CD = 0.02;
@@ -240,17 +241,22 @@ function follow(cur: number, want: number, k: number, dt: number) {
   return cur + (want - cur) * (1 - Math.exp(-k * dt));
 }
 
+function snapFollow(cur: number, want: number, dt: number) {
+  if (Math.abs(want) >= 0.9) return want;
+  return follow(cur, want, CMD_K, dt);
+}
+
 function flyCraft(s: SortieState, input: SortieInput, dt: number) {
-  s.cmdRoll = follow(s.cmdRoll, input.roll, CMD_K, dt);
-  s.cmdPitch = follow(s.cmdPitch, input.pitch, CMD_K, dt);
+  s.cmdRoll = snapFollow(s.cmdRoll, input.roll, dt);
+  s.cmdPitch = snapFollow(s.cmdPitch, input.pitch, dt);
 
   if (s.flight === "corridor" && s.shift <= 0 && s.path.length >= 2) {
     const len = pathLength(s.path) || 1;
     s.pathT = Math.min(1, s.pathT + (s.speed * dt) / len);
-    s.offsetX = Math.max(-ENVELOPE_X, Math.min(ENVELOPE_X, s.offsetX + s.cmdRoll * 92 * dt + input.rudder * 28 * dt));
-    s.offsetY = Math.max(-ENVELOPE_Y, Math.min(ENVELOPE_Y, s.offsetY + s.cmdPitch * 74 * dt));
-    if (Math.abs(s.cmdRoll) < 0.12) s.offsetX *= Math.exp(-0.7 * dt);
-    if (Math.abs(s.cmdPitch) < 0.12) s.offsetY *= Math.exp(-0.7 * dt);
+    const stickX = Math.max(-1, Math.min(1, input.roll + input.rudder * 0.25));
+    const stickY = Math.max(-1, Math.min(1, input.pitch));
+    s.offsetX = follow(s.offsetX, stickX * ENVELOPE_X, STICK_POS_K, dt);
+    s.offsetY = follow(s.offsetY, stickY * ENVELOPE_Y, STICK_POS_K, dt);
     const sample = samplePath(s.path, s.pathT);
     const posed = pathFrame(sample, s.offsetX, s.offsetY);
     s.x = posed.x;

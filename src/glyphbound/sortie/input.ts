@@ -37,15 +37,11 @@ export class SortieKeys {
   touchBoost = false;
   touchBrake = false;
   touchBarrel = 0;
-  private lastQ = -9;
-  private lastE = -9;
-  private lastW = -9;
-  private lastQUp = -9;
-  private lastEUp = -9;
-  private lastWUp = -9;
+  mouseFire = false;
+  private mx = 0;
+  private my = 0;
   private prevQ = false;
   private prevE = false;
-  private prevW = false;
   private prevFire = false;
   private prevBomb = false;
   private prevPause = false;
@@ -59,17 +55,52 @@ export class SortieKeys {
       if (GAME.has(e.code)) e.preventDefault();
     };
     const up = (e: KeyboardEvent) => this.keys.delete(e.code);
-    const clear = () => this.keys.clear();
+    const clear = () => {
+      this.keys.clear();
+      this.mouseFire = false;
+    };
+    const move = (e: MouseEvent) => {
+      if (typeof document === "undefined" || document.pointerLockElement == null) return;
+      this.mx += e.movementX * 0.004;
+      this.my += e.movementY * 0.004;
+      const m = Math.hypot(this.mx, this.my);
+      if (m > 1) {
+        this.mx /= m;
+        this.my /= m;
+      }
+    };
+    const pointerDown = (e: PointerEvent) => {
+      if (e.button === 0 && document.pointerLockElement) this.mouseFire = true;
+    };
+    const pointerUp = (e: PointerEvent) => {
+      if (e.button === 0) this.mouseFire = false;
+    };
+    const lockLost = () => {
+      if (document.pointerLockElement) return;
+      this.mx = 0;
+      this.my = 0;
+      this.mouseFire = false;
+    };
     el.addEventListener("keydown", down as EventListener);
     el.addEventListener("keyup", up as EventListener);
     window.addEventListener("blur", clear);
-    window.addEventListener("visibilitychange", () => {
+    window.addEventListener("mousemove", move);
+    window.addEventListener("pointerdown", pointerDown);
+    window.addEventListener("pointerup", pointerUp);
+    document.addEventListener("pointerlockchange", lockLost);
+    const hide = () => {
       if (document.hidden) clear();
-    });
+    };
+    window.addEventListener("visibilitychange", hide);
     return () => {
       el.removeEventListener("keydown", down as EventListener);
       el.removeEventListener("keyup", up as EventListener);
       window.removeEventListener("blur", clear);
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("pointerdown", pointerDown);
+      window.removeEventListener("pointerup", pointerUp);
+      document.removeEventListener("pointerlockchange", lockLost);
+      window.removeEventListener("visibilitychange", hide);
     };
   }
 
@@ -93,33 +124,27 @@ export class SortieKeys {
     const q = has("KeyQ");
     const eKey = has("KeyE");
     let barrel = 0;
-    const tapWindow = 0.38;
-    const shortTap = 0.16;
-    if (!q && this.prevQ) this.lastQUp = this.t;
-    if (!eKey && this.prevE) this.lastEUp = this.t;
-    if (q && !this.prevQ) {
-      if (this.t - this.lastQ < tapWindow && this.lastQUp - this.lastQ < shortTap) barrel = 1;
-      this.lastQ = this.t;
-    }
-    if (eKey && !this.prevE) {
-      if (this.t - this.lastE < tapWindow && this.lastEUp - this.lastE < shortTap) barrel = -1;
-      this.lastE = this.t;
-    }
+    if (q && !this.prevQ) barrel = 1;
+    if (eKey && !this.prevE) barrel = -1;
     this.prevQ = q;
     this.prevE = eKey;
     if (this.touchBarrel && barrel === 0) barrel = this.touchBarrel;
     this.touchBarrel = 0;
 
-    const w = has("KeyW") || has("ArrowUp") || pad.up;
-    let somersault = false;
-    if (!w && this.prevW) this.lastWUp = this.t;
-    if (w && !this.prevW) {
-      if (this.t - this.lastW < 0.38 && this.lastWUp - this.lastW < 0.16) somersault = true;
-      this.lastW = this.t;
+    let mouseRoll = 0;
+    let mousePitch = 0;
+    if (typeof document !== "undefined" && document.pointerLockElement) {
+      const m = Math.hypot(this.mx, this.my);
+      if (m > 0.08) {
+        const s = (m - 0.08) / 0.92 / m;
+        mouseRoll = -this.mx * s;
+        mousePitch = -this.my * s;
+      }
     }
-    this.prevW = w;
+    roll = Math.max(-1, Math.min(1, roll + mouseRoll));
+    pitch = Math.max(-1, Math.min(1, pitch + mousePitch));
 
-    const fireHeld = has("Space") || has("KeyJ") || pad.fire || this.touchFire;
+    const fireHeld = has("Space") || has("KeyJ") || pad.fire || this.touchFire || this.mouseFire;
     const fire = fireHeld && !this.prevFire;
     this.prevFire = fireHeld;
     const vKey = has("KeyV");
@@ -137,7 +162,7 @@ export class SortieKeys {
     out.barrel = barrel;
     out.lockBreak = has("Tab");
     out.cockpit = cockpit;
-    out.somersault = somersault;
+    out.somersault = false;
     const bombHeld = has("KeyB") || has("KeyM");
     out.bomb = (bombHeld && !this.prevBomb) || this.touchBomb;
     this.prevBomb = bombHeld;

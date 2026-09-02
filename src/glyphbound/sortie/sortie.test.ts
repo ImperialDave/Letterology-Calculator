@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import * as THREE from "three";
+import { makeCWing } from "./cwing";
 import { groundHeight } from "./height";
 import { COAST_PATH, landmarksFor, riverX, SORTS_PATH } from "./landmarks";
 import { unlockedIds } from "./missions";
-import { pathLength } from "./path";
+import { ENVELOPE_X, pathLength } from "./path";
 import { analogFromDelta } from "./stick";
 import { SortieKeys } from "./input";
 import { BARREL_T, CHARGE_LOCK, MAGNET, SOMERSAULT_T, createSortie, emptyInput, stepSortie } from "./sim";
@@ -34,6 +36,17 @@ test("sortie paints are daytime-bright", () => {
   assert.ok(lead > 140, `lead ${lead}`);
   assert.ok(scale > 100, `scale ${scale}`);
   assert.ok(brass > 150, `brass ${brass}`);
+});
+
+test("C-wing nose is parent -Z so yaw 0 flies forward", () => {
+  const g = makeCWing();
+  const body = g.getObjectByName("cwing-body");
+  assert.ok(body);
+  body.updateWorldMatrix(true, true);
+  const nose = new THREE.Vector3(2, 0, 0);
+  body.localToWorld(nose);
+  assert.ok(nose.z < -1, `nose z ${nose.z}`);
+  assert.ok(Math.abs(nose.x) < 0.25, `nose x ${nose.x}`);
 });
 
 test("stick left is roll left (screen left), stick up is pull-up", () => {
@@ -330,6 +343,34 @@ test("A still yaws left on a corridor envelope", () => {
   for (let i = 0; i < 20; i++) stepSortie(s, inp, 1 / 60);
   assert.ok(s.offsetX > x0 + 0.4, `offsetX ${s.offsetX}`);
   assert.ok(s.roll > 0.05, `bank ${s.roll}`);
+});
+
+test("corridor stick sits in the window then springs home", () => {
+  const s = createSortie({ corridor: true });
+  const inp = emptyInput();
+  inp.roll = 1;
+  for (let i = 0; i < 24; i++) stepSortie(s, inp, 1 / 60);
+  assert.ok(s.offsetX > ENVELOPE_X * 0.7, `sit ${s.offsetX}`);
+  for (let i = 0; i < 18; i++) stepSortie(s, emptyInput(), 1 / 60);
+  assert.ok(Math.abs(s.offsetX) < 4, `home ${s.offsetX}`);
+});
+
+test("W without boost does not somersault", () => {
+  const s = createSortie();
+  const inp = emptyInput();
+  inp.pitch = 1;
+  for (let i = 0; i < 20; i++) stepSortie(s, inp, 1 / 60);
+  assert.equal(s.somersault, 0);
+  assert.ok(s.pitch > 0.2, `pitch ${s.pitch}`);
+});
+
+test("boost and pull-up somersaults", () => {
+  const s = createSortie();
+  const inp = emptyInput();
+  inp.boost = true;
+  inp.pitch = 1;
+  stepSortie(s, inp, 1 / 60);
+  assert.ok(s.somersault > 0);
 });
 
 test("rim U-turn faces inward and stays near the arena", () => {
@@ -807,17 +848,19 @@ test("holding A to steer does not barrel", () => {
   assert.equal(again.barrel, 0);
 });
 
-test("double-tap Q within a wide window barrels", () => {
+test("single-tap Q barrels", () => {
   const k = new SortieKeys();
   k.setKeys(["KeyQ"]);
   const first = k.poll(0.016);
-  assert.equal(first.barrel, 0);
+  assert.equal(first.barrel, 1);
+  k.setKeys(["KeyQ"]);
+  const held = k.poll(0.016);
+  assert.equal(held.barrel, 0);
   k.setKeys([]);
   k.poll(0.016);
-  for (let i = 0; i < 20; i++) k.poll(0.016);
-  k.setKeys(["KeyQ"]);
-  const second = k.poll(0.016);
-  assert.equal(second.barrel, 1);
+  k.setKeys(["KeyE"]);
+  const right = k.poll(0.016);
+  assert.equal(right.barrel, -1);
 });
 
 test("Space edge fires, hold is charge", () => {

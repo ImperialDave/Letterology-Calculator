@@ -4,15 +4,16 @@ import { CHARGE_LOCK, HULL_MAX } from "./sim";
 import { analogFromDelta } from "./stick";
 
 const SORTIE_CONTROLS: { keys: string; does: string }[] = [
-  { keys: "A D  ← →", does: "Bank. Nose follows the bank." },
+  { keys: "A D  ← →", does: "Stick left / right. Bank. On a rail, sit in the window." },
   { keys: "W S  ↑ ↓", does: "Pull-up / dive." },
-  { keys: "Space", does: "Tap laser. Hold charge. Release bolt." },
+  { keys: "Space / click", does: "Tap laser. Hold charge. Release bolt." },
   { keys: "Shift", does: "Boost." },
   { keys: "Ctrl", does: "Brake." },
   { keys: "B", does: "Em-dash. Tap again to pop." },
-  { keys: "Q / E twice", does: "Barrel roll (eats orbs)." },
+  { keys: "Q / E", does: "Barrel (eats orbs). One tap." },
   { keys: "Boost + W", does: "Somersault." },
   { keys: "Brake + W", does: "U-turn (all-range)." },
+  { keys: "Mouse", does: "Optional stick. Click takeoff to lock." },
   { keys: "Tab", does: "Break lock." },
   { keys: "V", does: "Cockpit cam." },
   { keys: "Esc", does: "Pause / resume." },

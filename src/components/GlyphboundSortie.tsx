@@ -36,6 +36,7 @@ export function StarWords({
     if (onLeave) onLeave();
     else void nav({ to: "/", search: { n: undefined, name: undefined, tongue: undefined, club: true } });
   };
+  const wrapRef = useRef<HTMLDivElement>(null);
   const sim = useRef<SortieState>(createSortie());
   const keys = useRef(new SortieKeys());
   const missionRef = useRef<MissionDef | null>(null);
@@ -96,8 +97,13 @@ export function StarWords({
       prev = now;
       const k = keys.current.poll(dt);
       if (k.pause) {
-        if (sim.current.mode === "play") sim.current.mode = "pause";
-        else if (sim.current.mode === "pause") sim.current.mode = "play";
+        if (sim.current.mode === "play") {
+          sim.current.mode = "pause";
+          document.exitPointerLock?.();
+        } else if (sim.current.mode === "pause") {
+          sim.current.mode = "play";
+          wrapRef.current?.requestPointerLock?.();
+        }
       }
       const before = sim.current.shots.length;
       const barrel = sim.current.barrel;
@@ -146,7 +152,10 @@ export function StarWords({
   };
 
   return (
-    <div className={`relative w-full overflow-hidden bg-[#b8e8f0] [touch-action:none] ${embedded ? "h-full" : "h-[100dvh]"}`}>
+    <div
+      ref={wrapRef}
+      className={`relative w-full overflow-hidden bg-[#b8e8f0] [touch-action:none] ${embedded ? "h-full" : "h-[100dvh]"}`}
+    >
       {!picked ? (
         <RegisterMap
           cleared={cleared}
@@ -166,6 +175,7 @@ export function StarWords({
               e.stopPropagation();
               unlockSortieAudio();
               setReady(true);
+              wrapRef.current?.requestPointerLock?.();
             }}
           >
           <span className="absolute left-2 top-2 h-4 w-4 border-l border-t border-[#5ee0c0]" />
@@ -177,11 +187,11 @@ export function StarWords({
           <p className="mt-3 max-w-sm px-6 text-center text-sm text-[#c9b896]">{picked.blurb}</p>
           <p className="mt-6 text-sm text-[#5ee0c0]">Tap to take off</p>
           <p className="mt-8 max-w-md px-6 text-center text-[12px] leading-relaxed text-[#c8c4b8]">
-            <span className="text-[#f4f0e4]">A D</span> bank · <span className="text-[#f4f0e4]">W</span> pull-up · hold{" "}
-            <span className="text-[#f4f0e4]">J</span> spray then LOCK · <span className="text-[#f4f0e4]">K</span>+
-            <span className="text-[#f4f0e4]">W</span> somersault · <span className="text-[#f4f0e4]">X</span>+
-            <span className="text-[#f4f0e4]">W</span> U-turn · <span className="text-[#f4f0e4]">R</span> barrel ·{" "}
-            <span className="text-[#f4f0e4]">V</span> cockpit
+            <span className="text-[#f4f0e4]">A D</span> bank · <span className="text-[#f4f0e4]">W</span> pull-up ·{" "}
+            <span className="text-[#f4f0e4]">Space</span> tap laser, hold charge · <span className="text-[#f4f0e4]">Q E</span>{" "}
+            barrel · <span className="text-[#f4f0e4]">Shift</span>+<span className="text-[#f4f0e4]">W</span> loop ·{" "}
+            <span className="text-[#f4f0e4]">Ctrl</span>+<span className="text-[#f4f0e4]">W</span> U-turn · click locks
+            the mouse as the stick
           </p>
           </button>
           <button
@@ -209,6 +219,7 @@ export function StarWords({
             onResume={() => {
               sim.current.mode = "play";
               setSnap({ ...sim.current });
+              wrapRef.current?.requestPointerLock?.();
             }}
           />
           <TouchPads
