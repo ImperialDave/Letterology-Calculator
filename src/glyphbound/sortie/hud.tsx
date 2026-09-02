@@ -20,10 +20,15 @@ export function SortieHud({
 }) {
   return (
     <div className="pointer-events-none absolute inset-0 z-10 font-display text-[#f4f0e4]">
-      <div className="absolute left-3 top-3 text-[11px] uppercase tracking-[0.28em] text-[#e8d48a] drop-shadow-[0_2px_8px_#000]">
-        {s.missionName}
+      <span className="absolute left-3 top-3 h-8 w-8 border-l-2 border-t-2 border-[#e8d48a]/70" />
+      <span className="absolute right-3 top-3 h-8 w-8 border-r-2 border-t-2 border-[#e8d48a]/70" />
+      <span className="absolute bottom-3 left-3 h-8 w-8 border-b-2 border-l-2 border-[#e8d48a]/70" />
+      <span className="absolute bottom-3 right-3 h-8 w-8 border-b-2 border-r-2 border-[#e8d48a]/70" />
+      <div className="absolute left-5 top-5 text-[11px] uppercase tracking-[0.28em] text-[#e8d48a] drop-shadow-[0_2px_8px_#000]">
+        <p>C-wing</p>
+        <p className="mt-1 tracking-[0.18em] text-[#f4f0e4]">{s.missionName}</p>
       </div>
-      <div className="absolute right-3 top-3 text-right text-sm tabular-nums drop-shadow-[0_2px_8px_#000]">
+      <div className="absolute right-5 top-5 text-right text-sm tabular-nums drop-shadow-[0_2px_8px_#000]">
         <p style={{ color: s.proofLive ? "#e8d48a" : "#f4f0e4" }}>{s.hits}</p>
         <p className="text-[10px] text-[#c9b896]">
           hits · Proof {s.medal} · {s.score} · best {best}
@@ -32,7 +37,7 @@ export function SortieHud({
           Stem {["I", "II", "III"][s.stem] ?? "I"} · dash {s.bombs}
         </p>
       </div>
-      <div className="absolute bottom-3 left-3 flex gap-1">
+      <div className="absolute bottom-6 left-6 flex gap-1">
         {Array.from({ length: HULL_MAX }, (_, i) => (
           <span
             key={i}
@@ -50,7 +55,7 @@ export function SortieHud({
           ))}
         </span>
       </div>
-      <div className="absolute bottom-3 right-3 flex flex-col items-end gap-1">
+      <div className="absolute bottom-6 right-6 flex flex-col items-end gap-1">
         <div className="h-1.5 w-28 overflow-hidden rounded-sm border border-[#e8d48a]/40">
           <div className="h-full bg-[#e8d48a]" style={{ width: `${Math.min(100, (s.charge / 0.6) * 100)}%` }} />
         </div>
@@ -128,13 +133,14 @@ function Reticle({ s }: { s: SortieState }) {
   return (
     <div className="pointer-events-none absolute inset-0">
       <div
-        className="absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2"
-        style={{ border: `1.5px solid ${soft ? "transparent" : "rgba(244,240,228,0.55)"}` }}
-      >
-        <span className="absolute left-1/2 top-0 h-2 w-px -translate-x-1/2 -translate-y-2 bg-[#f4f0e4]/70" />
-        <span className="absolute bottom-0 left-1/2 h-2 w-px -translate-x-1/2 translate-y-2 bg-[#f4f0e4]/70" />
-        <span className="absolute left-0 top-1/2 h-px w-2 -translate-x-2 -translate-y-1/2 bg-[#f4f0e4]/70" />
-        <span className="absolute right-0 top-1/2 h-px w-2 -translate-y-1/2 translate-x-2 bg-[#f4f0e4]/70" />
+        className="absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2 rotate-45"
+        style={{ border: `1.5px solid ${soft ? "transparent" : "rgba(244,240,228,0.7)"}` }}
+      />
+      <div className="absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2">
+        <span className="absolute left-1/2 top-0 h-2.5 w-px -translate-x-1/2 -translate-y-3 bg-[#5ee0c0]/80" />
+        <span className="absolute bottom-0 left-1/2 h-2.5 w-px -translate-x-1/2 translate-y-3 bg-[#5ee0c0]/80" />
+        <span className="absolute left-0 top-1/2 h-px w-2.5 -translate-x-3 -translate-y-1/2 bg-[#5ee0c0]/80" />
+        <span className="absolute right-0 top-1/2 h-px w-2.5 -translate-y-1/2 translate-x-3 bg-[#5ee0c0]/80" />
       </div>
       {soft && (
         <div
@@ -155,8 +161,11 @@ function Radar({ s }: { s: SortieState }) {
   const px = 56 + s.x * scale;
   const pz = 56 + s.z * scale;
   return (
-    <svg className="absolute right-3 top-16 h-28 w-28 opacity-80" viewBox="0 0 112 112">
-      <circle cx="56" cy="56" r="52" fill="#121018" stroke="#e8d48a" strokeWidth="1" />
+    <svg className="absolute right-5 top-[4.6rem] h-28 w-28 opacity-85" viewBox="0 0 112 112">
+      <circle cx="56" cy="56" r="52" fill="#121018" stroke="#e8d48a" strokeWidth="1.4" />
+      <circle cx="56" cy="56" r="26" fill="none" stroke="#5ee0c0" strokeWidth="0.6" opacity="0.45" />
+      <line x1="56" y1="8" x2="56" y2="104" stroke="#e8d48a" strokeWidth="0.4" opacity="0.35" />
+      <line x1="8" y1="56" x2="104" y2="56" stroke="#e8d48a" strokeWidth="0.4" opacity="0.35" />
       {s.enemies
         .filter((e) => e.alive)
         .map((e) => (

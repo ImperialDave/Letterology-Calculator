@@ -139,10 +139,10 @@ export function GlyphboundSortie({
           leaveLabel={leaveLabel}
         />
       ) : !ready ? (
-        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-[#121018] text-[#f4f0e4]">
+        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-[#07080c] text-[#f4f0e4]">
           <button
             type="button"
-            className="flex flex-col items-center"
+            className="relative flex flex-col items-center border border-[#e8d48a]/35 bg-[#121018]/80 px-10 py-12"
             onPointerUp={(e) => {
               if (e.pointerType === "mouse" && e.button !== 0) return;
               e.stopPropagation();
@@ -150,7 +150,11 @@ export function GlyphboundSortie({
               setReady(true);
             }}
           >
-          <p className="text-[11px] uppercase tracking-[0.4em] text-[#e8d48a]">{picked.roman} · Drop Cap</p>
+          <span className="absolute left-2 top-2 h-4 w-4 border-l border-t border-[#5ee0c0]" />
+          <span className="absolute right-2 top-2 h-4 w-4 border-r border-t border-[#5ee0c0]" />
+          <span className="absolute bottom-2 left-2 h-4 w-4 border-b border-l border-[#5ee0c0]" />
+          <span className="absolute bottom-2 right-2 h-4 w-4 border-b border-r border-[#5ee0c0]" />
+          <p className="text-[11px] uppercase tracking-[0.4em] text-[#e8d48a]">{picked.roman} · C-wing</p>
           <h1 className="font-display text-6xl">{picked.name}</h1>
           <p className="mt-3 max-w-sm px-6 text-center text-sm text-[#c9b896]">{picked.blurb}</p>
           <p className="mt-6 text-sm text-[#5ee0c0]">Tap to take off</p>

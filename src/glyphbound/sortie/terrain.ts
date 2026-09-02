@@ -129,6 +129,17 @@ export function dressBiome(root: THREE.Group, kit: BiomeKit) {
     }
   }
 
+  for (let n = 0; n < 10; n++) {
+    const a = n * 0.63;
+    const x = Math.cos(a) * (ARENA_R - 36);
+    const z = Math.sin(a) * (ARENA_R - 36);
+    const h = 28 + (n % 5) * 18;
+    const spire = new THREE.Mesh(new THREE.ConeGeometry(8 + (n % 3) * 4, h, 5), metal);
+    spire.position.set(x, sit(biome, x, z) + h * 0.45, z);
+    spire.castShadow = true;
+    root.add(spire);
+  }
+
   const fogRing = new THREE.Mesh(
     new THREE.RingGeometry(ARENA_R - 8, ARENA_R + 24, 48),
     new THREE.MeshBasicMaterial({ color: kit.fog, transparent: true, opacity: 0.35, side: THREE.DoubleSide }),

@@ -3,13 +3,21 @@ import { useMemo, useRef, type MutableRefObject } from "react";
 import * as THREE from "three";
 import { makeCWing, poseCWing } from "./cwing";
 import { makeDigit } from "./digits";
-import { makeLizard } from "./lizards";
-import type { EnemyKind, SortieState } from "./sim";
+import { makeLizard, poseLizard } from "./lizards";
+import type { EnemyKind, PickupKind, SortieState } from "./sim";
 import { makeSky, makeWorld } from "./world";
 
 function fwd(yaw: number, pitch: number) {
   const cp = Math.cos(pitch);
   return new THREE.Vector3(-Math.sin(yaw) * cp, Math.sin(pitch), -Math.cos(yaw) * cp);
+}
+
+function pickupColor(kind: PickupKind) {
+  if (kind === "gold") return 0xe8d48a;
+  if (kind === "silver") return 0xd0d4d8;
+  if (kind === "repair") return 0x7ad0a8;
+  if (kind === "bomb") return 0xe8d48a;
+  return 0x5ee0c0;
 }
 
 function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
@@ -27,6 +35,7 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
   const pool = useRef<THREE.Group[]>([]);
   const shots = useRef<THREE.Mesh[]>([]);
   const rings = useRef<THREE.Mesh[]>([]);
+  const loot = useRef<THREE.Mesh[]>([]);
   const root = useRef<THREE.Group>(null);
   const tmp = useMemo(() => new THREE.Vector3(), []);
   const look = useMemo(() => new THREE.Vector3(), []);
@@ -42,12 +51,12 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
     ship.rotation.z = s.roll;
     poseCWing(ship, s);
 
-    tmp.set(s.x, s.y, s.z).addScaledVector(f, -18);
-    tmp.y += 5.5;
+    tmp.set(s.x, s.y, s.z).addScaledVector(f, -21);
+    tmp.y += 6.4;
     state.camera.position.lerp(tmp, 1 - Math.exp(-5.2 * d));
-    look.set(s.x, s.y, s.z).addScaledVector(f, 14);
+    look.set(s.x, s.y, s.z).addScaledVector(f, 16);
     state.camera.lookAt(look);
-    state.camera.fov = (s.speed > 70 ? 62 : 54) + s.flash * 4;
+    state.camera.fov = (s.speed > 70 ? 64 : 52) + s.flash * 4;
     state.camera.updateProjectionMatrix();
 
     world.waterMap.offset.x = s.t * 0.03;
@@ -72,12 +81,18 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
         node.userData.kind = e.kind;
       }
       node.position.set(e.x, e.y, e.z);
-      node.lookAt(s.x, s.y, s.z);
+      if (e.kind === "turret") {
+        node.lookAt(s.x, e.y, s.z);
+      } else {
+        node.lookAt(s.x, s.y, s.z);
+      }
+      const body = node.children[0];
+      if (body) poseLizard(body, s.t + e.t, e.kind);
     }
 
     while (shots.current.length < s.shots.length) {
       const m = new THREE.Mesh(
-        new THREE.SphereGeometry(0.28, 6, 6),
+        new THREE.BoxGeometry(0.16, 0.16, 1),
         new THREE.MeshBasicMaterial({ color: 0x5ee0c0 }),
       );
       g.add(m);
@@ -90,30 +105,30 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
       if (!sh) continue;
       m.position.set(sh.x, sh.y, sh.z);
       if (sh.kind === "laser") {
-        m.scale.set(0.45, 0.45, 9.5);
+        m.scale.set(0.7, 0.7, 8.5);
         tmp.set(sh.x + sh.vx, sh.y + sh.vy, sh.z + sh.vz);
         m.lookAt(tmp);
       } else if (sh.kind === "charge") {
-        m.scale.set(1.15, 1.15, 4.2);
+        m.scale.set(2.2, 2.2, 4.4);
         tmp.set(sh.x + sh.vx, sh.y + sh.vy, sh.z + sh.vz);
         m.lookAt(tmp);
       } else if (sh.kind === "bomb") {
-        m.scale.setScalar(4);
-        m.rotation.set(0, 0, 0);
+        m.scale.setScalar(3.4);
+        m.rotation.set(s.t * 4, s.t * 2, 0);
       } else {
-        m.scale.set(0.85, 0.85, 1.6);
+        m.scale.set(1.3, 1.3, 2.4);
         tmp.set(sh.x + sh.vx, sh.y + sh.vy, sh.z + sh.vz);
         m.lookAt(tmp);
       }
       (m.material as THREE.MeshBasicMaterial).color.set(
-        sh.kind === "bomb" ? 0xe8d48a : sh.friendly ? (sh.kind === "charge" ? 0xe8d48a : 0xb8fff0) : 0xd45a4a,
+        sh.kind === "bomb" ? 0xe8d48a : sh.friendly ? (sh.kind === "charge" ? 0xffe08a : 0xb8fff0) : 0xff6a55,
       );
     }
 
     while (rings.current.length < s.rings.length) {
       const m = new THREE.Mesh(
-        new THREE.TorusGeometry(5.5, 0.45, 6, 12),
-        new THREE.MeshLambertMaterial({ color: 0xe8d48a, emissive: 0x6a5428 }),
+        new THREE.TorusGeometry(5.5, 0.45, 6, 14),
+        new THREE.MeshLambertMaterial({ color: 0xe8d48a, emissive: 0x6a5428, emissiveIntensity: 0.7 }),
       );
       g.add(m);
       rings.current.push(m);
@@ -125,6 +140,28 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
       if (!r) continue;
       m.position.set(r.x, r.y, r.z);
       m.rotation.y = s.t * 1.4;
+      m.rotation.x = Math.sin(s.t) * 0.2;
+    }
+
+    while (loot.current.length < s.pickups.length) {
+      const m = new THREE.Mesh(
+        new THREE.OctahedronGeometry(1.15, 0),
+        new THREE.MeshLambertMaterial({ color: 0x5ee0c0, emissive: 0x5ee0c0, emissiveIntensity: 0.8 }),
+      );
+      m.castShadow = true;
+      g.add(m);
+      loot.current.push(m);
+    }
+    for (let i = 0; i < loot.current.length; i++) {
+      const m = loot.current[i];
+      const p = s.pickups[i];
+      m.visible = Boolean(p) && !p.taken;
+      if (!p) continue;
+      m.position.set(p.x, p.y + Math.sin(s.t * 3 + i) * 0.6, p.z);
+      m.rotation.y = s.t * 2.2;
+      const mat = m.material as THREE.MeshLambertMaterial;
+      mat.color.setHex(pickupColor(p.kind));
+      mat.emissive.setHex(pickupColor(p.kind));
     }
     void extra;
   });
@@ -134,10 +171,24 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
       <primitive object={sky} />
       <primitive object={world.root} />
       <primitive object={ship} />
-      <ambientLight intensity={0.7} />
-      <directionalLight position={[80, 120, 40]} intensity={1.35} color="#fff0c8" castShadow />
-      <pointLight position={[0, 80, 0]} intensity={0.45} color="#5ee0c0" />
-      <fog attach="fog" args={[world.fog, 70, 480]} />
+      <hemisphereLight args={[0xd8f4ec, 0x243028, 0.72]} />
+      <ambientLight intensity={0.22} />
+      <directionalLight
+        position={[90, 150, 55]}
+        intensity={1.65}
+        color="#fff2d0"
+        castShadow
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
+        shadow-camera-near={30}
+        shadow-camera-far={520}
+        shadow-camera-left={-160}
+        shadow-camera-right={160}
+        shadow-camera-top={160}
+        shadow-camera-bottom={-160}
+      />
+      <pointLight position={[0, 90, 0]} intensity={0.35} color="#5ee0c0" />
+      <fog attach="fog" args={[world.fog, 90, 520]} />
     </group>
   );
 }
@@ -149,7 +200,7 @@ export function SortieCanvas({ sim }: { sim: MutableRefObject<SortieState> }) {
       key={biome}
       dpr={1}
       gl={{ antialias: false, powerPreference: "high-performance" }}
-      camera={{ fov: 54, near: 0.4, far: 900, position: [0, 54, 140] }}
+      camera={{ fov: 52, near: 0.4, far: 980, position: [0, 54, 140] }}
       onCreated={({ gl }) => {
         const world = makeWorld(biome);
         gl.setClearColor(world.fog, 1);
