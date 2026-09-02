@@ -46,6 +46,7 @@ export const defaultSave = (): SaveData => ({
   talked: [],
   visited: [],
   letter: "c",
+  sortieBest: 0,
 });
 
 export function isEmptySave(data: SaveData) {
@@ -159,6 +160,7 @@ function parseSave(raw: string | null): SaveData {
       version: VERSION,
       party,
       letter,
+      sortieBest: Math.max(0, parsed.sortieBest ?? 0),
       maxShield: Math.max(3, parsed.maxShield ?? 3),
       talked: parsed.talked ?? [],
       visited: parsed.visited ?? [],

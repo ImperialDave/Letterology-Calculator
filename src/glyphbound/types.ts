@@ -377,6 +377,8 @@ export interface SaveData {
   talked: string[];
   visited: string[];
   letter: LetterId;
+  /** Best Drop Cap Sortie score. */
+  sortieBest: number;
 }
 
 export interface UiSnap {

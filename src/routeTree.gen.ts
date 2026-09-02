@@ -30,6 +30,7 @@ import { Route as TwoRouteImport } from './routes/two'
 import { Route as WhyRouteImport } from './routes/why'
 import { Route as ApiCardRouteImport } from './routes/api/card'
 import { Route as CountWalkRouteImport } from './routes/count_.$walk'
+import { Route as GlyphboundSortieRouteImport } from './routes/glyphbound.sortie'
 import { Route as LettersMarkRouteImport } from './routes/letters_.$mark'
 import { Route as OgFileRouteImport } from './routes/og.$file'
 import { Route as PSlugRouteImport } from './routes/p.$slug'
@@ -150,6 +151,11 @@ const CountWalkRoute = CountWalkRouteImport.update({
   path: '/count/$walk',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GlyphboundSortieRoute = GlyphboundSortieRouteImport.update({
+  id: '/sortie',
+  path: '/sortie',
+  getParentRoute: () => GlyphboundRoute,
+} as any)
 const LettersMarkRoute = LettersMarkRouteImport.update({
   id: '/letters_/$mark',
   path: '/letters/$mark',
@@ -232,7 +238,7 @@ export interface FileRoutesByFullPath {
   '/claim': typeof ClaimRoute
   '/count': typeof CountRoute
   '/doctrine': typeof DoctrineRoute
-  '/glyphbound': typeof GlyphboundRoute
+  '/glyphbound': typeof GlyphboundRouteWithChildren
   '/house': typeof HouseRoute
   '/key': typeof KeyRoute
   '/letters': typeof LettersRoute
@@ -243,6 +249,7 @@ export interface FileRoutesByFullPath {
   '/why': typeof WhyRoute
   '/api/card': typeof ApiCardRoute
   '/count/$walk': typeof CountWalkRoute
+  '/glyphbound/sortie': typeof GlyphboundSortieRoute
   '/letters/$mark': typeof LettersMarkRoute
   '/og/$file': typeof OgFileRoute
   '/p/$slug': typeof PSlugRoute
@@ -269,7 +276,7 @@ export interface FileRoutesByTo {
   '/claim': typeof ClaimRoute
   '/count': typeof CountRoute
   '/doctrine': typeof DoctrineRoute
-  '/glyphbound': typeof GlyphboundRoute
+  '/glyphbound': typeof GlyphboundRouteWithChildren
   '/house': typeof HouseRoute
   '/key': typeof KeyRoute
   '/letters': typeof LettersRoute
@@ -279,6 +286,7 @@ export interface FileRoutesByTo {
   '/why': typeof WhyRoute
   '/api/card': typeof ApiCardRoute
   '/count/$walk': typeof CountWalkRoute
+  '/glyphbound/sortie': typeof GlyphboundSortieRoute
   '/letters/$mark': typeof LettersMarkRoute
   '/og/$file': typeof OgFileRoute
   '/p/$slug': typeof PSlugRoute
@@ -306,7 +314,7 @@ export interface FileRoutesById {
   '/claim': typeof ClaimRoute
   '/count': typeof CountRoute
   '/doctrine': typeof DoctrineRoute
-  '/glyphbound': typeof GlyphboundRoute
+  '/glyphbound': typeof GlyphboundRouteWithChildren
   '/house': typeof HouseRoute
   '/key': typeof KeyRoute
   '/letters': typeof LettersRoute
@@ -317,6 +325,7 @@ export interface FileRoutesById {
   '/why': typeof WhyRoute
   '/api/card': typeof ApiCardRoute
   '/count_/$walk': typeof CountWalkRoute
+  '/glyphbound/sortie': typeof GlyphboundSortieRoute
   '/letters_/$mark': typeof LettersMarkRoute
   '/og/$file': typeof OgFileRoute
   '/p/$slug': typeof PSlugRoute
@@ -356,6 +365,7 @@ export interface FileRouteTypes {
     | '/why'
     | '/api/card'
     | '/count/$walk'
+    | '/glyphbound/sortie'
     | '/letters/$mark'
     | '/og/$file'
     | '/p/$slug'
@@ -392,6 +402,7 @@ export interface FileRouteTypes {
     | '/why'
     | '/api/card'
     | '/count/$walk'
+    | '/glyphbound/sortie'
     | '/letters/$mark'
     | '/og/$file'
     | '/p/$slug'
@@ -429,6 +440,7 @@ export interface FileRouteTypes {
     | '/why'
     | '/api/card'
     | '/count_/$walk'
+    | '/glyphbound/sortie'
     | '/letters_/$mark'
     | '/og/$file'
     | '/p/$slug'
@@ -456,7 +468,7 @@ export interface RootRouteChildren {
   ClaimRoute: typeof ClaimRoute
   CountRoute: typeof CountRoute
   DoctrineRoute: typeof DoctrineRoute
-  GlyphboundRoute: typeof GlyphboundRoute
+  GlyphboundRoute: typeof GlyphboundRouteWithChildren
   HouseRoute: typeof HouseRoute
   KeyRoute: typeof KeyRoute
   LettersRoute: typeof LettersRoute
@@ -622,6 +634,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CountWalkRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/glyphbound/sortie': {
+      id: '/glyphbound/sortie'
+      path: '/sortie'
+      fullPath: '/glyphbound/sortie'
+      preLoaderRoute: typeof GlyphboundSortieRouteImport
+      parentRoute: typeof GlyphboundRoute
+    }
     '/letters_/$mark': {
       id: '/letters_/$mark'
       path: '/letters/$mark'
@@ -723,6 +742,18 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface GlyphboundRouteChildren {
+  GlyphboundSortieRoute: typeof GlyphboundSortieRoute
+}
+
+const GlyphboundRouteChildren: GlyphboundRouteChildren = {
+  GlyphboundSortieRoute: GlyphboundSortieRoute,
+}
+
+const GlyphboundRouteWithChildren = GlyphboundRoute._addFileChildren(
+  GlyphboundRouteChildren,
+)
+
 interface StoicheiaRouteChildren {
   StoicheiaAgonRoute: typeof StoicheiaAgonRoute
   StoicheiaCalendarRoute: typeof StoicheiaCalendarRoute
@@ -764,7 +795,7 @@ const rootRouteChildren: RootRouteChildren = {
   ClaimRoute: ClaimRoute,
   CountRoute: CountRoute,
   DoctrineRoute: DoctrineRoute,
-  GlyphboundRoute: GlyphboundRoute,
+  GlyphboundRoute: GlyphboundRouteWithChildren,
   HouseRoute: HouseRoute,
   KeyRoute: KeyRoute,
   LettersRoute: LettersRoute,

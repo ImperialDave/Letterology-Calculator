@@ -8,6 +8,7 @@ import { Pause, Volume2, VolumeX } from "lucide-react";
 import { KITS, skillName } from "@/glyphbound/roster";
 import { KEY_DEFS, prettyCode, type KeyAction } from "@/glyphbound/keys";
 import { WEAPONS } from "@/glyphbound/weapons";
+import { Link } from "@tanstack/react-router";
 import { GlyphboundStudio } from "@/components/GlyphboundStudio";
 import { GlyphboundProof } from "@/components/GlyphboundProof";
 import { GlyphboundReplay } from "@/components/GlyphboundReplay";
@@ -474,6 +475,12 @@ export function Glyphbound() {
                 {ui.muted ? "Sound off" : "Sound on"}
               </button>
             </div>
+            <Link
+              to="/glyphbound/sortie"
+              className="flex h-11 items-center justify-center rounded-md border border-[#5ee0c0]/50 bg-[#10241c]/90 text-sm text-[#9af8de]"
+            >
+              Sortie · C-wing
+            </Link>
             <button
               type="button"
               data-ui="studio"
