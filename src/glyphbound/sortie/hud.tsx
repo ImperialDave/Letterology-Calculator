@@ -19,7 +19,7 @@ const SORTIE_CONTROLS: { keys: string; does: string }[] = [
   { keys: "Tab", does: "Break lock." },
   { keys: "V", does: "Cockpit cam." },
   { keys: "Esc", does: "Pause / resume." },
-  { keys: "Gunsight", does: "Lasers go through the squares. Hold fire to lock." },
+  { keys: "Two squares", does: "Sit a lizard in both. Hold fire to lock. Lasers go through the tunnel." },
 ];
 
 export function SortieHud({
@@ -192,8 +192,8 @@ function Reticle({ s }: { s: SortieState }) {
   const hard = s.lockHard;
   const soft = s.lockId >= 0 && s.lockOn;
   const charging = s.charge >= CHARGE_LOCK * 0.35;
-  const frame = hard ? "#d45a4a" : charging ? "#e8d48a" : "rgba(244,240,228,0.82)";
-  const inner = hard ? "#d45a4a" : charging ? "#e8d48a" : "rgba(94,224,192,0.9)";
+  const outerC = hard ? "#d45a4a" : charging ? "#e8d48a" : "rgba(232,212,138,0.92)";
+  const innerC = hard ? "#d45a4a" : charging ? "#e8d48a" : "rgba(94,224,192,0.95)";
   const cx = 50 + s.sightX * 50;
   const cy = 50 - s.sightY * 50;
   const ix = 50 + s.innerSx * 50;
@@ -209,14 +209,9 @@ function Reticle({ s }: { s: SortieState }) {
           top: `${cy}%`,
           width: `${OUTER_R * 100}vh`,
           height: `${OUTER_R * 100}vh`,
+          border: `2px solid ${outerC}`,
         }}
-      >
-        <span className="absolute left-0 top-0 h-[26%] w-[26%] border-l-2 border-t-2" style={{ borderColor: frame }} />
-        <span className="absolute right-0 top-0 h-[26%] w-[26%] border-r-2 border-t-2" style={{ borderColor: frame }} />
-        <span className="absolute bottom-0 left-0 h-[26%] w-[26%] border-b-2 border-l-2" style={{ borderColor: frame }} />
-        <span className="absolute bottom-0 right-0 h-[26%] w-[26%] border-b-2 border-r-2" style={{ borderColor: frame }} />
-        <div className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#e8d48a]" />
-      </div>
+      />
       <div
         className="absolute -translate-x-1/2 -translate-y-1/2"
         style={{
@@ -224,7 +219,7 @@ function Reticle({ s }: { s: SortieState }) {
           top: `${iy}%`,
           width: `${INNER_R * 100}vh`,
           height: `${INNER_R * 100}vh`,
-          border: `1.5px solid ${inner}`,
+          border: `1.5px solid ${innerC}`,
         }}
       >
         <div
@@ -237,12 +232,16 @@ function Reticle({ s }: { s: SortieState }) {
         {soft && (
           <span
             className="absolute -top-4 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-[0.2em]"
-            style={{ color: inner }}
+            style={{ color: innerC }}
           >
             {hard ? "LOCK" : "TGT"}
           </span>
         )}
       </div>
+      <div
+        className="absolute h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#e8d48a]"
+        style={{ left: `${cx}%`, top: `${cy}%` }}
+      />
       {s.incoming > 0 && (
         <div className="absolute left-1/2 top-[38%] -translate-x-1/2 text-[11px] uppercase tracking-[0.28em] text-[#d45a4a]">
           Break

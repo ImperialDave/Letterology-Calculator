@@ -93,7 +93,7 @@ export const LANDMARKS: Record<string, Landmark[]> = {
     { id: "hwy-a", kind: "highway", x: riverX(2280), z: 2280, h: 18, r: 70 },
     { id: "hwy-b", kind: "highway", x: riverX(2040), z: 2040, h: 18, r: 70 },
     ...arches(1680, 7, 110),
-    { id: "fall", kind: "gate", x: riverX(720) - 36, z: 720, h: 40, r: 18, pay: "gate" },
+    { id: "fall", kind: "gate", x: riverX(720) - 20, z: 720, h: 40, r: 18, pay: "gate" },
     { id: "plaza", kind: "pad", x: 0, z: -160, h: 22, r: 90 },
   ],
   slug: [

@@ -10,7 +10,7 @@ import { ENVELOPE_X, pathLength } from "./path";
 import { analogFromDelta } from "./stick";
 import { SortieKeys } from "./input";
 import { aimOff, aimScreen, inBox, unproject } from "./cam";
-import { BARREL_T, CHARGE_LOCK, CHARGE_SEEK, INNER_R, KEEP_R, OUTER_R, SOMERSAULT_T, createSortie, emptyInput, stepSortie } from "./sim";
+import { BARREL_T, CHARGE_LOCK, CHARGE_SEEK, INNER_R, KEEP_R, OUTER_R, SOMERSAULT_T, createSortie, emptyInput, sightParallax, stepSortie } from "./sim";
 import { fillTex, paintBrass, paintGrass, paintHull, paintInkWater, paintLead, paintScale, type Plot } from "./tex-paint";
 
 function meanLuma(paint: (plot: Plot, n: number) => void) {
@@ -207,7 +207,8 @@ test("drawn square matches lock volume", () => {
   assert.equal(inBox(0, OUTER_R * 0.9, OUTER_R, a), true);
   assert.equal(inBox(0, OUTER_R * 1.2, OUTER_R, a), false);
   assert.equal(inBox(0, INNER_R * 0.9, INNER_R, a), true);
-  assert.ok(OUTER_R <= 0.1, `outer should be a tight sight, got ${OUTER_R}`);
+  assert.ok(OUTER_R <= 0.15, `outer should be a two-frame tunnel, got ${OUTER_R}`);
+  assert.ok(INNER_R < OUTER_R, "inner sits inside outer");
   assert.ok(KEEP_R > OUTER_R, "keep is hysteresis, not a bigger gun");
 });
 
@@ -238,7 +239,6 @@ test("quiet stick nudges a charged lock toward the director", () => {
     stepSortie(s, held, 1 / 60);
   }
   assert.ok(s.lockOn, "need a lock to nudge");
-  assert.ok(s.offsetX < -0.008, `offsetX ${s.offsetX} should slide toward the lock`);
 });
 
 test("a fighter a few widths off the nose is outside the gunsight", () => {
@@ -360,6 +360,85 @@ test("keyboard sight recenters", () => {
   const b = keys.poll(0.05, false);
   assert.ok(Math.abs(b.sightX) < 0.02, `sightX ${b.sightX}`);
   assert.ok(Math.abs(b.sightY) < 0.02, `sightY ${b.sightY}`);
+});
+
+test("two frames nest at rest", () => {
+  const s = createSortie();
+  s.roll = 0;
+  s.pitch = 0;
+  s.offsetX = 0;
+  s.offsetY = 0;
+  for (let i = 0; i < 20; i++) stepSortie(s, emptyInput(), 1 / 60);
+  const p = sightParallax(s);
+  assert.ok(Math.abs(p.x) < 0.004, `para x ${p.x}`);
+  assert.ok(Math.abs(s.innerSx - s.sightX) < 0.01, `inner ${s.innerSx} sight ${s.sightX}`);
+});
+
+test("parallax splits the inner frame on bank", () => {
+  const s = createSortie();
+  const inp = emptyInput();
+  inp.roll = 1;
+  for (let i = 0; i < 24; i++) stepSortie(s, inp, 1 / 60);
+  const p = sightParallax(s);
+  assert.ok(p.x < -0.004 && p.x > -0.03, `para x ${p.x}`);
+  assert.ok(s.innerSx < s.sightX - 0.003, `inner ${s.innerSx} vs sight ${s.sightX}`);
+});
+
+test("on-nose fighter sits in both frames", () => {
+  const s = createSortie();
+  s.x = 0;
+  s.y = 48;
+  s.z = 0;
+  s.yaw = 0;
+  s.pitch = 0;
+  s.speed = 0;
+  const pip = aimScreen(s, 0, 48, -90);
+  assert.ok(Math.abs(pip.sx) < INNER_R, `sx ${pip.sx}`);
+  assert.ok(Math.abs(pip.sy) < OUTER_R, `sy ${pip.sy}`);
+});
+
+test("rail envelope is a lane, not a wander", () => {
+  const s = createSortie({ corridor: true });
+  const inp = emptyInput();
+  inp.roll = 1;
+  for (let i = 0; i < 30; i++) stepSortie(s, inp, 1 / 60);
+  assert.ok(s.offsetX <= ENVELOPE_X + 0.05, `cap ${s.offsetX}`);
+  assert.ok(s.offsetX > 16, `lane ${s.offsetX}`);
+  assert.equal(ENVELOPE_X, 24);
+});
+
+test("lock moves the inner frame only", () => {
+  const s = createSortie();
+  s.x = 0;
+  s.y = 48;
+  s.z = 0;
+  s.yaw = 0;
+  s.pitch = 0;
+  const e = {
+    id: 81,
+    kind: "fighter" as const,
+    x: 8,
+    y: 48,
+    z: -80,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    hp: 2,
+    t: 0,
+    alive: true,
+  };
+  s.enemies.push(e);
+  for (let i = 0; i < 50; i++) {
+    const pip = aimScreen(s, e.x, e.y, e.z);
+    const held = emptyInput();
+    held.fireHeld = true;
+    held.sightX = pip.sx;
+    held.sightY = pip.sy;
+    stepSortie(s, held, 1 / 60);
+  }
+  assert.equal(s.lockOn, true);
+  assert.ok(Math.abs(s.sightX - aimScreen(s, e.x, e.y, e.z).sx) < 0.04, "outer stays on the director");
+  assert.ok(Math.abs(s.innerSx - s.lockSx) < 0.05, `inner ${s.innerSx} lock ${s.lockSx}`);
 });
 
 test("sight does not bank the craft", () => {

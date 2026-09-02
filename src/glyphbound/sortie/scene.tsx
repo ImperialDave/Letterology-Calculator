@@ -13,6 +13,7 @@ import {
   CHASE_BACK,
   CHASE_FOV,
   CHASE_LOOK,
+  CHASE_LOOK_LIFT,
   CHASE_UP,
   COCKPIT_FOV,
   COCKPIT_FWD,
@@ -123,6 +124,7 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
       tmp.set(s.x, s.y, s.z).addScaledVector(f, -CHASE_BACK);
       tmp.y += CHASE_UP;
       lookT.set(s.x, s.y, s.z).addScaledVector(f, CHASE_LOOK);
+      lookT.y += CHASE_LOOK_LIFT;
       state.camera.fov = s.speed > 70 ? BOOST_FOV : CHASE_FOV;
     }
     state.camera.position.lerp(tmp, 1 - Math.exp(-CAM_POS_K * d));

@@ -15,14 +15,13 @@ export const CHARGE_LOCK = 0.7;
 export const BARREL_T = 0.42;
 export const SOMERSAULT_T = 0.55;
 /** NDC half-extent around the director. HUD draws these as r*100vh. */
-export const INNER_R = 0.045;
-export const OUTER_R = 0.09;
-export const KEEP_R = 0.13;
+export const INNER_R = 0.08;
+export const OUTER_R = 0.13;
+export const KEEP_R = 0.17;
 export const MAGNET = 0;
 export const CHARGE_SEEK = 0.15;
 const NUDGE_STICK = 0.35;
-const NUDGE_SIT = 12;
-const FOLLOW_SIT = 8;
+const NUDGE_SIT = 8;
 
 export type EnemyKind = "fighter" | "cork" | "bomber" | "turret" | "ace" | "mech" | "mothership" | "dualis" | "aster";
 export type FormName = "v" | "line" | "cross" | "guide" | "hold";
@@ -279,8 +278,6 @@ function flyCraft(s: SortieState, input: SortieInput, dt: number) {
     const quiet = Math.abs(input.roll) < NUDGE_STICK && Math.abs(input.pitch) < NUDGE_STICK;
     let wantX = stickX * ENVELOPE_X;
     let wantY = stickY * ENVELOPE_Y;
-    wantX -= s.sightX * FOLLOW_SIT;
-    wantY += s.sightY * FOLLOW_SIT;
     if (quiet && s.lockOn && s.charge >= CHARGE_SEEK) {
       wantX -= (s.lockSx - s.sightX) * NUDGE_SIT;
       wantY += (s.lockSy - s.sightY) * NUDGE_SIT;
@@ -800,9 +797,9 @@ function aimDir(s: SortieState, origin: Vec3, shotSpeed = LASER_SPD, home = fals
 function scriptWaves(s: SortieState) {
   if (s.missionId !== "sky" && scriptMissionWaves(s)) return;
   if (s.wave < 1 && s.t > 2.2) {
-    spawnEnemy(s, "fighter", -40, 50, -40, { form: "v", formId: 1, slot: 1, staged: true });
+    spawnEnemy(s, "fighter", -12, 50, -40, { form: "v", formId: 1, slot: 1, staged: true });
     spawnEnemy(s, "fighter", 0, 54, -70, { form: "v", formId: 1, slot: 0, staged: true });
-    spawnEnemy(s, "fighter", 40, 50, -40, { form: "v", formId: 1, slot: 2, staged: true });
+    spawnEnemy(s, "fighter", 12, 50, -40, { form: "v", formId: 1, slot: 2, staged: true });
     s.wave = 1;
     s.radio = { who: "s", text: "Lizards in a V. Cut the lead.", until: s.t + 3 };
   }
@@ -840,19 +837,32 @@ function sideOf(d: Vec3): Vec3 {
   return { x: x / n, y: 0, z: z / n };
 }
 
+export function sightParallax(s: SortieState) {
+  const onRail = s.flight === "corridor" && s.shift <= 0;
+  const ox = onRail ? s.offsetX / ENVELOPE_X : 0;
+  const oy = onRail ? s.offsetY / ENVELOPE_Y : 0;
+  let px = -(s.roll * 0.018) - ox * 0.012;
+  let py = s.pitch * 0.012 + oy * 0.008;
+  const m = Math.hypot(px, py);
+  if (m > 0.02) {
+    px = (px / m) * 0.02;
+    py = (py / m) * 0.02;
+  }
+  return { x: px, y: py };
+}
+
 function formOffset(form: FormName | undefined, slot: number, t: number): { x: number; y: number } {
-  if (form === "line") return { x: (slot - 1) * 16, y: 2 };
+  if (form === "line") return { x: (slot - 1) * 10, y: 2 };
   if (form === "cross") {
     const meet = (Math.sin(t * 1.15) + 1) * 0.5;
     const side = slot % 2 === 0 ? -1 : 1;
-    return { x: side * (8 + 26 * (1 - meet)), y: (slot % 2) * 6 };
+    return { x: side * (6 + 14 * (1 - meet)), y: (slot % 2) * 6 };
   }
-  if (form === "guide") return { x: Math.sin(t * 0.85) * 20, y: 3 };
+  if (form === "guide") return { x: Math.sin(t * 0.85) * 8, y: 3 };
   if (form === "hold") return { x: 0, y: 2 };
-  // v
   if (slot === 0) return { x: 0, y: 4 };
-  if (slot === 1) return { x: -18, y: 2 };
-  return { x: 18, y: 2 };
+  if (slot === 1) return { x: -11, y: 2 };
+  return { x: 11, y: 2 };
 }
 
 /** Rotate current velocity toward a unit want, capped at `turn` rad/s. */
@@ -1207,10 +1217,11 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
     s.leadSx = 0;
     s.leadSy = 0;
   }
-  const ix = s.lockOn ? s.lockSx : s.sightX;
-  const iy = s.lockOn ? s.lockSy : s.sightY;
-  s.innerSx = follow(s.innerSx, ix, 18, dt);
-  s.innerSy = follow(s.innerSy, iy, 18, dt);
+  const para = sightParallax(s);
+  const ix = s.lockOn ? s.lockSx : s.sightX + para.x;
+  const iy = s.lockOn ? s.lockSy : s.sightY + para.y;
+  s.innerSx = follow(s.innerSx, ix, 14, dt);
+  s.innerSy = follow(s.innerSy, iy, 14, dt);
 
   if (!input.fireHeld) {
     if (s.charge >= CHARGE_LOCK && !liveCharge) {

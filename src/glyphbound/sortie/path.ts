@@ -86,5 +86,5 @@ export const SKY_CORRIDOR: PathPoint[] = [
 
 export const SHIFT_T = 1.2;
 export const UTURN_T = 0.72;
-export const ENVELOPE_X = 36;
-export const ENVELOPE_Y = 28;
+export const ENVELOPE_X = 24;
+export const ENVELOPE_Y = 18;
