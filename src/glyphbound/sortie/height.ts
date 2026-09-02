@@ -67,6 +67,11 @@ function biomeHills(biome: BiomeId, x: number, z: number) {
 }
 
 export function groundHeight(biome: BiomeId, x: number, z: number, missionId?: string) {
+  // Coast strip is a river valley. landmarkHeight owns it so the water
+  // channel can sit *below* the biome's plaza floor instead of maxing with it.
+  if (missionId === "coast" && z > 220) {
+    return Math.max(0, landmarkHeight("coast", x, z));
+  }
   let h = biomeHills(biome, x, z);
   if (missionId) h = Math.max(h, landmarkHeight(missionId, x, z));
   if (z > 180) return Math.max(0, h);

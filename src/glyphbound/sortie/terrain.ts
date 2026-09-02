@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { groundHeight } from "./height";
-import { landmarksFor, type Landmark } from "./landmarks";
-import { BRASS, FOG, PAPER, RUST, ashTex, brassTex, grassLeadTex, iceGroundTex, iceWaterTex, inkWaterTex, leadTex, n64Mat, rustTex, slagWaterTex } from "./n64";
+import { landmarksFor, riverX, type Landmark } from "./landmarks";
+import { FOG, PAPER, RUST, ashTex, brassTex, grassLeadTex, iceGroundTex, iceWaterTex, inkWaterTex, leadTex, n64Mat, rockTex, rustTex, slagWaterTex } from "./n64";
 
 const ARENA_R = 420;
 
@@ -31,19 +31,6 @@ function sit(biome: BiomeId, x: number, z: number, missionId?: string) {
   return groundHeight(biome, x, z, missionId);
 }
 
-function arch(root: THREE.Group, x: number, z: number, h: number, mat: THREE.Material, biome: BiomeId, missionId?: string) {
-  const y0 = sit(biome, x, z, missionId);
-  const col = new THREE.BoxGeometry(7, h, 9);
-  const L = new THREE.Mesh(col, mat);
-  const R = new THREE.Mesh(col, mat);
-  L.position.set(x - 14, y0 + h * 0.5, z);
-  R.position.set(x + 14, y0 + h * 0.5, z);
-  const lintel = new THREE.Mesh(new THREE.BoxGeometry(36, 7, 11), mat);
-  lintel.position.set(x, y0 + h + 3, z);
-  L.castShadow = R.castShadow = lintel.castShadow = true;
-  root.add(L, R, lintel);
-}
-
 function makeSheet(kit: BiomeKit, missionId?: string) {
   const segs = 88;
   const size = (ARENA_R + 36) * 2;
@@ -54,7 +41,7 @@ function makeSheet(kit: BiomeKit, missionId?: string) {
     pos.setY(i, groundHeight(kit.id, pos.getX(i), pos.getZ(i), missionId));
   }
   geo.computeVertexNormals();
-  const map = kit.groundTex();
+  const map = kit.groundTex().clone();
   map.repeat.set(22, 22);
   const mesh = new THREE.Mesh(geo, n64Mat(kit.ground, { map }));
   mesh.receiveShadow = true;
@@ -62,19 +49,50 @@ function makeSheet(kit: BiomeKit, missionId?: string) {
 }
 
 function makeStrip(kit: BiomeKit, missionId: string) {
-  const geo = new THREE.PlaneGeometry(280, 4200, 24, 96);
+  const geo = new THREE.PlaneGeometry(420, 4200, 72, 120);
   geo.rotateX(-Math.PI / 2);
   const pos = geo.attributes.position;
+  const cols = new Float32Array(pos.count * 3);
+  const sand = new THREE.Color(0xf0dcb0);
+  const grass = new THREE.Color(0x5ad848);
+  const rock = new THREE.Color(0xb8a888);
+  const dirt = new THREE.Color(kit.ground);
   for (let i = 0; i < pos.count; i++) {
-    pos.setY(i, groundHeight(kit.id, pos.getX(i), pos.getZ(i) + 2100, missionId));
+    const x = pos.getX(i);
+    const z = pos.getZ(i) + 2100;
+    const y = groundHeight(kit.id, x, z, missionId);
+    pos.setY(i, y);
+    let c = dirt;
+    if (missionId === "coast") {
+      const d = Math.abs(x - riverX(z));
+      if (y < 3 || d < 22) c = sand;
+      else if (y > 24) c = rock;
+      else c = grass;
+    }
+    cols[i * 3] = c.r;
+    cols[i * 3 + 1] = c.g;
+    cols[i * 3 + 2] = c.b;
   }
+  geo.setAttribute("color", new THREE.BufferAttribute(cols, 3));
   geo.translate(0, 0, 2100);
   geo.computeVertexNormals();
-  const map = kit.groundTex();
-  map.repeat.set(8, 48);
-  const mesh = new THREE.Mesh(geo, n64Mat(kit.ground, { map }));
+  const paint = missionId === "coast";
+  let mat: THREE.Material;
+  if (paint) {
+    mat = n64Mat(0xffffff, { vertexColors: true });
+  } else {
+    const map = kit.groundTex().clone();
+    map.repeat.set(8, 48);
+    mat = n64Mat(kit.ground, { map });
+  }
+  const mesh = new THREE.Mesh(geo, mat);
   mesh.receiveShadow = true;
   return mesh;
+}
+
+function hash01(n: number) {
+  const s = Math.sin(n * 127.1) * 43758.5453;
+  return s - Math.floor(s);
 }
 
 function placeLandmark(root: THREE.Group, L: Landmark, kit: BiomeKit, biome: BiomeId, missionId: string) {
@@ -82,39 +100,132 @@ function placeLandmark(root: THREE.Group, L: Landmark, kit: BiomeKit, biome: Bio
   const metal = n64Mat(kit.metal, { map: kit.id === "press" || kit.id === "gutter" ? rustTex() : brassTex() });
   const paper = n64Mat(PAPER, { map: leadTex() });
   const dirt = n64Mat(kit.ground, { map: kit.groundTex() });
-  if (L.kind === "arch" || L.kind === "gate") {
-    arch(root, L.x, L.z, L.h, paper, biome, missionId);
+  const rock = n64Mat(0xc8b89a, { map: rockTex() });
+  if (L.kind === "arch") {
+    // Hole faces ±Z (torus in XY) so sky shows through from the cockpit.
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(18, 5.4, 7, 16), rock);
+    ring.position.set(L.x, y0 + 18, L.z);
+    ring.castShadow = true;
+    root.add(ring);
+    for (const s of [-16, 16]) {
+      const foot = new THREE.Mesh(new THREE.DodecahedronGeometry(6.5, 0), rock);
+      foot.position.set(L.x + s, y0 + 5, L.z);
+      foot.rotation.y = hash01(L.z + s) * 2;
+      root.add(foot);
+    }
+    return;
+  }
+  if (L.kind === "gate") {
+    const left = new THREE.Mesh(new THREE.BoxGeometry(22, L.h + 16, 22), rock);
+    left.position.set(L.x - 16, y0 + (L.h + 16) * 0.42, L.z - 4);
+    const right = new THREE.Mesh(new THREE.BoxGeometry(14, L.h * 0.7, 16), rock);
+    right.position.set(L.x + 18, y0 + L.h * 0.28, L.z + 8);
+    left.castShadow = right.castShadow = true;
+    root.add(left, right);
+    const fallMap = kit.waterTex().clone();
+    fallMap.repeat.set(1, 3);
+    for (const [dx, dz, w] of [
+      [2, 6, 11],
+      [5, 3, 8],
+      [0, 8, 9],
+    ] as const) {
+      const fall = new THREE.Mesh(
+        new THREE.PlaneGeometry(w, L.h + 6),
+        new THREE.MeshBasicMaterial({
+          map: fallMap,
+          transparent: true,
+          opacity: 0.7,
+          side: THREE.DoubleSide,
+          depthWrite: false,
+        }),
+      );
+      fall.position.set(L.x + dx, y0 + L.h * 0.38, L.z + dz);
+      fall.name = "fall";
+      root.add(fall);
+    }
     return;
   }
   if (L.kind === "tower") {
-    const b = new THREE.Mesh(new THREE.BoxGeometry(14, L.h, 14), dirt);
+    const yaw = hash01(L.z + L.x) * 0.8 - 0.4;
+    const face = L.x >= 0 ? -1 : 1;
+    if (L.h > 50) {
+      // Skyline C: spine + two arms opening toward the river.
+      const spine = new THREE.Mesh(new THREE.BoxGeometry(7, L.h, 16), dirt);
+      spine.position.set(L.x, y0 + L.h * 0.5, L.z);
+      spine.rotation.y = yaw;
+      const top = new THREE.Mesh(new THREE.BoxGeometry(18, 9, 16), paper);
+      top.position.set(L.x + face * 8, y0 + L.h - 2, L.z);
+      top.rotation.y = yaw;
+      const bot = new THREE.Mesh(new THREE.BoxGeometry(15, 8, 16), dirt);
+      bot.position.set(L.x + face * 6, y0 + 8, L.z);
+      bot.rotation.y = yaw;
+      spine.castShadow = top.castShadow = true;
+      root.add(spine, top, bot);
+      return;
+    }
+    const w = 11 + hash01(L.z) * 8;
+    const d = 10 + hash01(L.x) * 7;
+    const b = new THREE.Mesh(new THREE.BoxGeometry(w, L.h, d), dirt);
     b.position.set(L.x, y0 + L.h * 0.5, L.z);
+    b.rotation.y = yaw;
     b.castShadow = true;
     root.add(b);
+    if (L.h > 36) {
+      const cap = new THREE.Mesh(new THREE.BoxGeometry(w * 0.6, 8, d * 0.6), paper);
+      cap.position.set(L.x, y0 + L.h + 2, L.z);
+      cap.rotation.y = yaw;
+      root.add(cap);
+    }
+    if (hash01(L.x * 3) > 0.55) {
+      const annex = new THREE.Mesh(new THREE.BoxGeometry(w * 0.7, L.h * 0.45, d * 0.8), dirt);
+      annex.position.set(L.x + Math.cos(yaw) * w * 0.7, y0 + L.h * 0.22, L.z + Math.sin(yaw) * w * 0.7);
+      annex.rotation.y = yaw + 0.35;
+      annex.castShadow = true;
+      root.add(annex);
+    }
     return;
   }
   if (L.kind === "highway") {
-    const b = new THREE.Mesh(new THREE.BoxGeometry(90, 4, 18), metal);
-    b.position.set(L.x, y0 + L.h, L.z);
-    b.castShadow = true;
-    root.add(b);
+    const deck = new THREE.Mesh(new THREE.BoxGeometry(86, 3.2, 16), metal);
+    deck.position.set(L.x, y0 + L.h, L.z);
+    deck.castShadow = true;
+    root.add(deck);
+    for (const s of [-28, -10, 10, 28]) {
+      const pier = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.8, L.h, 5), rock);
+      pier.position.set(L.x + s, y0 + L.h * 0.5, L.z);
+      root.add(pier);
+    }
     return;
   }
   if (L.kind === "tanker") {
-    const b = new THREE.Mesh(new THREE.BoxGeometry(90, 16, 22), metal);
-    b.position.set(L.x, y0 + 10, L.z);
-    root.add(b);
+    const hull = new THREE.Mesh(new THREE.CylinderGeometry(9, 9, 70, 8, 1, true), metal);
+    hull.rotation.x = Math.PI / 2;
+    hull.position.set(L.x, y0 + 11, L.z);
+    root.add(hull);
+    for (const s of [-34, 34]) {
+      const lip = new THREE.Mesh(new THREE.TorusGeometry(9.2, 1.1, 6, 10), metal);
+      lip.position.set(L.x, y0 + 11, L.z + s);
+      root.add(lip);
+    }
     return;
   }
   if (L.kind === "stack") {
-    const b = new THREE.Mesh(new THREE.CylinderGeometry(8, 12, L.h, 6), n64Mat(RUST));
+    const b = new THREE.Mesh(new THREE.CylinderGeometry(7, 11, L.h, 6), n64Mat(RUST));
     b.position.set(L.x, y0 + L.h * 0.5, L.z);
     root.add(b);
+    const smoke = new THREE.Mesh(
+      new THREE.SphereGeometry(5, 5, 4),
+      new THREE.MeshBasicMaterial({ color: 0xc9b896, transparent: true, opacity: 0.35 }),
+    );
+    smoke.position.set(L.x, y0 + L.h + 8, L.z);
+    smoke.scale.set(1.4, 0.8, 1.4);
+    root.add(smoke);
     return;
   }
   if (L.kind === "hangar") {
     const b = new THREE.Mesh(new THREE.BoxGeometry(36, L.h, 28), paper);
     b.position.set(L.x, y0 + L.h * 0.5, L.z);
+    b.lookAt(0, y0 + L.h * 0.5, 0);
     root.add(b);
     return;
   }
@@ -124,11 +235,51 @@ function placeLandmark(root: THREE.Group, L: Landmark, kit: BiomeKit, biome: Bio
     root.add(b);
     return;
   }
+  if (L.kind === "pad") {
+    const disk = new THREE.Mesh(new THREE.CylinderGeometry(L.r * 0.55, L.r * 0.62, 3.2, 16), metal);
+    disk.position.set(L.x, y0 + 1.4, L.z);
+    disk.receiveShadow = true;
+    root.add(disk);
+    return;
+  }
   if (L.kind === "slug" || L.kind === "rock") {
-    const b = new THREE.Mesh(new THREE.DodecahedronGeometry(L.r * 0.45, 0), n64Mat(0x8a9aa8, { map: leadTex() }));
+    const b = new THREE.Mesh(new THREE.DodecahedronGeometry(L.r * 0.45, 0), rock);
     b.position.set(L.x, y0 + L.h * 0.35, L.z);
+    b.rotation.set(hash01(L.x) * 1.2, hash01(L.z) * 2, 0);
     b.castShadow = true;
     root.add(b);
+  }
+}
+
+function scatterTrees(root: THREE.Group, kit: BiomeKit, missionId: string) {
+  const grass = n64Mat(0x5ad848, { map: kit.groundTex() });
+  const trunk = n64Mat(0x8a6a40);
+  for (let i = 0; i < 70; i++) {
+    const z = 900 + hash01(i * 3.1) * 2900;
+    const side = hash01(i * 7.7) > 0.5 ? 1 : -1;
+    const x = riverX(z) + side * (48 + hash01(i * 2.2) * 90);
+    const y0 = sit(kit.id, x, z, missionId);
+    if (y0 < 6) continue;
+    const s = 0.7 + hash01(i) * 1.1;
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.5 * s, 0.7 * s, 4 * s, 4), trunk);
+    stem.position.set(x, y0 + 2 * s, z);
+    const leaf = new THREE.Mesh(new THREE.ConeGeometry(3.2 * s, 7 * s, 5), grass);
+    leaf.position.set(x, y0 + 6.2 * s, z);
+    root.add(stem, leaf);
+  }
+}
+
+function farRidges(root: THREE.Group, kit: BiomeKit, missionId: string) {
+  const rock = n64Mat(0xb8a888, { map: rockTex() });
+  for (let i = 0; i < 6; i++) {
+    const z = 400 + i * 620 + hash01(i * 4) * 80;
+    const x = (i % 2 === 0 ? -1 : 1) * (280 + hash01(i * 9) * 90);
+    const h = 48 + hash01(i * 2) * 56;
+    const ridge = new THREE.Mesh(new THREE.DodecahedronGeometry(20 + hash01(i) * 14, 0), rock);
+    ridge.position.set(x, sit(kit.id, x, z, missionId) + h * 0.22, z);
+    ridge.scale.set(1.8 + hash01(i * 3), h / 20, 1.2);
+    ridge.rotation.y = hash01(i * 5) * 2;
+    root.add(ridge);
   }
 }
 
@@ -136,25 +287,7 @@ export function dressBiome(root: THREE.Group, kit: BiomeKit, missionId = kit.id)
   const biome = kit.id;
   root.add(makeSheet(kit, missionId));
   if (missionId !== "ice" && missionId !== "sky") root.add(makeStrip(kit, missionId));
-  const metal = n64Mat(kit.metal, { map: kit.id === "press" || kit.id === "gutter" ? rustTex() : brassTex() });
   for (const L of landmarksFor(missionId)) placeLandmark(root, L, kit, biome, missionId);
-
-  for (let n = 0; n < 10; n++) {
-    const a = n * 0.63;
-    const x = Math.cos(a) * (ARENA_R - 36);
-    const z = Math.sin(a) * (ARENA_R - 36);
-    const h = 28 + (n % 5) * 18;
-    const spire = new THREE.Mesh(new THREE.ConeGeometry(8 + (n % 3) * 4, h, 5), metal);
-    spire.position.set(x, sit(biome, x, z, missionId) + h * 0.45, z);
-    spire.castShadow = true;
-    root.add(spire);
-  }
-
-  const fogRing = new THREE.Mesh(
-    new THREE.RingGeometry(ARENA_R - 8, ARENA_R + 24, 48),
-    new THREE.MeshBasicMaterial({ color: kit.fog, transparent: true, opacity: 0.35, side: THREE.DoubleSide }),
-  );
-  fogRing.rotation.x = -Math.PI / 2;
-  fogRing.position.y = 2;
-  root.add(fogRing);
+  if (missionId === "coast" || missionId === "slug") scatterTrees(root, kit, missionId);
+  if (missionId !== "sky") farRidges(root, kit, missionId);
 }

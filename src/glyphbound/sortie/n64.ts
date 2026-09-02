@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { PAINTS, fillTex, paintBrass, paintCloud, paintGrass, paintHull, paintIce, paintInkWater, paintLead, paintRust, paintScale, paintSlagWater, type Plot } from "./tex-paint";
+import { PAINTS, fillTex, paintBrass, paintCloud, paintGrass, paintHull, paintIce, paintInkWater, paintLead, paintRock, paintRust, paintScale, paintSlagWater, type Plot } from "./tex-paint";
 
 export const INK = 0x5ee0c0;
 export const BRASS = 0xffe08a;
@@ -11,10 +11,11 @@ export const OLIVE = 0x6edc58;
 
 const cache = new Map<string, THREE.Texture>();
 
-export function n64Mat(color: number, opts?: { map?: THREE.Texture; emissive?: number; glow?: number }) {
+export function n64Mat(color: number, opts?: { map?: THREE.Texture; emissive?: number; glow?: number; vertexColors?: boolean }) {
   return new THREE.MeshLambertMaterial({
-    color: opts?.map ? 0xffffff : color,
+    color: opts?.map || opts?.vertexColors ? 0xffffff : color,
     map: opts?.map,
+    vertexColors: opts?.vertexColors ?? false,
     emissive: opts?.emissive ?? 0x000000,
     emissiveIntensity: opts?.glow ?? (opts?.emissive ? 0.55 : 0),
     flatShading: true,
@@ -73,3 +74,4 @@ export const ashTex = () => fromPaint("ground-ash", PAINTS["ground-ash"]);
 export const scaleOliveTex = () => fromPaint("scale-olive", paintScale);
 export const cloudTex = () => fromPaint("cloud-paper", paintCloud);
 export const hullTex = () => fromPaint("ship-hull", paintHull);
+export const rockTex = () => fromPaint("ground-rock", paintRock);

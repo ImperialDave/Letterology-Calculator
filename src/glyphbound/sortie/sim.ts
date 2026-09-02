@@ -9,7 +9,7 @@ import type { BiomeId } from "./terrain";
 export const ARENA_R = 420;
 export const WATER_Y = 0;
 export const HULL_MAX = 6;
-export const CHARGE_LOCK = 0.5;
+export const CHARGE_LOCK = 3;
 export const BARREL_T = 0.42;
 export const SOMERSAULT_T = 0.55;
 export const INNER_R = 0.38;
@@ -186,10 +186,11 @@ const CEIL_Y = 260;
 const AUTO_LEVEL = 0.72;
 const CMD_K = 11;
 const BANK_K = 8;
-const HEAT_PER_SHOT = 0.048;
+const HEAT_PER_SHOT = 0.012;
 const RAPID_CD = 0.08;
-const HEAT_CD = 0.06;
+const HEAT_CD = 0.02;
 const OVERHEAT_CD = 0.28;
+const ENEMY_TURN = 3.2;
 const BOOST_DRAIN = 0.4;
 const BRAKE_DRAIN = 0.36;
 const METER_REGEN = 0.58;
@@ -677,45 +678,136 @@ function scriptWaves(s: SortieState) {
   }
 }
 
+function railDir(s: SortieState): Vec3 {
+  if (s.path.length > 1) {
+    const sample = samplePath(s.path, Math.min(0.999, s.pathT));
+    const n = Math.hypot(sample.dx, sample.dy, sample.dz) || 1;
+    return { x: sample.dx / n, y: sample.dy / n, z: sample.dz / n };
+  }
+  return { x: 0, y: 0, z: -1 };
+}
+
+function sideOf(d: Vec3): Vec3 {
+  const x = d.z;
+  const z = -d.x;
+  const n = Math.hypot(x, z) || 1;
+  return { x: x / n, y: 0, z: z / n };
+}
+
+/** Rotate current velocity toward a unit want, capped at `turn` rad/s. */
+function turnTo(e: Enemy, wx: number, wy: number, wz: number, spd: number, turn: number, dt: number) {
+  const wn = Math.hypot(wx, wy, wz) || 1;
+  wx /= wn;
+  wy /= wn;
+  wz /= wn;
+  let cx = e.vx;
+  let cy = e.vy;
+  let cz = e.vz;
+  const cn = Math.hypot(cx, cy, cz);
+  if (cn < 1) {
+    e.vx = wx * spd;
+    e.vy = wy * spd;
+    e.vz = wz * spd;
+    return;
+  }
+  cx /= cn;
+  cy /= cn;
+  cz /= cn;
+  const dot = Math.max(-1, Math.min(1, cx * wx + cy * wy + cz * wz));
+  const ang = Math.acos(dot);
+  const max = turn * dt;
+  if (ang <= max) {
+    e.vx = wx * spd;
+    e.vy = wy * spd;
+    e.vz = wz * spd;
+    return;
+  }
+  let sx = wx - cx * dot;
+  let sy = wy - cy * dot;
+  let sz = wz - cz * dot;
+  let sn = Math.hypot(sx, sy, sz);
+  if (sn < 1e-4) {
+    sx = -cz;
+    sy = 0;
+    sz = cx;
+    sn = Math.hypot(sx, sz) || 1;
+  }
+  sx /= sn;
+  sy /= sn;
+  sz /= sn;
+  const c = Math.cos(max);
+  const si = Math.sin(max);
+  e.vx = (cx * c + sx * si) * spd;
+  e.vy = (cy * c + sy * si) * spd;
+  e.vz = (cz * c + sz * si) * spd;
+}
+
 function steerEnemy(s: SortieState, e: Enemy, dt: number) {
   e.t += dt;
   const toP = { x: s.x - e.x, y: s.y - e.y, z: s.z - e.z };
   const n = Math.hypot(toP.x, toP.y, toP.z) || 1;
-  if (e.kind === "fighter" || e.kind === "ace") {
-    const spd = e.kind === "ace" ? 30 : 22;
-    e.vx = (toP.x / n) * spd;
-    e.vy = (toP.y / n) * 12;
-    e.vz = (toP.z / n) * spd;
-    if (e.t % 1.6 < dt + 0.02) {
-      fireShot(s, "orb", false, e.x, e.y, e.z, toP, 46);
-    }
-  } else if (e.kind === "cork") {
-    const ang = e.t * 1.4;
-    e.vx = Math.cos(ang) * 36 + toP.x * 0.04;
-    e.vy = Math.sin(ang * 0.8) * 10;
-    e.vz = Math.sin(ang) * 36 + toP.z * 0.04;
-    if (e.t % 1.1 < dt + 0.02) fireShot(s, "orb", false, e.x, e.y, e.z, toP, 40);
-  } else if (e.kind === "bomber") {
-    if (e.t % 3 < 1.1) {
-      e.vx = (toP.x / n) * 55;
-      e.vy = (toP.y / n) * 40 - 8;
-      e.vz = (toP.z / n) * 55;
-    } else {
-      e.vx *= 0.9;
-      e.vy += 8 * dt;
-      e.vz *= 0.9;
-    }
-    if (e.t % 2.2 < dt + 0.02) fireShot(s, "orb", false, e.x, e.y, e.z, toP, 50);
-  } else if (e.kind === "turret" || e.kind === "mech" || e.kind === "mothership") {
+  const rail = s.flight === "corridor";
+  const d = railDir(s);
+  const side = sideOf(d);
+
+  if (e.kind === "turret" || e.kind === "mech" || e.kind === "mothership") {
     if (e.t % (e.kind === "mothership" ? 0.7 : 1.4) < dt + 0.02) fireShot(s, "orb", false, e.x, e.y, e.z, toP, 44);
-  } else {
-    const ang = e.t * 0.55;
-    e.x = Math.cos(ang) * 90;
-    e.z = -180 + Math.sin(ang) * 70;
-    e.y = 62 + Math.sin(ang * 2) * 8;
+    return;
+  }
+
+  if (e.kind === "dualis") {
+    if (rail) {
+      e.x += d.x * 20 * dt;
+      e.z += d.z * 20 * dt;
+    } else {
+      const ang = e.t * 0.55;
+      e.x = Math.cos(ang) * 90;
+      e.z = -180 + Math.sin(ang) * 70;
+      e.y = 62 + Math.sin(ang * 2) * 8;
+    }
     e.vx = 0;
     e.vz = 0;
     if (e.t % 0.85 < dt + 0.02) fireShot(s, "orb", false, e.x, e.y, e.z, toP, 42);
+    return;
+  }
+
+  if (rail) {
+    // Same grammar as the C-wing on rails: fly the course, weave, never reverse.
+    const weave = Math.sin(e.t * 2.1 + e.id) * (e.kind === "cork" ? 22 : 8);
+    const bob = Math.sin(e.t * 1.7 + e.id * 0.4) * (e.kind === "cork" ? 12 : 5);
+    const spd = e.kind === "ace" ? 50 : e.kind === "bomber" ? 36 : e.kind === "cork" ? 44 : 46;
+    e.vx = d.x * spd + side.x * weave;
+    e.vy = d.y * spd + bob + (e.kind === "bomber" && e.t % 3 < 1.1 ? -16 : 0);
+    e.vz = d.z * spd + side.z * weave;
+  } else {
+    const wantx = toP.x / n;
+    const wanty = toP.y / n;
+    const wantz = toP.z / n;
+    if (e.kind === "cork") {
+      turnTo(e, wantx, wanty, wantz, 28, ENEMY_TURN, dt);
+      const ang = e.t * 1.4;
+      e.vx += Math.cos(ang) * 16;
+      e.vy += Math.sin(ang * 0.8) * 8;
+      e.vz += Math.sin(ang) * 16;
+    } else if (e.kind === "bomber") {
+      if (e.t % 3 < 1.1) turnTo(e, wantx, wanty * 0.7 - 0.2, wantz, 40, ENEMY_TURN, dt);
+      else {
+        e.vx *= 0.9;
+        e.vy += 8 * dt;
+        e.vz *= 0.9;
+      }
+    } else {
+      const spd = e.kind === "ace" ? 30 : 22;
+      turnTo(e, wantx, wanty, wantz, spd, ENEMY_TURN, dt);
+    }
+  }
+
+  if (e.kind === "fighter" || e.kind === "ace") {
+    if (e.t % 1.6 < dt + 0.02) fireShot(s, "orb", false, e.x, e.y, e.z, toP, 46);
+  } else if (e.kind === "cork") {
+    if (e.t % 1.1 < dt + 0.02) fireShot(s, "orb", false, e.x, e.y, e.z, toP, 40);
+  } else if (e.kind === "bomber") {
+    if (e.t % 2.2 < dt + 0.02) fireShot(s, "orb", false, e.x, e.y, e.z, toP, 50);
   }
 }
 
@@ -837,7 +929,7 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
   }
 
   if (input.cockpit) s.cockpit = !s.cockpit;
-  if (input.fireHeld) s.charge = Math.min(1.2, s.charge + dt);
+  if (input.fireHeld) s.charge = Math.min(CHARGE_LOCK + 0.4, s.charge + dt);
 
   if (input.lockBreak) s.lockId = -1;
   else s.lockId = pickTarget(s);

@@ -228,6 +228,19 @@ export function paintHull(plot: Plot, n: number) {
   }
 }
 
+export function paintRock(plot: Plot, n: number) {
+  const a = rgb("#8a7a68");
+  const b = rgb("#c8b89a");
+  const c = rgb("#e8dcc0");
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      const nse = ((x * 17 + y * 11) % 19) / 19;
+      band(plot, x, y, a, b, 0.4 + nse * 0.5);
+      if (nse > 0.85) put(plot, x, y, c);
+    }
+  }
+}
+
 export const PAINTS: Record<string, (plot: Plot, n: number) => void> = {
   "water-ink": paintInkWater,
   "water-ice": paintIceWater,
@@ -241,4 +254,5 @@ export const PAINTS: Record<string, (plot: Plot, n: number) => void> = {
   "scale-olive": paintScale,
   "cloud-paper": paintCloud,
   "ship-hull": paintHull,
+  "ground-rock": paintRock,
 };

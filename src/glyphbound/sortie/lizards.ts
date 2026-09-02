@@ -181,4 +181,8 @@ export function poseLizard(g: THREE.Object3D, t: number, kind: EnemyKind) {
   }
   if (kind === "cork") g.rotation.z = Math.sin(t * 3.2) * 0.35;
   if (kind === "mothership") g.rotation.z = Math.sin(t * 0.6) * 0.08;
+  if (kind === "mech") {
+    g.rotation.x = Math.sin(t * 2.1) * 0.09;
+    g.position.y = Math.abs(Math.sin(t * 2.1)) * 0.4;
+  }
 }

@@ -27,6 +27,13 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
   const missionId = sim.current.missionId;
   const world = useMemo(() => makeWorld(biome, missionId), [biome, missionId]);
   const sky = useMemo(() => makeSky(world.sky), [world.sky]);
+  const falls = useMemo(() => {
+    const out: THREE.Mesh[] = [];
+    world.root.traverse((o) => {
+      if (o.name === "fall") out.push(o as THREE.Mesh);
+    });
+    return out;
+  }, [world]);
   const molds = useMemo(() => {
     const kinds: EnemyKind[] = ["fighter", "cork", "bomber", "turret", "ace", "mech", "mothership"];
     const out: Partial<Record<EnemyKind, THREE.Group>> = { dualis: makeDigit("!") };
@@ -74,6 +81,11 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
 
     world.waterMap.offset.x = s.t * 0.03;
     world.waterMap.offset.y = s.t * 0.02;
+    const river = world.root.getObjectByName("river") as THREE.Mesh | undefined;
+    const rmap = (river?.material as THREE.MeshLambertMaterial | undefined)?.map;
+    if (rmap) rmap.offset.y = s.t * 0.08;
+    const fmap = (falls[0]?.material as THREE.MeshBasicMaterial | undefined)?.map;
+    if (fmap) fmap.offset.y = s.t * 0.28;
 
     const g = root.current;
     if (!g) return;
@@ -94,10 +106,12 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
         node.userData.kind = e.kind;
       }
       node.position.set(e.x, e.y, e.z);
-      if (e.kind === "turret") {
-        node.lookAt(s.x, e.y, s.z);
+      if (e.kind === "turret" || e.kind === "mech" || e.kind === "mothership" || e.kind === "dualis") {
+        node.lookAt(s.x, e.kind === "turret" ? e.y : s.y, s.z);
       } else {
-        node.lookAt(s.x, s.y, s.z);
+        const spd = Math.hypot(e.vx, e.vy, e.vz);
+        if (spd > 0.5) node.lookAt(e.x + e.vx, e.y + e.vy, e.z + e.vz);
+        else node.lookAt(e.x, e.y, e.z - 10);
       }
       const body = node.children[0];
       if (body) poseLizard(body, s.t + e.t, e.kind);

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { groundHeight } from "./height";
-import { COAST_PATH, landmarksFor } from "./landmarks";
+import { COAST_PATH, landmarksFor, riverX } from "./landmarks";
 import { unlockedIds } from "./missions";
 import { pathLength } from "./path";
 import { analogFromDelta } from "./stick";
@@ -291,9 +291,11 @@ test("barrel roll reflects an orb", () => {
 
 test("charge bolt fires after lock time on release", () => {
   const s = createSortie();
+  s.invuln = 99;
+  s.wave = 99;
   const held = emptyInput();
   held.fireHeld = true;
-  for (let i = 0; i < 50; i++) stepSortie(s, held, 1 / 60);
+  for (let i = 0; i < 200; i++) stepSortie(s, held, 1 / 60);
   assert.ok(s.charge >= CHARGE_LOCK);
   stepSortie(s, emptyInput(), 1 / 60);
   assert.ok(s.shots.some((q) => q.kind === "charge"));
@@ -356,6 +358,23 @@ test("Register unlocks ice when Coast is a Proof, else slug", () => {
 
 test("Coast strip is a long course", () => {
   assert.ok(pathLength(COAST_PATH) > 3000, `len ${pathLength(COAST_PATH)}`);
+});
+
+test("Coast river sits lower than the bank", () => {
+  const z = 1500;
+  const rx = riverX(z);
+  const river = groundHeight("coast", rx, z, "coast");
+  const bank = groundHeight("coast", rx + 50, z, "coast");
+  assert.ok(bank > river + 4, `river ${river} bank ${bank}`);
+  assert.ok(river < 3, `river floor ${river}`);
+});
+
+test("Coast waterfall gorge is lower than the cliff", () => {
+  const z = 720;
+  const rx = riverX(z);
+  const gorge = groundHeight("coast", rx - 36, z, "coast");
+  const cliff = groundHeight("coast", rx - 70, z, "coast");
+  assert.ok(cliff > gorge + 12, `gorge ${gorge} cliff ${cliff}`);
 });
 
 test("seven n-arches pay and set the Coast fork", () => {
@@ -485,18 +504,86 @@ test("hold fire sprays lasers with a short cooldown", () => {
   }
   assert.ok(volleys >= 5, `rapid volleys ${volleys}`);
   assert.ok(volleys <= 14, `cooldown should space shots, got ${volleys}`);
-  assert.ok(s.gunHeat > 0.1, `heat ${s.gunHeat}`);
+  assert.ok(s.gunHeat > 0.05, `heat ${s.gunHeat}`);
+});
+
+test("rapid-fire lasts several seconds before the overheat hitch", () => {
+  const s = createSortie();
+  s.invuln = 99;
+  s.wave = 99;
+  const inp = emptyInput();
+  inp.fireHeld = true;
+  let volleys = 0;
+  for (let i = 0; i < 150; i++) {
+    const id = s.shotId;
+    stepSortie(s, inp, 1 / 60);
+    if (s.shotId > id) volleys += 1;
+  }
+  assert.ok(s.charge < CHARGE_LOCK, `still spraying at 2.5s, charge ${s.charge}`);
+  assert.ok(volleys >= 20, `long spray ${volleys}`);
+  assert.ok(s.gunHeat < 1, `should not hitch yet, heat ${s.gunHeat}`);
+  assert.ok(s.gunHeat > 0.15, `heat should have built ${s.gunHeat}`);
 });
 
 test("rapid-fire heat hitch is brief, then guns recover", () => {
   const s = createSortie();
+  s.invuln = 99;
+  s.wave = 99;
   const inp = emptyInput();
   inp.fireHeld = true;
-  for (let i = 0; i < 240; i++) stepSortie(s, inp, 1 / 60);
+  for (let i = 0; i < 900; i++) stepSortie(s, inp, 1 / 60);
   assert.ok(s.gunHeat < 1, `heat should not stick at max ${s.gunHeat}`);
   const cooling = emptyInput();
   for (let i = 0; i < 90; i++) stepSortie(s, cooling, 1 / 60);
   assert.ok(s.gunHeat < 0.2, `forgiving recovery ${s.gunHeat}`);
+});
+
+test("corridor lizards fly the rail and do not reverse", () => {
+  const s = createSortie({ corridor: true, path: COAST_PATH, missionId: "coast", biome: "coast" });
+  s.enemies.push({
+    id: 80,
+    kind: "fighter",
+    x: s.x,
+    y: s.y,
+    z: s.z - 40,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    hp: 2,
+    t: 0,
+    alive: true,
+  });
+  const e = s.enemies[s.enemies.length - 1];
+  for (let i = 0; i < 90; i++) stepSortie(s, emptyInput(), 1 / 60);
+  assert.ok(e.alive);
+  assert.ok(e.vz < -8, `should keep flying down the coast, vz ${e.vz}`);
+  assert.ok(e.z < s.z, `should stay ahead on the rail, ez ${e.z} sz ${s.z}`);
+});
+
+test("all-range lizards need about a second to reverse, like the C-wing", () => {
+  const s = createSortie();
+  s.enemies.push({
+    id: 81,
+    kind: "fighter",
+    x: 0,
+    y: 48,
+    z: -40,
+    vx: 0,
+    vy: 0,
+    vz: -22,
+    hp: 2,
+    t: 0,
+    alive: true,
+  });
+  s.x = 0;
+  s.y = 48;
+  s.z = 80;
+  s.yaw = 0;
+  const e = s.enemies[s.enemies.length - 1];
+  for (let i = 0; i < 12; i++) stepSortie(s, emptyInput(), 1 / 60);
+  assert.ok(e.vz < 0, `still outgoing at 0.2s, vz ${e.vz}`);
+  for (let i = 0; i < 80; i++) stepSortie(s, emptyInput(), 1 / 60);
+  assert.ok(e.vz > 4, `has come about after a second, vz ${e.vz}`);
 });
 
 test("player can reverse heading in about a second", () => {

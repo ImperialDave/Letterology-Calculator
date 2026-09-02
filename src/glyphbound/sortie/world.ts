@@ -1,14 +1,34 @@
 import * as THREE from "three";
+import { riverX } from "./landmarks";
 import { ARENA_R } from "./sim";
 import { cloudTex, n64Mat } from "./n64";
 import { BIOMES, dressBiome, type BiomeId } from "./terrain";
+
+function makeRiver(kit: { water: number; waterTex: () => THREE.Texture }) {
+  const geo = new THREE.PlaneGeometry(34, 3400, 1, 80);
+  geo.rotateX(-Math.PI / 2);
+  const pos = geo.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const z = pos.getZ(i) + 2300;
+    pos.setX(i, pos.getX(i) + riverX(z));
+    pos.setY(i, 1.05);
+  }
+  geo.translate(0, 0, 2300);
+  geo.computeVertexNormals();
+  const ribbon = kit.waterTex().clone();
+  ribbon.repeat.set(2, 36);
+  const river = new THREE.Mesh(geo, n64Mat(kit.water, { map: ribbon }));
+  river.receiveShadow = true;
+  river.name = "river";
+  return river;
+}
 
 export function makeWorld(biome: BiomeId = "sky", missionId = biome) {
   const kit = BIOMES[biome] ?? BIOMES.sky;
   const root = new THREE.Group();
   root.name = "world";
 
-  const waterMap = kit.waterTex();
+  const waterMap = kit.waterTex().clone();
   waterMap.repeat.set(18, 18);
   const water = new THREE.Mesh(
     new THREE.CircleGeometry(ARENA_R + 40, 48),
@@ -19,18 +39,7 @@ export function makeWorld(biome: BiomeId = "sky", missionId = biome) {
   water.receiveShadow = true;
   root.add(water);
 
-  if (missionId !== "ice" && missionId !== "sky") {
-    const stripW = kit.waterTex();
-    stripW.repeat.set(8, 40);
-    const strip = new THREE.Mesh(
-      new THREE.PlaneGeometry(260, 4200, 1, 1),
-      n64Mat(kit.water, { map: stripW }),
-    );
-    strip.rotation.x = -Math.PI / 2;
-    strip.position.set(0, 0.15, 2100);
-    strip.receiveShadow = true;
-    root.add(strip);
-  }
+  if (missionId !== "ice" && missionId !== "sky") root.add(makeRiver(kit));
 
   dressBiome(root, kit, missionId);
 
