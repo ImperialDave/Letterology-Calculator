@@ -1,7 +1,29 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { groundHeight } from "./height";
 import { unlockedIds } from "./missions";
+import { analogFromDelta } from "./stick";
 import { BARREL_T, CHARGE_LOCK, createSortie, emptyInput, stepSortie } from "./sim";
+
+test("stick left is roll left (screen left), stick up is pull-up", () => {
+  const left = analogFromDelta(-40, 0, 64);
+  const right = analogFromDelta(40, 0, 64);
+  const up = analogFromDelta(0, -40, 64);
+  const down = analogFromDelta(0, 40, 64);
+  assert.ok(left.roll > 0.4, `left roll ${left.roll}`);
+  assert.ok(right.roll < -0.4, `right roll ${right.roll}`);
+  assert.ok(up.pitch > 0.4, `up pitch ${up.pitch}`);
+  assert.ok(down.pitch < -0.4, `down pitch ${down.pitch}`);
+});
+
+test("ground is a field, not a cylinder stamp", () => {
+  const a = groundHeight("coast", 0, -160);
+  const b = groundHeight("coast", 80, -160);
+  const sea = groundHeight("coast", 0, 300);
+  assert.ok(a > 8, `plaza ${a}`);
+  assert.ok(Math.abs(a - b) > 0.5, "height varies across the plaza");
+  assert.ok(sea < a, `channel ${sea} vs plaza ${a}`);
+});
 
 test("A (roll +1) yaws left while flying forward", () => {
   const s = createSortie();

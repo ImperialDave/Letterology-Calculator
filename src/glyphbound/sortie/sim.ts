@@ -2,6 +2,7 @@
 
 import { scriptMissionWaves } from "./missions";
 import { ENVELOPE_X, ENVELOPE_Y, SHIFT_T, SKY_CORRIDOR, UTURN_T, pathLength, pathFrame, samplePath, type PathPoint } from "./path";
+import { groundHeight } from "./height";
 import type { BiomeId } from "./terrain";
 
 export const ARENA_R = 420;
@@ -423,15 +424,7 @@ function detonate(s: SortieState, x: number, y: number, z: number) {
 }
 
 function islandHeight(s: SortieState, x: number, z: number) {
-  let h = WATER_Y;
-  for (const i of s.islands) {
-    const d = Math.hypot(x - i.x, z - i.z);
-    if (d < i.r) {
-      const top = i.h * (1 - (d / i.r) * (d / i.r));
-      if (top > h) h = top;
-    }
-  }
-  return h;
+  return Math.max(WATER_Y, groundHeight(s.biome, x, z));
 }
 
 function inArch(s: SortieState) {

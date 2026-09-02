@@ -74,7 +74,7 @@ export class SortieKeys {
     const has = (c: string) => (this.injected ? this.injected.includes(c) : this.keys.has(c));
     const pad = this.pad();
     let roll = this.stick.x;
-    let pitch = -this.stick.y;
+    let pitch = this.stick.y;
     if (has("KeyA") || has("ArrowLeft") || pad.left) roll += 1;
     if (has("KeyD") || has("ArrowRight") || pad.right) roll -= 1;
     if (has("KeyW") || has("ArrowUp") || pad.up) pitch += 1;
@@ -115,9 +115,10 @@ export class SortieKeys {
     out.boost = has("KeyK") || has("ShiftLeft") || has("ShiftRight") || pad.boost || this.touchBoost;
     out.brake = has("KeyX") || has("ControlLeft") || has("ControlRight") || pad.brake || this.touchBrake;
     out.barrel = barrel;
-    const bombHeld = has("KeyB") || has("KeyM") || this.touchBomb;
-    out.bomb = bombHeld && !this.prevBomb;
+    const bombHeld = has("KeyB") || has("KeyM");
+    out.bomb = (bombHeld && !this.prevBomb) || this.touchBomb;
     this.prevBomb = bombHeld;
+    this.touchBomb = false;
     this.injected = null;
     return { ...out, pause: has("Escape") || pad.pause };
   }

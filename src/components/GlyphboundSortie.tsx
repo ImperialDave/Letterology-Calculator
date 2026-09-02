@@ -190,9 +190,9 @@ export function GlyphboundSortie({
             }}
           />
           <TouchPads
-            onStick={(x, y) => {
-              keys.current.stick.x = -x;
-              keys.current.stick.y = y;
+            onStick={(roll, pitch) => {
+              keys.current.stick.x = roll;
+              keys.current.stick.y = pitch;
             }}
             onFire={(v) => {
               keys.current.touchFire = v;
@@ -205,6 +205,9 @@ export function GlyphboundSortie({
             }}
             onBarrel={() => {
               keys.current.touchBarrel = 1;
+            }}
+            onBomb={() => {
+              keys.current.touchBomb = true;
             }}
           />
         </>

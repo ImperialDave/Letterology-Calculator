@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { ARENA_R, ISLANDS } from "./sim";
+import { ARENA_R } from "./sim";
 import { cloudTex, n64Mat } from "./n64";
 import { BIOMES, dressBiome, type BiomeId } from "./terrain";
 
@@ -19,7 +19,7 @@ export function makeWorld(biome: BiomeId = "sky") {
   water.receiveShadow = true;
   root.add(water);
 
-  dressBiome(root, kit, ISLANDS);
+  dressBiome(root, kit);
 
   return { root, waterMap, fog: kit.fog, sky: kit.sky };
 }

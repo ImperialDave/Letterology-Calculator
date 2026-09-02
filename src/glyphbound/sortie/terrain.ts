@@ -1,6 +1,8 @@
 import * as THREE from "three";
-import { ARENA_R, type Island } from "./sim";
+import { groundHeight } from "./height";
 import { BRASS, FOG, PAPER, RUST, ashTex, brassTex, grassLeadTex, iceGroundTex, iceWaterTex, inkWaterTex, leadTex, n64Mat, rustTex, slagWaterTex } from "./n64";
+
+const ARENA_R = 420;
 
 export type BiomeId = "sky" | "coast" | "slug" | "gutter" | "ice" | "press";
 
@@ -24,89 +26,105 @@ export const BIOMES: Record<BiomeId, BiomeKit> = {
   press: { id: "press", fog: 0x6a3828, sky: 0x8a4830, water: 0x1a100c, waterTex: slagWaterTex, ground: 0x6a4030, groundTex: ashTex, metal: 0xd45a4a },
 };
 
-function arch(root: THREE.Group, x: number, z: number, h: number, mat: THREE.Material) {
-  const col = new THREE.BoxGeometry(6, h, 8);
+function sit(biome: BiomeId, x: number, z: number) {
+  return groundHeight(biome, x, z);
+}
+
+function arch(root: THREE.Group, x: number, z: number, h: number, mat: THREE.Material, biome: BiomeId) {
+  const y0 = sit(biome, x, z);
+  const col = new THREE.BoxGeometry(7, h, 9);
   const L = new THREE.Mesh(col, mat);
   const R = new THREE.Mesh(col, mat);
-  L.position.set(x - 12, h * 0.5, z);
-  R.position.set(x + 12, h * 0.5, z);
-  const lintel = new THREE.Mesh(new THREE.BoxGeometry(32, 6, 10), mat);
-  lintel.position.set(x, h + 2, z);
+  L.position.set(x - 14, y0 + h * 0.5, z);
+  R.position.set(x + 14, y0 + h * 0.5, z);
+  const lintel = new THREE.Mesh(new THREE.BoxGeometry(36, 7, 11), mat);
+  lintel.position.set(x, y0 + h + 3, z);
+  L.castShadow = R.castShadow = lintel.castShadow = true;
   root.add(L, R, lintel);
 }
 
-export function dressBiome(root: THREE.Group, kit: BiomeKit, islands: Island[]) {
-  const ground = kit.groundTex();
-  ground.repeat.set(8, 8);
+function makeSheet(kit: BiomeKit) {
+  const segs = 88;
+  const size = (ARENA_R + 36) * 2;
+  const geo = new THREE.PlaneGeometry(size, size, segs, segs);
+  geo.rotateX(-Math.PI / 2);
+  const pos = geo.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    pos.setY(i, groundHeight(kit.id, pos.getX(i), pos.getZ(i)));
+  }
+  geo.computeVertexNormals();
+  const map = kit.groundTex();
+  map.repeat.set(22, 22);
+  const mesh = new THREE.Mesh(geo, n64Mat(kit.ground, { map }));
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
+export function dressBiome(root: THREE.Group, kit: BiomeKit) {
+  const biome = kit.id;
+  root.add(makeSheet(kit));
   const metal = n64Mat(kit.metal, { map: kit.id === "press" || kit.id === "gutter" ? rustTex() : brassTex() });
-  const dirt = n64Mat(kit.ground, { map: ground });
+  const dirt = n64Mat(kit.ground, { map: kit.groundTex() });
   const paper = n64Mat(PAPER, { map: leadTex() });
 
-  for (const i of islands) {
-    const geo = new THREE.CylinderGeometry(i.r * 0.22, i.r, i.h, i.arch ? 6 : 8);
-    const mesh = new THREE.Mesh(geo, i.id === "press" ? metal : dirt);
-    mesh.position.set(i.x, i.h * 0.5, i.z);
-    mesh.receiveShadow = true;
-    mesh.castShadow = true;
-    root.add(mesh);
-    if (i.arch) arch(root, i.x, i.z, i.h, paper);
-    if (i.id === "press") {
-      const plate = new THREE.Mesh(new THREE.BoxGeometry(i.r * 1.1, 4, i.r * 0.7), metal);
-      plate.position.set(i.x, i.h + 2, i.z);
-      root.add(plate);
-    }
-  }
-
-  if (kit.id === "coast") {
-    for (let n = 0; n < 7; n++) arch(root, -90 + n * 28, 200 - n * 18, 36, paper);
-    for (let n = 0; n < 6; n++) {
-      const b = new THREE.Mesh(new THREE.BoxGeometry(18, 28 + (n % 3) * 10, 18), dirt);
-      b.position.set(-140 + n * 22, 18, -40);
+  if (kit.id === "coast" || kit.id === "sky") {
+    for (let n = 0; n < 7; n++) arch(root, -70 + n * 22, 210 - n * 22, 32, paper, biome);
+    for (let n = 0; n < 10; n++) {
+      const x = -130 + (n % 5) * 28;
+      const z = -30 - Math.floor(n / 5) * 36;
+      const h = 22 + (n % 4) * 12;
+      const b = new THREE.Mesh(new THREE.BoxGeometry(16, h, 16), dirt);
+      b.position.set(x, sit(biome, x, z) + h * 0.5, z);
       b.castShadow = true;
       root.add(b);
     }
+    const press = new THREE.Mesh(new THREE.BoxGeometry(70, 8, 48), metal);
+    press.position.set(0, sit(biome, 0, -180) + 6, -180);
+    root.add(press);
   }
 
   if (kit.id === "slug") {
-    for (let n = 0; n < 14; n++) {
-      const r = 8 + (n % 5) * 4;
-      const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(r * 0.45, 0), n64Mat(0x3a4248, { map: leadTex() }));
-      const ang = n * 0.7;
-      rock.position.set(Math.cos(ang) * 160, r * 0.4, Math.sin(ang) * 160);
+    for (let n = 0; n < 16; n++) {
+      const a = n * 0.62;
+      const x = Math.cos(a) * 150;
+      const z = Math.sin(a) * 150;
+      const r = 10 + (n % 5) * 5;
+      const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(r * 0.5, 0), n64Mat(0x3a4248, { map: leadTex() }));
+      rock.position.set(x, sit(biome, x, z) + r * 0.35, z);
+      rock.castShadow = true;
       root.add(rock);
     }
   }
 
   if (kit.id === "gutter") {
     for (let n = 0; n < 5; n++) {
+      const x = -120 + n * 55;
+      const z = -80;
       const stack = new THREE.Mesh(new THREE.CylinderGeometry(8, 12, 70, 6), n64Mat(RUST));
-      stack.position.set(-120 + n * 55, 35, -80);
+      stack.position.set(x, sit(biome, x, z) + 35, z);
       root.add(stack);
     }
     const tanker = new THREE.Mesh(new THREE.BoxGeometry(90, 16, 22), n64Mat(BRASS, { map: brassTex() }));
-    tanker.position.set(40, 14, 120);
+    tanker.position.set(40, sit(biome, 40, 120) + 10, 120);
     root.add(tanker);
   }
 
   if (kit.id === "ice") {
-    for (let n = 0; n < 4; n++) {
-      const pad = new THREE.Mesh(new THREE.CylinderGeometry(36, 40, 8, 8), n64Mat(0xd8e4e8, { map: brassTex() }));
-      pad.position.set(Math.cos(n * 1.6) * 140, 4, Math.sin(n * 1.6) * 140);
-      root.add(pad);
-    }
     const barge = new THREE.Mesh(new THREE.BoxGeometry(70, 14, 24), n64Mat(PAPER, { map: leadTex() }));
-    barge.position.set(-40, 18, 80);
+    barge.position.set(-40, sit(biome, -40, 80) + 10, 80);
     root.add(barge);
   }
 
   if (kit.id === "press") {
     const rim = new THREE.Mesh(new THREE.TorusGeometry(120, 10, 6, 16), n64Mat(RUST));
     rim.rotation.x = Math.PI / 2;
-    rim.position.y = 8;
+    rim.position.y = sit(biome, 0, 0) + 6;
     root.add(rim);
     for (let n = 0; n < 4; n++) {
+      const x = Math.cos(n * 1.57) * 90;
+      const z = Math.sin(n * 1.57) * 90;
       const censer = new THREE.Mesh(new THREE.SphereGeometry(8, 6, 5), n64Mat(BRASS, { map: brassTex() }));
-      censer.position.set(Math.cos(n * 1.57) * 90, 48, Math.sin(n * 1.57) * 90);
+      censer.position.set(x, sit(biome, x, z) + 36, z);
       root.add(censer);
     }
   }

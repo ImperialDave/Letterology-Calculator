@@ -1,5 +1,7 @@
+import { useRef, useState, type PointerEvent } from "react";
 import type { SortieState } from "./sim";
 import { HULL_MAX } from "./sim";
+import { analogFromDelta } from "./stick";
 
 export function SortieHud({
   s,
@@ -166,25 +168,74 @@ export function TouchPads({
   onBoost,
   onBrake,
   onBarrel,
+  onBomb,
 }: {
-  onStick: (x: number, y: number) => void;
+  onStick: (roll: number, pitch: number) => void;
   onFire: (v: boolean) => void;
   onBoost: (v: boolean) => void;
   onBrake: (v: boolean) => void;
   onBarrel: () => void;
+  onBomb?: () => void;
 }) {
+  const origin = useRef<{ x: number; y: number; id: number } | null>(null);
+  const [knob, setKnob] = useState({ x: 0, y: 0, on: false, ox: 0.22, oy: 0.72 });
+  const radius = 64;
+
+  const move = (e: PointerEvent<HTMLDivElement>) => {
+    const o = origin.current;
+    if (!o || o.id !== e.pointerId) return;
+    const a = analogFromDelta(e.clientX - o.x, e.clientY - o.y, radius);
+    onStick(a.roll, a.pitch);
+    const zone = e.currentTarget.getBoundingClientRect();
+    setKnob({
+      x: a.kx,
+      y: a.ky,
+      on: true,
+      ox: (o.x - zone.left) / zone.width,
+      oy: (o.y - zone.top) / zone.height,
+    });
+  };
+  const end = (e: PointerEvent<HTMLDivElement>) => {
+    if (origin.current?.id !== e.pointerId) return;
+    origin.current = null;
+    onStick(0, 0);
+    setKnob((k) => ({ ...k, x: 0, y: 0, on: false }));
+  };
+
   return (
-    <div className="pointer-events-none absolute inset-0 z-20 md:hidden">
+    <div className="pointer-events-none absolute inset-0 z-[15] [@media(hover:hover)_and_(pointer:fine)]:hidden">
       <div
-        className="pointer-events-auto absolute bottom-8 left-6 h-28 w-28 rounded-full border border-[#f4f0e4]/30 bg-[#121018]/40"
-        onPointerDown={(e) => e.currentTarget.setPointerCapture(e.pointerId)}
-        onPointerMove={(e) => {
-          const r = e.currentTarget.getBoundingClientRect();
-          onStick((e.clientX - r.left) / r.width * 2 - 1, (e.clientY - r.top) / r.height * 2 - 1);
+        className="pointer-events-auto absolute bottom-0 left-0 h-[58%] w-[46%]"
+        style={{ touchAction: "none" }}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          origin.current = { x: e.clientX, y: e.clientY, id: e.pointerId };
+          e.currentTarget.setPointerCapture(e.pointerId);
+          const zone = e.currentTarget.getBoundingClientRect();
+          setKnob({
+            x: 0,
+            y: 0,
+            on: true,
+            ox: (e.clientX - zone.left) / zone.width,
+            oy: (e.clientY - zone.top) / zone.height,
+          });
+          onStick(0, 0);
         }}
-        onPointerUp={() => onStick(0, 0)}
-        onPointerCancel={() => onStick(0, 0)}
-      />
+        onPointerMove={move}
+        onPointerUp={end}
+        onPointerCancel={end}
+      >
+        <div
+          className="absolute h-[7.2rem] w-[7.2rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#f4f0e4]/35 bg-[#121018]/45"
+          style={{ left: `${knob.ox * 100}%`, top: `${knob.oy * 100}%` }}
+        >
+          <span
+            className="absolute left-1/2 top-1/2 h-11 w-11 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#5ee0c0]/70 bg-[#5ee0c0]/80"
+            style={{ transform: `translate(calc(-50% + ${knob.x * 36}px), calc(-50% + ${knob.y * 36}px))` }}
+          />
+        </div>
+      </div>
       <button
         type="button"
         className="pointer-events-auto absolute bottom-10 right-6 h-16 w-16 rounded-full bg-[#5ee0c0] text-sm text-[#121018]"
@@ -217,6 +268,15 @@ export function TouchPads({
       >
         Roll
       </button>
+      {onBomb && (
+        <button
+          type="button"
+          className="pointer-events-auto absolute bottom-44 right-36 h-11 rounded-md border border-[#e8d48a]/50 px-3 text-[#e8d48a]"
+          onPointerDown={() => onBomb()}
+        >
+          Dash
+        </button>
+      )}
     </div>
   );
 }
