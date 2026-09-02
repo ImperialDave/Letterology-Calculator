@@ -20,6 +20,8 @@ const GAME = new Set([
   "ControlRight",
   "KeyQ",
   "KeyE",
+  "KeyR",
+  "KeyC",
   "Escape",
 ]);
 
@@ -30,10 +32,12 @@ export class SortieKeys {
   touchFire = false;
   touchBoost = false;
   touchBrake = false;
+  touchBarrel = 0;
   private lastA = -9;
   private lastD = -9;
   private prevA = false;
   private prevD = false;
+  private prevR = false;
   private prevFire = false;
   t = 0;
 
@@ -87,6 +91,11 @@ export class SortieKeys {
     }
     this.prevA = a;
     this.prevD = d;
+    const rKey = has("KeyR") || has("KeyC");
+    if (rKey && !this.prevR && barrel === 0) barrel = roll >= 0 ? 1 : -1;
+    this.prevR = rKey;
+    if (this.touchBarrel && barrel === 0) barrel = this.touchBarrel;
+    this.touchBarrel = 0;
 
     const fireHeld =
       has("KeyJ") || has("KeyZ") || has("Space") || pad.fire || this.touchFire;

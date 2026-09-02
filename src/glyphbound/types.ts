@@ -379,6 +379,10 @@ export interface SaveData {
   letter: LetterId;
   /** Best Drop Cap Sortie score. */
   sortieBest: number;
+  /** Missions written in Drop Cap Sortie. */
+  sortieCleared: string[];
+  /** Missions that met the Proof hit count. */
+  sortieProofs: string[];
 }
 
 export interface UiSnap {

@@ -47,6 +47,8 @@ export const defaultSave = (): SaveData => ({
   visited: [],
   letter: "c",
   sortieBest: 0,
+  sortieCleared: [],
+  sortieProofs: [],
 });
 
 export function isEmptySave(data: SaveData) {
@@ -161,6 +163,8 @@ function parseSave(raw: string | null): SaveData {
       party,
       letter,
       sortieBest: Math.max(0, parsed.sortieBest ?? 0),
+      sortieCleared: Array.isArray(parsed.sortieCleared) ? parsed.sortieCleared : [],
+      sortieProofs: Array.isArray(parsed.sortieProofs) ? parsed.sortieProofs : [],
       maxShield: Math.max(3, parsed.maxShield ?? 3),
       talked: parsed.talked ?? [],
       visited: parsed.visited ?? [],

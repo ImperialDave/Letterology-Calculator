@@ -1,10 +1,10 @@
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useMemo, useRef, type MutableRefObject } from "react";
 import * as THREE from "three";
-import { makeCWing } from "./cwing";
+import { makeCWing, poseCWing } from "./cwing";
 import { makeDigit } from "./digits";
-import { FOG } from "./n64";
-import type { SortieState } from "./sim";
+import { makeLizard } from "./lizards";
+import type { EnemyKind, SortieState } from "./sim";
 import { makeSky, makeWorld } from "./world";
 
 function fwd(yaw: number, pitch: number) {
@@ -14,17 +14,15 @@ function fwd(yaw: number, pitch: number) {
 
 function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
   const ship = useMemo(() => makeCWing(), []);
-  const sky = useMemo(() => makeSky(), []);
-  const world = useMemo(() => makeWorld(), []);
-  const digits = useMemo(
-    () => ({
-      "1": makeDigit("1"),
-      "0": makeDigit("0"),
-      "2": makeDigit("2"),
-      dualis: makeDigit("!"),
-    }),
-    [],
-  );
+  const biome = sim.current.biome;
+  const world = useMemo(() => makeWorld(biome), [biome]);
+  const sky = useMemo(() => makeSky(world.sky), [world.sky]);
+  const molds = useMemo(() => {
+    const kinds: EnemyKind[] = ["fighter", "cork", "bomber", "turret", "ace", "mech", "mothership"];
+    const out: Partial<Record<EnemyKind, THREE.Group>> = { dualis: makeDigit("!") };
+    for (const k of kinds) out[k] = makeLizard(k);
+    return out;
+  }, []);
   const extra = useRef<THREE.Group[]>([]);
   const pool = useRef<THREE.Group[]>([]);
   const shots = useRef<THREE.Mesh[]>([]);
@@ -42,6 +40,7 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
     ship.rotation.y = s.yaw;
     ship.rotation.x = -s.pitch;
     ship.rotation.z = s.roll;
+    poseCWing(ship, s);
 
     tmp.set(s.x, s.y, s.z).addScaledVector(f, -18);
     tmp.y += 5.5;
@@ -68,7 +67,8 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
       if (!e?.alive) continue;
       if (node.userData.kind !== e.kind) {
         node.clear();
-        node.add(digits[e.kind].clone());
+        const mold = molds[e.kind] ?? molds.fighter;
+        if (mold) node.add(mold.clone());
         node.userData.kind = e.kind;
       }
       node.position.set(e.x, e.y, e.z);
@@ -116,21 +116,25 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
       <primitive object={sky} />
       <primitive object={world.root} />
       <primitive object={ship} />
-      <ambientLight intensity={0.55} />
-      <directionalLight position={[80, 120, 40]} intensity={1.15} color="#f4e8c0" castShadow />
-      <fog attach="fog" args={[FOG, 70, 480]} />
+      <ambientLight intensity={0.7} />
+      <directionalLight position={[80, 120, 40]} intensity={1.35} color="#fff0c8" castShadow />
+      <pointLight position={[0, 80, 0]} intensity={0.45} color="#5ee0c0" />
+      <fog attach="fog" args={[world.fog, 70, 480]} />
     </group>
   );
 }
 
 export function SortieCanvas({ sim }: { sim: MutableRefObject<SortieState> }) {
+  const biome = sim.current.biome;
   return (
     <Canvas
+      key={biome}
       dpr={1}
       gl={{ antialias: false, powerPreference: "high-performance" }}
       camera={{ fov: 54, near: 0.4, far: 900, position: [0, 54, 140] }}
       onCreated={({ gl }) => {
-        gl.setClearColor(FOG, 1);
+        const world = makeWorld(biome);
+        gl.setClearColor(world.fog, 1);
         gl.shadowMap.enabled = true;
       }}
       style={{ imageRendering: "pixelated", width: "100%", height: "100%" }}

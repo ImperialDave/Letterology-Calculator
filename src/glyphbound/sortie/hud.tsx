@@ -19,11 +19,13 @@ export function SortieHud({
   return (
     <div className="pointer-events-none absolute inset-0 z-10 font-display text-[#f4f0e4]">
       <div className="absolute left-3 top-3 text-[11px] uppercase tracking-[0.28em] text-[#e8d48a] drop-shadow-[0_2px_8px_#000]">
-        Lower Case Sky
+        {s.missionName}
       </div>
       <div className="absolute right-3 top-3 text-right text-sm tabular-nums drop-shadow-[0_2px_8px_#000]">
         <p className="text-[#e8d48a]">{s.score}</p>
-        <p className="text-[10px] text-[#c9b896]">best {best}</p>
+        <p className="text-[10px] text-[#c9b896]">
+          {s.hits} hits · best {best}
+        </p>
       </div>
       <div className="absolute bottom-3 left-3 flex gap-1">
         {Array.from({ length: HULL_MAX }, (_, i) => (
@@ -43,10 +45,8 @@ export function SortieHud({
           {s.radio.text}
         </div>
       )}
-      {s.lockId >= 0 && s.charge >= 0.2 && (
-        <div className="absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#e8d48a]" />
-      )}
-      <Radar s={s} />
+      <Reticle s={s} />
+      {s.flight === "allrange" && <Radar s={s} />}
       {(s.mode === "win" || s.mode === "dead" || s.mode === "pause") && (
         <div className="pointer-events-auto absolute inset-0 flex flex-col items-center justify-center bg-[#07080c]/70">
           <p className="font-display text-4xl text-[#f4f0e4]">
@@ -93,16 +93,57 @@ export function SortieHud({
   );
 }
 
+function Reticle({ s }: { s: SortieState }) {
+  if (s.mode !== "play") return null;
+  const hard = s.lockId >= 0 && s.charge >= 0.2 && s.lockOn;
+  const soft = s.lockId >= 0 && s.lockOn;
+  const color = hard ? "#d45a4a" : soft ? "#e8d48a" : "#f4f0e4";
+  const left = 50 + s.lockSx * 42;
+  const top = 50 - s.lockSy * 42;
+  return (
+    <div className="pointer-events-none absolute inset-0">
+      <div
+        className="absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2"
+        style={{ border: `1.5px solid ${soft ? "transparent" : "rgba(244,240,228,0.55)"}` }}
+      >
+        <span className="absolute left-1/2 top-0 h-2 w-px -translate-x-1/2 -translate-y-2 bg-[#f4f0e4]/70" />
+        <span className="absolute bottom-0 left-1/2 h-2 w-px -translate-x-1/2 translate-y-2 bg-[#f4f0e4]/70" />
+        <span className="absolute left-0 top-1/2 h-px w-2 -translate-x-2 -translate-y-1/2 bg-[#f4f0e4]/70" />
+        <span className="absolute right-0 top-1/2 h-px w-2 -translate-y-1/2 translate-x-2 bg-[#f4f0e4]/70" />
+      </div>
+      {soft && (
+        <div
+          className="absolute h-12 w-12 -translate-x-1/2 -translate-y-1/2"
+          style={{ left: `${left}%`, top: `${top}%`, border: `2px solid ${color}` }}
+        >
+          <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-[0.2em]" style={{ color }}>
+            {hard ? "LOCK" : "TGT"}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Radar({ s }: { s: SortieState }) {
   const scale = 52 / 420;
   const px = 56 + s.x * scale;
   const pz = 56 + s.z * scale;
-  const dual = s.enemies.find((e) => e.kind === "dualis" && e.alive);
   return (
     <svg className="absolute right-3 top-16 h-28 w-28 opacity-80" viewBox="0 0 112 112">
       <circle cx="56" cy="56" r="52" fill="#121018" stroke="#e8d48a" strokeWidth="1" />
+      {s.enemies
+        .filter((e) => e.alive)
+        .map((e) => (
+          <circle
+            key={e.id}
+            cx={56 + e.x * scale}
+            cy={56 + e.z * scale}
+            r={e.kind === "dualis" || e.kind === "mothership" || e.kind === "mech" ? 4 : 2}
+            fill={e.kind === "dualis" ? "#e8d48a" : "#d45a4a"}
+          />
+        ))}
       <circle cx={px} cy={pz} r="3" fill="#5ee0c0" />
-      {dual && <circle cx={56 + dual.x * scale} cy={56 + dual.z * scale} r="4" fill="#d45a4a" />}
     </svg>
   );
 }
@@ -112,11 +153,13 @@ export function TouchPads({
   onFire,
   onBoost,
   onBrake,
+  onBarrel,
 }: {
   onStick: (x: number, y: number) => void;
   onFire: (v: boolean) => void;
   onBoost: (v: boolean) => void;
   onBrake: (v: boolean) => void;
+  onBarrel: () => void;
 }) {
   return (
     <div className="pointer-events-none absolute inset-0 z-20 md:hidden">
@@ -154,6 +197,13 @@ export function TouchPads({
         onPointerUp={() => onBrake(false)}
       >
         Brake
+      </button>
+      <button
+        type="button"
+        className="pointer-events-auto absolute bottom-44 right-16 h-11 rounded-md border border-[#5ee0c0]/50 px-3 text-[#5ee0c0]"
+        onPointerDown={() => onBarrel()}
+      >
+        Roll
       </button>
     </div>
   );

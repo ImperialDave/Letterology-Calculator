@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { PAINTS, fillTex, paintBrass, paintCloud, paintGrass, paintHull, paintIce, paintInkWater, paintLead, paintRust, paintScale, paintSlagWater, type Plot } from "./tex-paint";
 
 export const INK = 0x5ee0c0;
 export const BRASS = 0xe8d48a;
@@ -6,85 +7,65 @@ export const RUST = 0xd45a4a;
 export const LEAD = 0x3a4248;
 export const PAPER = 0xc9b896;
 export const FOG = 0x6a9080;
+export const OLIVE = 0x3d5a40;
 
-export function n64Mat(color: number, opts?: { map?: THREE.Texture; emissive?: number }) {
+const cache = new Map<string, THREE.Texture>();
+
+export function n64Mat(color: number, opts?: { map?: THREE.Texture; emissive?: number; glow?: number }) {
   return new THREE.MeshLambertMaterial({
     color,
     map: opts?.map,
     emissive: opts?.emissive ?? 0x000000,
-    emissiveIntensity: opts?.emissive ? 0.35 : 0,
+    emissiveIntensity: opts?.glow ?? (opts?.emissive ? 0.55 : 0),
     flatShading: true,
   });
 }
 
-export function tileTex(paint: (c: CanvasRenderingContext2D, n: number) => void, n = 64) {
-  const c = document.createElement("canvas");
-  c.width = n;
-  c.height = n;
-  const g = c.getContext("2d");
-  if (!g) return new THREE.Texture();
-  paint(g, n);
-  const t = new THREE.CanvasTexture(c);
-  t.magFilter = THREE.NearestFilter;
-  t.minFilter = THREE.NearestFilter;
-  t.wrapS = THREE.RepeatWrapping;
-  t.wrapT = THREE.RepeatWrapping;
-  t.colorSpace = THREE.SRGBColorSpace;
-  return t;
+function fromPaint(name: string, paint: (plot: Plot, n: number) => void, n = 64) {
+  const hit = cache.get(name);
+  if (hit) return hit;
+  const buf = Uint8Array.from(fillTex(n, paint));
+  const tex = new THREE.DataTexture(buf, n, n, THREE.RGBAFormat);
+  tex.magFilter = THREE.NearestFilter;
+  tex.minFilter = THREE.NearestFilter;
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.flipY = true;
+  tex.needsUpdate = true;
+  cache.set(name, tex);
+  if (typeof THREE.TextureLoader !== "undefined") {
+    new THREE.TextureLoader().load(
+      `/glyphbound/sortie/tex/${name}.png`,
+      (loaded) => {
+        loaded.magFilter = THREE.NearestFilter;
+        loaded.minFilter = THREE.NearestFilter;
+        loaded.wrapS = THREE.RepeatWrapping;
+        loaded.wrapT = THREE.RepeatWrapping;
+        loaded.colorSpace = THREE.SRGBColorSpace;
+        tex.image = loaded.image;
+        tex.needsUpdate = true;
+      },
+      undefined,
+      () => {},
+    );
+  }
+  return tex;
 }
 
-export function inkWaterTex() {
-  return tileTex((g, n) => {
-    g.fillStyle = "#163028";
-    g.fillRect(0, 0, n, n);
-    for (let i = 0; i < 18; i++) {
-      g.strokeStyle = i % 2 ? "#2a5a48" : "#1c3c34";
-      g.beginPath();
-      const y = (i * 7) % n;
-      g.moveTo(0, y);
-      g.quadraticCurveTo(n * 0.4, y + 4, n, y);
-      g.stroke();
-    }
-    g.fillStyle = "#5ee0c0";
-    g.globalAlpha = 0.15;
-    g.fillRect(8, 20, 12, 3);
-    g.globalAlpha = 1;
-  });
+export function tileTex(paint: (plot: Plot, n: number) => void, n = 64) {
+  return fromPaint("anon-" + paint.name, paint, n);
 }
 
-export function leadTex() {
-  return tileTex((g, n) => {
-    g.fillStyle = "#2a3238";
-    g.fillRect(0, 0, n, n);
-    g.fillStyle = "#3e4a52";
-    for (let y = 0; y < n; y += 8) g.fillRect(0, y, n, 3);
-    g.fillStyle = "#1a2024";
-    for (let x = 0; x < n; x += 11) g.fillRect(x, 0, 2, n);
-    g.fillStyle = "#c9b896";
-    g.globalAlpha = 0.2;
-    g.fillRect(4, 4, 6, 6);
-    g.globalAlpha = 1;
-  });
-}
-
-export function brassTex() {
-  return tileTex((g, n) => {
-    g.fillStyle = "#6a5428";
-    g.fillRect(0, 0, n, n);
-    g.fillStyle = "#e8d48a";
-    g.globalAlpha = 0.35;
-    for (let i = 0; i < 12; i++) g.fillRect((i * 13) % n, (i * 9) % n, 8, 3);
-    g.globalAlpha = 1;
-  });
-}
-
-export function grassLeadTex() {
-  return tileTex((g, n) => {
-    g.fillStyle = "#1a3020";
-    g.fillRect(0, 0, n, n);
-    g.fillStyle = "#3d6a44";
-    for (let i = 0; i < 40; i++) g.fillRect((i * 17) % n, (i * 11) % n, 3, 5);
-    g.fillStyle = "#2a3238";
-    for (let i = 0; i < 8; i++) g.fillRect((i * 19) % n, (i * 7) % n, 10, 4);
-  });
-}
+export const inkWaterTex = () => fromPaint("water-ink", paintInkWater);
+export const iceWaterTex = () => fromPaint("water-ice", PAINTS["water-ice"]);
+export const slagWaterTex = () => fromPaint("water-slag", paintSlagWater);
+export const leadTex = () => fromPaint("ground-lead", paintLead);
+export const brassTex = () => fromPaint("metal-brass", paintBrass);
+export const rustTex = () => fromPaint("metal-rust", paintRust);
+export const grassLeadTex = () => fromPaint("ground-grass", paintGrass);
+export const iceGroundTex = () => fromPaint("ground-ice", paintIce);
+export const ashTex = () => fromPaint("ground-ash", PAINTS["ground-ash"]);
+export const scaleOliveTex = () => fromPaint("scale-olive", paintScale);
+export const cloudTex = () => fromPaint("cloud-paper", paintCloud);
+export const hullTex = () => fromPaint("ship-hull", paintHull);
