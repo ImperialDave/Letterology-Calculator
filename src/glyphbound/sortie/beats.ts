@@ -4,11 +4,22 @@ export interface Beat {
   id: number;
   when: "rail" | "arena";
   t: number;
-  kind: "spawn" | "radio" | "pickup" | "check";
+  kind: "spawn" | "radio" | "pickup" | "check" | "rings";
   who?: string;
   text?: string;
   ships?: { kind: EnemyKind; dx: number; dy: number; dz: number; hp?: number; form?: FormName; armed?: boolean }[];
   loot?: { kind: PickupKind; dx: number; dy: number; dz: number };
+  rings?: { dx: number; dy: number; dz: number }[];
+}
+
+function rocks(dz: number, n = 8): Beat["ships"] {
+  return Array.from({ length: n }, (_, i) => ({
+    kind: "aster" as const,
+    dx: ((i % 4) - 1.5) * 24 + (i % 3) * 5,
+    dy: (i % 5) * 9 - 14,
+    dz: dz - Math.floor(i / 4) * 30,
+    hp: i % 6 === 0 ? 12 : 1,
+  }));
 }
 
 function V(dz: number, spread = 16): Beat["ships"] {
@@ -21,7 +32,7 @@ function V(dz: number, spread = 16): Beat["ships"] {
 
 export const BEATS: Record<string, Beat[]> = {
   coast: [
-    { id: 1, when: "rail", t: 0.03, kind: "radio", who: "s", text: "Ink sea. Hold J until the squares rust." },
+    { id: 1, when: "rail", t: 0.03, kind: "radio", who: "s", text: "Ink sea. Tap Space. Hold to charge." },
     { id: 2, when: "rail", t: 0.04, kind: "spawn", ships: [{ kind: "fighter", dx: 0, dy: 2, dz: -36, form: "guide" }] },
     { id: 3, when: "rail", t: 0.08, kind: "spawn", ships: V(-50, 18) },
     { id: 4, when: "rail", t: 0.12, kind: "radio", who: "b", text: "Canyon. Brake. Turrets on the teeth." },
@@ -84,6 +95,31 @@ export const BEATS: Record<string, Beat[]> = {
     { id: 5, when: "rail", t: 0.68, kind: "spawn", ships: V(-40, 18) },
     { id: 6, when: "arena", t: 0.6, kind: "spawn", ships: [{ kind: "dualis", dx: 0, dy: 20, dz: -180 }, { kind: "fighter", dx: -50, dy: 12, dz: -80 }, { kind: "bomber", dx: 50, dy: 22, dz: -80 }] },
     { id: 7, when: "arena", t: 0.8, kind: "radio", who: "s", text: "Dualis. Hit the bar until it splits." },
+  ],
+  sorts: [
+    { id: 1, when: "rail", t: 0.03, kind: "radio", who: "s", text: "The Sorts. Shoot the small type. Brake the crushers." },
+    { id: 2, when: "rail", t: 0.04, kind: "spawn", ships: rocks(-50, 10) },
+    { id: 3, when: "rail", t: 0.12, kind: "spawn", ships: V(-48, 20) },
+    { id: 4, when: "rail", t: 0.18, kind: "spawn", ships: rocks(-44, 8) },
+    { id: 5, when: "rail", t: 0.26, kind: "radio", who: "b", text: "Big sort ahead. Go high or brake." },
+    { id: 6, when: "rail", t: 0.28, kind: "spawn", ships: [{ kind: "aster", dx: 0, dy: 0, dz: -36, hp: 16 }, { kind: "aster", dx: -40, dy: 8, dz: -70, hp: 1 }, { kind: "aster", dx: 40, dy: -6, dz: -70, hp: 1 }] },
+    { id: 7, when: "rail", t: 0.38, kind: "spawn", ships: rocks(-52, 12) },
+    { id: 8, when: "rail", t: 0.46, kind: "pickup", loot: { kind: "stem", dx: 0, dy: 4, dz: -24 } },
+    { id: 9, when: "rail", t: 0.5, kind: "check", who: "e", text: "Checkpoint. Seven rings if you want Ice." },
+    { id: 10, when: "rail", t: 0.56, kind: "spawn", ships: V(-40, 18) },
+    { id: 11, when: "rail", t: 0.62, kind: "rings", rings: [
+      { dx: -18, dy: 0, dz: -36 },
+      { dx: 18, dy: 4, dz: -90 },
+      { dx: -16, dy: -2, dz: -144 },
+      { dx: 20, dy: 6, dz: -198 },
+      { dx: -14, dy: 2, dz: -252 },
+      { dx: 16, dy: -4, dz: -306 },
+      { dx: 0, dy: 0, dz: -360 },
+    ] },
+    { id: 12, when: "rail", t: 0.64, kind: "radio", who: "s", text: "Rings zigzag. Miss one and we stay for the quoin." },
+    { id: 13, when: "rail", t: 0.78, kind: "spawn", ships: rocks(-48, 8) },
+    { id: 14, when: "arena", t: 0.5, kind: "spawn", ships: [{ kind: "mothership", dx: 0, dy: 8, dz: -140 }, { kind: "fighter", dx: -60, dy: 10, dz: -50 }, { kind: "fighter", dx: 60, dy: 10, dz: -50 }] },
+    { id: 15, when: "arena", t: 0.7, kind: "radio", who: "s", text: "The quoin. Core in the drill. Don’t kiss the bit." },
   ],
 };
 

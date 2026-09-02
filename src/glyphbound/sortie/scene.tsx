@@ -72,7 +72,7 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
   const wakeAcc = useRef(0);
   const wasAlive = useRef(new Map<number, boolean>());
   const molds = useMemo(() => {
-    const kinds: EnemyKind[] = ["fighter", "cork", "bomber", "turret", "ace", "mech", "mothership"];
+    const kinds: EnemyKind[] = ["fighter", "cork", "bomber", "turret", "ace", "mech", "mothership", "aster"];
     const out: Partial<Record<EnemyKind, THREE.Group>> = { dualis: makeDigit("!") };
     for (const k of kinds) out[k] = makeLizard(k);
     return out;
@@ -199,7 +199,9 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
         node.userData.kind = e.kind;
       }
       node.position.set(e.x, e.y, e.z);
-      if (e.kind === "turret" || e.kind === "mech" || e.kind === "mothership" || e.kind === "dualis") {
+      if (e.kind === "aster") {
+        node.scale.setScalar(e.hp >= 8 ? 3.2 : 1.15);
+      } else if (e.kind === "turret" || e.kind === "mech" || e.kind === "mothership" || e.kind === "dualis") {
         node.lookAt(s.x, e.kind === "turret" ? e.y : s.y, s.z);
       } else {
         const spd = Math.hypot(e.vx, e.vy, e.vz);

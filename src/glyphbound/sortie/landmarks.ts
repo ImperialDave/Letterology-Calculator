@@ -52,6 +52,12 @@ export const PRESS_PATH = stripPath(2800, 40, 14, (u) => ({
   y: 44 + u * 22,
 }));
 
+/** Space belt: slight weave so the field isn't a tube. */
+export const SORTS_PATH = stripPath(3800, 80, 20, (u) => ({
+  x: Math.sin(u * 7) * 16,
+  y: 48 + Math.sin(u * 11) * 10,
+}));
+
 function arches(z0: number, n: number, gap: number): Landmark[] {
   return Array.from({ length: n }, (_, i) => {
     const z = z0 - i * gap;
@@ -128,6 +134,7 @@ export const LANDMARKS: Record<string, Landmark[]> = {
     { id: "h2", kind: "hangar", x: 80, z: 40, h: 18, r: 28 },
     { id: "h3", kind: "hangar", x: 0, z: -90, h: 18, r: 28 },
   ],
+  sorts: [],
   press: [
     ...Array.from({ length: 5 }, (_, i) => ({
       id: `cen-${i}`,

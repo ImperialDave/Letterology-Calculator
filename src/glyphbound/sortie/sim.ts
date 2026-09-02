@@ -9,7 +9,7 @@ import type { BiomeId } from "./terrain";
 export const ARENA_R = 420;
 export const WATER_Y = 0;
 export const HULL_MAX = 6;
-export const CHARGE_LOCK = 3;
+export const CHARGE_LOCK = 0.7;
 export const BARREL_T = 0.42;
 export const SOMERSAULT_T = 0.55;
 export const INNER_R = 0.38;
@@ -17,7 +17,7 @@ export const OUTER_R = 0.58;
 export const KEEP_R = 0.72;
 export const MAGNET = 0.3;
 
-export type EnemyKind = "fighter" | "cork" | "bomber" | "turret" | "ace" | "mech" | "mothership" | "dualis";
+export type EnemyKind = "fighter" | "cork" | "bomber" | "turret" | "ace" | "mech" | "mothership" | "dualis" | "aster";
 export type FormName = "v" | "line" | "cross" | "guide" | "hold";
 export type ShotKind = "laser" | "orb" | "charge" | "bomb";
 export type PickupKind = "silver" | "gold" | "stem" | "bomb" | "repair";
@@ -395,11 +395,14 @@ export function createSortie(opts?: {
     enemyId: 1,
     shots: [],
     enemies: [],
-    rings: [
-      { id: 1, x: 30, y: 42, z: 20, taken: false },
-      { id: 2, x: -80, y: 50, z: -60, taken: false },
-      { id: 3, x: 90, y: 46, z: -120, taken: false },
-    ],
+    rings:
+      opts?.missionId && opts.missionId !== "sky"
+        ? []
+        : [
+            { id: 1, x: 30, y: 42, z: 20, taken: false },
+            { id: 2, x: -80, y: 50, z: -60, taken: false },
+            { id: 3, x: 90, y: 46, z: -120, taken: false },
+          ],
     islands: ISLANDS.map((i) => ({ ...i })),
     radio: {
       who: "s",
@@ -446,7 +449,7 @@ export function createSortie(opts?: {
 }
 
 function defaultArmed(kind: EnemyKind) {
-  return kind !== "fighter" && kind !== "cork";
+  return kind !== "fighter" && kind !== "cork" && kind !== "aster";
 }
 
 function flyerKind(kind: EnemyKind) {
@@ -463,7 +466,23 @@ export function spawnEnemy(
 ) {
   const hp =
     extra?.hp ??
-    (kind === "dualis" ? 18 : kind === "mothership" ? 24 : kind === "mech" ? 24 : kind === "ace" ? 6 : kind === "bomber" ? 4 : kind === "cork" ? 3 : kind === "turret" ? 3 : 2);
+    (kind === "dualis"
+      ? 18
+      : kind === "mothership"
+        ? 24
+        : kind === "mech"
+          ? 24
+          : kind === "ace"
+            ? 6
+            : kind === "bomber"
+              ? 4
+              : kind === "cork"
+                ? 3
+                : kind === "turret"
+                  ? 3
+                  : kind === "aster"
+                    ? 1
+                    : 2);
   s.enemies.push({
     id: s.enemyId++,
     kind,
@@ -548,13 +567,48 @@ function killEnemy(s: SortieState, e: Enemy, splash = false) {
   }
 }
 
+function bodyR(e: Enemy) {
+  if (e.kind === "aster") return e.hp >= 8 ? 20 : 8;
+  if (e.kind === "dualis" || e.kind === "mothership" || e.kind === "mech") return 18;
+  if (e.kind === "bomber") return 13;
+  if (e.kind === "ace") return 11;
+  return 10;
+}
+
+function distSeg(px: number, py: number, pz: number, ax: number, ay: number, az: number, bx: number, by: number, bz: number) {
+  const abx = bx - ax;
+  const aby = by - ay;
+  const abz = bz - az;
+  const apx = px - ax;
+  const apy = py - ay;
+  const apz = pz - az;
+  const ab2 = abx * abx + aby * aby + abz * abz || 1;
+  let t = (apx * abx + apy * aby + apz * abz) / ab2;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(px - (ax + abx * t), py - (ay + aby * t), pz - (az + abz * t));
+}
+
+function chargeSplash(s: SortieState, x: number, y: number, z: number, skipId: number) {
+  const R = 22;
+  for (const e of s.enemies) {
+    if (!e.alive || e.id === skipId) continue;
+    const d = Math.hypot(e.x - x, e.y - y, e.z - z);
+    if (d > R) continue;
+    e.hp -= 4;
+    s.hits += 1;
+    s.score += 40;
+    if (e.hp <= 0) killEnemy(s, e, true);
+  }
+}
+
 function detonate(s: SortieState, x: number, y: number, z: number) {
-  const R = 32;
+  const R = 36;
   for (const e of s.enemies) {
     if (!e.alive) continue;
     const d = Math.hypot(e.x - x, e.y - y, e.z - z);
     if (d > R) continue;
     e.hp -= 8;
+    s.hits += 1;
     s.score += 40;
     if (e.hp <= 0) killEnemy(s, e, true);
   }
@@ -664,13 +718,12 @@ function leadPoint(s: SortieState, e: Enemy, shotSpeed: number) {
   return { x: e.x + e.vx * t, y: e.y + e.vy * t, z: e.z + e.vz * t };
 }
 
-function aimDir(s: SortieState, f: Vec3, shotSpeed = LASER_SPD): Vec3 {
-  if (s.lockId < 0) return f;
+function aimDir(s: SortieState, f: Vec3, shotSpeed = LASER_SPD, home = false): Vec3 {
+  if (!home || s.lockId < 0) return f;
   const e = s.enemies.find((n) => n.id === s.lockId && n.alive);
   if (!e) return f;
   const pip = aimScreen(s, e.x, e.y, e.z);
-  const inner = inBox(pip.sx, pip.sy, INNER_R);
-  const blend = s.lockHard ? 0.85 : inner ? MAGNET : 0;
+  const blend = s.lockHard ? 0.85 : 0;
   if (blend <= 0) return f;
   const lead = leadPoint(s, e, shotSpeed);
   const dx = lead.x - s.x;
@@ -699,7 +752,7 @@ function scriptWaves(s: SortieState) {
     spawnEnemy(s, "bomber", -130, 90, -80);
     spawnEnemy(s, "bomber", -100, 95, -50);
     s.wave = 2;
-    s.radio = { who: "c", text: "Hold J to spray. Corkscrews inbound.", until: s.t + 3 };
+    s.radio = { who: "c", text: "Tap Space. Hold to charge. Corkscrews inbound.", until: s.t + 3 };
   }
   if (s.wave < 3 && s.t > 38 && s.mode === "play") {
     const live = s.enemies.filter((e) => e.alive && e.kind !== "dualis").length;
@@ -817,6 +870,13 @@ function steerEnemy(s: SortieState, e: Enemy, dt: number) {
   const d = railDir(s);
   const side = sideOf(d);
   const armed = e.armed ?? defaultArmed(e.kind);
+
+  if (e.kind === "aster") {
+    e.vx = 0;
+    e.vy = 0;
+    e.vz = 0;
+    return;
+  }
 
   if (e.kind === "turret" || e.kind === "mech" || e.kind === "mothership") {
     if (armed && e.t % (e.kind === "mothership" ? 0.7 : 1.4) < dt + 0.02) fireShot(s, "orb", false, e.x, e.y, e.z, toP, 44);
@@ -969,14 +1029,15 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
   if (s.wings === 0) s.pitch -= 0.22 * dt;
   const f = fwd(s);
 
+  const space = s.biome === "sorts";
   const ground = islandHeight(s, s.x, s.z);
-  if (s.y < ground + 6) {
+  if (!space && s.y < ground + 6) {
     s.y = ground + 6;
     if (s.pitch < 0.22) s.pitch = follow(s.pitch, 0.22, 8, dt);
     hurt(s, 1, ground > 2);
     s.splash = 0.35;
   }
-  if (s.y < WATER_Y + 5) {
+  if (!space && s.y < WATER_Y + 5) {
     s.y = WATER_Y + 8;
     if (s.pitch < 0.28) s.pitch = follow(s.pitch, 0.28, 8, dt);
     hurt(s, 1);
@@ -1002,6 +1063,14 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
       r.taken = true;
       s.score += 150;
       s.hull = Math.min(HULL_MAX + s.golds, s.hull + 1);
+      if (s.missionId === "sorts") {
+        s.archHits += 1;
+        if (s.archHits >= 7) {
+          s.fork = true;
+          s.mode = "win";
+          s.radio = { who: "s", text: "Seven rings. Warp. Ice is open.", until: s.t + 4 };
+        }
+      }
     }
   }
   for (const p of s.pickups) {
@@ -1029,10 +1098,12 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
   }
 
   if (input.cockpit) s.cockpit = !s.cockpit;
-  if (input.fireHeld) s.charge = Math.min(CHARGE_LOCK + 0.4, s.charge + dt);
+  const liveCharge = s.shots.some((q) => q.friendly && q.kind === "charge" && q.life > 0);
+  if (input.fireHeld && !liveCharge) s.charge = Math.min(CHARGE_LOCK + 0.4, s.charge + dt);
 
   if (input.lockBreak) s.lockId = -1;
-  else s.lockId = pickTarget(s);
+  else if (s.charge > 0.12) s.lockId = pickTarget(s);
+  else s.lockId = -1;
   const locked = s.enemies.find((e) => e.id === s.lockId && e.alive);
   if (locked) {
     const pip = aimScreen(s, locked.x, locked.y, locked.z);
@@ -1048,9 +1119,9 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
   }
 
   if (!input.fireHeld) {
-    if (s.charge >= CHARGE_LOCK) {
+    if (s.charge >= CHARGE_LOCK && !liveCharge) {
       const home = s.lockHard ? s.lockId : -1;
-      fireShot(s, "charge", true, s.x, s.y, s.z, aimDir(s, f, CHARGE_SPD), CHARGE_SPD, home);
+      fireShot(s, "charge", true, s.x, s.y, s.z, aimDir(s, f, CHARGE_SPD, home >= 0), CHARGE_SPD, home);
     }
     s.charge = 0;
   }
@@ -1063,16 +1134,15 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
     } else if (s.bombs > 0) {
       s.bombs -= 1;
       const home = s.lockHard ? s.lockId : -1;
-      const dir = home >= 0 ? aimDir(s, f, 48) : f;
+      const dir = home >= 0 ? aimDir(s, f, 48, true) : f;
       fireShot(s, "bomb", true, s.x + dir.x * 14, s.y + dir.y * 14, s.z + dir.z * 14, dir, 48, home);
       s.charge = 0;
     }
   }
 
-  const spraying = (input.fire || input.fireHeld) && s.charge < CHARGE_LOCK;
-  if (spraying && s.cooldown <= 0) {
+  if (input.fire && s.charge < 0.12 && s.cooldown <= 0) {
     const r = right(s);
-    const dir = aimDir(s, f, LASER_SPD);
+    const dir = f;
     const dmgLife = s.stem >= 2 ? 1.6 : 1.35;
     if (s.stem === 0) {
       fireShot(s, "laser", true, s.x, s.y, s.z, dir, LASER_SPD);
@@ -1083,13 +1153,10 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
     s.shots.filter((q) => q.kind === "laser" && q.life > 1.3).forEach((q) => {
       q.life = dmgLife;
     });
-    s.gunHeat = Math.min(1, s.gunHeat + HEAT_PER_SHOT);
-    s.cooldown = s.gunHeat >= 1 ? OVERHEAT_CD : RAPID_CD + s.gunHeat * HEAT_CD;
-    if (s.gunHeat >= 1) s.gunHeat = 0.38;
+    s.cooldown = RAPID_CD;
     s.flash = 1;
-  } else if (!input.fireHeld) {
-    s.gunHeat = Math.max(0, s.gunHeat - dt * 0.95);
   }
+  if (!input.fireHeld) s.gunHeat = Math.max(0, s.gunHeat - dt * 0.95);
 
   scriptWaves(s);
 
@@ -1106,9 +1173,12 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
       e.y += e.vy * dt;
       e.z += e.vz * dt;
     }
-    const floor = islandHeight(s, e.x, e.z) + 8;
-    if (e.y < floor) e.y = floor;
-    if (dist2(s, e) < 10 * 10) hurt(s, 1);
+    if (s.biome !== "sorts") {
+      const floor = islandHeight(s, e.x, e.z) + 8;
+      if (e.y < floor) e.y = floor;
+    }
+    const cr = e.kind === "aster" ? bodyR(e) * 0.8 : 10;
+    if (dist2(s, e) < cr * cr) hurt(s, 1);
   }
 
   for (const sh of s.shots) {
@@ -1145,11 +1215,16 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
       } else {
         for (const e of s.enemies) {
           if (!e.alive) continue;
-          const rad = e.kind === "dualis" || e.kind === "mothership" || e.kind === "mech" ? 16 : 7;
-          if (dist2(sh, e) < rad * rad) {
+          const rad = bodyR(e) + (sh.kind === "charge" ? 6 : 2);
+          const hit =
+            sh.kind === "laser"
+              ? distSeg(e.x, e.y, e.z, sh.x - sh.vx * dt, sh.y - sh.vy * dt, sh.z - sh.vz * dt, sh.x, sh.y, sh.z) < rad
+              : dist2(sh, e) < rad * rad;
+          if (hit) {
             e.hp -= sh.kind === "charge" ? 6 : s.stem >= 2 ? 2 : 1;
             sh.life = 0;
             s.score += sh.kind === "charge" ? 80 : 20;
+            if (sh.kind === "charge") chargeSplash(s, sh.x, sh.y, sh.z, e.id);
             if (e.kind === "mech") {
               if (!s.bossAt) s.bossAt = s.t;
               if (e.hp <= 16 && s.bossPhase < 1) {
@@ -1171,7 +1246,7 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
           }
         }
       }
-    } else if (dist2(sh, s) < 7 * 7) {
+    } else if (dist2(sh, s) < 5.5 * 5.5) {
       if (s.barrel > 0 || s.somersault > 0) {
         sh.friendly = true;
         sh.vx *= -1.1;

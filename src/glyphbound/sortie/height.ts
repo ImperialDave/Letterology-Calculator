@@ -57,6 +57,7 @@ function biomeHills(biome: BiomeId, x: number, z: number) {
     }
     return h;
   }
+  if (biome === "sorts") return 0;
   if (biome === "press") {
     const crater = Math.hypot(x, z);
     const bowl = crater < 130 ? Math.max(4, 14 - (130 - crater) * 0.08) : 16 + n * 7;

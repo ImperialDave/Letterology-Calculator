@@ -39,7 +39,10 @@ export function makeWorld(biome: BiomeId = "sky", missionId = biome) {
   water.receiveShadow = true;
   root.add(water);
 
-  if (missionId !== "ice" && missionId !== "sky") root.add(makeRiver(kit));
+  if (missionId !== "ice" && missionId !== "sky" && missionId !== "sorts") root.add(makeRiver(kit));
+  if (missionId === "sorts") {
+    water.visible = false;
+  }
 
   dressBiome(root, kit, missionId);
 

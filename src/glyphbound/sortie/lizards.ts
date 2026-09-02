@@ -175,6 +175,14 @@ export function makeLizard(kind: EnemyKind) {
     g.rotation.y = Math.PI;
     return g;
   }
+  if (kind === "aster") {
+    const g = new THREE.Group();
+    const m = mats();
+    add(g, new THREE.DodecahedronGeometry(1.15, 0), m.dark, 0, 0, 0);
+    add(g, new THREE.DodecahedronGeometry(0.7, 0), m.rust, 0.35, 0.2, 0.15);
+    g.rotation.y = Math.PI;
+    return g;
+  }
   return raptor(1.18, 1.95, 1, "rust");
 }
 
@@ -191,6 +199,7 @@ export function poseLizard(g: THREE.Object3D, t: number, kind: EnemyKind) {
   }
   if (kind === "cork") g.rotation.z = Math.sin(t * 3.2) * 0.35;
   if (kind === "mothership") g.rotation.z = Math.sin(t * 0.6) * 0.08;
+  if (kind === "aster") g.rotation.set(t * 0.35, t * 0.5, t * 0.2);
   if (kind === "mech") {
     const step = Math.sin(t * 2.4);
     const legL = g.getObjectByName("legL");

@@ -5,7 +5,7 @@ import { FOG, PAPER, RUST, ashTex, brassTex, grassLeadTex, iceGroundTex, iceWate
 
 const ARENA_R = 420;
 
-export type BiomeId = "sky" | "coast" | "slug" | "gutter" | "ice" | "press";
+export type BiomeId = "sky" | "coast" | "slug" | "gutter" | "ice" | "press" | "sorts";
 
 export interface BiomeKit {
   id: BiomeId;
@@ -25,6 +25,7 @@ export const BIOMES: Record<BiomeId, BiomeKit> = {
   gutter: { id: "gutter", fog: 0xf0c8a0, sky: 0xf0a868, water: 0x48d0c8, waterTex: inkWaterTex, ground: 0xe8a070, groundTex: ashTex, metal: 0xff8060 },
   ice: { id: "ice", fog: 0xe0f4fc, sky: 0xd8f4ff, water: 0xa8e0f0, waterTex: iceWaterTex, ground: 0xf4ffff, groundTex: iceGroundTex, metal: 0xffe08a },
   press: { id: "press", fog: 0xf0c090, sky: 0xf0a060, water: 0xe07848, waterTex: slagWaterTex, ground: 0xe89860, groundTex: ashTex, metal: 0xff8060 },
+  sorts: { id: "sorts", fog: 0x12182a, sky: 0x1a2448, water: 0x102030, waterTex: inkWaterTex, ground: 0x6a6058, groundTex: rockTex, metal: 0xc8b89a },
 };
 
 function sit(biome: BiomeId, x: number, z: number, missionId?: string) {
@@ -323,8 +324,33 @@ function farRidges(root: THREE.Group, kit: BiomeKit, missionId: string) {
   }
 }
 
+function scatterSorts(root: THREE.Group) {
+  const rock = n64Mat(0xb8a888, { map: rockTex() });
+  const star = new THREE.MeshBasicMaterial({ color: 0xf4f0e4 });
+  for (let i = 0; i < 40; i++) {
+    const z = 200 + hash01(i * 3.3) * 3400;
+    const x = (hash01(i * 8.1) - 0.5) * 420;
+    const y = (hash01(i * 5.7) - 0.5) * 180;
+    const r = 6 + hash01(i * 2) * 16;
+    const b = new THREE.Mesh(new THREE.DodecahedronGeometry(r * 0.45, 0), rock);
+    b.position.set(x, y, z);
+    b.rotation.set(hash01(i) * 2, hash01(i * 4) * 3, 0);
+    root.add(b);
+  }
+  for (let i = 0; i < 48; i++) {
+    const card = new THREE.Mesh(new THREE.SphereGeometry(0.7 + hash01(i) * 1.4, 5, 4), star);
+    const a = i * 0.71;
+    card.position.set(Math.cos(a) * (380 + (i % 5) * 40), 40 + (i % 7) * 28, Math.sin(a) * 400 + 1800);
+    root.add(card);
+  }
+}
+
 export function dressBiome(root: THREE.Group, kit: BiomeKit, missionId = kit.id) {
   const biome = kit.id;
+  if (missionId === "sorts") {
+    scatterSorts(root);
+    return;
+  }
   root.add(makeSheet(kit, missionId));
   if (missionId !== "ice" && missionId !== "sky") root.add(makeStrip(kit, missionId));
   for (const L of landmarksFor(missionId)) placeLandmark(root, L, kit, biome, missionId);

@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { groundHeight } from "./height";
-import { COAST_PATH, landmarksFor, riverX } from "./landmarks";
+import { COAST_PATH, landmarksFor, riverX, SORTS_PATH } from "./landmarks";
 import { unlockedIds } from "./missions";
 import { pathLength } from "./path";
 import { analogFromDelta } from "./stick";
 import { SortieKeys } from "./input";
-import { BARREL_T, CHARGE_LOCK, MAGNET, SOMERSAULT_T, createSortie, emptyInput, stepSortie } from "./sim";
+import { BARREL_T, CHARGE_LOCK, SOMERSAULT_T, createSortie, emptyInput, stepSortie } from "./sim";
 import { fillTex, paintBrass, paintGrass, paintHull, paintInkWater, paintLead, paintScale, type Plot } from "./tex-paint";
 
 function meanLuma(paint: (plot: Plot, n: number) => void) {
@@ -74,7 +74,7 @@ test("D (roll -1) yaws right", () => {
   assert.ok(s.yaw < -0.05, `yaw ${s.yaw}`);
 });
 
-test("soft lock pulls lasers toward a target in the inner square", () => {
+test("uncharged lasers fly down the nose with no magnet", () => {
   const s = createSortie();
   s.enemies.push({
     id: 50,
@@ -94,15 +94,12 @@ test("soft lock pulls lasers toward a target in the inner square", () => {
   s.z = 0;
   s.yaw = 0;
   s.pitch = 0;
-  stepSortie(s, emptyInput(), 1 / 60);
-  assert.equal(s.lockId, 50);
   const inp = emptyInput();
   inp.fire = true;
   stepSortie(s, inp, 1 / 60);
   const shot = s.shots.find((q) => q.kind === "laser");
   assert.ok(shot);
-  assert.ok(shot!.vx > 4, `magnetism vx ${shot!.vx}`);
-  assert.ok(shot!.vx < 240 * MAGNET + 40, `not full home ${shot!.vx}`);
+  assert.ok(Math.abs(shot!.vx) < 8, `no magnet vx ${shot!.vx}`);
 });
 
 test("lasers down the nose miss a target outside the squares", () => {
@@ -157,7 +154,8 @@ test("Dualis cannot be lock-on targeted", () => {
   s.pitch = 0;
   const held = emptyInput();
   held.fireHeld = true;
-  for (let i = 0; i < 40; i++) stepSortie(s, held, 1 / 60);
+  for (let i = 0; i < 60; i++) stepSortie(s, held, 1 / 60);
+  assert.ok(s.charge >= CHARGE_LOCK);
   assert.notEqual(s.lockId, 9);
   assert.equal(s.lockHard, false);
 });
@@ -295,7 +293,7 @@ test("charge bolt fires after lock time on release", () => {
   s.wave = 99;
   const held = emptyInput();
   held.fireHeld = true;
-  for (let i = 0; i < 200; i++) stepSortie(s, held, 1 / 60);
+  for (let i = 0; i < 50; i++) stepSortie(s, held, 1 / 60);
   assert.ok(s.charge >= CHARGE_LOCK);
   stepSortie(s, emptyInput(), 1 / 60);
   assert.ok(s.shots.some((q) => q.kind === "charge"));
@@ -348,12 +346,14 @@ test("rim U-turn faces inward and stays near the arena", () => {
   assert.ok(Math.abs(d) < 0.8, `yaw ${s.yaw} inward ${inward}`);
 });
 
-test("Register unlocks ice when Coast is a Proof, else slug", () => {
+test("Register unlocks Sorts after Coast, Ice on Proof or warp", () => {
   assert.ok(unlockedIds([], []).has("coast"));
-  assert.equal(unlockedIds(["coast"], []).has("slug"), true);
+  assert.equal(unlockedIds(["coast"], []).has("sorts"), true);
+  assert.equal(unlockedIds(["coast"], []).has("slug"), false);
   assert.equal(unlockedIds(["coast"], []).has("ice"), false);
   assert.equal(unlockedIds(["coast"], ["coast"]).has("ice"), true);
-  assert.equal(unlockedIds(["coast"], [], ["coast"]).has("ice"), true);
+  assert.equal(unlockedIds(["sorts"], []).has("slug"), true);
+  assert.equal(unlockedIds(["sorts"], [], ["sorts"]).has("ice"), true);
 });
 
 test("Coast strip is a long course", () => {
@@ -450,12 +450,17 @@ test("hold pull-up keeps pitching through a loop", () => {
   assert.ok(maxY > 95, `loop should climb, maxY ${maxY}`);
 });
 
-test("short hold sprays and does not dump a charge bolt", () => {
+test("a tap fires a laser and a short hold does not spray", () => {
+  const tap = createSortie();
+  const shot = emptyInput();
+  shot.fire = true;
+  stepSortie(tap, shot, 1 / 60);
+  assert.ok(tap.shots.some((q) => q.kind === "laser"));
   const s = createSortie();
   const inp = emptyInput();
   inp.fireHeld = true;
   for (let i = 0; i < 20; i++) stepSortie(s, inp, 1 / 60);
-  assert.ok(s.shots.some((q) => q.kind === "laser"));
+  assert.equal(s.shots.filter((q) => q.kind === "laser").length, 0);
   assert.ok(!s.shots.some((q) => q.kind === "charge"));
   assert.ok(s.charge < CHARGE_LOCK);
 });
@@ -492,10 +497,12 @@ test("brake and pull-up U-turns in all-range", () => {
   assert.ok(Math.abs(s.yaw - yaw0) > 2.2, `yaw ${s.yaw} from ${yaw0}`);
 });
 
-test("hold fire sprays lasers with a short cooldown", () => {
+test("mashing fire sprays lasers with a short cooldown", () => {
   const s = createSortie();
+  s.invuln = 99;
+  s.wave = 99;
   const inp = emptyInput();
-  inp.fireHeld = true;
+  inp.fire = true;
   let volleys = 0;
   for (let i = 0; i < 45; i++) {
     const id = s.shotId;
@@ -504,38 +511,37 @@ test("hold fire sprays lasers with a short cooldown", () => {
   }
   assert.ok(volleys >= 5, `rapid volleys ${volleys}`);
   assert.ok(volleys <= 14, `cooldown should space shots, got ${volleys}`);
-  assert.ok(s.gunHeat > 0.05, `heat ${s.gunHeat}`);
 });
 
-test("rapid-fire lasts several seconds before the overheat hitch", () => {
+test("charge splash tags a neighbor", () => {
   const s = createSortie();
   s.invuln = 99;
   s.wave = 99;
-  const inp = emptyInput();
-  inp.fireHeld = true;
-  let volleys = 0;
-  for (let i = 0; i < 150; i++) {
-    const id = s.shotId;
-    stepSortie(s, inp, 1 / 60);
-    if (s.shotId > id) volleys += 1;
+  s.enemies.push(
+    { id: 61, kind: "turret", x: 0, y: 48, z: -40, vx: 0, vy: 0, vz: 0, hp: 2, t: 0, alive: true },
+    { id: 62, kind: "turret", x: 12, y: 48, z: -40, vx: 0, vy: 0, vz: 0, hp: 2, t: 0, alive: true },
+  );
+  s.x = 0;
+  s.y = 48;
+  s.z = 0;
+  s.yaw = 0;
+  s.pitch = 0;
+  s.speed = 0;
+  const held = emptyInput();
+  held.fireHeld = true;
+  for (let i = 0; i < 50; i++) {
+    s.speed = 0;
+    stepSortie(s, held, 1 / 60);
   }
-  assert.ok(s.charge < CHARGE_LOCK, `still spraying at 2.5s, charge ${s.charge}`);
-  assert.ok(volleys >= 20, `long spray ${volleys}`);
-  assert.ok(s.gunHeat < 1, `should not hitch yet, heat ${s.gunHeat}`);
-  assert.ok(s.gunHeat > 0.15, `heat should have built ${s.gunHeat}`);
-});
-
-test("rapid-fire heat hitch is brief, then guns recover", () => {
-  const s = createSortie();
-  s.invuln = 99;
-  s.wave = 99;
-  const inp = emptyInput();
-  inp.fireHeld = true;
-  for (let i = 0; i < 900; i++) stepSortie(s, inp, 1 / 60);
-  assert.ok(s.gunHeat < 1, `heat should not stick at max ${s.gunHeat}`);
-  const cooling = emptyInput();
-  for (let i = 0; i < 90; i++) stepSortie(s, cooling, 1 / 60);
-  assert.ok(s.gunHeat < 0.2, `forgiving recovery ${s.gunHeat}`);
+  stepSortie(s, emptyInput(), 1 / 60);
+  for (let i = 0; i < 40; i++) {
+    s.speed = 0;
+    stepSortie(s, emptyInput(), 1 / 60);
+  }
+  const a = s.enemies.find((e) => e.id === 61);
+  const b = s.enemies.find((e) => e.id === 62);
+  assert.ok(!a?.alive || a.hp < 2, `primary ${a?.hp}`);
+  assert.ok(!b?.alive || b.hp < 2, `splash neighbor ${b?.hp}`);
 });
 
 test("corridor lizards fly the rail and do not reverse", () => {
@@ -633,6 +639,57 @@ test("unarmed fighters fire no orbs", () => {
   );
 });
 
+test("small sorts die to a laser", () => {
+  const s = createSortie({ corridor: true, path: SORTS_PATH, missionId: "sorts", biome: "sorts" });
+  s.wave = 99;
+  s.flight = "allrange";
+  s.speed = 0;
+  s.x = 0;
+  s.y = 48;
+  s.z = 0;
+  s.yaw = 0;
+  s.pitch = 0;
+  s.enemies.push({
+    id: 201,
+    kind: "aster",
+    x: 0,
+    y: 48,
+    z: -30,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    hp: 1,
+    t: 0,
+    alive: true,
+    armed: false,
+  });
+  const inp = emptyInput();
+  inp.fire = true;
+  stepSortie(s, inp, 1 / 60);
+  for (let i = 0; i < 30; i++) stepSortie(s, emptyInput(), 1 / 60);
+  const rock = s.enemies.find((e) => e.id === 201);
+  assert.ok(!rock?.alive || (rock.hp ?? 1) <= 0, `aster hp ${rock?.hp} alive ${rock?.alive}`);
+});
+
+test("seven Sorts rings warp and fork", () => {
+  const s = createSortie({ corridor: true, path: SORTS_PATH, missionId: "sorts", biome: "sorts" });
+  s.wave = 99;
+  s.flight = "allrange";
+  s.speed = 0;
+  for (let i = 0; i < 7; i++) {
+    s.rings.push({ id: 300 + i, x: 0, y: 48, z: -20 - i, taken: false });
+  }
+  s.x = 0;
+  s.y = 48;
+  s.z = -20;
+  for (let i = 0; i < 7; i++) {
+    s.z = -20 - i;
+    stepSortie(s, emptyInput(), 1 / 60);
+  }
+  assert.equal(s.fork, true);
+  assert.equal(s.mode, "win");
+});
+
 test("low flight over water sets skim", () => {
   const s = createSortie({ missionId: "coast", biome: "coast" });
   s.x = 0;
@@ -704,17 +761,29 @@ test("holding A to steer does not barrel", () => {
   assert.equal(again.barrel, 0);
 });
 
-test("double-tap A within a wide window barrels", () => {
+test("double-tap Q within a wide window barrels", () => {
   const k = new SortieKeys();
-  k.setKeys(["KeyA"]);
+  k.setKeys(["KeyQ"]);
   const first = k.poll(0.016);
   assert.equal(first.barrel, 0);
   k.setKeys([]);
   k.poll(0.016);
   for (let i = 0; i < 20; i++) k.poll(0.016);
-  k.setKeys(["KeyA"]);
+  k.setKeys(["KeyQ"]);
   const second = k.poll(0.016);
   assert.equal(second.barrel, 1);
+});
+
+test("Space edge fires, hold is charge", () => {
+  const k = new SortieKeys();
+  k.setKeys(["Space"]);
+  const down = k.poll(0.016);
+  assert.equal(down.fire, true);
+  assert.equal(down.fireHeld, true);
+  k.setKeys(["Space"]);
+  const held = k.poll(0.016);
+  assert.equal(held.fire, false);
+  assert.equal(held.fireHeld, true);
 });
 
 test("Dualis death wins the sortie", () => {
