@@ -128,14 +128,40 @@ export function scriptMissionWaves(s: SortieState) {
   const id = s.missionId;
   if (id === "sky") return false;
   if (id === "coast") {
-    if (s.wave < 1 && s.t > 1.4) {
-      s.wave = 1;
+    if (s.flight === "corridor") {
+      if (s.wave < 1 && s.pathT > 0.08) {
+        spawn(s, "fighter", s.x - 20, s.y + 6, s.z - 50);
+        spawn(s, "fighter", s.x + 20, s.y + 6, s.z - 50);
+        spawn(s, "fighter", s.x, s.y + 8, s.z - 70);
+        s.wave = 1;
+        s.radio = { who: "s", text: "V on the water. Cut the lead.", until: s.t + 2.6 };
+      }
+      if (s.wave < 2 && s.pathT > 0.28) {
+        spawn(s, "turret", s.x + 30, 8, s.z - 40);
+        spawn(s, "turret", s.x - 30, 8, s.z - 55);
+        s.wave = 2;
+        s.radio = { who: "b", text: "Turrets on the stacks. Don’t sit.", until: s.t + 2.4 };
+      }
+      if (s.wave < 3 && s.pathT > 0.48) {
+        spawn(s, "cork", s.x + 40, s.y + 10, s.z - 40);
+        spawn(s, "cork", s.x - 40, s.y + 12, s.z - 60);
+        s.pickups.push({ id: s.enemyId++, kind: "bomb", x: s.x, y: s.y + 4, z: s.z - 30, taken: false });
+        s.wave = 3;
+        s.radio = { who: "c", text: "Em-dash in the arch. Take it.", until: s.t + 2.4 };
+      }
+      if (s.wave < 4 && s.pathT > 0.7) {
+        spawn(s, "bomber", s.x, s.y + 24, s.z - 50);
+        spawn(s, "fighter", s.x - 25, s.y, s.z - 35);
+        spawn(s, "fighter", s.x + 25, s.y, s.z - 35);
+        s.wave = 4;
+      }
+      return true;
     }
-    if (s.flight === "allrange" && s.wave < 2) {
+    if (s.flight === "allrange" && s.wave < 10) {
       spawn(s, "fighter", -50, 48, -40);
       spawn(s, "fighter", 50, 48, -40);
       spawn(s, "mech", 0, 20, -160);
-      s.wave = 2;
+      s.wave = 10;
       s.radio = { who: "s", text: "Scale on the plaza. Knees, then frill.", until: s.t + 3.5 };
     }
     return true;

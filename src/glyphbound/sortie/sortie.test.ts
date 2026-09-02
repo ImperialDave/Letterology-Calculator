@@ -75,6 +75,87 @@ test("laser hits a fighter", () => {
   assert.ok(one!.hp < 2 || !one!.alive);
 });
 
+test("em-dash splash kills a cluster and counts hits", () => {
+  const s = createSortie();
+  s.bombs = 1;
+  for (const [x, z] of [
+    [0, -80],
+    [8, -84],
+    [-8, -76],
+  ] as const) {
+    s.enemies.push({
+      id: s.enemyId++,
+      kind: "fighter",
+      x,
+      y: 48,
+      z,
+      vx: 0,
+      vy: 0,
+      vz: 0,
+      hp: 2,
+      t: 0,
+      alive: true,
+    });
+  }
+  s.x = 0;
+  s.y = 48;
+  s.z = 0;
+  const inp = emptyInput();
+  inp.bomb = true;
+  stepSortie(s, inp, 1 / 60);
+  const bomb = s.shots.find((q) => q.kind === "bomb");
+  assert.ok(bomb);
+  bomb!.x = 0;
+  bomb!.y = 48;
+  bomb!.z = -80;
+  bomb!.life = 2;
+  const boom = emptyInput();
+  boom.bomb = true;
+  stepSortie(s, boom, 1 / 60);
+  const dead = s.enemies.filter((e) => e.id > 40 || !e.alive).length;
+  assert.ok(s.hits >= 3, `hits ${s.hits} deadish ${dead}`);
+});
+
+test("hyper stem doubles laser damage", () => {
+  const s = createSortie();
+  s.stem = 2;
+  s.enemies.push({
+    id: 77,
+    kind: "fighter",
+    x: 0,
+    y: 48,
+    z: -20,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    hp: 2,
+    t: 0,
+    alive: true,
+  });
+  s.x = 0;
+  s.y = 48;
+  s.z = -10;
+  s.yaw = 0;
+  s.pitch = 0;
+  const inp = emptyInput();
+  inp.fire = true;
+  stepSortie(s, inp, 1 / 60);
+  for (let i = 0; i < 12; i++) stepSortie(s, emptyInput(), 1 / 60);
+  const e = s.enemies.find((n) => n.id === 77);
+  assert.ok(e && (!e.alive || e.hp <= 0), `hp ${e?.hp} alive ${e?.alive}`);
+});
+
+test("island crash snaps a wing", () => {
+  const s = createSortie();
+  s.invuln = 0;
+  s.wings = 2;
+  s.x = 0;
+  s.z = -180;
+  s.y = 8;
+  stepSortie(s, emptyInput(), 1 / 30);
+  assert.equal(s.wings, 1);
+});
+
 test("barrel roll reflects an orb", () => {
   const s = createSortie();
   s.barrel = BARREL_T;

@@ -22,9 +22,12 @@ export function SortieHud({
         {s.missionName}
       </div>
       <div className="absolute right-3 top-3 text-right text-sm tabular-nums drop-shadow-[0_2px_8px_#000]">
-        <p className="text-[#e8d48a]">{s.score}</p>
+        <p style={{ color: s.proofLive ? "#e8d48a" : "#f4f0e4" }}>{s.hits}</p>
         <p className="text-[10px] text-[#c9b896]">
-          {s.hits} hits · best {best}
+          hits · Proof {s.medal} · {s.score} · best {best}
+        </p>
+        <p className="text-[10px] text-[#5ee0c0]">
+          Stem {["I", "II", "III"][s.stem] ?? "I"} · dash {s.bombs}
         </p>
       </div>
       <div className="absolute bottom-3 left-3 flex gap-1">
@@ -35,6 +38,15 @@ export function SortieHud({
             style={{ background: i < s.hull ? "#5ee0c0" : "transparent" }}
           />
         ))}
+        <span className="ml-2 flex gap-0.5">
+          {[0, 1].map((i) => (
+            <span
+              key={i}
+              className="h-2.5 w-3 rounded-sm border border-[#5ee0c0]/50"
+              style={{ background: i < s.wings ? "#5ee0c0" : "transparent" }}
+            />
+          ))}
+        </span>
       </div>
       <div className="absolute bottom-3 right-3 h-1.5 w-28 overflow-hidden rounded-sm border border-[#e8d48a]/40">
         <div className="h-full bg-[#e8d48a]" style={{ width: `${Math.min(100, (s.charge / 0.6) * 100)}%` }} />

@@ -54,6 +54,7 @@ export function GlyphboundSortie({
       biome: m.biome,
     });
     next.winKind = m.win;
+    next.medal = m.medal;
     sim.current = next;
     missionRef.current = m;
     lastMode.current = "play";

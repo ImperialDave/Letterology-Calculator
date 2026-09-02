@@ -11,7 +11,8 @@ export const CHARGE_LOCK = 0.6;
 export const BARREL_T = 0.42;
 
 export type EnemyKind = "fighter" | "cork" | "bomber" | "turret" | "ace" | "mech" | "mothership" | "dualis";
-export type ShotKind = "laser" | "orb" | "charge";
+export type ShotKind = "laser" | "orb" | "charge" | "bomb";
+export type PickupKind = "silver" | "gold" | "stem" | "bomb" | "repair";
 export type SortieMode = "play" | "win" | "dead" | "pause";
 export type FlightMode = "corridor" | "allrange";
 
@@ -66,6 +67,15 @@ export interface Ring {
   taken: boolean;
 }
 
+export interface Pickup {
+  id: number;
+  kind: PickupKind;
+  x: number;
+  y: number;
+  z: number;
+  taken: boolean;
+}
+
 export interface RadioLine {
   who: string;
   text: string;
@@ -81,6 +91,7 @@ export interface SortieInput {
   boost: boolean;
   brake: boolean;
   barrel: number;
+  bomb: boolean;
 }
 
 export interface SortieState {
@@ -129,6 +140,13 @@ export interface SortieState {
   lockSx: number;
   lockSy: number;
   lockOn: boolean;
+  medal: number;
+  bombs: number;
+  stem: 0 | 1 | 2;
+  wings: 0 | 1 | 2;
+  golds: number;
+  pickups: Pickup[];
+  proofLive: boolean;
 }
 
 const CRUISE = 48;
@@ -237,7 +255,7 @@ export function dist2(a: Vec3, b: Vec3) {
 }
 
 export function emptyInput(): SortieInput {
-  return { roll: 0, pitch: 0, rudder: 0, fire: false, fireHeld: false, boost: false, brake: false, barrel: 0 };
+  return { roll: 0, pitch: 0, rudder: 0, fire: false, fireHeld: false, boost: false, brake: false, barrel: 0, bomb: false };
 }
 
 export function createSortie(opts?: {
@@ -305,6 +323,16 @@ export function createSortie(opts?: {
     lockSx: 0,
     lockSy: 0,
     lockOn: false,
+    medal: 80,
+    bombs: 1,
+    stem: 1,
+    wings: 2,
+    golds: 0,
+    pickups: [
+      { id: 1, kind: "stem", x: -30, y: 44, z: 40, taken: false },
+      { id: 2, kind: "bomb", x: 50, y: 46, z: -30, taken: false },
+    ],
+    proofLive: false,
   };
 }
 
@@ -348,20 +376,49 @@ function fireShot(
     vx: (dir.x / n) * speed,
     vy: (dir.y / n) * speed,
     vz: (dir.z / n) * speed,
-    life: kind === "charge" ? 2.4 : 1.35,
+    life: kind === "bomb" ? 2.8 : kind === "charge" ? 2.4 : 1.35,
     lockId,
   });
 }
 
-function hurt(s: SortieState, n: number) {
+function hurt(s: SortieState, n: number, snap = false) {
   if (s.invuln > 0 || s.barrel > 0 || s.mode !== "play") return;
   s.hull -= n;
   s.invuln = 0.85;
   s.hitStop = 0.05;
+  if (snap && s.wings > 0) {
+    s.wings = (s.wings - 1) as 0 | 1 | 2;
+    if (s.stem > 0) s.stem = (s.stem - 1) as 0 | 1 | 2;
+    s.radio = { who: "e", text: s.wings ? "Wing gone. Stem drops." : "Both wings. We’re sinking.", until: s.t + 2.8 };
+  }
   if (s.hull <= 0) {
     s.hull = 0;
     s.mode = "dead";
     s.radio = { who: "b", text: "Hull gone. Wake the press.", until: s.t + 4 };
+  }
+}
+
+function killEnemy(s: SortieState, e: Enemy, splash = false) {
+  if (!e.alive) return;
+  e.alive = false;
+  s.hits += 1;
+  s.score += e.kind === "dualis" || e.kind === "mech" || e.kind === "mothership" ? 1000 : splash ? 80 : 120;
+  const acesGone = s.winKind === "aces" && s.wave >= 2 && !s.enemies.some((n) => n.alive && n.kind === "ace");
+  if ((s.winKind !== "aces" && e.kind === s.winKind) || acesGone) {
+    s.mode = "win";
+    s.radio = { who: "s", text: "Press clear. C, that was a sentence.", until: s.t + 5 };
+  }
+}
+
+function detonate(s: SortieState, x: number, y: number, z: number) {
+  const R = 32;
+  for (const e of s.enemies) {
+    if (!e.alive) continue;
+    const d = Math.hypot(e.x - x, e.y - y, e.z - z);
+    if (d > R) continue;
+    e.hp -= 8;
+    s.score += 40;
+    if (e.hp <= 0) killEnemy(s, e, true);
   }
 }
 
@@ -542,13 +599,15 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
   s.speed += (want - s.speed) * Math.min(1, dt * 2.4);
 
   flyCraft(s, input, dt);
+  if (s.wings === 1) s.yaw += 0.28 * dt;
+  if (s.wings === 0) s.pitch = Math.max(-0.68, s.pitch - 0.22 * dt);
   const f = fwd(s);
 
   const ground = islandHeight(s, s.x, s.z);
   if (s.y < ground + 6) {
     s.y = ground + 6;
     s.pitch = Math.max(s.pitch, 0.18);
-    hurt(s, ground > 2 ? 1 : 1);
+    hurt(s, 1, ground > 2);
     s.splash = 0.35;
   }
   if (s.y < WATER_Y + 5) {
@@ -582,7 +641,30 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
     if (dist2(s, r) < 13 * 13) {
       r.taken = true;
       s.score += 150;
-      s.hull = Math.min(HULL_MAX, s.hull + 1);
+      s.hull = Math.min(HULL_MAX + s.golds, s.hull + 1);
+    }
+  }
+  for (const p of s.pickups) {
+    if (p.taken) continue;
+    if (dist2(s, p) < 14 * 14) {
+      p.taken = true;
+      if (p.kind === "stem") {
+        s.stem = Math.min(2, s.stem + 1) as 0 | 1 | 2;
+        s.radio = { who: "e", text: s.stem === 2 ? "Hyper stem. Keep the wings." : "Twin stem.", until: s.t + 2.4 };
+      } else if (p.kind === "bomb") {
+        s.bombs = Math.min(9, s.bombs + 1);
+        s.radio = { who: "b", text: "Em-dash aboard.", until: s.t + 2 };
+      } else if (p.kind === "silver") {
+        s.hull = Math.min(HULL_MAX + s.golds, s.hull + 2);
+      } else if (p.kind === "gold") {
+        s.golds = Math.min(3, s.golds + 1);
+        s.hull = Math.min(HULL_MAX + s.golds, s.hull + 2);
+        if (s.golds === 3) s.radio = { who: "e", text: "Three golds. Extra curve.", until: s.t + 2.4 };
+      } else if (p.kind === "repair") {
+        s.wings = Math.min(2, s.wings + 1) as 0 | 1 | 2;
+        s.radio = { who: "e", text: "Wing patched.", until: s.t + 2 };
+      }
+      s.score += 80;
     }
   }
 
@@ -604,12 +686,33 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
     s.charge = 0;
   }
 
+  if (input.bomb) {
+    const live = s.shots.find((q) => q.kind === "bomb" && q.life > 0);
+    if (live) {
+      detonate(s, live.x, live.y, live.z);
+      live.life = 0;
+    } else if (s.bombs > 0) {
+      s.bombs -= 1;
+      const dir = s.charge >= CHARGE_LOCK && s.lockId >= 0 ? aimDir(s, f) : f;
+      fireShot(s, "bomb", true, s.x + dir.x * 14, s.y + dir.y * 14, s.z + dir.z * 14, dir, 48, s.charge >= CHARGE_LOCK ? s.lockId : -1);
+      s.charge = 0;
+    }
+  }
+
   if (input.fire && s.cooldown <= 0) {
     const r = right(s);
     const dir = aimDir(s, f);
-    fireShot(s, "laser", true, s.x + r.x * 2.2, s.y, s.z + r.z * 2.2, dir, 220);
-    fireShot(s, "laser", true, s.x - r.x * 2.2, s.y, s.z - r.z * 2.2, dir, 220);
-    s.cooldown = 0.1;
+    const dmgLife = s.stem >= 2 ? 1.6 : 1.35;
+    if (s.stem === 0) {
+      fireShot(s, "laser", true, s.x, s.y, s.z, dir, 220);
+    } else {
+      fireShot(s, "laser", true, s.x + r.x * 2.2, s.y, s.z + r.z * 2.2, dir, 220);
+      fireShot(s, "laser", true, s.x - r.x * 2.2, s.y, s.z - r.z * 2.2, dir, 220);
+    }
+    s.shots.filter((q) => q.kind === "laser" && q.life > 1.3).forEach((q) => {
+      q.life = dmgLife;
+    });
+    s.cooldown = s.stem >= 2 ? 0.08 : 0.1;
     s.flash = 1;
   }
 
@@ -630,7 +733,7 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
 
   for (const sh of s.shots) {
     if (sh.life <= 0) continue;
-    if (sh.kind === "charge" && sh.lockId >= 0) {
+    if ((sh.kind === "charge" || sh.kind === "bomb") && sh.lockId >= 0) {
       const e = s.enemies.find((n) => n.id === sh.lockId && n.alive);
       if (e) {
         const dx = e.x - sh.x;
@@ -648,22 +751,26 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
     sh.life -= dt;
 
     if (sh.friendly) {
-      for (const e of s.enemies) {
-        if (!e.alive) continue;
-        const rad = e.kind === "dualis" || e.kind === "mothership" || e.kind === "mech" ? 16 : 7;
-        if (dist2(sh, e) < rad * rad) {
-          e.hp -= sh.kind === "charge" ? 6 : 1;
-          sh.life = 0;
-          s.score += sh.kind === "charge" ? 80 : 20;
-          if (e.hp <= 0) {
-            e.alive = false;
-            s.hits += 1;
-            s.score += e.kind === "dualis" || e.kind === "mech" || e.kind === "mothership" ? 1000 : 120;
-            const acesGone = s.winKind === "aces" && s.wave >= 2 && !s.enemies.some((n) => n.alive && n.kind === "ace");
-            if ((s.winKind !== "aces" && e.kind === s.winKind) || acesGone) {
-              s.mode = "win";
-              s.radio = { who: "s", text: "Press clear. C, that was a sentence.", until: s.t + 5 };
+      if (sh.kind === "bomb") {
+        if (sh.life < 2.65) {
+          for (const e of s.enemies) {
+            if (!e.alive) continue;
+            if (dist2(sh, e) < 32 * 32) {
+              detonate(s, sh.x, sh.y, sh.z);
+              sh.life = 0;
+              break;
             }
+          }
+        }
+      } else {
+        for (const e of s.enemies) {
+          if (!e.alive) continue;
+          const rad = e.kind === "dualis" || e.kind === "mothership" || e.kind === "mech" ? 16 : 7;
+          if (dist2(sh, e) < rad * rad) {
+            e.hp -= sh.kind === "charge" ? 6 : s.stem >= 2 ? 2 : 1;
+            sh.life = 0;
+            s.score += sh.kind === "charge" ? 80 : 20;
+            if (e.hp <= 0) killEnemy(s, e, sh.kind === "charge");
           }
         }
       }
@@ -683,6 +790,7 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
   }
 
   s.shots = s.shots.filter((sh) => sh.life > 0);
+  s.proofLive = s.hits >= s.medal;
   return s;
 }
 

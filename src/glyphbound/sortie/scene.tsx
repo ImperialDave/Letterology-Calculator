@@ -89,7 +89,10 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
       m.visible = Boolean(sh);
       if (!sh) continue;
       m.position.set(sh.x, sh.y, sh.z);
-      (m.material as THREE.MeshBasicMaterial).color.set(sh.friendly ? (sh.kind === "charge" ? 0xe8d48a : 0x5ee0c0) : 0xd45a4a);
+      m.scale.setScalar(sh.kind === "bomb" ? 4 : 1);
+      (m.material as THREE.MeshBasicMaterial).color.set(
+        sh.kind === "bomb" ? 0xe8d48a : sh.friendly ? (sh.kind === "charge" ? 0xe8d48a : 0x5ee0c0) : 0xd45a4a,
+      );
     }
 
     while (rings.current.length < s.rings.length) {

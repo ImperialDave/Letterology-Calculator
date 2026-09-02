@@ -22,6 +22,8 @@ const GAME = new Set([
   "KeyE",
   "KeyR",
   "KeyC",
+  "KeyB",
+  "KeyM",
   "Escape",
 ]);
 
@@ -39,6 +41,8 @@ export class SortieKeys {
   private prevD = false;
   private prevR = false;
   private prevFire = false;
+  private prevBomb = false;
+  touchBomb = false;
   t = 0;
 
   attach(el: Window | HTMLElement = window) {
@@ -111,6 +115,9 @@ export class SortieKeys {
     out.boost = has("KeyK") || has("ShiftLeft") || has("ShiftRight") || pad.boost || this.touchBoost;
     out.brake = has("KeyX") || has("ControlLeft") || has("ControlRight") || pad.brake || this.touchBrake;
     out.barrel = barrel;
+    const bombHeld = has("KeyB") || has("KeyM") || this.touchBomb;
+    out.bomb = bombHeld && !this.prevBomb;
+    this.prevBomb = bombHeld;
     this.injected = null;
     return { ...out, pause: has("Escape") || pad.pause };
   }
