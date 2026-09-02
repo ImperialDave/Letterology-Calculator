@@ -1,7 +1,7 @@
 import { BEATS, progressOf } from "./beats";
 import { COAST_PATH, GUTTER_PATH, PRESS_PATH, SLUG_PATH } from "./landmarks";
 import type { PathPoint } from "./path";
-import type { EnemyKind, PickupKind, SortieState } from "./sim";
+import type { EnemyKind, FormName, PickupKind, SortieState } from "./sim";
 import type { BiomeId } from "./terrain";
 
 export interface MissionDef {
@@ -110,8 +110,19 @@ export function scriptMissionWaves(s: SortieState) {
       if (b.kind === "check") s.hull = Math.min(6 + s.golds, s.hull + 1);
     }
     if (b.kind === "spawn" && b.ships) {
-      for (const sh of b.ships) {
-        spawn(s, sh.kind, s.x + sh.dx, s.y + sh.dy, s.z + sh.dz, sh.hp);
+      const formId = s.enemyId;
+      const form = (b.ships[0]?.form ?? (b.ships.length > 1 ? "v" : "guide")) as FormName;
+      for (let i = 0; i < b.ships.length; i++) {
+        const sh = b.ships[i];
+        spawn(s, sh.kind, s.x + sh.dx, s.y + sh.dy, s.z + sh.dz, sh.hp, {
+          staged: true,
+          form: sh.form ?? form,
+          formId,
+          slot: i,
+          armed: sh.armed,
+          lead: Math.max(52, -sh.dz),
+          life: 6.5,
+        });
         if (sh.kind === "mech" && !s.bossAt) s.bossAt = s.t;
       }
     }
@@ -129,9 +140,18 @@ export function scriptMissionWaves(s: SortieState) {
   return true;
 }
 
-function spawn(s: SortieState, kind: EnemyKind, x: number, y: number, z: number, hp?: number) {
+function spawn(
+  s: SortieState,
+  kind: EnemyKind,
+  x: number,
+  y: number,
+  z: number,
+  hp?: number,
+  extra?: { staged?: boolean; armed?: boolean; form?: FormName; formId?: number; slot?: number; lead?: number; life?: number },
+) {
   const auto =
     kind === "dualis" ? 18 : kind === "mothership" ? 24 : kind === "mech" ? 24 : kind === "ace" ? 6 : kind === "bomber" ? 4 : kind === "cork" ? 3 : kind === "turret" ? 3 : 2;
+  const armed = extra?.armed ?? (kind !== "fighter" && kind !== "cork");
   s.enemies.push({
     id: s.enemyId++,
     kind,
@@ -144,5 +164,12 @@ function spawn(s: SortieState, kind: EnemyKind, x: number, y: number, z: number,
     hp: hp ?? auto,
     t: 0,
     alive: true,
+    staged: extra?.staged ?? true,
+    armed,
+    form: extra?.form,
+    formId: extra?.formId,
+    slot: extra?.slot ?? 0,
+    lead: extra?.lead,
+    life: extra?.life,
   });
 }

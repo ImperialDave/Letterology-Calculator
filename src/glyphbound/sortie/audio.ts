@@ -27,13 +27,21 @@ function beep(freq: number, dur: number, type: OscillatorType, gain = 0.05) {
 }
 
 export const sortieSfx = {
-  laser: () => beep(840 + Math.random() * 90, 0.055, "square", 0.035),
+  laser: () => {
+    beep(840 + Math.random() * 90, 0.055, "square", 0.035);
+    beep(420 + Math.random() * 40, 0.04, "triangle", 0.02);
+  },
   charge: () => beep(220, 0.22, "sawtooth", 0.06),
   lock: () => beep(980, 0.12, "square", 0.045),
   warn: () => beep(180, 0.16, "sawtooth", 0.05),
   hit: () => beep(160, 0.12, "triangle", 0.07),
+  boom: () => {
+    beep(90 + Math.random() * 30, 0.22, "sawtooth", 0.07);
+    beep(180, 0.12, "triangle", 0.04);
+  },
   roll: () => beep(420, 0.18, "sine", 0.04),
   splash: () => beep(90, 0.2, "triangle", 0.05),
+  wake: () => beep(70 + Math.random() * 20, 0.08, "triangle", 0.012),
   win: () => {
     beep(523, 0.15, "square", 0.05);
     setTimeout(() => beep(784, 0.25, "square", 0.05), 120);

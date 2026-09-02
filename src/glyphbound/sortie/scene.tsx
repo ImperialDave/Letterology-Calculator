@@ -5,6 +5,7 @@ THREE.ColorManagement.enabled = true;
 import { makeCWing, poseCWing } from "./cwing";
 import { makeDigit } from "./digits";
 import { makeLizard, poseLizard } from "./lizards";
+import { sortieSfx } from "./audio";
 import { BARREL_T, type EnemyKind, type PickupKind, type SortieState } from "./sim";
 import { makeSky, makeWorld } from "./world";
 
@@ -27,13 +28,49 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
   const missionId = sim.current.missionId;
   const world = useMemo(() => makeWorld(biome, missionId), [biome, missionId]);
   const sky = useMemo(() => makeSky(world.sky), [world.sky]);
-  const falls = useMemo(() => {
-    const out: THREE.Mesh[] = [];
+  const dress = useMemo(() => {
+    const falls: THREE.Mesh[] = [];
+    const trees: THREE.Object3D[] = [];
+    const mists: THREE.Object3D[] = [];
     world.root.traverse((o) => {
-      if (o.name === "fall") out.push(o as THREE.Mesh);
+      if (o.name === "fall") falls.push(o as THREE.Mesh);
+      if (o.name === "tree") trees.push(o);
+      if (o.name === "mist") mists.push(o);
     });
-    return out;
+    return { falls, trees, mists };
   }, [world]);
+  const fx = useMemo(() => {
+    const g = new THREE.Group();
+    g.name = "fx";
+    const foam: THREE.Mesh[] = [];
+    const booms: THREE.Mesh[] = [];
+    for (let i = 0; i < 36; i++) {
+      const m = new THREE.Mesh(
+        new THREE.PlaneGeometry(3.4, 1.2),
+        new THREE.MeshBasicMaterial({ color: 0xe8fff8, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }),
+      );
+      m.rotation.x = -Math.PI / 2;
+      m.visible = false;
+      g.add(m);
+      foam.push(m);
+    }
+    for (let i = 0; i < 18; i++) {
+      const m = new THREE.Mesh(
+        new THREE.PlaneGeometry(7, 7),
+        new THREE.MeshBasicMaterial({ color: 0xff9040, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }),
+      );
+      m.visible = false;
+      g.add(m);
+      booms.push(m);
+    }
+    return { g, foam, booms };
+  }, []);
+  const foamLife = useRef<number[]>(Array(36).fill(0));
+  const boomLife = useRef<number[]>(Array(18).fill(0));
+  const foamI = useRef(0);
+  const boomI = useRef(0);
+  const wakeAcc = useRef(0);
+  const wasAlive = useRef(new Map<number, boolean>());
   const molds = useMemo(() => {
     const kinds: EnemyKind[] = ["fighter", "cork", "bomber", "turret", "ace", "mech", "mothership"];
     const out: Partial<Record<EnemyKind, THREE.Group>> = { dualis: makeDigit("!") };
@@ -84,8 +121,64 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
     const river = world.root.getObjectByName("river") as THREE.Mesh | undefined;
     const rmap = (river?.material as THREE.MeshLambertMaterial | undefined)?.map;
     if (rmap) rmap.offset.y = s.t * 0.08;
-    const fmap = (falls[0]?.material as THREE.MeshBasicMaterial | undefined)?.map;
+    const fmap = (dress.falls[0]?.material as THREE.MeshBasicMaterial | undefined)?.map;
     if (fmap) fmap.offset.y = s.t * 0.28;
+    for (const tree of dress.trees) {
+      tree.rotation.z = Math.sin(s.t * 1.4 + (tree.userData.phase ?? 0) * 6) * 0.06;
+    }
+    for (const mist of dress.mists) {
+      mist.scale.y = 0.7 + Math.sin(s.t * 1.8) * 0.12;
+    }
+
+    const fdir = fwd(s.yaw, s.pitch);
+    wakeAcc.current += d;
+    if (s.skim && wakeAcc.current > 0.07) {
+      wakeAcc.current = 0;
+      for (const side of [-1, 1]) {
+        const i = foamI.current % fx.foam.length;
+        foamI.current += 1;
+        const card = fx.foam[i];
+        card.visible = true;
+        card.position.set(s.x - fdir.x * 4 + side * 1.6, 1.2, s.z - fdir.z * 4);
+        card.rotation.z = s.yaw;
+        foamLife.current[i] = 1;
+      }
+    }
+    for (let i = 0; i < fx.foam.length; i++) {
+      if (foamLife.current[i] <= 0) {
+        fx.foam[i].visible = false;
+        continue;
+      }
+      foamLife.current[i] -= d * 1.6;
+      const mat = fx.foam[i].material as THREE.MeshBasicMaterial;
+      mat.opacity = Math.max(0, foamLife.current[i] * 0.45);
+      fx.foam[i].scale.setScalar(1 + (1 - foamLife.current[i]) * 1.8);
+    }
+
+    for (const e of s.enemies) {
+      const prev = wasAlive.current.get(e.id);
+      if (prev && !e.alive) {
+        const i = boomI.current % fx.booms.length;
+        boomI.current += 1;
+        const b = fx.booms[i];
+        b.visible = true;
+        b.position.set(e.x, e.y, e.z);
+        boomLife.current[i] = 1;
+        sortieSfx.boom();
+      }
+      wasAlive.current.set(e.id, e.alive);
+    }
+    for (let i = 0; i < fx.booms.length; i++) {
+      if (boomLife.current[i] <= 0) {
+        fx.booms[i].visible = false;
+        continue;
+      }
+      boomLife.current[i] -= d * 2.4;
+      const mat = fx.booms[i].material as THREE.MeshBasicMaterial;
+      mat.opacity = Math.max(0, boomLife.current[i]);
+      fx.booms[i].scale.setScalar(0.6 + (1 - boomLife.current[i]) * 3.2);
+      fx.booms[i].lookAt(state.camera.position);
+    }
 
     const g = root.current;
     if (!g) return;
@@ -198,6 +291,7 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
       <primitive object={sky} />
       <primitive object={world.root} />
       <primitive object={ship} />
+      <primitive object={fx.g} />
       <hemisphereLight args={[0xfff6dc, 0x88d060, 1.15]} />
       <ambientLight intensity={0.62} />
       <directionalLight

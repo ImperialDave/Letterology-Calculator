@@ -540,6 +540,7 @@ test("rapid-fire heat hitch is brief, then guns recover", () => {
 
 test("corridor lizards fly the rail and do not reverse", () => {
   const s = createSortie({ corridor: true, path: COAST_PATH, missionId: "coast", biome: "coast" });
+  s.wave = 99;
   s.enemies.push({
     id: 80,
     kind: "fighter",
@@ -552,12 +553,94 @@ test("corridor lizards fly the rail and do not reverse", () => {
     hp: 2,
     t: 0,
     alive: true,
+    staged: true,
+    armed: false,
+    form: "guide",
+    lead: 64,
+    life: 6.5,
+    slot: 0,
   });
   const e = s.enemies[s.enemies.length - 1];
-  for (let i = 0; i < 90; i++) stepSortie(s, emptyInput(), 1 / 60);
-  assert.ok(e.alive);
-  assert.ok(e.vz < -8, `should keep flying down the coast, vz ${e.vz}`);
+  for (let i = 0; i < 180; i++) stepSortie(s, emptyInput(), 1 / 60);
+  assert.ok(e.alive, "should still be in the window at 3s");
   assert.ok(e.z < s.z, `should stay ahead on the rail, ez ${e.z} sz ${s.z}`);
+  assert.ok(e.vz <= 0, `should not reverse, vz ${e.vz}`);
+});
+
+test("a V formation keeps spacing in the gunsight", () => {
+  const s = createSortie({ corridor: true, path: COAST_PATH, missionId: "coast", biome: "coast" });
+  s.wave = 99;
+  for (const [slot, x] of [
+    [0, 0],
+    [1, -18],
+    [2, 18],
+  ] as const) {
+    s.enemies.push({
+      id: 90 + slot,
+      kind: "fighter",
+      x: s.x + x,
+      y: s.y,
+      z: s.z - 60,
+      vx: 0,
+      vy: 0,
+      vz: 0,
+      hp: 2,
+      t: 0,
+      alive: true,
+      staged: true,
+      armed: false,
+      form: "v",
+      formId: 7,
+      slot,
+      lead: 64,
+      life: 6.5,
+    });
+  }
+  for (let i = 0; i < 120; i++) stepSortie(s, emptyInput(), 1 / 60);
+  const live = s.enemies.filter((e) => e.formId === 7 && e.alive);
+  assert.equal(live.length, 3);
+  const d01 = Math.hypot(live[0].x - live[1].x, live[0].z - live[1].z);
+  const d02 = Math.hypot(live[0].x - live[2].x, live[0].z - live[2].z);
+  assert.ok(d01 < 40 && d02 < 40, `V spacing ${d01} ${d02}`);
+});
+
+test("unarmed fighters fire no orbs", () => {
+  const s = createSortie({ corridor: true, path: COAST_PATH, missionId: "coast", biome: "coast" });
+  s.wave = 99;
+  s.enemies.push({
+    id: 77,
+    kind: "fighter",
+    x: s.x,
+    y: s.y,
+    z: s.z - 50,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    hp: 2,
+    t: 0,
+    alive: true,
+    staged: true,
+    armed: false,
+    form: "guide",
+    lead: 60,
+    life: 6,
+    slot: 0,
+  });
+  for (let i = 0; i < 240; i++) stepSortie(s, emptyInput(), 1 / 60);
+  assert.equal(
+    s.shots.filter((q) => !q.friendly).length,
+    0,
+  );
+});
+
+test("low flight over water sets skim", () => {
+  const s = createSortie({ missionId: "coast", biome: "coast" });
+  s.x = 0;
+  s.y = 6;
+  s.z = 1500;
+  s.pitch = 0;
+  stepSortie(s, emptyInput(), 1 / 60);
+  assert.equal(s.skim, true);
 });
 
 test("all-range lizards need about a second to reverse, like the C-wing", () => {

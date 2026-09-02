@@ -141,6 +141,21 @@ export function makeCWing() {
   const trailMat = new THREE.MeshBasicMaterial({ color: 0x9af8de, transparent: true, opacity: 0.55 });
   add(trail, new THREE.ConeGeometry(0.18, 1.7, 5), trailMat, 0, 0, 0.38, { rz: -Math.PI / 2, cast: false });
   add(trail, new THREE.ConeGeometry(0.18, 1.7, 5), trailMat, 0, 0, -0.38, { rz: -Math.PI / 2, cast: false });
+  add(trail, new THREE.ConeGeometry(0.12, 2.6, 5), trailMat.clone(), -0.4, 0, 0.38, { rz: -Math.PI / 2, cast: false });
+  add(trail, new THREE.ConeGeometry(0.12, 2.6, 5), trailMat.clone(), -0.4, 0, -0.38, { rz: -Math.PI / 2, cast: false });
+
+  const sparkle = new THREE.Group();
+  sparkle.name = "sparkle";
+  g.add(sparkle);
+  const sparkMat = new THREE.MeshBasicMaterial({ color: 0xe8d48a, transparent: true, opacity: 0.85 });
+  for (let i = 0; i < 10; i++) {
+    const p = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 0.9), sparkMat.clone());
+    const a = (i / 10) * Math.PI * 2;
+    p.position.set(Math.cos(a) * 1.6, Math.sin(a) * 1.1, 0);
+    p.rotation.z = a;
+    sparkle.add(p);
+  }
+  sparkle.visible = false;
 
   g.scale.setScalar(1.52);
   g.userData.wingL = wingL;
@@ -155,6 +170,7 @@ export function makeCWing() {
   g.userData.engineLight = engLight;
   g.userData.canopy = canopy;
   g.userData.chargeBall = chargeBall;
+  g.userData.sparkle = sparkle;
   return g;
 }
 
@@ -176,8 +192,13 @@ export function poseCWing(g: THREE.Group, s: SortieState) {
   const engLight = g.userData.engineLight as THREE.PointLight;
   if (engLight) engLight.intensity = (boost ? 3.2 : 1.3) * pulse;
 
+  const sparkle = g.userData.sparkle as THREE.Group | undefined;
+  if (sparkle) {
+    sparkle.visible = s.barrel > 0;
+    if (s.barrel > 0) sparkle.rotation.x = (1 - s.barrel / 0.42) * Math.PI * 2;
+  }
   if (trail) {
-    trail.scale.set(boost ? 1.35 : 0.85, boost ? 1.9 : 1, boost ? 1.35 : 0.85);
+    trail.scale.set(boost ? 1.55 : 0.85, boost ? 2.4 : 1, boost ? 1.55 : 0.85);
     trail.traverse((n) => {
       const mesh = n as THREE.Mesh;
       const mat = mesh.material as THREE.MeshBasicMaterial | undefined;

@@ -18,6 +18,7 @@ export const KEEP_R = 0.72;
 export const MAGNET = 0.3;
 
 export type EnemyKind = "fighter" | "cork" | "bomber" | "turret" | "ace" | "mech" | "mothership" | "dualis";
+export type FormName = "v" | "line" | "cross" | "guide" | "hold";
 export type ShotKind = "laser" | "orb" | "charge" | "bomb";
 export type PickupKind = "silver" | "gold" | "stem" | "bomb" | "repair";
 export type SortieMode = "play" | "win" | "dead" | "pause";
@@ -50,6 +51,13 @@ export interface Enemy {
   hp: number;
   t: number;
   alive: boolean;
+  staged?: boolean;
+  armed?: boolean;
+  form?: FormName;
+  formId?: number;
+  slot?: number;
+  lead?: number;
+  life?: number;
 }
 
 export interface Shot {
@@ -144,6 +152,7 @@ export interface SortieState {
   radio: RadioLine | null;
   hitStop: number;
   splash: number;
+  skim: boolean;
   warned: number;
   wave: number;
   hits: number;
@@ -399,6 +408,7 @@ export function createSortie(opts?: {
     },
     hitStop: 0,
     splash: 0,
+    skim: false,
     warned: 0,
     wave: 0,
     hits: 0,
@@ -435,9 +445,25 @@ export function createSortie(opts?: {
   };
 }
 
-function spawnEnemy(s: SortieState, kind: EnemyKind, x: number, y: number, z: number) {
+function defaultArmed(kind: EnemyKind) {
+  return kind !== "fighter" && kind !== "cork";
+}
+
+function flyerKind(kind: EnemyKind) {
+  return kind === "fighter" || kind === "cork" || kind === "bomber" || kind === "ace";
+}
+
+export function spawnEnemy(
+  s: SortieState,
+  kind: EnemyKind,
+  x: number,
+  y: number,
+  z: number,
+  extra?: { hp?: number; staged?: boolean; armed?: boolean; form?: FormName; formId?: number; slot?: number; lead?: number; life?: number },
+) {
   const hp =
-    kind === "dualis" ? 18 : kind === "mothership" ? 24 : kind === "mech" ? 24 : kind === "ace" ? 6 : kind === "bomber" ? 4 : kind === "cork" ? 3 : kind === "turret" ? 3 : 2;
+    extra?.hp ??
+    (kind === "dualis" ? 18 : kind === "mothership" ? 24 : kind === "mech" ? 24 : kind === "ace" ? 6 : kind === "bomber" ? 4 : kind === "cork" ? 3 : kind === "turret" ? 3 : 2);
   s.enemies.push({
     id: s.enemyId++,
     kind,
@@ -450,6 +476,13 @@ function spawnEnemy(s: SortieState, kind: EnemyKind, x: number, y: number, z: nu
     hp,
     t: 0,
     alive: true,
+    staged: extra?.staged ?? true,
+    armed: extra?.armed ?? defaultArmed(kind),
+    form: extra?.form,
+    formId: extra?.formId,
+    slot: extra?.slot ?? 0,
+    lead: extra?.lead,
+    life: extra?.life,
   });
 }
 
@@ -654,9 +687,9 @@ function aimDir(s: SortieState, f: Vec3, shotSpeed = LASER_SPD): Vec3 {
 function scriptWaves(s: SortieState) {
   if (s.missionId !== "sky" && scriptMissionWaves(s)) return;
   if (s.wave < 1 && s.t > 2.2) {
-    spawnEnemy(s, "fighter", -40, 50, -40);
-    spawnEnemy(s, "fighter", 0, 54, -70);
-    spawnEnemy(s, "fighter", 40, 50, -40);
+    spawnEnemy(s, "fighter", -40, 50, -40, { form: "v", formId: 1, slot: 1, staged: true });
+    spawnEnemy(s, "fighter", 0, 54, -70, { form: "v", formId: 1, slot: 0, staged: true });
+    spawnEnemy(s, "fighter", 40, 50, -40, { form: "v", formId: 1, slot: 2, staged: true });
     s.wave = 1;
     s.radio = { who: "s", text: "Lizards in a V. Cut the lead.", until: s.t + 3 };
   }
@@ -692,6 +725,21 @@ function sideOf(d: Vec3): Vec3 {
   const z = -d.x;
   const n = Math.hypot(x, z) || 1;
   return { x: x / n, y: 0, z: z / n };
+}
+
+function formOffset(form: FormName | undefined, slot: number, t: number): { x: number; y: number } {
+  if (form === "line") return { x: (slot - 1) * 16, y: 2 };
+  if (form === "cross") {
+    const meet = (Math.sin(t * 1.15) + 1) * 0.5;
+    const side = slot % 2 === 0 ? -1 : 1;
+    return { x: side * (8 + 26 * (1 - meet)), y: (slot % 2) * 6 };
+  }
+  if (form === "guide") return { x: Math.sin(t * 0.85) * 20, y: 3 };
+  if (form === "hold") return { x: 0, y: 2 };
+  // v
+  if (slot === 0) return { x: 0, y: 4 };
+  if (slot === 1) return { x: -18, y: 2 };
+  return { x: 18, y: 2 };
 }
 
 /** Rotate current velocity toward a unit want, capped at `turn` rad/s. */
@@ -742,6 +790,25 @@ function turnTo(e: Enemy, wx: number, wy: number, wz: number, spd: number, turn:
   e.vz = (cz * c + sz * si) * spd;
 }
 
+function springTo(e: Enemy, tx: number, ty: number, tz: number, dt: number) {
+  const k = 1 - Math.exp(-7 * dt);
+  e.x += (tx - e.x) * k;
+  e.y += (ty - e.y) * k;
+  e.z += (tz - e.z) * k;
+}
+
+function fireIfArmed(s: SortieState, e: Enemy, toP: Vec3, dt: number) {
+  const armed = e.armed ?? defaultArmed(e.kind);
+  if (!armed) return;
+  if (e.kind === "fighter" || e.kind === "ace") {
+    if (e.t % 1.6 < dt + 0.02) fireShot(s, "orb", false, e.x, e.y, e.z, toP, 46);
+  } else if (e.kind === "cork") {
+    if (e.t % 1.1 < dt + 0.02) fireShot(s, "orb", false, e.x, e.y, e.z, toP, 40);
+  } else if (e.kind === "bomber") {
+    if (e.t % 2.2 < dt + 0.02) fireShot(s, "orb", false, e.x, e.y, e.z, toP, 50);
+  }
+}
+
 function steerEnemy(s: SortieState, e: Enemy, dt: number) {
   e.t += dt;
   const toP = { x: s.x - e.x, y: s.y - e.y, z: s.z - e.z };
@@ -749,9 +816,10 @@ function steerEnemy(s: SortieState, e: Enemy, dt: number) {
   const rail = s.flight === "corridor";
   const d = railDir(s);
   const side = sideOf(d);
+  const armed = e.armed ?? defaultArmed(e.kind);
 
   if (e.kind === "turret" || e.kind === "mech" || e.kind === "mothership") {
-    if (e.t % (e.kind === "mothership" ? 0.7 : 1.4) < dt + 0.02) fireShot(s, "orb", false, e.x, e.y, e.z, toP, 44);
+    if (armed && e.t % (e.kind === "mothership" ? 0.7 : 1.4) < dt + 0.02) fireShot(s, "orb", false, e.x, e.y, e.z, toP, 44);
     return;
   }
 
@@ -767,12 +835,51 @@ function steerEnemy(s: SortieState, e: Enemy, dt: number) {
     }
     e.vx = 0;
     e.vz = 0;
-    if (e.t % 0.85 < dt + 0.02) fireShot(s, "orb", false, e.x, e.y, e.z, toP, 42);
+    if (armed && e.t % 0.85 < dt + 0.02) fireShot(s, "orb", false, e.x, e.y, e.z, toP, 42);
+    return;
+  }
+
+  if (rail && e.staged && flyerKind(e.kind)) {
+    e.lead = e.lead ?? 64;
+    e.life = e.life ?? 6.5;
+    e.life -= dt;
+    const off = formOffset(e.form, e.slot ?? 0, e.t);
+    if (e.life > 0.85) {
+      const tx = s.x + d.x * e.lead + side.x * off.x;
+      const ty = s.y + off.y;
+      const tz = s.z + d.z * e.lead + side.z * off.x;
+      springTo(e, tx, ty, tz, dt);
+      e.vx = d.x * s.speed;
+      e.vy = 0;
+      e.vz = d.z * s.speed;
+    } else {
+      const dir = (e.slot ?? 0) % 2 === 0 ? 1 : -1;
+      e.vx = d.x * s.speed * 0.35 + side.x * dir * 90;
+      e.vy = 16;
+      e.vz = d.z * s.speed * 0.35 + side.z * dir * 90;
+      e.x += e.vx * dt;
+      e.y += e.vy * dt;
+      e.z += e.vz * dt;
+      if (Math.hypot(e.x - s.x, e.z - s.z) > 240) e.alive = false;
+    }
+    fireIfArmed(s, e, toP, dt);
+    return;
+  }
+
+  if (!rail && e.staged && flyerKind(e.kind)) {
+    const f = fwd(s);
+    const r = right(s);
+    const slot = (e.slot ?? 0) - 1;
+    const tx = s.x + f.x * 72 + r.x * slot * 22;
+    const ty = s.y + 6;
+    const tz = s.z + f.z * 72 + r.z * slot * 22;
+    springTo(e, tx, ty, tz, dt);
+    turnTo(e, f.x, f.y * 0.2, f.z, e.kind === "ace" ? 30 : 22, ENEMY_TURN, dt);
+    fireIfArmed(s, e, toP, dt);
     return;
   }
 
   if (rail) {
-    // Same grammar as the C-wing on rails: fly the course, weave, never reverse.
     const weave = Math.sin(e.t * 2.1 + e.id) * (e.kind === "cork" ? 22 : 8);
     const bob = Math.sin(e.t * 1.7 + e.id * 0.4) * (e.kind === "cork" ? 12 : 5);
     const spd = e.kind === "ace" ? 50 : e.kind === "bomber" ? 36 : e.kind === "cork" ? 44 : 46;
@@ -801,14 +908,7 @@ function steerEnemy(s: SortieState, e: Enemy, dt: number) {
       turnTo(e, wantx, wanty, wantz, spd, ENEMY_TURN, dt);
     }
   }
-
-  if (e.kind === "fighter" || e.kind === "ace") {
-    if (e.t % 1.6 < dt + 0.02) fireShot(s, "orb", false, e.x, e.y, e.z, toP, 46);
-  } else if (e.kind === "cork") {
-    if (e.t % 1.1 < dt + 0.02) fireShot(s, "orb", false, e.x, e.y, e.z, toP, 40);
-  } else if (e.kind === "bomber") {
-    if (e.t % 2.2 < dt + 0.02) fireShot(s, "orb", false, e.x, e.y, e.z, toP, 50);
-  }
+  fireIfArmed(s, e, toP, dt);
 }
 
 export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
@@ -993,10 +1093,15 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
 
   scriptWaves(s);
 
+  const groundNow = islandHeight(s, s.x, s.z);
+  s.skim = s.y < 14 && groundNow < 5;
+  if (s.skim) s.splash = Math.max(s.splash, 0.2);
+
   for (const e of s.enemies) {
     if (!e.alive) continue;
     steerEnemy(s, e, dt);
-    if (e.kind !== "dualis" && e.kind !== "turret" && e.kind !== "mech" && e.kind !== "mothership") {
+    const held = Boolean(e.staged && flyerKind(e.kind));
+    if (e.kind !== "dualis" && e.kind !== "turret" && e.kind !== "mech" && e.kind !== "mothership" && !held) {
       e.x += e.vx * dt;
       e.y += e.vy * dt;
       e.z += e.vz * dt;

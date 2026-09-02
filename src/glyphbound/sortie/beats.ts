@@ -1,4 +1,4 @@
-import type { EnemyKind, PickupKind, SortieState } from "./sim";
+import type { EnemyKind, FormName, PickupKind, SortieState } from "./sim";
 
 export interface Beat {
   id: number;
@@ -7,22 +7,22 @@ export interface Beat {
   kind: "spawn" | "radio" | "pickup" | "check";
   who?: string;
   text?: string;
-  ships?: { kind: EnemyKind; dx: number; dy: number; dz: number; hp?: number }[];
+  ships?: { kind: EnemyKind; dx: number; dy: number; dz: number; hp?: number; form?: FormName; armed?: boolean }[];
   loot?: { kind: PickupKind; dx: number; dy: number; dz: number };
 }
 
 function V(dz: number, spread = 16): Beat["ships"] {
   return [
-    { kind: "fighter", dx: 0, dy: 4, dz },
-    { kind: "fighter", dx: -spread, dy: 2, dz: dz + 14 },
-    { kind: "fighter", dx: spread, dy: 2, dz: dz + 14 },
+    { kind: "fighter", dx: 0, dy: 4, dz, form: "v" },
+    { kind: "fighter", dx: -spread, dy: 2, dz: dz + 14, form: "v" },
+    { kind: "fighter", dx: spread, dy: 2, dz: dz + 14, form: "v" },
   ];
 }
 
 export const BEATS: Record<string, Beat[]> = {
   coast: [
     { id: 1, when: "rail", t: 0.03, kind: "radio", who: "s", text: "Ink sea. Hold J until the squares rust." },
-    { id: 2, when: "rail", t: 0.04, kind: "spawn", ships: [{ kind: "fighter", dx: 0, dy: 2, dz: -36 }] },
+    { id: 2, when: "rail", t: 0.04, kind: "spawn", ships: [{ kind: "fighter", dx: 0, dy: 2, dz: -36, form: "guide" }] },
     { id: 3, when: "rail", t: 0.08, kind: "spawn", ships: V(-50, 18) },
     { id: 4, when: "rail", t: 0.12, kind: "radio", who: "b", text: "Canyon. Brake. Turrets on the teeth." },
     { id: 5, when: "rail", t: 0.14, kind: "spawn", ships: [{ kind: "turret", dx: 28, dy: -20, dz: -30 }, { kind: "turret", dx: -28, dy: -20, dz: -48 }] },

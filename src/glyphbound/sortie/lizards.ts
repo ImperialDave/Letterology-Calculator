@@ -113,20 +113,29 @@ export function makeLizard(kind: EnemyKind) {
   if (kind === "mech") {
     const g = new THREE.Group();
     const m = mats();
-    add(g, new THREE.BoxGeometry(1.15, 1.35, 0.85), m.skin, 0, 0.35, 0);
-    add(g, new THREE.BoxGeometry(1.35, 0.28, 0.95), m.brass, 0, 0.85, 0);
-    add(g, new THREE.ConeGeometry(0.38, 0.9, 6), m.skin, 0, 0.7, 0.7, { rx: -Math.PI / 2 });
-    add(g, new THREE.SphereGeometry(0.12, 6, 5), m.ink, -0.16, 0.78, 1.05);
-    add(g, new THREE.SphereGeometry(0.12, 6, 5), m.ink, 0.16, 0.78, 1.05);
-    add(g, new THREE.BoxGeometry(0.55, 0.18, 0.7), m.rust, 0, 0.55, 0.85);
-    const leg = new THREE.BoxGeometry(0.28, 1.55, 0.32);
-    add(g, leg, m.brass, -0.42, -0.7, 0.12);
-    add(g, leg, m.brass, 0.42, -0.7, 0.12);
-    add(g, new THREE.BoxGeometry(0.42, 0.16, 0.7), m.dark, -0.42, -1.45, 0.22);
-    add(g, new THREE.BoxGeometry(0.42, 0.16, 0.7), m.dark, 0.42, -1.45, 0.22);
-    add(g, new THREE.BoxGeometry(0.7, 0.22, 0.22), m.ink, -0.85, 0.55, 0.15, { name: "gunL" });
-    add(g, new THREE.BoxGeometry(0.7, 0.22, 0.22), m.ink, 0.85, 0.55, 0.15);
-    add(g, new THREE.ConeGeometry(0.16, 0.45, 5), m.ink, 0, 0.2, -0.55, { rx: Math.PI / 2, name: "engine" });
+    const pelvis = new THREE.Group();
+    pelvis.name = "pelvis";
+    g.add(pelvis);
+    add(pelvis, new THREE.BoxGeometry(1.15, 1.35, 0.85), m.skin, 0, 0.55, 0);
+    add(pelvis, new THREE.BoxGeometry(1.35, 0.28, 0.95), m.brass, 0, 1.05, 0);
+    add(pelvis, new THREE.ConeGeometry(0.38, 0.9, 6), m.skin, 0, 0.9, 0.7, { rx: -Math.PI / 2 });
+    add(pelvis, new THREE.SphereGeometry(0.12, 6, 5), m.ink, -0.16, 0.98, 1.05);
+    add(pelvis, new THREE.SphereGeometry(0.12, 6, 5), m.ink, 0.16, 0.98, 1.05);
+    add(pelvis, new THREE.BoxGeometry(0.55, 0.18, 0.7), m.rust, 0, 0.75, 0.85);
+    add(pelvis, new THREE.BoxGeometry(0.7, 0.22, 0.22), m.ink, -0.85, 0.75, 0.15, { name: "gunL" });
+    add(pelvis, new THREE.BoxGeometry(0.7, 0.22, 0.22), m.ink, 0.85, 0.75, 0.15);
+    add(pelvis, new THREE.ConeGeometry(0.16, 0.45, 5), m.ink, 0, 0.4, -0.55, { rx: Math.PI / 2, name: "engine" });
+    const legL = new THREE.Group();
+    const legR = new THREE.Group();
+    legL.name = "legL";
+    legR.name = "legR";
+    legL.position.set(-0.42, 0.05, 0.1);
+    legR.position.set(0.42, 0.05, 0.1);
+    g.add(legL, legR);
+    add(legL, new THREE.BoxGeometry(0.3, 1.15, 0.34), m.brass, 0, -0.55, 0);
+    add(legR, new THREE.BoxGeometry(0.3, 1.15, 0.34), m.brass, 0, -0.55, 0);
+    add(legL, new THREE.BoxGeometry(0.46, 0.18, 0.72), m.dark, 0, -1.18, 0.12);
+    add(legR, new THREE.BoxGeometry(0.46, 0.18, 0.72), m.dark, 0, -1.18, 0.12);
     g.scale.setScalar(1.85);
     g.rotation.y = Math.PI;
     return g;
@@ -154,6 +163,7 @@ export function makeLizard(kind: EnemyKind) {
   if (kind === "turret") {
     const g = new THREE.Group();
     const m = mats();
+    add(g, new THREE.CylinderGeometry(1.05, 1.2, 0.35, 8), m.dark, 0, -0.35, 0);
     add(g, new THREE.CylinderGeometry(0.7, 0.95, 0.55, 8), m.dark, 0, 0, 0);
     add(g, new THREE.CylinderGeometry(0.55, 0.7, 0.4, 8), m.skin, 0, 0.4, 0);
     add(g, new THREE.ConeGeometry(0.32, 0.7, 6), m.skin, 0, 0.85, 0.15, { rx: -0.4 });
@@ -182,7 +192,11 @@ export function poseLizard(g: THREE.Object3D, t: number, kind: EnemyKind) {
   if (kind === "cork") g.rotation.z = Math.sin(t * 3.2) * 0.35;
   if (kind === "mothership") g.rotation.z = Math.sin(t * 0.6) * 0.08;
   if (kind === "mech") {
-    g.rotation.x = Math.sin(t * 2.1) * 0.09;
-    g.position.y = Math.abs(Math.sin(t * 2.1)) * 0.4;
+    const step = Math.sin(t * 2.4);
+    const legL = g.getObjectByName("legL");
+    const legR = g.getObjectByName("legR");
+    if (legL) legL.rotation.x = step * 0.45;
+    if (legR) legR.rotation.x = -step * 0.45;
+    g.position.y = Math.abs(step) * 0.28;
   }
 }
