@@ -8,7 +8,8 @@ import { unlockedIds } from "./missions";
 import { ENVELOPE_X, pathLength } from "./path";
 import { analogFromDelta } from "./stick";
 import { SortieKeys } from "./input";
-import { BARREL_T, CHARGE_LOCK, MAGNET, SOMERSAULT_T, createSortie, emptyInput, stepSortie } from "./sim";
+import { aimScreen, inBox } from "./cam";
+import { BARREL_T, CHARGE_LOCK, INNER_R, MAGNET, OUTER_R, SOMERSAULT_T, createSortie, emptyInput, stepSortie } from "./sim";
 import { fillTex, paintBrass, paintGrass, paintHull, paintInkWater, paintLead, paintScale, type Plot } from "./tex-paint";
 
 function meanLuma(paint: (plot: Plot, n: number) => void) {
@@ -92,7 +93,7 @@ test("in-square lasers lean toward the target", () => {
   s.enemies.push({
     id: 50,
     kind: "fighter",
-    x: 16,
+    x: 6,
     y: 48,
     z: -80,
     vx: 0,
@@ -115,6 +116,92 @@ test("in-square lasers lean toward the target", () => {
   assert.ok(shot);
   assert.ok(shot!.vx > 4, `in-square lean vx ${shot!.vx}`);
   assert.ok(shot!.vx < 400 * MAGNET + 50, `not full home ${shot!.vx}`);
+});
+
+test("on-nose fighter sits in the gunsight", () => {
+  const s = createSortie();
+  s.x = 0;
+  s.y = 48;
+  s.z = 0;
+  s.yaw = 0;
+  s.pitch = 0;
+  s.enemies.push({
+    id: 70,
+    kind: "fighter",
+    x: 0,
+    y: 48,
+    z: -80,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    hp: 2,
+    t: 0,
+    alive: true,
+  });
+  stepSortie(s, emptyInput(), 1 / 60);
+  assert.equal(s.lockId, 70);
+  assert.ok(Math.abs(s.lockSx) < 0.08, `sx ${s.lockSx}`);
+  assert.ok(Math.abs(s.lockSy) < 0.16, `sy ${s.lockSy}`);
+  assert.equal(s.lockOn, true);
+});
+
+test("fighter right of the nose has positive sx", () => {
+  const s = createSortie();
+  s.x = 0;
+  s.y = 48;
+  s.z = 0;
+  s.yaw = 0;
+  s.pitch = 0;
+  s.enemies.push({
+    id: 71,
+    kind: "fighter",
+    x: 30,
+    y: 48,
+    z: -80,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    hp: 2,
+    t: 0,
+    alive: true,
+  });
+  const pip = aimScreen(s, 30, 48, -80);
+  assert.ok(pip.sx > 0.05, `sx ${pip.sx}`);
+});
+
+test("drawn square matches lock volume", () => {
+  const s = createSortie();
+  const a = 16 / 9;
+  assert.equal(inBox(0, OUTER_R * 0.9, OUTER_R, a), true);
+  assert.equal(inBox(0, OUTER_R * 1.2, OUTER_R, a), false);
+  assert.equal(inBox(0, INNER_R * 0.9, INNER_R, a), true);
+});
+
+test("quiet stick nudges lock toward center", () => {
+  const s = createSortie();
+  s.x = 0;
+  s.y = 48;
+  s.z = 0;
+  s.yaw = 0;
+  s.pitch = 0;
+  s.enemies.push({
+    id: 72,
+    kind: "fighter",
+    x: 7,
+    y: 48,
+    z: -90,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    hp: 2,
+    t: 0,
+    alive: true,
+  });
+  stepSortie(s, emptyInput(), 1 / 60);
+  const sx0 = s.lockSx;
+  assert.ok(s.lockOn, "need a lock to nudge");
+  for (let i = 0; i < 24; i++) stepSortie(s, emptyInput(), 1 / 60);
+  assert.ok(Math.abs(s.lockSx) < Math.abs(sx0) - 0.01, `sx ${s.lockSx} from ${sx0}`);
 });
 
 test("lasers down the nose miss a target outside the squares", () => {

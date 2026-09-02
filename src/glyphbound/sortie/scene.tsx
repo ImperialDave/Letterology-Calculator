@@ -6,6 +6,19 @@ import { makeCWing, poseCWing } from "./cwing";
 import { makeDigit } from "./digits";
 import { makeLizard, poseLizard } from "./lizards";
 import { sortieSfx } from "./audio";
+import {
+  BOOST_FOV,
+  CAM_LOOK_K,
+  CAM_POS_K,
+  CHASE_BACK,
+  CHASE_FOV,
+  CHASE_LOOK,
+  CHASE_UP,
+  COCKPIT_FOV,
+  COCKPIT_FWD,
+  COCKPIT_LOOK,
+  COCKPIT_UP,
+} from "./cam";
 import { BARREL_T, type EnemyKind, type PickupKind, type SortieState } from "./sim";
 import { makeSky, makeWorld } from "./world";
 
@@ -99,20 +112,22 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
     ship.rotation.z = s.roll + spin;
     poseCWing(ship, s);
 
+    const size = state.size;
+    if (size.height > 0) s.aspect = size.width / size.height;
     if (s.cockpit) {
-      tmp.set(s.x, s.y, s.z).addScaledVector(f, 1.35);
-      tmp.y += 0.55;
-      lookT.set(s.x, s.y, s.z).addScaledVector(f, 22);
-      state.camera.fov = 68;
+      tmp.set(s.x, s.y, s.z).addScaledVector(f, COCKPIT_FWD);
+      tmp.y += COCKPIT_UP;
+      lookT.set(s.x, s.y, s.z).addScaledVector(f, COCKPIT_LOOK);
+      state.camera.fov = COCKPIT_FOV;
     } else {
-      tmp.set(s.x, s.y, s.z).addScaledVector(f, -21);
-      tmp.y += 6.4;
-      lookT.set(s.x, s.y, s.z).addScaledVector(f, 16);
-      state.camera.fov = s.speed > 70 ? 62 : 52;
+      tmp.set(s.x, s.y, s.z).addScaledVector(f, -CHASE_BACK);
+      tmp.y += CHASE_UP;
+      lookT.set(s.x, s.y, s.z).addScaledVector(f, CHASE_LOOK);
+      state.camera.fov = s.speed > 70 ? BOOST_FOV : CHASE_FOV;
     }
-    state.camera.position.lerp(tmp, 1 - Math.exp(-4.2 * d));
+    state.camera.position.lerp(tmp, 1 - Math.exp(-CAM_POS_K * d));
     if (look.lengthSq() < 0.01) look.copy(lookT);
-    else look.lerp(lookT, 1 - Math.exp(-6.5 * d));
+    else look.lerp(lookT, 1 - Math.exp(-CAM_LOOK_K * d));
     state.camera.lookAt(look);
     state.camera.updateProjectionMatrix();
 

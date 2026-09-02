@@ -1,6 +1,6 @@
 import { useRef, useState, type PointerEvent } from "react";
 import type { SortieState } from "./sim";
-import { CHARGE_LOCK, HULL_MAX } from "./sim";
+import { CHARGE_LOCK, HULL_MAX, INNER_R, OUTER_R } from "./sim";
 import { analogFromDelta } from "./stick";
 
 const SORTIE_CONTROLS: { keys: string; does: string }[] = [
@@ -17,6 +17,7 @@ const SORTIE_CONTROLS: { keys: string; does: string }[] = [
   { keys: "Tab", does: "Break lock." },
   { keys: "V", does: "Cockpit cam." },
   { keys: "Esc", does: "Pause / resume." },
+  { keys: "Squares", does: "The two squares are the gun." },
 ];
 
 export function SortieHud({
@@ -165,22 +166,33 @@ function Reticle({ s }: { s: SortieState }) {
   const soft = s.lockId >= 0 && s.lockOn;
   const charging = s.charge >= CHARGE_LOCK * 0.35;
   const color = hard ? "#d45a4a" : charging ? "#e8d48a" : soft ? "#5ee0c0" : "#f4f0e4";
-  const left = 50 + s.lockSx * 42;
-  const top = 50 - s.lockSy * 42;
-  const off = soft && (Math.abs(s.lockSx) > 1.05 || Math.abs(s.lockSy) > 0.9);
+  const left = 50 + s.lockSx * 50;
+  const top = 50 - s.lockSy * 50;
+  const off = s.lockId >= 0 && (Math.abs(s.lockSx) > 1.02 || Math.abs(s.lockSy) > 1.02);
+  const lead = Math.hypot(s.leadSx - s.lockSx, s.leadSy - s.lockSy) > 0.035;
   return (
     <div className="pointer-events-none absolute inset-0">
       <div
-        className="absolute left-1/2 top-1/2 h-[6.2rem] w-[6.2rem] -translate-x-1/2 -translate-y-1/2"
-        style={{ border: `2px solid ${hard ? "#d45a4a" : charging ? "#e8d48a" : "rgba(244,240,228,0.75)"}` }}
-      />
-      <div
-        className="absolute left-1/2 top-1/2 h-11 w-11 -translate-x-1/2 -translate-y-1/2"
-        style={{ border: `1.5px solid ${hard ? "#d45a4a" : charging ? "#e8d48a" : "rgba(94,224,192,0.85)"}` }}
-      />
-      <div
-        className="absolute left-1/2 top-1/2 h-14 w-14 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#e8d48a]/50"
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
         style={{
+          width: `calc(${OUTER_R * 200}vmin)`,
+          height: `calc(${OUTER_R * 200}vmin)`,
+          border: `2px solid ${hard ? "#d45a4a" : charging ? "#e8d48a" : "rgba(244,240,228,0.75)"}`,
+        }}
+      />
+      <div
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+        style={{
+          width: `calc(${INNER_R * 200}vmin)`,
+          height: `calc(${INNER_R * 200}vmin)`,
+          border: `1.5px solid ${hard ? "#d45a4a" : charging ? "#e8d48a" : "rgba(94,224,192,0.85)"}`,
+        }}
+      />
+      <div
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#e8d48a]/50"
+        style={{
+          width: `calc(${INNER_R * 200}vmin)`,
+          height: `calc(${INNER_R * 200}vmin)`,
           clipPath: `inset(${100 - Math.min(100, (s.charge / CHARGE_LOCK) * 100)}% 0 0 0)`,
           opacity: s.charge > 0.05 ? 1 : 0.25,
         }}
@@ -192,13 +204,19 @@ function Reticle({ s }: { s: SortieState }) {
       )}
       {soft && (
         <div
-          className="absolute h-12 w-12 -translate-x-1/2 -translate-y-1/2"
+          className="absolute h-10 w-10 -translate-x-1/2 -translate-y-1/2"
           style={{ left: `${left}%`, top: `${top}%`, border: `2px solid ${color}` }}
         >
           <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-[0.2em]" style={{ color }}>
             {hard ? "LOCK" : "TGT"}
           </span>
         </div>
+      )}
+      {soft && lead && (
+        <div
+          className="absolute h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#e8d48a]"
+          style={{ left: `${50 + s.leadSx * 50}%`, top: `${50 - s.leadSy * 50}%` }}
+        />
       )}
       {off && (
         <div
@@ -215,8 +233,15 @@ function Reticle({ s }: { s: SortieState }) {
 
 function Radar({ s }: { s: SortieState }) {
   const scale = 52 / 420;
-  const px = 56 + s.x * scale;
-  const pz = 56 + s.z * scale;
+  const cy = Math.cos(s.yaw);
+  const sy = Math.sin(s.yaw);
+  const toRadar = (x: number, z: number) => {
+    const dx = x - s.x;
+    const dz = z - s.z;
+    const right = dx * cy - dz * sy;
+    const fwd = -dx * sy - dz * cy;
+    return { cx: 56 + right * scale, cy: 56 - fwd * scale };
+  };
   return (
     <svg className="absolute right-5 top-[4.6rem] h-28 w-28 opacity-85" viewBox="0 0 112 112">
       <circle cx="56" cy="56" r="52" fill="#121018" stroke="#e8d48a" strokeWidth="1.4" />
@@ -225,16 +250,19 @@ function Radar({ s }: { s: SortieState }) {
       <line x1="8" y1="56" x2="104" y2="56" stroke="#e8d48a" strokeWidth="0.4" opacity="0.35" />
       {s.enemies
         .filter((e) => e.alive)
-        .map((e) => (
-          <circle
-            key={e.id}
-            cx={56 + e.x * scale}
-            cy={56 + e.z * scale}
-            r={e.kind === "dualis" || e.kind === "mothership" || e.kind === "mech" ? 4 : 2}
-            fill={e.kind === "dualis" ? "#e8d48a" : "#d45a4a"}
-          />
-        ))}
-      <circle cx={px} cy={pz} r="3" fill="#5ee0c0" />
+        .map((e) => {
+          const p = toRadar(e.x, e.z);
+          return (
+            <circle
+              key={e.id}
+              cx={p.cx}
+              cy={p.cy}
+              r={e.kind === "dualis" || e.kind === "mothership" || e.kind === "mech" ? 4 : 2}
+              fill={e.kind === "dualis" ? "#e8d48a" : "#d45a4a"}
+            />
+          );
+        })}
+      <circle cx="56" cy="56" r="3" fill="#5ee0c0" />
     </svg>
   );
 }

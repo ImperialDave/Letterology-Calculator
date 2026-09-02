@@ -38,6 +38,11 @@ export function RegisterMap({
                 e.stopPropagation();
                 onPick(m);
               }}
+              onClick={(e) => {
+                if (locked) return;
+                e.stopPropagation();
+                onPick(m);
+              }}
             >
               <p className="text-[11px] uppercase tracking-[0.22em] text-[#5ee0c0]">
                 {m.roman} {proof ? "· Proof" : cleared.includes(m.id) ? "· written" : ""}
