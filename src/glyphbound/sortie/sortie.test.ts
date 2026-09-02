@@ -351,6 +351,26 @@ test("twin lasers converge on the director", () => {
   assert.ok(lasers[0]!.vx * lasers[1]!.vx < 0 || Math.abs(lasers[0]!.vx) + Math.abs(lasers[1]!.vx) > 0.5);
 });
 
+test("keyboard stick eases in instead of slamming", () => {
+  const keys = new SortieKeys();
+  keys.setKeys(["KeyA"]);
+  const first = keys.poll(1 / 60, false);
+  assert.ok(first.roll > 0.05 && first.roll < 0.3, `first frame ${first.roll}`);
+  for (let i = 0; i < 20; i++) {
+    keys.setKeys(["KeyA"]);
+    keys.poll(1 / 60, false);
+  }
+  keys.setKeys(["KeyA"]);
+  const held = keys.poll(1 / 60, false);
+  assert.ok(held.roll > 0.85, `held ${held.roll}`);
+  for (let i = 0; i < 8; i++) {
+    keys.setKeys([]);
+    keys.poll(1 / 60, false);
+  }
+  const letGo = keys.poll(1 / 60, false);
+  assert.ok(letGo.roll > 0.15 && letGo.roll < held.roll, `release ${letGo.roll}`);
+});
+
 test("keyboard sight recenters", () => {
   const keys = new SortieKeys();
   keys.setSight(0.4, -0.2);

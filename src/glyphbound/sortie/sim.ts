@@ -211,10 +211,10 @@ const PITCH_MAX = 0.55;
 const BANK = 0.92;
 const YAW_FROM_BANK = 2.2;
 const CEIL_Y = 260;
-const CMD_K = 22;
-const CMD_K_RANGE = 12;
-const BANK_K = 14;
-const STICK_POS_K = 20;
+const CMD_K = 8;
+const CMD_K_RANGE = 8;
+const BANK_K = 9;
+const STICK_POS_K = 8;
 const HEAT_PER_SHOT = 0.012;
 const RAPID_CD = 0.08;
 const HEAT_CD = 0.02;
@@ -255,20 +255,11 @@ function follow(cur: number, want: number, k: number, dt: number) {
   return cur + (want - cur) * (1 - Math.exp(-k * dt));
 }
 
-function snapFollow(cur: number, want: number, dt: number) {
-  if (Math.abs(want) >= 0.9) return want;
-  return follow(cur, want, CMD_K, dt);
-}
-
 function flyCraft(s: SortieState, input: SortieInput, dt: number) {
   const onRail = s.flight === "corridor" && s.shift <= 0 && s.path.length >= 2;
-  if (onRail) {
-    s.cmdRoll = snapFollow(s.cmdRoll, input.roll, dt);
-    s.cmdPitch = snapFollow(s.cmdPitch, input.pitch, dt);
-  } else {
-    s.cmdRoll = follow(s.cmdRoll, input.roll, CMD_K_RANGE, dt);
-    s.cmdPitch = follow(s.cmdPitch, input.pitch, CMD_K_RANGE, dt);
-  }
+  const cmdK = onRail ? CMD_K : CMD_K_RANGE;
+  s.cmdRoll = follow(s.cmdRoll, input.roll, cmdK, dt);
+  s.cmdPitch = follow(s.cmdPitch, input.pitch, cmdK, dt);
 
   if (onRail) {
     const len = pathLength(s.path) || 1;

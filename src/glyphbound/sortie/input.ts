@@ -43,6 +43,8 @@ export class SortieKeys {
   private mx = 0;
   private my = 0;
   private mouseMoved = false;
+  private keyRoll = 0;
+  private keyPitch = 0;
   private prevQ = false;
   private prevE = false;
   private prevFire = false;
@@ -119,14 +121,23 @@ export class SortieKeys {
     const has = (c: string) => (this.injected ? this.injected.includes(c) : this.keys.has(c));
     const pad = this.pad();
     const keyScale = allRange ? 0.62 : 1;
-    let roll = this.stick.x;
-    let pitch = this.stick.y;
-    if (has("KeyA") || has("ArrowLeft") || pad.left) roll += keyScale;
-    if (has("KeyD") || has("ArrowRight") || pad.right) roll -= keyScale;
-    if (has("KeyW") || has("ArrowUp") || pad.up) pitch += keyScale;
-    if (has("KeyS") || has("ArrowDown") || pad.down) pitch -= keyScale;
-    roll = Math.max(-1, Math.min(1, roll + pad.ax));
-    pitch = Math.max(-1, Math.min(1, pitch - pad.ay));
+    let keyWantR = 0;
+    let keyWantP = 0;
+    if (has("KeyA") || has("ArrowLeft") || pad.left) keyWantR += keyScale;
+    if (has("KeyD") || has("ArrowRight") || pad.right) keyWantR -= keyScale;
+    if (has("KeyW") || has("ArrowUp") || pad.up) keyWantP += keyScale;
+    if (has("KeyS") || has("ArrowDown") || pad.down) keyWantP -= keyScale;
+    const ease = (cur: number, want: number) => {
+      const toward = Math.abs(want) > Math.abs(cur) + 0.02;
+      const k = toward ? 11 : 7;
+      return cur + (want - cur) * (1 - Math.exp(-k * dt));
+    };
+    this.keyRoll = ease(this.keyRoll, keyWantR);
+    this.keyPitch = ease(this.keyPitch, keyWantP);
+    let roll = this.stick.x + this.keyRoll + pad.ax;
+    let pitch = this.stick.y + this.keyPitch - pad.ay;
+    roll = Math.max(-1, Math.min(1, roll));
+    pitch = Math.max(-1, Math.min(1, pitch));
 
     const q = has("KeyQ");
     const eKey = has("KeyE");
