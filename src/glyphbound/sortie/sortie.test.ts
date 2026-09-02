@@ -9,8 +9,8 @@ import { CAMPAIGN, crewOf } from "./story";
 import { ENVELOPE_X, pathLength } from "./path";
 import { analogFromDelta } from "./stick";
 import { SortieKeys } from "./input";
-import { aimScreen, inBox } from "./cam";
-import { BARREL_T, CHARGE_LOCK, INNER_R, MAGNET, OUTER_R, SOMERSAULT_T, createSortie, emptyInput, stepSortie } from "./sim";
+import { aimOff, aimScreen, inBox, unproject } from "./cam";
+import { BARREL_T, CHARGE_LOCK, CHARGE_SEEK, INNER_R, KEEP_R, OUTER_R, SOMERSAULT_T, createSortie, emptyInput, stepSortie } from "./sim";
 import { fillTex, paintBrass, paintGrass, paintHull, paintInkWater, paintLead, paintScale, type Plot } from "./tex-paint";
 
 function meanLuma(paint: (plot: Plot, n: number) => void) {
@@ -89,12 +89,30 @@ test("D (roll -1) yaws right", () => {
   assert.ok(s.yaw < -0.05, `yaw ${s.yaw}`);
 });
 
-test("in-square lasers lean toward the target", () => {
+test("lasers go through the director", () => {
   const s = createSortie();
+  s.stem = 0;
+  s.x = 0;
+  s.y = 48;
+  s.z = 0;
+  s.yaw = 0;
+  s.pitch = 0;
+  const inp = emptyInput();
+  inp.sightX = 0.22;
+  inp.fire = true;
+  stepSortie(s, inp, 1 / 60);
+  const shot = s.shots.find((q) => q.kind === "laser");
+  assert.ok(shot);
+  assert.ok(shot!.vx > 12, `through-sight vx ${shot!.vx}`);
+});
+
+test("an enemy in the world does not magnet a center shot", () => {
+  const s = createSortie();
+  s.stem = 0;
   s.enemies.push({
     id: 50,
     kind: "fighter",
-    x: 6,
+    x: 3,
     y: 48,
     z: -80,
     vx: 0,
@@ -109,26 +127,25 @@ test("in-square lasers lean toward the target", () => {
   s.z = 0;
   s.yaw = 0;
   s.pitch = 0;
-  stepSortie(s, emptyInput(), 1 / 60);
   const inp = emptyInput();
   inp.fire = true;
   stepSortie(s, inp, 1 / 60);
   const shot = s.shots.find((q) => q.kind === "laser");
   assert.ok(shot);
-  assert.ok(shot!.vx > 4, `in-square lean vx ${shot!.vx}`);
-  assert.ok(shot!.vx < 400 * MAGNET + 50, `not full home ${shot!.vx}`);
+  assert.ok(Math.abs(shot!.vx) < 12, `no magnet vx ${shot!.vx}`);
+  assert.equal(s.lockOn, false);
 });
 
-test("on-nose fighter sits in the gunsight", () => {
+test("charge seeker locks a fighter in the director", () => {
   const s = createSortie();
   s.x = 0;
   s.y = 48;
   s.z = 0;
   s.yaw = 0;
   s.pitch = 0;
-  s.enemies.push({
+  const e = {
     id: 70,
-    kind: "fighter",
+    kind: "fighter" as const,
     x: 0,
     y: 48,
     z: -80,
@@ -138,12 +155,27 @@ test("on-nose fighter sits in the gunsight", () => {
     hp: 2,
     t: 0,
     alive: true,
-  });
-  stepSortie(s, emptyInput(), 1 / 60);
+  };
+  s.enemies.push(e);
+  for (let i = 0; i < 50; i++) {
+    const pip = aimScreen(s, e.x, e.y, e.z);
+    const held = emptyInput();
+    held.fireHeld = true;
+    held.sightX = pip.sx;
+    held.sightY = pip.sy;
+    stepSortie(s, held, 1 / 60);
+  }
+  assert.ok(s.charge >= CHARGE_SEEK, `charge ${s.charge}`);
   assert.equal(s.lockId, 70);
-  assert.ok(Math.abs(s.lockSx) < 0.08, `sx ${s.lockSx}`);
-  assert.ok(Math.abs(s.lockSy) < 0.16, `sy ${s.lockSy}`);
   assert.equal(s.lockOn, true);
+  const pip = aimScreen(s, e.x, e.y, e.z);
+  const brk = emptyInput();
+  brk.lockBreak = true;
+  brk.fireHeld = true;
+  brk.sightX = pip.sx;
+  brk.sightY = pip.sy;
+  stepSortie(s, brk, 1 / 60);
+  assert.equal(s.lockId, -1);
 });
 
 test("fighter right of the nose has positive sx", () => {
@@ -171,20 +203,21 @@ test("fighter right of the nose has positive sx", () => {
 });
 
 test("drawn square matches lock volume", () => {
-  const s = createSortie();
   const a = 16 / 9;
   assert.equal(inBox(0, OUTER_R * 0.9, OUTER_R, a), true);
   assert.equal(inBox(0, OUTER_R * 1.2, OUTER_R, a), false);
   assert.equal(inBox(0, INNER_R * 0.9, INNER_R, a), true);
+  assert.ok(OUTER_R <= 0.1, `outer should be a tight sight, got ${OUTER_R}`);
+  assert.ok(KEEP_R > OUTER_R, "keep is hysteresis, not a bigger gun");
 });
 
-test("quiet stick nudges lock toward center", () => {
+test("quiet stick nudges a charged lock toward the director", () => {
   const s = createSortie({ corridor: true });
   stepSortie(s, emptyInput(), 1 / 60);
-  s.enemies.push({
+  const e = {
     id: 72,
-    kind: "fighter",
-    x: s.x + 8,
+    kind: "fighter" as const,
+    x: s.x + 2.4,
     y: s.y,
     z: s.z - 90,
     vx: 0,
@@ -194,12 +227,45 @@ test("quiet stick nudges lock toward center", () => {
     t: 0,
     alive: true,
     staged: true,
+  };
+  s.enemies.push(e);
+  for (let i = 0; i < 20; i++) {
+    const pip = aimScreen(s, e.x, e.y, e.z);
+    const held = emptyInput();
+    held.fireHeld = true;
+    held.sightX = pip.sx;
+    held.sightY = pip.sy;
+    stepSortie(s, held, 1 / 60);
+  }
+  assert.ok(s.lockOn, "need a lock to nudge");
+  assert.ok(s.offsetX < -0.008, `offsetX ${s.offsetX} should slide toward the lock`);
+});
+
+test("a fighter a few widths off the nose is outside the gunsight", () => {
+  const s = createSortie();
+  s.x = 0;
+  s.y = 48;
+  s.z = 0;
+  s.yaw = 0;
+  s.pitch = 0;
+  s.enemies.push({
+    id: 73,
+    kind: "fighter",
+    x: 10,
+    y: 48,
+    z: -80,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    hp: 2,
+    t: 0,
+    alive: true,
   });
   stepSortie(s, emptyInput(), 1 / 60);
-  const sx0 = s.lockSx;
-  assert.ok(s.lockOn, "need a lock to nudge");
-  for (let i = 0; i < 24; i++) stepSortie(s, emptyInput(), 1 / 60);
-  assert.ok(Math.abs(s.lockSx) < Math.abs(sx0) - 0.008, `sx ${s.lockSx} from ${sx0}`);
+  const off = aimOff(s, 10, 48, -80);
+  assert.equal(inBox(off.sx, off.sy, OUTER_R, 16 / 9), false);
+  assert.notEqual(s.lockId, 73);
+  assert.equal(s.lockOn, false);
 });
 
 test("lasers down the nose miss a target outside the squares", () => {
@@ -222,6 +288,7 @@ test("lasers down the nose miss a target outside the squares", () => {
   s.z = 0;
   s.yaw = 0;
   s.pitch = 0;
+  s.stem = 0;
   stepSortie(s, emptyInput(), 1 / 60);
   assert.notEqual(s.lockId, 51);
   const inp = emptyInput();
@@ -229,7 +296,7 @@ test("lasers down the nose miss a target outside the squares", () => {
   stepSortie(s, inp, 1 / 60);
   const shot = s.shots.find((q) => q.kind === "laser");
   assert.ok(shot);
-  assert.ok(Math.abs(shot!.vx) < 8, `no magnet vx ${shot!.vx}`);
+  assert.ok(Math.abs(shot!.vx) < 12, `no magnet vx ${shot!.vx}`);
 });
 
 test("Dualis cannot be lock-on targeted", () => {
@@ -258,6 +325,52 @@ test("Dualis cannot be lock-on targeted", () => {
   assert.ok(s.charge >= CHARGE_LOCK);
   assert.notEqual(s.lockId, 9);
   assert.equal(s.lockHard, false);
+});
+
+test("twin lasers converge on the director", () => {
+  const s = createSortie();
+  s.stem = 1;
+  s.x = 0;
+  s.y = 48;
+  s.z = 0;
+  s.yaw = 0;
+  s.pitch = 0;
+  const inp = emptyInput();
+  inp.fire = true;
+  stepSortie(s, inp, 1 / 60);
+  const lasers = s.shots.filter((q) => q.kind === "laser");
+  assert.equal(lasers.length, 2);
+  const aim = unproject(s, 0, 0);
+  for (const shot of lasers) {
+    const sp = Math.hypot(shot.vx, shot.vy, shot.vz) || 1;
+    const px = shot.x + (shot.vx / sp) * 90;
+    const pz = shot.z + (shot.vz / sp) * 90;
+    assert.ok(Math.abs(px - aim.x) < 18, `converge x ${px} vs ${aim.x}`);
+    assert.ok(Math.abs(pz - aim.z) < 24, `converge z ${pz} vs ${aim.z}`);
+  }
+  assert.ok(lasers[0]!.vx * lasers[1]!.vx < 0 || Math.abs(lasers[0]!.vx) + Math.abs(lasers[1]!.vx) > 0.5);
+});
+
+test("keyboard sight recenters", () => {
+  const keys = new SortieKeys();
+  keys.setSight(0.4, -0.2);
+  const a = keys.poll(0.05, false);
+  assert.ok(Math.abs(a.sightX) < 0.4);
+  for (let i = 0; i < 40; i++) keys.poll(0.05, false);
+  const b = keys.poll(0.05, false);
+  assert.ok(Math.abs(b.sightX) < 0.02, `sightX ${b.sightX}`);
+  assert.ok(Math.abs(b.sightY) < 0.02, `sightY ${b.sightY}`);
+});
+
+test("sight does not bank the craft", () => {
+  const s = createSortie();
+  const yaw0 = s.yaw;
+  const inp = emptyInput();
+  inp.sightX = 0.5;
+  inp.sightY = 0.3;
+  for (let i = 0; i < 30; i++) stepSortie(s, inp, 1 / 60);
+  assert.ok(Math.abs(s.yaw - yaw0) < 0.04, `yaw ${s.yaw}`);
+  assert.ok(Math.abs(s.cmdRoll) < 0.05, `cmdRoll ${s.cmdRoll}`);
 });
 
 test("pitch auto-levels when stick is released", () => {

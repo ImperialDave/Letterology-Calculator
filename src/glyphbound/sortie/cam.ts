@@ -3,6 +3,9 @@
 export const CHASE_BACK = 16;
 export const CHASE_UP = 2.4;
 export const CHASE_LOOK = 16;
+export const SIGHT_DIST = 100;
+export const CONVERGE_DIST = 110;
+export const SIGHT_CLAMP = 0.62;
 export const CHASE_FOV = 52;
 export const BOOST_FOV = 62;
 export const COCKPIT_FWD = 1.35;
@@ -37,8 +40,30 @@ export function inBox(sx: number, sy: number, r: number, aspect = DEFAULT_ASPECT
   return Math.abs(sy) < r && Math.abs(sx) * aspect < r;
 }
 
-/** Chase/cockpit projection. sx/sy are NDC −1..1 of the frame. */
-export function aimScreen(s: AimCraft, tx: number, ty: number, tz: number) {
+export function clampSight(x: number, y: number) {
+  const m = Math.hypot(x, y);
+  if (m <= SIGHT_CLAMP) return { x, y };
+  return { x: (x / m) * SIGHT_CLAMP, y: (y / m) * SIGHT_CLAMP };
+}
+
+type CamFrame = {
+  ox: number;
+  oy: number;
+  oz: number;
+  fx: number;
+  fy: number;
+  fz: number;
+  rx: number;
+  ry: number;
+  rz: number;
+  ux: number;
+  uy: number;
+  uz: number;
+  tan: number;
+  aspect: number;
+};
+
+function camFrame(s: AimCraft): CamFrame {
   const f = shipFwd(s.yaw, s.pitch);
   const aspect = s.aspect && s.aspect > 0.3 ? s.aspect : DEFAULT_ASPECT;
   let ox: number;
@@ -82,15 +107,55 @@ export function aimScreen(s: AimCraft, tx: number, ty: number, tz: number) {
   const ux = ry * fz - rz * fy;
   const uy = rz * fx - rx * fz;
   const uz = rx * fy - ry * fx;
-  const dx = tx - ox;
-  const dy = ty - oy;
-  const dz = tz - oz;
-  const z = dx * fx + dy * fy + dz * fz;
-  const x = dx * rx + dy * ry + dz * rz;
-  const y = dx * ux + dy * uy + dz * uz;
-  if (z < 6) return { sx: 0, sy: 0, z, on: false };
   const tan = Math.tan(((fov * Math.PI) / 180) / 2);
-  const sx = x / z / (tan * aspect);
-  const sy = y / z / tan;
+  return { ox, oy, oz, fx, fy, fz, rx, ry, rz, ux, uy, uz, tan, aspect };
+}
+
+/** Where the nose sits on screen at a given range. Chase cam looks slightly down, so this is above center. */
+export function gunPip(s: AimCraft, dist = SIGHT_DIST) {
+  const f = shipFwd(s.yaw, s.pitch);
+  return aimScreen(s, s.x + f.x * dist, s.y + f.y * dist, s.z + f.z * dist);
+}
+
+/** Screen offset of a world point from the director (sightX/Y), falling back to screen center. */
+export function aimOff(s: AimCraft & { sightX?: number; sightY?: number }, tx: number, ty: number, tz: number) {
+  const pip = aimScreen(s, tx, ty, tz);
+  const dx = s.sightX ?? 0;
+  const dy = s.sightY ?? 0;
+  return {
+    sx: pip.sx - dx,
+    sy: pip.sy - dy,
+    z: pip.z,
+    on: pip.on,
+    pipSx: pip.sx,
+    pipSy: pip.sy,
+  };
+}
+
+/** World point along the camera ray through NDC (sx, sy) at camera-forward depth `dist`. */
+export function unproject(s: AimCraft, sx: number, sy: number, dist = CONVERGE_DIST) {
+  const c = camFrame(s);
+  const z = Math.max(12, dist);
+  const x = sx * c.tan * c.aspect * z;
+  const y = sy * c.tan * z;
+  return {
+    x: c.ox + c.fx * z + c.rx * x + c.ux * y,
+    y: c.oy + c.fy * z + c.ry * x + c.uy * y,
+    z: c.oz + c.fz * z + c.rz * x + c.uz * y,
+  };
+}
+
+/** Chase/cockpit projection. sx/sy are NDC −1..1 of the frame. */
+export function aimScreen(s: AimCraft, tx: number, ty: number, tz: number) {
+  const c = camFrame(s);
+  const dx = tx - c.ox;
+  const dy = ty - c.oy;
+  const dz = tz - c.oz;
+  const z = dx * c.fx + dy * c.fy + dz * c.fz;
+  const x = dx * c.rx + dy * c.ry + dz * c.rz;
+  const y = dx * c.ux + dy * c.uy + dz * c.uz;
+  if (z < 6) return { sx: 0, sy: 0, z, on: false };
+  const sx = x / z / (c.tan * c.aspect);
+  const sy = y / z / c.tan;
   return { sx, sy, z, on: Math.abs(sx) < 1.05 && Math.abs(sy) < 1 };
 }

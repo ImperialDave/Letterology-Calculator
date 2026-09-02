@@ -1,12 +1,12 @@
 /** StarWords — arcade flight. No three.js. */
 
-import { aimScreen, inBox } from "./cam";
+import { aimOff, aimScreen, CONVERGE_DIST, inBox, unproject } from "./cam";
 import { scriptMissionWaves } from "./missions";
 import { ENVELOPE_X, ENVELOPE_Y, SHIFT_T, SKY_CORRIDOR, UTURN_T, pathLength, pathFrame, samplePath, type PathPoint } from "./path";
 import { groundHeight } from "./height";
 import { landmarksFor } from "./landmarks";
 import type { BiomeId } from "./terrain";
-export { aimScreen, inBox } from "./cam";
+export { aimOff, aimScreen, CONVERGE_DIST, gunPip, inBox, unproject } from "./cam";
 
 export const ARENA_R = 420;
 export const WATER_Y = 0;
@@ -14,12 +14,15 @@ export const HULL_MAX = 6;
 export const CHARGE_LOCK = 0.7;
 export const BARREL_T = 0.42;
 export const SOMERSAULT_T = 0.55;
-export const INNER_R = 0.13;
-export const OUTER_R = 0.24;
-export const KEEP_R = 0.3;
-export const MAGNET = 0.32;
+/** NDC half-extent around the director. HUD draws these as r*100vh. */
+export const INNER_R = 0.045;
+export const OUTER_R = 0.09;
+export const KEEP_R = 0.13;
+export const MAGNET = 0;
+export const CHARGE_SEEK = 0.15;
 const NUDGE_STICK = 0.35;
 const NUDGE_SIT = 12;
+const FOLLOW_SIT = 8;
 
 export type EnemyKind = "fighter" | "cork" | "bomber" | "turret" | "ace" | "mech" | "mothership" | "dualis" | "aster";
 export type FormName = "v" | "line" | "cross" | "guide" | "hold";
@@ -114,6 +117,8 @@ export interface SortieInput {
   lockBreak: boolean;
   cockpit: boolean;
   somersault: boolean;
+  sightX: number;
+  sightY: number;
 }
 
 export interface SortieState {
@@ -166,6 +171,12 @@ export interface SortieState {
   lockDist: number;
   lockSx: number;
   lockSy: number;
+  sightX: number;
+  sightY: number;
+  sightSx: number;
+  sightSy: number;
+  innerSx: number;
+  innerSy: number;
   lockOn: boolean;
   lockHard: boolean;
   leadSx: number;
@@ -268,9 +279,11 @@ function flyCraft(s: SortieState, input: SortieInput, dt: number) {
     const quiet = Math.abs(input.roll) < NUDGE_STICK && Math.abs(input.pitch) < NUDGE_STICK;
     let wantX = stickX * ENVELOPE_X;
     let wantY = stickY * ENVELOPE_Y;
-    if (quiet && s.lockOn) {
-      wantX -= s.lockSx * NUDGE_SIT;
-      wantY += s.lockSy * NUDGE_SIT;
+    wantX -= s.sightX * FOLLOW_SIT;
+    wantY += s.sightY * FOLLOW_SIT;
+    if (quiet && s.lockOn && s.charge >= CHARGE_SEEK) {
+      wantX -= (s.lockSx - s.sightX) * NUDGE_SIT;
+      wantY += (s.lockSy - s.sightY) * NUDGE_SIT;
     }
     wantX = Math.max(-ENVELOPE_X, Math.min(ENVELOPE_X, wantX));
     wantY = Math.max(-ENVELOPE_Y, Math.min(ENVELOPE_Y, wantY));
@@ -384,6 +397,8 @@ export function emptyInput(): SortieInput {
     lockBreak: false,
     cockpit: false,
     somersault: false,
+    sightX: 0,
+    sightY: 0,
   };
 }
 
@@ -459,6 +474,12 @@ export function createSortie(opts?: {
     lockDist: 0,
     lockSx: 0,
     lockSy: 0,
+    sightX: 0,
+    sightY: 0,
+    sightSx: 0,
+    sightSy: 0,
+    innerSx: 0,
+    innerSy: 0,
     lockOn: false,
     lockHard: false,
     leadSx: 0,
@@ -719,19 +740,20 @@ function kindRank(kind: EnemyKind) {
 }
 
 function pickTarget(s: SortieState) {
+  if (s.charge < CHARGE_SEEK) return -1;
   const aspect = s.aspect || 16 / 9;
   const kept = s.enemies.find((e) => e.id === s.lockId && e.alive && listable(e.kind));
   if (kept) {
-    const pip = aimScreen(s, kept.x, kept.y, kept.z);
-    if (pip.z <= 320 && pip.z >= 6 && inBox(pip.sx, pip.sy, KEEP_R, aspect)) return kept.id;
+    const off = aimOff(s, kept.x, kept.y, kept.z);
+    if (off.z <= 320 && off.z >= 6 && inBox(off.sx, off.sy, KEEP_R, aspect)) return kept.id;
   }
   let best = -1;
   let bestScore = -1;
   for (const e of s.enemies) {
     if (!e.alive || !listable(e.kind)) continue;
-    const pip = aimScreen(s, e.x, e.y, e.z);
-    if (pip.z > 320 || pip.z < 6 || !inBox(pip.sx, pip.sy, OUTER_R, aspect)) continue;
-    const center = 1 - Math.min(1, Math.hypot(pip.sx * aspect, pip.sy));
+    const off = aimOff(s, e.x, e.y, e.z);
+    if (off.z > 320 || off.z < 6 || !inBox(off.sx, off.sy, OUTER_R, aspect)) continue;
+    const center = 1 - Math.min(1, Math.hypot(off.sx * aspect, off.sy));
     const score = kindRank(e.kind) * 10 + center;
     if (score > bestScore) {
       bestScore = score;
@@ -747,22 +769,30 @@ function leadPoint(s: SortieState, e: Enemy, shotSpeed: number) {
   return { x: e.x + e.vx * t, y: e.y + e.vy * t, z: e.z + e.vz * t };
 }
 
-function aimDir(s: SortieState, f: Vec3, shotSpeed = LASER_SPD, home = false): Vec3 {
-  if (s.lockId < 0) return f;
-  const e = s.enemies.find((n) => n.id === s.lockId && n.alive);
-  if (!e) return f;
-  const pip = aimScreen(s, e.x, e.y, e.z);
-  const inOuter = inBox(pip.sx, pip.sy, OUTER_R, s.aspect);
-  const blend = home && s.lockHard ? 0.85 : !home && inOuter ? MAGNET : 0;
-  if (blend <= 0) return f;
-  const lead = leadPoint(s, e, shotSpeed);
-  const dx = lead.x - s.x;
-  const dy = lead.y - s.y;
-  const dz = lead.z - s.z;
+function worldAim(s: SortieState, depth = CONVERGE_DIST) {
+  return unproject(s, s.sightX, s.sightY, depth);
+}
+
+function dirTo(from: Vec3, to: Vec3): Vec3 {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const dz = to.z - from.z;
   const n = Math.hypot(dx, dy, dz) || 1;
-  const x = f.x + (dx / n) * blend;
-  const y = f.y + (dy / n) * blend;
-  const z = f.z + (dz / n) * blend;
+  return { x: dx / n, y: dy / n, z: dz / n };
+}
+
+function aimDir(s: SortieState, origin: Vec3, shotSpeed = LASER_SPD, home = false): Vec3 {
+  const depth = s.lockHard && s.lockDist > 12 ? s.lockDist : CONVERGE_DIST;
+  const aim = worldAim(s, depth);
+  const through = dirTo(origin, aim);
+  if (!home || !s.lockHard || s.lockId < 0) return through;
+  const e = s.enemies.find((n) => n.id === s.lockId && n.alive);
+  if (!e) return through;
+  const lead = leadPoint(s, e, shotSpeed);
+  const toLead = dirTo(origin, lead);
+  const x = through.x + toLead.x * 0.85;
+  const y = through.y + toLead.y * 0.85;
+  const z = through.z + toLead.z * 0.85;
   const m = Math.hypot(x, y, z) || 1;
   return { x: x / m, y: y / m, z: z / m };
 }
@@ -1069,10 +1099,13 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
     s.boostMeter = Math.max(0, s.boostMeter - 0.28);
   }
 
+  s.sightX = input.sightX;
+  s.sightY = input.sightY;
+  s.sightSx = s.sightX;
+  s.sightSy = s.sightY;
   flyCraft(s, input, dt);
   if (s.wings === 1) s.yaw += 0.28 * dt;
   if (s.wings === 0) s.pitch -= 0.22 * dt;
-  const f = fwd(s);
 
   const space = s.biome === "sorts";
   const ground = islandHeight(s, s.x, s.z);
@@ -1157,12 +1190,12 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
   else s.lockId = pickTarget(s);
   const locked = s.enemies.find((e) => e.id === s.lockId && e.alive);
   if (locked) {
-    const pip = aimScreen(s, locked.x, locked.y, locked.z);
-    s.lockSx = pip.sx;
-    s.lockSy = pip.sy;
-    s.lockOn = inBox(pip.sx, pip.sy, OUTER_R, s.aspect);
-    s.lockHard = s.charge >= CHARGE_LOCK && inBox(pip.sx, pip.sy, INNER_R, s.aspect);
-    s.lockDist = pip.z;
+    const off = aimOff(s, locked.x, locked.y, locked.z);
+    s.lockSx = off.pipSx;
+    s.lockSy = off.pipSy;
+    s.lockOn = inBox(off.sx, off.sy, OUTER_R, s.aspect);
+    s.lockHard = s.charge >= CHARGE_LOCK && inBox(off.sx, off.sy, INNER_R, s.aspect);
+    s.lockDist = off.z;
     const lead = leadPoint(s, locked, LASER_SPD);
     const lp = aimScreen(s, lead.x, lead.y, lead.z);
     s.leadSx = lp.sx;
@@ -1174,11 +1207,15 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
     s.leadSx = 0;
     s.leadSy = 0;
   }
+  const ix = s.lockOn ? s.lockSx : s.sightX;
+  const iy = s.lockOn ? s.lockSy : s.sightY;
+  s.innerSx = follow(s.innerSx, ix, 18, dt);
+  s.innerSy = follow(s.innerSy, iy, 18, dt);
 
   if (!input.fireHeld) {
     if (s.charge >= CHARGE_LOCK && !liveCharge) {
       const home = s.lockHard ? s.lockId : -1;
-      fireShot(s, "charge", true, s.x, s.y, s.z, aimDir(s, f, CHARGE_SPD, home >= 0), CHARGE_SPD, home);
+      fireShot(s, "charge", true, s.x, s.y, s.z, aimDir(s, s, CHARGE_SPD, home >= 0), CHARGE_SPD, home);
     }
     s.charge = 0;
   }
@@ -1191,7 +1228,7 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
     } else if (s.bombs > 0) {
       s.bombs -= 1;
       const home = s.lockHard ? s.lockId : -1;
-      const dir = home >= 0 ? aimDir(s, f, 48, true) : f;
+      const dir = aimDir(s, s, 48, home >= 0);
       fireShot(s, "bomb", true, s.x + dir.x * 14, s.y + dir.y * 14, s.z + dir.z * 14, dir, 48, home);
       s.charge = 0;
     }
@@ -1199,16 +1236,21 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
 
   if (input.fire && s.charge < 0.12 && s.cooldown <= 0) {
     const r = right(s);
-    const dir = aimDir(s, f, LASER_SPD, false);
+    const aim = worldAim(s);
     const dmgLife = s.stem >= 2 ? 1.6 : 1.35;
-    const mx = s.x + dir.x * 4;
-    const my = s.y + dir.y * 4;
-    const mz = s.z + dir.z * 4;
+    const nose = aimDir(s, s, LASER_SPD, false);
+    const mx = s.x + nose.x * 4;
+    const my = s.y + nose.y * 4;
+    const mz = s.z + nose.z * 4;
     if (s.stem === 0) {
-      fireShot(s, "laser", true, mx, my, mz, dir, LASER_SPD);
+      fireShot(s, "laser", true, mx, my, mz, dirTo({ x: mx, y: my, z: mz }, aim), LASER_SPD);
     } else {
-      fireShot(s, "laser", true, mx + r.x * 2.2, my, mz + r.z * 2.2, dir, LASER_SPD);
-      fireShot(s, "laser", true, mx - r.x * 2.2, my, mz - r.z * 2.2, dir, LASER_SPD);
+      const lx = mx + r.x * 2.2;
+      const rx = mx - r.x * 2.2;
+      const lz = mz + r.z * 2.2;
+      const rz = mz - r.z * 2.2;
+      fireShot(s, "laser", true, lx, my, lz, dirTo({ x: lx, y: my, z: lz }, aim), LASER_SPD);
+      fireShot(s, "laser", true, rx, my, rz, dirTo({ x: rx, y: my, z: rz }, aim), LASER_SPD);
     }
     s.shots.filter((q) => q.kind === "laser" && q.life > 1.3).forEach((q) => {
       q.life = dmgLife;

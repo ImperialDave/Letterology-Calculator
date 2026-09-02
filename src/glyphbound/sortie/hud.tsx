@@ -15,27 +15,25 @@ const SORTIE_CONTROLS: { keys: string; does: string }[] = [
   { keys: "Q / E", does: "Barrel (eats orbs). One tap." },
   { keys: "Boost + W", does: "Somersault." },
   { keys: "Brake + W", does: "U-turn (all-range)." },
-  { keys: "Mouse", does: "Optional stick. Click takeoff to lock." },
+  { keys: "Mouse", does: "Aims the squares. Click takeoff to lock." },
   { keys: "Tab", does: "Break lock." },
   { keys: "V", does: "Cockpit cam." },
   { keys: "Esc", does: "Pause / resume." },
-  { keys: "Squares", does: "The two squares are the gun." },
+  { keys: "Gunsight", does: "Lasers go through the squares. Hold fire to lock." },
 ];
 
 export function SortieHud({
   s,
   best,
   onRetry,
-  onTitle,
+  onRegister,
   onResume,
-  leaveLabel = "Title",
 }: {
   s: SortieState;
   best: number;
   onRetry: () => void;
-  onTitle: () => void;
+  onRegister: () => void;
   onResume: () => void;
-  leaveLabel?: string;
 }) {
   return (
     <div className="pointer-events-none absolute inset-0 z-10 font-display text-[#f4f0e4]">
@@ -151,14 +149,14 @@ export function SortieHud({
               className="h-11 rounded-md border border-[#f4f0e4]/40 px-4"
               onPointerUp={(e) => {
                 e.stopPropagation();
-                onTitle();
+                onRegister();
               }}
               onClick={(e) => {
                 e.stopPropagation();
-                onTitle();
+                onRegister();
               }}
             >
-              {leaveLabel}
+              Register
             </button>
           </div>
         </div>
@@ -194,54 +192,63 @@ function Reticle({ s }: { s: SortieState }) {
   const hard = s.lockHard;
   const soft = s.lockId >= 0 && s.lockOn;
   const charging = s.charge >= CHARGE_LOCK * 0.35;
-  const color = hard ? "#d45a4a" : charging ? "#e8d48a" : soft ? "#5ee0c0" : "#f4f0e4";
-  const left = 50 + s.lockSx * 50;
-  const top = 50 - s.lockSy * 50;
+  const frame = hard ? "#d45a4a" : charging ? "#e8d48a" : "rgba(244,240,228,0.82)";
+  const inner = hard ? "#d45a4a" : charging ? "#e8d48a" : "rgba(94,224,192,0.9)";
+  const cx = 50 + s.sightX * 50;
+  const cy = 50 - s.sightY * 50;
+  const ix = 50 + s.innerSx * 50;
+  const iy = 50 - s.innerSy * 50;
   const off = s.lockId >= 0 && (Math.abs(s.lockSx) > 1.02 || Math.abs(s.lockSy) > 1.02);
-  const lead = Math.hypot(s.leadSx - s.lockSx, s.leadSy - s.lockSy) > 0.035;
+  const lead = soft && Math.hypot(s.leadSx - s.lockSx, s.leadSy - s.lockSy) > 0.035;
   return (
     <div className="pointer-events-none absolute inset-0">
       <div
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+        className="absolute -translate-x-1/2 -translate-y-1/2"
         style={{
-          width: `calc(${OUTER_R * 200}vmin)`,
-          height: `calc(${OUTER_R * 200}vmin)`,
-          border: `2px solid ${hard ? "#d45a4a" : charging ? "#e8d48a" : "rgba(244,240,228,0.75)"}`,
+          left: `${cx}%`,
+          top: `${cy}%`,
+          width: `${OUTER_R * 100}vh`,
+          height: `${OUTER_R * 100}vh`,
         }}
-      />
+      >
+        <span className="absolute left-0 top-0 h-[26%] w-[26%] border-l-2 border-t-2" style={{ borderColor: frame }} />
+        <span className="absolute right-0 top-0 h-[26%] w-[26%] border-r-2 border-t-2" style={{ borderColor: frame }} />
+        <span className="absolute bottom-0 left-0 h-[26%] w-[26%] border-b-2 border-l-2" style={{ borderColor: frame }} />
+        <span className="absolute bottom-0 right-0 h-[26%] w-[26%] border-b-2 border-r-2" style={{ borderColor: frame }} />
+        <div className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#e8d48a]" />
+      </div>
       <div
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+        className="absolute -translate-x-1/2 -translate-y-1/2"
         style={{
-          width: `calc(${INNER_R * 200}vmin)`,
-          height: `calc(${INNER_R * 200}vmin)`,
-          border: `1.5px solid ${hard ? "#d45a4a" : charging ? "#e8d48a" : "rgba(94,224,192,0.85)"}`,
+          left: `${ix}%`,
+          top: `${iy}%`,
+          width: `${INNER_R * 100}vh`,
+          height: `${INNER_R * 100}vh`,
+          border: `1.5px solid ${inner}`,
         }}
-      />
-      <div
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#e8d48a]/50"
-        style={{
-          width: `calc(${INNER_R * 200}vmin)`,
-          height: `calc(${INNER_R * 200}vmin)`,
-          clipPath: `inset(${100 - Math.min(100, (s.charge / CHARGE_LOCK) * 100)}% 0 0 0)`,
-          opacity: s.charge > 0.05 ? 1 : 0.25,
-        }}
-      />
+      >
+        <div
+          className="absolute inset-0 rounded-full border border-[#e8d48a]/55"
+          style={{
+            clipPath: `inset(${100 - Math.min(100, (s.charge / CHARGE_LOCK) * 100)}% 0 0 0)`,
+            opacity: s.charge > 0.05 ? 1 : 0.22,
+          }}
+        />
+        {soft && (
+          <span
+            className="absolute -top-4 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-[0.2em]"
+            style={{ color: inner }}
+          >
+            {hard ? "LOCK" : "TGT"}
+          </span>
+        )}
+      </div>
       {s.incoming > 0 && (
         <div className="absolute left-1/2 top-[38%] -translate-x-1/2 text-[11px] uppercase tracking-[0.28em] text-[#d45a4a]">
           Break
         </div>
       )}
-      {soft && (
-        <div
-          className="absolute h-10 w-10 -translate-x-1/2 -translate-y-1/2"
-          style={{ left: `${left}%`, top: `${top}%`, border: `2px solid ${color}` }}
-        >
-          <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-[0.2em]" style={{ color }}>
-            {hard ? "LOCK" : "TGT"}
-          </span>
-        </div>
-      )}
-      {soft && lead && (
+      {lead && (
         <div
           className="absolute h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#e8d48a]"
           style={{ left: `${50 + s.leadSx * 50}%`, top: `${50 - s.leadSy * 50}%` }}
@@ -298,6 +305,7 @@ function Radar({ s }: { s: SortieState }) {
 
 export function TouchPads({
   onStick,
+  onAim,
   onFire,
   onBoost,
   onBrake,
@@ -305,6 +313,7 @@ export function TouchPads({
   onBomb,
 }: {
   onStick: (roll: number, pitch: number) => void;
+  onAim?: (x: number, y: number) => void;
   onFire: (v: boolean) => void;
   onBoost: (v: boolean) => void;
   onBrake: (v: boolean) => void;
@@ -312,7 +321,9 @@ export function TouchPads({
   onBomb?: () => void;
 }) {
   const origin = useRef<{ x: number; y: number; id: number } | null>(null);
+  const aimOrigin = useRef<{ x: number; y: number; id: number } | null>(null);
   const [knob, setKnob] = useState({ x: 0, y: 0, on: false, ox: 0.22, oy: 0.72 });
+  const [aimKnob, setAimKnob] = useState({ x: 0, y: 0, on: false });
   const radius = 64;
 
   const move = (e: PointerEvent<HTMLDivElement>) => {
@@ -370,6 +381,46 @@ export function TouchPads({
           />
         </div>
       </div>
+      {onAim && (
+        <div
+          className="pointer-events-auto absolute bottom-[22%] right-[26%] h-[34%] w-[30%]"
+          style={{ touchAction: "none" }}
+          onPointerDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            aimOrigin.current = { x: e.clientX, y: e.clientY, id: e.pointerId };
+            e.currentTarget.setPointerCapture(e.pointerId);
+            setAimKnob({ x: 0, y: 0, on: true });
+            onAim(0, 0);
+          }}
+          onPointerMove={(e) => {
+            const o = aimOrigin.current;
+            if (!o || o.id !== e.pointerId) return;
+            const a = analogFromDelta(e.clientX - o.x, e.clientY - o.y, radius);
+            onAim(a.kx, -a.ky);
+            setAimKnob({ x: a.kx, y: a.ky, on: true });
+          }}
+          onPointerUp={(e) => {
+            if (aimOrigin.current?.id !== e.pointerId) return;
+            aimOrigin.current = null;
+            onAim(0, 0);
+            setAimKnob({ x: 0, y: 0, on: false });
+          }}
+          onPointerCancel={(e) => {
+            if (aimOrigin.current?.id !== e.pointerId) return;
+            aimOrigin.current = null;
+            onAim(0, 0);
+            setAimKnob({ x: 0, y: 0, on: false });
+          }}
+        >
+          <div className="absolute left-1/2 top-1/2 h-[6.4rem] w-[6.4rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#e8d48a]/40 bg-[#121018]/40">
+            <span
+              className="absolute left-1/2 top-1/2 h-9 w-9 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#e8d48a]/70 bg-[#e8d48a]/75"
+              style={{ transform: `translate(calc(-50% + ${aimKnob.x * 32}px), calc(-50% + ${aimKnob.y * 32}px))` }}
+            />
+          </div>
+        </div>
+      )}
       <button
         type="button"
         className="pointer-events-auto absolute bottom-10 right-6 h-16 w-16 rounded-full bg-[#5ee0c0] text-sm text-[#121018]"

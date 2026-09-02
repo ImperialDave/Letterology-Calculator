@@ -1,3 +1,4 @@
+import { clampSight } from "./cam";
 import { emptyInput, type SortieInput } from "./sim";
 
 const GAME = new Set([
@@ -38,6 +39,7 @@ export class SortieKeys {
   touchBrake = false;
   touchBarrel = 0;
   mouseFire = false;
+  aim = { x: 0, y: 0 };
   private mx = 0;
   private my = 0;
   private mouseMoved = false;
@@ -62,14 +64,12 @@ export class SortieKeys {
     };
     const move = (e: MouseEvent) => {
       if (typeof document === "undefined" || document.pointerLockElement == null) return;
-      this.mx += e.movementX * 0.004;
-      this.my += e.movementY * 0.004;
+      this.mx += e.movementX * 0.0022;
+      this.my -= e.movementY * 0.0022;
       this.mouseMoved = true;
-      const m = Math.hypot(this.mx, this.my);
-      if (m > 1) {
-        this.mx /= m;
-        this.my /= m;
-      }
+      const c = clampSight(this.mx, this.my);
+      this.mx = c.x;
+      this.my = c.y;
     };
     const pointerDown = (e: PointerEvent) => {
       if (e.button === 0 && document.pointerLockElement) this.mouseFire = true;
@@ -79,8 +79,6 @@ export class SortieKeys {
     };
     const lockLost = () => {
       if (document.pointerLockElement) return;
-      this.mx = 0;
-      this.my = 0;
       this.mouseFire = false;
     };
     el.addEventListener("keydown", down as EventListener);
@@ -110,16 +108,16 @@ export class SortieKeys {
     this.injected = codes;
   }
 
+  setSight(x: number, y: number) {
+    const c = clampSight(x, y);
+    this.mx = c.x;
+    this.my = c.y;
+  }
+
   poll(dt: number, allRange = false): SortieInput & { pause: boolean } {
     this.t += dt;
     const has = (c: string) => (this.injected ? this.injected.includes(c) : this.keys.has(c));
     const pad = this.pad();
-    if (!this.mouseMoved) {
-      const spring = Math.exp(-8 * dt);
-      this.mx *= spring;
-      this.my *= spring;
-    }
-    this.mouseMoved = false;
     const keyScale = allRange ? 0.62 : 1;
     let roll = this.stick.x;
     let pitch = this.stick.y;
@@ -140,18 +138,24 @@ export class SortieKeys {
     if (this.touchBarrel && barrel === 0) barrel = this.touchBarrel;
     this.touchBarrel = 0;
 
-    let mouseRoll = 0;
-    let mousePitch = 0;
-    if (typeof document !== "undefined" && document.pointerLockElement) {
-      const m = Math.hypot(this.mx, this.my);
-      if (m > 0.08) {
-        const s = (m - 0.08) / 0.92 / m;
-        mouseRoll = -this.mx * s;
-        mousePitch = -this.my * s;
-      }
+    const touchAim = Math.hypot(this.aim.x, this.aim.y) > 0.04;
+    const padAim = Math.hypot(pad.aimX, pad.aimY) > 0.08;
+    if (this.mouseMoved) {
+      /* mx/my already integrated from pointer lock */
+    } else if (touchAim) {
+      const c = clampSight(this.aim.x, this.aim.y);
+      this.mx = c.x;
+      this.my = c.y;
+    } else if (padAim) {
+      const c = clampSight(pad.aimX, pad.aimY);
+      this.mx = c.x;
+      this.my = c.y;
+    } else {
+      const spring = Math.exp(-10 * dt);
+      this.mx *= spring;
+      this.my *= spring;
     }
-    roll = Math.max(-1, Math.min(1, roll + mouseRoll));
-    pitch = Math.max(-1, Math.min(1, pitch + mousePitch));
+    this.mouseMoved = false;
 
     const fireHeld = has("Space") || has("KeyJ") || pad.fire || this.touchFire || this.mouseFire;
     const fire = fireHeld && !this.prevFire;
@@ -164,6 +168,8 @@ export class SortieKeys {
     out.roll = roll;
     out.pitch = pitch;
     out.rudder = pad.rudder;
+    out.sightX = this.mx;
+    out.sightY = this.my;
     out.fire = fire;
     out.fireHeld = fireHeld;
     out.boost = has("ShiftLeft") || has("ShiftRight") || has("KeyK") || pad.boost || this.touchBoost;
@@ -192,12 +198,15 @@ export class SortieKeys {
       return { x: x * s, y: y * s };
     };
     if (!g) {
-      return { ax: 0, ay: 0, left: false, right: false, up: false, down: false, fire: false, boost: false, brake: false, pause: false, rudder: 0 };
+      return { ax: 0, ay: 0, aimX: 0, aimY: 0, left: false, right: false, up: false, down: false, fire: false, boost: false, brake: false, pause: false, rudder: 0 };
     }
     const st = dead(g.axes[0] ?? 0, g.axes[1] ?? 0);
+    const aim = dead(g.axes[2] ?? 0, g.axes[3] ?? 0);
     return {
       ax: -st.x,
       ay: st.y,
+      aimX: aim.x,
+      aimY: -aim.y,
       left: g.buttons[14]?.pressed ?? false,
       right: g.buttons[15]?.pressed ?? false,
       up: g.buttons[12]?.pressed ?? false,

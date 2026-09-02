@@ -152,6 +152,13 @@ export function StarWords({
     bootMission(m);
   };
 
+  const toRegister = () => {
+    if (typeof document !== "undefined" && document.pointerLockElement) document.exitPointerLock();
+    missionRef.current = null;
+    setReady(false);
+    setPicked(null);
+  };
+
   return (
     <div
       ref={wrapRef}
@@ -235,8 +242,7 @@ export function StarWords({
             s={snap}
             best={best}
             onRetry={retry}
-            onTitle={leave}
-            leaveLabel={leaveLabel}
+            onRegister={toRegister}
             onResume={() => {
               sim.current.mode = "play";
               setSnap({ ...sim.current });
@@ -247,6 +253,10 @@ export function StarWords({
             onStick={(roll, pitch) => {
               keys.current.stick.x = roll;
               keys.current.stick.y = pitch;
+            }}
+            onAim={(x, y) => {
+              keys.current.aim.x = x;
+              keys.current.aim.y = y;
             }}
             onFire={(v) => {
               keys.current.touchFire = v;
