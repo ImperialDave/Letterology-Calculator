@@ -1,4 +1,4 @@
-import { BEATS, progressOf } from "./beats";
+import { BEATS, far, progressOf } from "./beats";
 import { COAST_PATH, GUTTER_PATH, PRESS_PATH, SLUG_PATH, SORTS_PATH } from "./landmarks";
 import type { PathPoint } from "./path";
 import type { EnemyKind, FormName, PickupKind, SortieState } from "./sim";
@@ -130,14 +130,15 @@ export function scriptMissionWaves(s: SortieState) {
       for (let i = 0; i < b.ships.length; i++) {
         const sh = b.ships[i];
         const flyer = sh.kind === "fighter" || sh.kind === "cork" || sh.kind === "bomber" || sh.kind === "ace";
-        spawn(s, sh.kind, s.x + sh.dx, s.y + sh.dy, s.z + sh.dz, sh.hp, {
+        const push = flyer || sh.kind === "aster" || sh.kind === "turret";
+        spawn(s, sh.kind, s.x + sh.dx, s.y + sh.dy, s.z + (push ? far(sh.dz) : sh.dz), sh.hp, {
           staged: flyer,
           form: sh.form ?? form,
           formId,
           slot: i,
           armed: sh.armed,
-          lead: Math.max(52, -sh.dz),
-          life: 6.5,
+          lead: Math.max(180, -sh.dz),
+          life: 12,
         });
         if (sh.kind === "mech" && !s.bossAt) s.bossAt = s.t;
       }

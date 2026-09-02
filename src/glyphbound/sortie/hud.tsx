@@ -166,11 +166,11 @@ function Reticle({ s }: { s: SortieState }) {
   return (
     <div className="pointer-events-none absolute inset-0">
       <div
-        className="absolute left-1/2 top-1/2 h-[4.6rem] w-[4.6rem] -translate-x-1/2 -translate-y-1/2"
+        className="absolute left-1/2 top-1/2 h-[6.2rem] w-[6.2rem] -translate-x-1/2 -translate-y-1/2"
         style={{ border: `2px solid ${hard ? "#d45a4a" : charging ? "#e8d48a" : "rgba(244,240,228,0.75)"}` }}
       />
       <div
-        className="absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2"
+        className="absolute left-1/2 top-1/2 h-11 w-11 -translate-x-1/2 -translate-y-1/2"
         style={{ border: `1.5px solid ${hard ? "#d45a4a" : charging ? "#e8d48a" : "rgba(94,224,192,0.85)"}` }}
       />
       <div

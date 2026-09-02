@@ -12,10 +12,10 @@ export const HULL_MAX = 6;
 export const CHARGE_LOCK = 0.7;
 export const BARREL_T = 0.42;
 export const SOMERSAULT_T = 0.55;
-export const INNER_R = 0.38;
-export const OUTER_R = 0.58;
-export const KEEP_R = 0.72;
-export const MAGNET = 0.3;
+export const INNER_R = 0.42;
+export const OUTER_R = 0.64;
+export const KEEP_R = 0.78;
+export const MAGNET = 0.32;
 
 export type EnemyKind = "fighter" | "cork" | "bomber" | "turret" | "ace" | "mech" | "mothership" | "dualis" | "aster";
 export type FormName = "v" | "line" | "cross" | "guide" | "hold";
@@ -204,8 +204,8 @@ const ENEMY_TURN = 3.2;
 const BOOST_DRAIN = 0.4;
 const BRAKE_DRAIN = 0.36;
 const METER_REGEN = 0.58;
-const LASER_SPD = 240;
-const CHARGE_SPD = 170;
+const LASER_SPD = 400;
+const CHARGE_SPD = 200;
 
 export const ISLANDS: Island[] = [
   { id: "press", x: 0, z: -180, r: 78, h: 38 },
@@ -586,11 +586,11 @@ function killEnemy(s: SortieState, e: Enemy, splash = false) {
 }
 
 function bodyR(e: Enemy) {
-  if (e.kind === "aster") return e.hp >= 8 ? 20 : 8;
-  if (e.kind === "dualis" || e.kind === "mothership" || e.kind === "mech") return 18;
-  if (e.kind === "bomber") return 13;
-  if (e.kind === "ace") return 11;
-  return 10;
+  if (e.kind === "aster") return e.hp >= 8 ? 22 : 10;
+  if (e.kind === "dualis" || e.kind === "mothership" || e.kind === "mech") return 20;
+  if (e.kind === "bomber") return 15;
+  if (e.kind === "ace") return 13;
+  return 12;
 }
 
 function distSeg(px: number, py: number, pz: number, ax: number, ay: number, az: number, bx: number, by: number, bz: number) {
@@ -607,7 +607,7 @@ function distSeg(px: number, py: number, pz: number, ax: number, ay: number, az:
 }
 
 function chargeSplash(s: SortieState, x: number, y: number, z: number, skipId: number) {
-  const R = 22;
+  const R = 32;
   for (const e of s.enemies) {
     if (!e.alive || e.id === skipId) continue;
     const d = Math.hypot(e.x - x, e.y - y, e.z - z);
@@ -737,11 +737,12 @@ function leadPoint(s: SortieState, e: Enemy, shotSpeed: number) {
 }
 
 function aimDir(s: SortieState, f: Vec3, shotSpeed = LASER_SPD, home = false): Vec3 {
-  if (!home || s.lockId < 0) return f;
+  if (s.lockId < 0) return f;
   const e = s.enemies.find((n) => n.id === s.lockId && n.alive);
   if (!e) return f;
   const pip = aimScreen(s, e.x, e.y, e.z);
-  const blend = s.lockHard ? 0.85 : 0;
+  const inOuter = inBox(pip.sx, pip.sy, OUTER_R);
+  const blend = home && s.lockHard ? 0.85 : !home && inOuter ? MAGNET : 0;
   if (blend <= 0) return f;
   const lead = leadPoint(s, e, shotSpeed);
   const dx = lead.x - s.x;
@@ -933,8 +934,8 @@ function steerEnemy(s: SortieState, e: Enemy, dt: number) {
   }
 
   if (rail && e.staged && flyerKind(e.kind)) {
-    e.lead = e.lead ?? 64;
-    e.life = e.life ?? 6.5;
+    e.lead = e.lead ?? 180;
+    e.life = e.life ?? 12;
     e.life -= dt;
     const off = formOffset(e.form, e.slot ?? 0, e.t);
     if (e.life > 0.85) {
@@ -963,9 +964,9 @@ function steerEnemy(s: SortieState, e: Enemy, dt: number) {
     const f = fwd(s);
     const r = right(s);
     const slot = (e.slot ?? 0) - 1;
-    const tx = s.x + f.x * 72 + r.x * slot * 22;
+    const tx = s.x + f.x * 140 + r.x * slot * 22;
     const ty = s.y + 6;
-    const tz = s.z + f.z * 72 + r.z * slot * 22;
+    const tz = s.z + f.z * 140 + r.z * slot * 22;
     springTo(e, tx, ty, tz, dt);
     turnTo(e, f.x, f.y * 0.2, f.z, e.kind === "ace" ? 30 : 22, ENEMY_TURN, dt);
     fireIfArmed(s, e, toP, dt);
@@ -1142,8 +1143,7 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
   if (input.fireHeld && !liveCharge) s.charge = Math.min(CHARGE_LOCK + 0.4, s.charge + dt);
 
   if (input.lockBreak) s.lockId = -1;
-  else if (s.charge > 0.12) s.lockId = pickTarget(s);
-  else s.lockId = -1;
+  else s.lockId = pickTarget(s);
   const locked = s.enemies.find((e) => e.id === s.lockId && e.alive);
   if (locked) {
     const pip = aimScreen(s, locked.x, locked.y, locked.z);
@@ -1182,7 +1182,7 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
 
   if (input.fire && s.charge < 0.12 && s.cooldown <= 0) {
     const r = right(s);
-    const dir = f;
+    const dir = aimDir(s, f, LASER_SPD, false);
     const dmgLife = s.stem >= 2 ? 1.6 : 1.35;
     if (s.stem === 0) {
       fireShot(s, "laser", true, s.x, s.y, s.z, dir, LASER_SPD);
@@ -1255,7 +1255,7 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
       } else {
         for (const e of s.enemies) {
           if (!e.alive) continue;
-          const rad = bodyR(e) + (sh.kind === "charge" ? 6 : 2);
+          const rad = bodyR(e) + (sh.kind === "charge" ? 8 : sh.kind === "laser" ? 8 : 3);
           const hit =
             sh.kind === "laser"
               ? distSeg(e.x, e.y, e.z, sh.x - sh.vx * dt, sh.y - sh.vy * dt, sh.z - sh.vz * dt, sh.x, sh.y, sh.z) < rad

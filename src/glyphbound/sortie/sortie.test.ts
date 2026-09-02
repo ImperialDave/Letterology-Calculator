@@ -6,7 +6,7 @@ import { unlockedIds } from "./missions";
 import { pathLength } from "./path";
 import { analogFromDelta } from "./stick";
 import { SortieKeys } from "./input";
-import { BARREL_T, CHARGE_LOCK, SOMERSAULT_T, createSortie, emptyInput, stepSortie } from "./sim";
+import { BARREL_T, CHARGE_LOCK, MAGNET, SOMERSAULT_T, createSortie, emptyInput, stepSortie } from "./sim";
 import { fillTex, paintBrass, paintGrass, paintHull, paintInkWater, paintLead, paintScale, type Plot } from "./tex-paint";
 
 function meanLuma(paint: (plot: Plot, n: number) => void) {
@@ -74,7 +74,7 @@ test("D (roll -1) yaws right", () => {
   assert.ok(s.yaw < -0.05, `yaw ${s.yaw}`);
 });
 
-test("uncharged lasers fly down the nose with no magnet", () => {
+test("in-square lasers lean toward the target", () => {
   const s = createSortie();
   s.enemies.push({
     id: 50,
@@ -94,12 +94,14 @@ test("uncharged lasers fly down the nose with no magnet", () => {
   s.z = 0;
   s.yaw = 0;
   s.pitch = 0;
+  stepSortie(s, emptyInput(), 1 / 60);
   const inp = emptyInput();
   inp.fire = true;
   stepSortie(s, inp, 1 / 60);
   const shot = s.shots.find((q) => q.kind === "laser");
   assert.ok(shot);
-  assert.ok(Math.abs(shot!.vx) < 8, `no magnet vx ${shot!.vx}`);
+  assert.ok(shot!.vx > 4, `in-square lean vx ${shot!.vx}`);
+  assert.ok(shot!.vx < 400 * MAGNET + 50, `not full home ${shot!.vx}`);
 });
 
 test("lasers down the nose miss a target outside the squares", () => {
@@ -562,13 +564,13 @@ test("corridor lizards fly the rail and do not reverse", () => {
     staged: true,
     armed: false,
     form: "guide",
-    lead: 64,
-    life: 6.5,
+    lead: 180,
+    life: 12,
     slot: 0,
   });
   const e = s.enemies[s.enemies.length - 1];
-  for (let i = 0; i < 180; i++) stepSortie(s, emptyInput(), 1 / 60);
-  assert.ok(e.alive, "should still be in the window at 3s");
+  for (let i = 0; i < 240; i++) stepSortie(s, emptyInput(), 1 / 60);
+  assert.ok(e.alive, "should still be in the window at 4s");
   assert.ok(e.z < s.z, `should stay ahead on the rail, ez ${e.z} sz ${s.z}`);
   assert.ok(e.vz <= 0, `should not reverse, vz ${e.vz}`);
 });

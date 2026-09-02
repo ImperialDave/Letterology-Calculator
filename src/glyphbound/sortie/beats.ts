@@ -12,49 +12,58 @@ export interface Beat {
   rings?: { dx: number; dy: number; dz: number }[];
 }
 
+export function far(dz: number) {
+  return Math.min(dz, -200);
+}
+
 function rocks(dz: number, n = 8): Beat["ships"] {
+  const z0 = far(dz);
   return Array.from({ length: n }, (_, i) => ({
     kind: "aster" as const,
     dx: ((i % 4) - 1.5) * 24 + (i % 3) * 5,
     dy: (i % 5) * 9 - 14,
-    dz: dz - Math.floor(i / 4) * 30,
+    dz: z0 - Math.floor(i / 4) * 36,
     hp: i % 6 === 0 ? 12 : 1,
   }));
 }
 
 function V(dz: number, spread = 16): Beat["ships"] {
+  const z = far(dz);
   return [
-    { kind: "fighter", dx: 0, dy: 4, dz, form: "v" },
-    { kind: "fighter", dx: -spread, dy: 2, dz: dz + 14, form: "v" },
-    { kind: "fighter", dx: spread, dy: 2, dz: dz + 14, form: "v" },
+    { kind: "fighter", dx: 0, dy: 4, dz: z, form: "v" },
+    { kind: "fighter", dx: -spread, dy: 2, dz: z + 14, form: "v" },
+    { kind: "fighter", dx: spread, dy: 2, dz: z + 14, form: "v" },
   ];
 }
 
 function Cross(dz: number): Beat["ships"] {
+  const z = far(dz);
   return [
-    { kind: "fighter", dx: -22, dy: 4, dz, form: "cross" },
-    { kind: "fighter", dx: 22, dy: 4, dz: dz + 8, form: "cross" },
-    { kind: "fighter", dx: -22, dy: 8, dz: dz + 16, form: "cross" },
-    { kind: "fighter", dx: 22, dy: 8, dz: dz + 24, form: "cross" },
+    { kind: "fighter", dx: -22, dy: 4, dz: z, form: "cross" },
+    { kind: "fighter", dx: 22, dy: 4, dz: z + 8, form: "cross" },
+    { kind: "fighter", dx: -22, dy: 8, dz: z + 16, form: "cross" },
+    { kind: "fighter", dx: 22, dy: 8, dz: z + 24, form: "cross" },
   ];
 }
 
 function Line(dz: number): Beat["ships"] {
+  const z = far(dz);
   return [
-    { kind: "fighter", dx: -18, dy: 2, dz, form: "line" },
-    { kind: "fighter", dx: 0, dy: 5, dz: dz + 6, form: "line" },
-    { kind: "fighter", dx: 18, dy: 2, dz: dz + 12, form: "line" },
+    { kind: "fighter", dx: -18, dy: 2, dz: z, form: "line" },
+    { kind: "fighter", dx: 0, dy: 5, dz: z + 6, form: "line" },
+    { kind: "fighter", dx: 18, dy: 2, dz: z + 12, form: "line" },
   ];
 }
 
 function rockRing(dz: number, r = 26, n = 8): Beat["ships"] {
+  const z = far(dz);
   return Array.from({ length: n }, (_, i) => {
     const a = (i / n) * Math.PI * 2;
     return {
       kind: "aster" as const,
       dx: Math.cos(a) * r,
       dy: Math.sin(a) * r * 0.65,
-      dz,
+      dz: z,
       hp: 1,
     };
   });
@@ -142,13 +151,13 @@ export const BEATS: Record<string, Beat[]> = {
     { id: 12, when: "rail", t: 0.5, kind: "check", who: "e", text: "Checkpoint. Seven rings if you want Ice." },
     { id: 13, when: "rail", t: 0.56, kind: "spawn", ships: V(-40, 18) },
     { id: 14, when: "rail", t: 0.62, kind: "rings", rings: [
-      { dx: -18, dy: 0, dz: -36 },
-      { dx: 18, dy: 4, dz: -90 },
-      { dx: -16, dy: -2, dz: -144 },
-      { dx: 20, dy: 6, dz: -198 },
-      { dx: -14, dy: 2, dz: -252 },
-      { dx: 16, dy: -4, dz: -306 },
-      { dx: 0, dy: 0, dz: -360 },
+      { dx: -18, dy: 0, dz: -180 },
+      { dx: 18, dy: 4, dz: -250 },
+      { dx: -16, dy: -2, dz: -320 },
+      { dx: 20, dy: 6, dz: -390 },
+      { dx: -14, dy: 2, dz: -460 },
+      { dx: 16, dy: -4, dz: -530 },
+      { dx: 0, dy: 0, dz: -600 },
     ] },
     { id: 15, when: "rail", t: 0.64, kind: "radio", who: "s", text: "Rings zigzag. All seven for the warp. Miss one and the quoin stays." },
     { id: 16, when: "rail", t: 0.78, kind: "spawn", ships: rocks(-48, 8) },

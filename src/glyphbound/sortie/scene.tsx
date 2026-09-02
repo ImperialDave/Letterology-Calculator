@@ -54,9 +54,9 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
       g.add(m);
       foam.push(m);
     }
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < 48; i++) {
       const m = new THREE.Mesh(
-        new THREE.PlaneGeometry(7, 7),
+        new THREE.PlaneGeometry(6, 6),
         new THREE.MeshBasicMaterial({ color: 0xff9040, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }),
       );
       m.visible = false;
@@ -66,7 +66,7 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
     return { g, foam, booms };
   }, []);
   const foamLife = useRef<number[]>(Array(36).fill(0));
-  const boomLife = useRef<number[]>(Array(18).fill(0));
+  const boomLife = useRef<number[]>(Array(48).fill(0));
   const foamI = useRef(0);
   const boomI = useRef(0);
   const wakeAcc = useRef(0);
@@ -158,12 +158,16 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
     for (const e of s.enemies) {
       const prev = wasAlive.current.get(e.id);
       if (prev && !e.alive) {
-        const i = boomI.current % fx.booms.length;
-        boomI.current += 1;
-        const b = fx.booms[i];
-        b.visible = true;
-        b.position.set(e.x, e.y, e.z);
-        boomLife.current[i] = 1;
+        const palette = [0xfff0c0, 0xff9030, 0xff6020, 0xc9b896, 0xffe08a, 0x8a7060];
+        for (let k = 0; k < 6; k++) {
+          const i = boomI.current % fx.booms.length;
+          boomI.current += 1;
+          const b = fx.booms[i];
+          b.visible = true;
+          b.position.set(e.x + (k % 3 - 1) * 1.4, e.y + Math.floor(k / 3) * 1.2, e.z);
+          (b.material as THREE.MeshBasicMaterial).color.setHex(palette[k]);
+          boomLife.current[i] = 1 - k * 0.06;
+        }
         sortieSfx.boom();
       }
       wasAlive.current.set(e.id, e.alive);
@@ -227,23 +231,23 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
       if (!sh) continue;
       m.position.set(sh.x, sh.y, sh.z);
       if (sh.kind === "laser") {
-        m.scale.set(0.7, 0.7, 8.5);
+        m.scale.set(1.6, 1.6, 16);
         tmp.set(sh.x + sh.vx, sh.y + sh.vy, sh.z + sh.vz);
         m.lookAt(tmp);
       } else if (sh.kind === "charge") {
-        m.scale.set(2.2, 2.2, 4.4);
+        m.scale.set(5.2, 5.2, 7.5);
         tmp.set(sh.x + sh.vx, sh.y + sh.vy, sh.z + sh.vz);
         m.lookAt(tmp);
       } else if (sh.kind === "bomb") {
-        m.scale.setScalar(3.4);
+        m.scale.setScalar(3.8);
         m.rotation.set(s.t * 4, s.t * 2, 0);
       } else {
-        m.scale.set(1.3, 1.3, 2.4);
+        m.scale.set(2.4, 2.4, 2.4);
         tmp.set(sh.x + sh.vx, sh.y + sh.vy, sh.z + sh.vz);
         m.lookAt(tmp);
       }
       (m.material as THREE.MeshBasicMaterial).color.set(
-        sh.kind === "bomb" ? 0xe8d48a : sh.friendly ? (sh.kind === "charge" ? 0xffe08a : 0xb8fff0) : 0xff6a55,
+        sh.kind === "bomb" ? 0xe8d48a : sh.friendly ? (sh.kind === "charge" ? 0xc8ff70 : 0x7efff8) : 0xff4a38,
       );
     }
 
