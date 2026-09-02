@@ -3,7 +3,7 @@ import { ARENA_R } from "./sim";
 import { cloudTex, n64Mat } from "./n64";
 import { BIOMES, dressBiome, type BiomeId } from "./terrain";
 
-export function makeWorld(biome: BiomeId = "sky") {
+export function makeWorld(biome: BiomeId = "sky", missionId = biome) {
   const kit = BIOMES[biome] ?? BIOMES.sky;
   const root = new THREE.Group();
   root.name = "world";
@@ -19,7 +19,20 @@ export function makeWorld(biome: BiomeId = "sky") {
   water.receiveShadow = true;
   root.add(water);
 
-  dressBiome(root, kit);
+  if (missionId !== "ice" && missionId !== "sky") {
+    const stripW = kit.waterTex();
+    stripW.repeat.set(8, 40);
+    const strip = new THREE.Mesh(
+      new THREE.PlaneGeometry(260, 4200, 1, 1),
+      n64Mat(kit.water, { map: stripW }),
+    );
+    strip.rotation.x = -Math.PI / 2;
+    strip.position.set(0, 0.15, 2100);
+    strip.receiveShadow = true;
+    root.add(strip);
+  }
+
+  dressBiome(root, kit, missionId);
 
   return { root, waterMap, fog: kit.fog, sky: kit.sky };
 }

@@ -24,7 +24,8 @@ function pickupColor(kind: PickupKind) {
 function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
   const ship = useMemo(() => makeCWing(), []);
   const biome = sim.current.biome;
-  const world = useMemo(() => makeWorld(biome), [biome]);
+  const missionId = sim.current.missionId;
+  const world = useMemo(() => makeWorld(biome, missionId), [biome, missionId]);
   const sky = useMemo(() => makeSky(world.sky), [world.sky]);
   const molds = useMemo(() => {
     const kinds: EnemyKind[] = ["fighter", "cork", "bomber", "turret", "ace", "mech", "mothership"];
@@ -201,21 +202,22 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
         shadow-intensity={0.28}
       />
       <pointLight position={[0, 90, 0]} intensity={0.55} color="#fff0c0" />
-      <fog attach="fog" args={[world.fog, 160, 620]} />
+      <fog attach="fog" args={[world.fog, 140, 980]} />
     </group>
   );
 }
 
 export function SortieCanvas({ sim }: { sim: MutableRefObject<SortieState> }) {
   const biome = sim.current.biome;
+  const missionId = sim.current.missionId;
   return (
     <Canvas
-      key={biome}
+      key={`${biome}-${missionId}`}
       dpr={1}
       gl={{ antialias: false, powerPreference: "high-performance", toneMapping: THREE.NoToneMapping }}
-      camera={{ fov: 52, near: 0.4, far: 980, position: [0, 54, 140] }}
+      camera={{ fov: 52, near: 0.4, far: 1400, position: [0, 54, 140] }}
       onCreated={({ gl }) => {
-        const world = makeWorld(biome);
+        const world = makeWorld(biome, missionId);
         gl.toneMapping = THREE.NoToneMapping;
         gl.outputColorSpace = THREE.SRGBColorSpace;
         gl.setClearColor(world.fog, 1);

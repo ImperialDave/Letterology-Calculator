@@ -383,6 +383,7 @@ export interface SaveData {
   sortieCleared: string[];
   /** Missions that met the Proof hit count. */
   sortieProofs: string[];
+  sortieForks: string[];
 }
 
 export interface UiSnap {

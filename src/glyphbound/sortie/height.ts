@@ -1,4 +1,5 @@
 /** Shared ground height for collision and the visible mesh. No three.js. */
+import { landmarkHeight } from "./landmarks";
 import type { BiomeId } from "./terrain";
 
 const ARENA_R = 420;
@@ -65,10 +66,12 @@ function biomeHills(biome: BiomeId, x: number, z: number) {
   return 8 + n * 10;
 }
 
-export function groundHeight(biome: BiomeId, x: number, z: number) {
+export function groundHeight(biome: BiomeId, x: number, z: number, missionId?: string) {
+  let h = biomeHills(biome, x, z);
+  if (missionId) h = Math.max(h, landmarkHeight(missionId, x, z));
+  if (z > 180) return Math.max(0, h);
   const r = Math.hypot(x, z);
   if (r > ARENA_R + 8) return 0;
-  let h = biomeHills(biome, x, z);
   for (const i of PADS) {
     h = Math.max(h, mound(x, z, i.x, i.z, i.r, i.h));
   }

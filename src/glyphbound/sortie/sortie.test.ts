@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { groundHeight } from "./height";
+import { COAST_PATH, landmarksFor } from "./landmarks";
 import { unlockedIds } from "./missions";
+import { pathLength } from "./path";
 import { analogFromDelta } from "./stick";
 import { SortieKeys } from "./input";
 import { BARREL_T, CHARGE_LOCK, MAGNET, SOMERSAULT_T, createSortie, emptyInput, stepSortie } from "./sim";
@@ -349,6 +351,56 @@ test("Register unlocks ice when Coast is a Proof, else slug", () => {
   assert.equal(unlockedIds(["coast"], []).has("slug"), true);
   assert.equal(unlockedIds(["coast"], []).has("ice"), false);
   assert.equal(unlockedIds(["coast"], ["coast"]).has("ice"), true);
+  assert.equal(unlockedIds(["coast"], [], ["coast"]).has("ice"), true);
+});
+
+test("Coast strip is a long course", () => {
+  assert.ok(pathLength(COAST_PATH) > 3000, `len ${pathLength(COAST_PATH)}`);
+});
+
+test("seven n-arches pay and set the Coast fork", () => {
+  const s = createSortie({ corridor: true, path: COAST_PATH, missionId: "coast", biome: "coast" });
+  s.flight = "allrange";
+  s.speed = 0;
+  const arches = landmarksFor("coast").filter((L) => L.pay === "arch");
+  assert.equal(arches.length, 7);
+  for (const L of arches) {
+    s.uturn = 0;
+    s.x = L.x;
+    s.y = L.h * 0.5;
+    s.z = L.z;
+    stepSortie(s, emptyInput(), 1 / 60);
+  }
+  assert.equal(s.archHits, 7);
+  assert.equal(s.fork, true);
+});
+
+test("Scale advances through three phases before it can die as a set piece", () => {
+  const s = createSortie();
+  s.winKind = "mech";
+  s.enemies.push({
+    id: 3,
+    kind: "mech",
+    x: 0,
+    y: 20,
+    z: -20,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    hp: 24,
+    t: 0,
+    alive: true,
+  });
+  s.x = 0;
+  s.y = 20;
+  s.z = -10;
+  const hit = emptyInput();
+  hit.fire = true;
+  for (let i = 0; i < 80; i++) {
+    s.cooldown = 0;
+    stepSortie(s, hit, 1 / 60);
+  }
+  assert.ok(s.bossPhase >= 1, `phase ${s.bossPhase}`);
 });
 
 test("coast all-range spawns Scale the mech", () => {

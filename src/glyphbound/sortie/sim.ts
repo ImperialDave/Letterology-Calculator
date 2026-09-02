@@ -3,6 +3,7 @@
 import { scriptMissionWaves } from "./missions";
 import { ENVELOPE_X, ENVELOPE_Y, SHIFT_T, SKY_CORRIDOR, UTURN_T, pathLength, pathFrame, samplePath, type PathPoint } from "./path";
 import { groundHeight } from "./height";
+import { landmarksFor } from "./landmarks";
 import type { BiomeId } from "./terrain";
 
 export const ARENA_R = 420;
@@ -166,6 +167,13 @@ export interface SortieState {
   golds: number;
   pickups: Pickup[];
   proofLive: boolean;
+  fork: boolean;
+  archHits: number;
+  arenaT: number;
+  bossPhase: number;
+  bossAt: number;
+  split: boolean;
+  takenLandmarks: string[];
 }
 
 const CRUISE = 52;
@@ -249,7 +257,10 @@ function flyCraft(s: SortieState, input: SortieInput, dt: number) {
 
   if (s.shift > 0) {
     s.shift = Math.max(0, s.shift - dt);
-    if (s.shift <= 0) s.flight = "allrange";
+    if (s.shift <= 0) {
+      s.flight = "allrange";
+      if (!s.arenaT) s.arenaT = s.t;
+    }
   }
 
   if (s.uturn > 0) {
@@ -413,12 +424,19 @@ export function createSortie(opts?: {
       { id: 2, kind: "bomb", x: 50, y: 46, z: -30, taken: false },
     ],
     proofLive: false,
+    fork: false,
+    archHits: 0,
+    arenaT: 0,
+    bossPhase: 0,
+    bossAt: 0,
+    split: false,
+    takenLandmarks: [],
   };
 }
 
 function spawnEnemy(s: SortieState, kind: EnemyKind, x: number, y: number, z: number) {
   const hp =
-    kind === "dualis" ? 18 : kind === "mothership" ? 22 : kind === "mech" ? 16 : kind === "ace" ? 6 : kind === "bomber" ? 4 : kind === "cork" ? 3 : kind === "turret" ? 3 : 2;
+    kind === "dualis" ? 18 : kind === "mothership" ? 24 : kind === "mech" ? 24 : kind === "ace" ? 6 : kind === "bomber" ? 4 : kind === "cork" ? 3 : kind === "turret" ? 3 : 2;
   s.enemies.push({
     id: s.enemyId++,
     kind,
@@ -483,8 +501,14 @@ function killEnemy(s: SortieState, e: Enemy, splash = false) {
   e.alive = false;
   s.hits += 1;
   s.score += e.kind === "dualis" || e.kind === "mech" || e.kind === "mothership" ? 1000 : splash ? 80 : 120;
-  const acesGone = s.winKind === "aces" && s.wave >= 2 && !s.enemies.some((n) => n.alive && n.kind === "ace");
-  if ((s.winKind !== "aces" && e.kind === s.winKind) || acesGone) {
+  if (e.kind === "mech" && s.bossAt && s.t - s.bossAt < 25) {
+    s.hits += 10;
+    s.score += 400;
+  }
+  const acesGone = s.winKind === "aces" && !s.enemies.some((n) => n.alive && n.kind === "ace") && s.enemies.some((n) => n.kind === "ace");
+  const dualisGone = s.winKind === "dualis" && !s.enemies.some((n) => n.alive && n.kind === "dualis");
+  const otherWin = s.winKind !== "aces" && s.winKind !== "dualis" && e.kind === s.winKind;
+  if (otherWin || acesGone || dualisGone) {
     s.mode = "win";
     s.radio = { who: "s", text: "Press clear. C, that was a sentence.", until: s.t + 5 };
   }
@@ -503,15 +527,35 @@ function detonate(s: SortieState, x: number, y: number, z: number) {
 }
 
 function islandHeight(s: SortieState, x: number, z: number) {
-  return Math.max(WATER_Y, groundHeight(s.biome, x, z));
+  return Math.max(WATER_Y, groundHeight(s.biome, x, z, s.missionId));
 }
 
-function inArch(s: SortieState) {
-  const a = s.islands.find((i) => i.arch);
-  if (!a) return false;
-  const dx = s.x - a.x;
-  const dz = s.z - a.z;
-  return Math.abs(dx) < 14 && Math.abs(dz) < 8 && s.y > a.h * 0.25 && s.y < a.h + 10;
+function payLandmarks(s: SortieState) {
+  for (const L of landmarksFor(s.missionId)) {
+    if (!L.pay || s.takenLandmarks.includes(L.id)) continue;
+    const hole =
+      Math.abs(s.x - L.x) < (L.pay === "tanker" ? 18 : 14) &&
+      Math.abs(s.z - L.z) < (L.pay === "tanker" ? 12 : 9) &&
+      s.y > L.h * 0.2 &&
+      s.y < L.h + 12;
+    if (!hole) continue;
+    s.takenLandmarks.push(L.id);
+    s.hits += 1;
+    s.score += L.pay === "arch" ? 80 : 120;
+    if (L.pay === "arch") {
+      s.archHits += 1;
+      if (s.archHits >= 7) {
+        s.fork = true;
+        s.radio = { who: "s", text: "Seven n. That’s a sentence. Ice is open.", until: s.t + 3 };
+      }
+    }
+    if (L.pay === "ring") s.golds = Math.min(3, s.golds + 1);
+    if (L.pay === "tanker") {
+      s.bombs = Math.min(9, s.bombs + 1);
+      s.radio = { who: "e", text: "Through the hold. Em-dash aboard.", until: s.t + 2.2 };
+    }
+    if (L.pay === "gate") s.hull = Math.min(HULL_MAX + s.golds, s.hull + 1);
+  }
 }
 
 function listable(kind: EnemyKind) {
@@ -758,11 +802,7 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
     }
   }
 
-  if (inArch(s) && !s.archBonus) {
-    s.archBonus = true;
-    s.score += 400;
-    s.radio = { who: "c", text: "Through the n. That’s press-work.", until: s.t + 2.5 };
-  }
+  payLandmarks(s);
 
   for (const r of s.rings) {
     if (r.taken) continue;
@@ -913,6 +953,23 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
             e.hp -= sh.kind === "charge" ? 6 : s.stem >= 2 ? 2 : 1;
             sh.life = 0;
             s.score += sh.kind === "charge" ? 80 : 20;
+            if (e.kind === "mech") {
+              if (!s.bossAt) s.bossAt = s.t;
+              if (e.hp <= 16 && s.bossPhase < 1) {
+                s.bossPhase = 1;
+                s.radio = { who: "s", text: "Knees gone. Frill next.", until: s.t + 2.4 };
+              }
+              if (e.hp <= 8 && s.bossPhase < 2) {
+                s.bossPhase = 2;
+                s.radio = { who: "s", text: "Frill off. Core!", until: s.t + 2.4 };
+              }
+            }
+            if (e.kind === "dualis" && e.hp <= 9 && e.hp > 0 && !s.split) {
+              s.split = true;
+              spawnEnemy(s, "dualis", e.x + 28, e.y, e.z);
+              spawnEnemy(s, "dualis", e.x - 28, e.y, e.z);
+              s.radio = { who: "s", text: "It splits. Two ones.", until: s.t + 2.8 };
+            }
             if (e.hp <= 0) killEnemy(s, e, sh.kind === "charge");
           }
         }

@@ -3,17 +3,19 @@ import { MISSIONS, unlockedIds, type MissionDef } from "./missions";
 export function RegisterMap({
   cleared,
   proofs,
+  forks = [],
   onPick,
   onLeave,
   leaveLabel,
 }: {
   cleared: string[];
   proofs: string[];
+  forks?: string[];
   onPick: (m: MissionDef) => void;
   onLeave: () => void;
   leaveLabel: string;
 }) {
-  const open = unlockedIds(cleared, proofs);
+  const open = unlockedIds(cleared, proofs, forks);
   return (
     <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-[#121018] text-[#f4f0e4]">
       <p className="text-[11px] uppercase tracking-[0.4em] text-[#e8d48a]">Drop Cap Sortie</p>

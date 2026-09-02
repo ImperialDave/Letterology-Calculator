@@ -43,6 +43,7 @@ export function GlyphboundSortie({
   const [best, setBest] = useState(0);
   const [cleared, setCleared] = useState<string[]>([]);
   const [proofs, setProofs] = useState<string[]>([]);
+  const [forks, setForks] = useState<string[]>([]);
   const lastMode = useRef(sim.current.mode);
   const lastHard = useRef(false);
   const lastIncoming = useRef(0);
@@ -69,6 +70,7 @@ export function GlyphboundSortie({
     setBest(data.sortieBest ?? 0);
     setCleared(data.sortieCleared ?? []);
     setProofs(data.sortieProofs ?? []);
+    setForks(data.sortieForks ?? []);
     const off = keys.current.attach();
     window.__controlsTest = {
       getYaw: () => sim.current.yaw,
@@ -118,10 +120,13 @@ export function GlyphboundSortie({
             sim.current.hits >= def.medal && !data.sortieProofs.includes(id)
               ? [...data.sortieProofs, id]
               : data.sortieProofs;
-          writeSave({ ...data, sortieBest: score, sortieCleared: written, sortieProofs: proved });
+          const forked =
+            sim.current.fork && !data.sortieForks.includes(id) ? [...data.sortieForks, id] : data.sortieForks;
+          writeSave({ ...data, sortieBest: score, sortieCleared: written, sortieProofs: proved, sortieForks: forked });
           setBest(score);
           setCleared(written);
           setProofs(proved);
+          setForks(forked);
         }
         if (sim.current.mode === "dead") sortieSfx.dead();
         lastMode.current = sim.current.mode;
@@ -144,6 +149,7 @@ export function GlyphboundSortie({
         <RegisterMap
           cleared={cleared}
           proofs={proofs}
+          forks={forks}
           onPick={bootMission}
           onLeave={leave}
           leaveLabel={leaveLabel}

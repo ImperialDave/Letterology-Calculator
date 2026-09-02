@@ -1,5 +1,7 @@
+import { BEATS, progressOf } from "./beats";
+import { COAST_PATH, GUTTER_PATH, PRESS_PATH, SLUG_PATH } from "./landmarks";
 import type { PathPoint } from "./path";
-import type { EnemyKind, SortieState } from "./sim";
+import type { EnemyKind, PickupKind, SortieState } from "./sim";
 import type { BiomeId } from "./terrain";
 
 export interface MissionDef {
@@ -15,45 +17,16 @@ export interface MissionDef {
   next: string[];
 }
 
-const COAST_PATH: PathPoint[] = [
-  { x: 0, y: 40, z: 420 },
-  { x: 0, y: 42, z: 300 },
-  { x: -40, y: 44, z: 210 },
-  { x: 10, y: 46, z: 120 },
-  { x: 0, y: 48, z: 20 },
-];
-
-const SLUG_PATH: PathPoint[] = [
-  { x: 0, y: 50, z: 400 },
-  { x: 40, y: 70, z: 260 },
-  { x: -30, y: 55, z: 140 },
-  { x: 20, y: 48, z: 20 },
-];
-
-const GUTTER_PATH: PathPoint[] = [
-  { x: 0, y: 36, z: 400 },
-  { x: 30, y: 32, z: 260 },
-  { x: -20, y: 38, z: 140 },
-  { x: 0, y: 44, z: 10 },
-];
-
-const PRESS_PATH: PathPoint[] = [
-  { x: 0, y: 50, z: 400 },
-  { x: 0, y: 46, z: 240 },
-  { x: 0, y: 58, z: 80 },
-  { x: 0, y: 62, z: -40 },
-];
-
 export const MISSIONS: MissionDef[] = [
   {
     id: "coast",
     roman: "I",
     name: "Exchange Coast",
-    blurb: "Canyon, streets, seven arches. Scale waits on the plaza.",
+    blurb: "Sea, canyon, type-city, seven n-arches. Scale on the plaza.",
     biome: "coast",
     corridor: true,
     path: COAST_PATH,
-    medal: 12,
+    medal: 80,
     win: "mech",
     next: ["slug", "ice"],
   },
@@ -61,11 +34,11 @@ export const MISSIONS: MissionDef[] = [
     id: "slug",
     roman: "II",
     name: "Slug Field",
-    blurb: "Type-slug rocks. Thread the gold rings. Lizards in the gaps.",
+    blurb: "Brake the slugs. Thread seven gold rings. Bomber in the bowl.",
     biome: "slug",
     corridor: true,
     path: SLUG_PATH,
-    medal: 14,
+    medal: 60,
     win: "bomber",
     next: ["gutter"],
   },
@@ -73,11 +46,11 @@ export const MISSIONS: MissionDef[] = [
     id: "gutter",
     roman: "III",
     name: "Gutter Refinery",
-    blurb: "Ink ocean and stacks. Cut the mothership belly.",
+    blurb: "Stay in the ink. Through the tanker. Belly, then core.",
     biome: "gutter",
     corridor: true,
     path: GUTTER_PATH,
-    medal: 14,
+    medal: 70,
     win: "mothership",
     next: ["press"],
   },
@@ -85,11 +58,11 @@ export const MISSIONS: MissionDef[] = [
     id: "ice",
     roman: "IV",
     name: "Em-Quad Ice",
-    blurb: "Hold the field. The Serifs come in threes.",
+    blurb: "Hold the pad. The Serifs come in threes.",
     biome: "ice",
     corridor: false,
     path: [],
-    medal: 14,
+    medal: 50,
     win: "aces",
     next: ["gutter"],
   },
@@ -97,11 +70,11 @@ export const MISSIONS: MissionDef[] = [
     id: "press",
     roman: "V",
     name: "The Press",
-    blurb: "Crater. Dualis. The count ends here.",
+    blurb: "Crater road. Dualis splits when the bar breaks.",
     biome: "press",
     corridor: true,
     path: PRESS_PATH,
-    medal: 16,
+    medal: 90,
     win: "dualis",
     next: [],
   },
@@ -111,12 +84,12 @@ export function missionById(id: string) {
   return MISSIONS.find((m) => m.id === id) ?? MISSIONS[0];
 }
 
-export function unlockedIds(cleared: string[], proofs: string[]) {
+export function unlockedIds(cleared: string[], proofs: string[], forks: string[] = []) {
   const open = new Set<string>(["coast"]);
   for (const id of cleared) {
     const m = missionById(id);
     if (id === "coast") {
-      open.add(proofs.includes("coast") ? "ice" : "slug");
+      open.add(proofs.includes("coast") || forks.includes("coast") ? "ice" : "slug");
     } else {
       for (const n of m.next) open.add(n);
     }
@@ -125,104 +98,40 @@ export function unlockedIds(cleared: string[], proofs: string[]) {
 }
 
 export function scriptMissionWaves(s: SortieState) {
-  const id = s.missionId;
-  if (id === "sky") return false;
-  if (id === "coast") {
-    if (s.flight === "corridor") {
-      if (s.wave < 1 && s.pathT > 0.04) {
-        spawn(s, "fighter", s.x, s.y + 2, s.z - 36);
-        spawn(s, "fighter", s.x - 16, s.y + 4, s.z - 48);
-        spawn(s, "fighter", s.x + 16, s.y + 4, s.z - 48);
-        s.wave = 1;
-        s.radio = { who: "s", text: "Hold J. Squares go rust, then release.", until: s.t + 3.2 };
+  const sheet = BEATS[s.missionId];
+  if (!sheet) return false;
+  for (const b of sheet) {
+    if (s.wave >= b.id) continue;
+    const p = progressOf(s, b.when);
+    if (p < b.t) continue;
+    s.wave = b.id;
+    if (b.kind === "radio" || b.kind === "check") {
+      s.radio = { who: b.who ?? "s", text: b.text ?? "", until: s.t + 3 };
+      if (b.kind === "check") s.hull = Math.min(6 + s.golds, s.hull + 1);
+    }
+    if (b.kind === "spawn" && b.ships) {
+      for (const sh of b.ships) {
+        spawn(s, sh.kind, s.x + sh.dx, s.y + sh.dy, s.z + sh.dz, sh.hp);
+        if (sh.kind === "mech" && !s.bossAt) s.bossAt = s.t;
       }
-      if (s.wave < 2 && s.pathT > 0.28) {
-        spawn(s, "turret", s.x + 30, 8, s.z - 40);
-        spawn(s, "turret", s.x - 30, 8, s.z - 55);
-        s.wave = 2;
-        s.radio = { who: "b", text: "Turrets on the stacks. Don’t sit.", until: s.t + 2.4 };
-      }
-      if (s.wave < 3 && s.pathT > 0.48) {
-        spawn(s, "cork", s.x + 40, s.y + 10, s.z - 40);
-        spawn(s, "cork", s.x - 40, s.y + 12, s.z - 60);
-        s.pickups.push({ id: s.enemyId++, kind: "bomb", x: s.x, y: s.y + 4, z: s.z - 30, taken: false });
-        s.wave = 3;
-        s.radio = { who: "c", text: "Em-dash in the arch. Take it.", until: s.t + 2.4 };
-      }
-      if (s.wave < 4 && s.pathT > 0.7) {
-        spawn(s, "bomber", s.x, s.y + 24, s.z - 50);
-        spawn(s, "fighter", s.x - 25, s.y, s.z - 35);
-        spawn(s, "fighter", s.x + 25, s.y, s.z - 35);
-        s.wave = 4;
-      }
-      return true;
     }
-    if (s.flight === "allrange" && s.wave < 10) {
-      spawn(s, "fighter", -50, 48, -40);
-      spawn(s, "fighter", 50, 48, -40);
-      spawn(s, "mech", 0, 20, -160);
-      s.wave = 10;
-      s.radio = { who: "s", text: "Scale on the plaza. Knees, then frill.", until: s.t + 3.5 };
+    if (b.kind === "pickup" && b.loot) {
+      s.pickups.push({
+        id: s.enemyId++,
+        kind: b.loot.kind as PickupKind,
+        x: s.x + b.loot.dx,
+        y: s.y + b.loot.dy,
+        z: s.z + b.loot.dz,
+        taken: false,
+      });
     }
-    return true;
   }
-  if (id === "slug") {
-    if (s.wave < 1 && s.t > 2) {
-      spawn(s, "fighter", -30, 60, -20);
-      spawn(s, "cork", 40, 70, -80);
-      s.wave = 1;
-    }
-    if (s.flight === "allrange" && s.wave < 2) {
-      spawn(s, "fighter", -80, 50, -60);
-      spawn(s, "fighter", 80, 50, -60);
-      spawn(s, "bomber", 0, 90, -140);
-      s.wave = 2;
-    }
-    return true;
-  }
-  if (id === "gutter") {
-    if (s.flight === "allrange" && s.wave < 2) {
-      spawn(s, "mothership", 0, 40, -120);
-      spawn(s, "fighter", -70, 50, -40);
-      spawn(s, "fighter", 70, 50, -40);
-      s.wave = 2;
-      s.radio = { who: "e", text: "Mothership over the ink. Belly first.", until: s.t + 3.5 };
-    }
-    return true;
-  }
-  if (id === "ice") {
-    if (s.wave < 1 && s.t > 1.2) {
-      spawn(s, "fighter", -60, 40, -40);
-      spawn(s, "fighter", 60, 40, -40);
-      spawn(s, "fighter", 0, 45, -90);
-      s.wave = 1;
-      s.radio = { who: "b", text: "Hold the field. Green is ours.", until: s.t + 3 };
-    }
-    if (s.wave < 2 && s.t > 22) {
-      spawn(s, "ace", -40, 55, -160);
-      spawn(s, "ace", 40, 55, -160);
-      spawn(s, "ace", 0, 62, -200);
-      s.wave = 2;
-      s.radio = { who: "s", text: "The Serifs. Three aces.", until: s.t + 3.5 };
-    }
-    return true;
-  }
-  if (id === "press") {
-    if (s.flight === "allrange" && s.wave < 2) {
-      spawn(s, "fighter", -50, 60, -80);
-      spawn(s, "bomber", 50, 80, -80);
-      spawn(s, "dualis", 0, 70, -180);
-      s.wave = 2;
-      s.radio = { who: "s", text: "Dualis over the Press. Hit the bar.", until: s.t + 4 };
-    }
-    return true;
-  }
-  return false;
+  return true;
 }
 
-function spawn(s: SortieState, kind: EnemyKind, x: number, y: number, z: number) {
-  const hp =
-    kind === "dualis" ? 18 : kind === "mothership" ? 22 : kind === "mech" ? 16 : kind === "ace" ? 6 : kind === "bomber" ? 4 : 2;
+function spawn(s: SortieState, kind: EnemyKind, x: number, y: number, z: number, hp?: number) {
+  const auto =
+    kind === "dualis" ? 18 : kind === "mothership" ? 24 : kind === "mech" ? 24 : kind === "ace" ? 6 : kind === "bomber" ? 4 : kind === "cork" ? 3 : kind === "turret" ? 3 : 2;
   s.enemies.push({
     id: s.enemyId++,
     kind,
@@ -232,7 +141,7 @@ function spawn(s: SortieState, kind: EnemyKind, x: number, y: number, z: number)
     vx: 0,
     vy: 0,
     vz: 0,
-    hp,
+    hp: hp ?? auto,
     t: 0,
     alive: true,
   });
