@@ -15,8 +15,7 @@ import {
   buildScriptorium,
 } from "./levels-numberomicons";
 import { assembleStage } from "./assemble";
-import { clearFightPorches, ensureHazards, ensureMovers } from "./density";
-import { houseAfter } from "./site";
+import { finishLedger } from "./density";
 
 export type { LevelId, LevelMeta };
 export type { ThemeId } from "./types";
@@ -303,12 +302,7 @@ for (let n = 16; n <= STAGE_COUNT; n++) {
 
 for (const id of Object.keys(LEVELS)) {
   if (id === "hub") continue;
-  houseAfter(LEVELS[id].rows);
-  const n = LEVELS[id].index || 1;
-  if (n >= 16) ensureHazards(LEVELS[id].rows, n);
-  ensureMovers(LEVELS[id].rows, n);
-  houseAfter(LEVELS[id].rows);
-  clearFightPorches(LEVELS[id].rows);
+  finishLedger(LEVELS[id].rows, LEVELS[id].index || 1);
 }
 
 export function getLevel(id: string): LevelMeta {

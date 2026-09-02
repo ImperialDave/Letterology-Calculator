@@ -80,3 +80,20 @@ test("campaign audit covers hub plus every stage", () => {
   assert.equal(reports[0].id, "hub");
   assert.equal(reports[STAGE_COUNT].id, `stage${STAGE_COUNT}`);
 });
+
+test("auditor flags dirt lidding a spike", () => {
+  const g = room();
+  g.put(10, 8, "#");
+  g.put(10, 9, "^");
+  const codes = auditLevel([...g]).map((i) => i.code);
+  assert.ok(codes.includes("reveal-lid"), codes.join(","));
+});
+
+test("Remainder 16-29 has no dirt-lidded teeth", () => {
+  const buried: string[] = [];
+  for (const r of auditCampaign("16-29")) {
+    const lids = r.issues.filter((i) => i.code === "reveal-lid" && i.severity === "fail");
+    if (lids.length) buried.push(`${r.id} x${lids.length}`);
+  }
+  assert.equal(buried.join("; "), "");
+});

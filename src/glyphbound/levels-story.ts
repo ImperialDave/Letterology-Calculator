@@ -260,16 +260,20 @@ export function sealBasement<T extends string[]>(rows: T, fy: number): T {
   for (let x = 1; x < W - 1; x++) {
     const yf = localFloorY(rows, x) || fy;
     const floor = rows[yf]?.[x] ?? "#";
-    const pit = floor === "." || floor === "^";
-    for (let y = yf + (pit ? 0 : 1); y < H - 1; y++) {
-      const here = rows[y]?.[x] ?? "#";
-      if (here !== "." && here !== "#") continue;
-      if (!pit) {
-        if (here === ".") set(x, y, "#");
-        continue;
+    const pit = floor === "." || floor === "^" || floor === "~";
+    if (!pit) {
+      for (let y = yf + 1; y < H - 1; y++) {
+        const here = rows[y]?.[x] ?? "#";
+        if (here === "." || here === "^") set(x, y, "#");
       }
-      if (y === yf && (here === "." || here === "#")) set(x, y, "^");
-      else if (here === ".") set(x, y, "#");
+      continue;
+    }
+    if (floor === "." && yf + 1 < H - 1) {
+      const mid = rows[yf + 1][x];
+      if (mid === "." || mid === "#") set(x, yf + 1, "^");
+    }
+    for (let y = yf + 2; y < H - 1; y++) {
+      if (rows[y]?.[x] === ".") set(x, y, "#");
     }
   }
   hoistFromBasement(rows, fy);

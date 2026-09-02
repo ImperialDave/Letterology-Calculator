@@ -3,7 +3,7 @@ import { FROZEN_REMAINDER } from "./remainder-hand";
 import { remainderName, remainderObjective } from "./remainder-names";
 import { isBoss, recipeFor, rng, themeFor, type Recipe } from "./recipe";
 import { FY, paintPattern, pickPattern } from "./patterns";
-import { clearFightPorches, dressTerrain, ensureCounts, fillDensity } from "./density";
+import { dressTerrain, ensureCounts, fillDensity, finishLedger } from "./density";
 import { validateLevel } from "./validate-level";
 import type { LevelId, TaskDef, ThemeId } from "./types";
 import { STAGE_COUNT } from "./types";
@@ -238,7 +238,7 @@ export function assembleStage(n: number): LevelMeta {
   sealBasement(rows, FY);
   repairPath(rows);
   ensureCounts(rows, n);
-  clearFightPorches(rows);
+  finishLedger(rows, n);
   const boss = isBoss(n);
   const tasks: TaskDef[] = [{ id: `clear-${n}`, text: boss ? "Defeat the warden" : "Reach the gate" }];
   if (n === 6) tasks.push({ id: "word-wall", text: "Pick up WALL" });

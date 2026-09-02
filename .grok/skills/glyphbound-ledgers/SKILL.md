@@ -109,6 +109,19 @@ Site is the **row**. Housing is the **container, mount, or recess** the motion n
 
 Tell before commit: laser visible off-phase from its emitter; blink has a wait-spot on `#`; geyser is inset in `#`; saw rides a rail at `yf-2`; spikes retract into `#`.
 
+## Reveal — dirt is never a lid
+
+Site is the **row**. Housing is the **mount**. Reveal is the **hole**. `#` is ground you stand on. It is never a rug over a trap. Packed-slab `^` under walk `#` is invisible — it does not count as a hazard the player can read. Either open the well (`.` at the walk, `^` in the pit, `#` only as the socket **below** the teeth) or delete the teeth. `houseAfter` / `armTeeth` / `sealBasement` in `src/glyphbound/site.ts` and `levels-story.ts` enforce this. Never overwrite `@ % P`.
+
+| Allowed `#` | Forbidden `#` |
+|---|---|
+| Floor beside a pit (the lip) | Floor *in* the pit column at walk height |
+| Socket **under** `^` | `^` packed at `yf+1` under walk `#` |
+| Beam / emitter / jamb / anvil for hang toys | `#` covering `j w ~ g T` at the walk |
+| Fight-porch floor | `#` filling the only opening of a trap |
+
+A 1–3 tile buried run becomes an open well. A long packed slab loses the teeth — do not unzip a 40-tile dirt street into one mega-pit. Auditor code `reveal-lid`.
+
 ## Basement
 
 Rows below the main floor are **ground or lethal wells**, never a hallway. `grid()` packs `fy+1 … H-2` with `#`. `armTeeth` then:

@@ -132,6 +132,10 @@ function housingIssues(rows: string[], hub: boolean): AuditIssue[] {
       if (hub && HUB_SKIP.includes(ch)) continue;
       switch (ch) {
         case "^": {
+          const lid = at(rows, x, y - 1);
+          if (lid === "#" || lid === "*") {
+            issues.push(issue("reveal-lid", "dirt lids a spike — open the well or remove the teeth", x, y));
+          }
           if (at(rows, x, y + 1) === "^") break;
           if (!solid(at(rows, x, y + 1))) {
             issues.push(issue("housing-socket", "spike has no # socket — teeth retract into air", x, y));
@@ -153,6 +157,10 @@ function housingIssues(rows: string[], hub: boolean): AuditIssue[] {
         }
         case "~":
         case "w": {
+          const lid = at(rows, x, y - 1);
+          if (lid === "#" || lid === "*") {
+            issues.push(issue("reveal-lid", "dirt lids a basin", x, y));
+          }
           if (at(rows, x - 1, y) === ch) break;
           const x1 = runEnd(rows, x, y, ch);
           let floor = true;
@@ -271,12 +279,20 @@ function housingIssues(rows: string[], hub: boolean): AuditIssue[] {
           break;
         }
         case "g": {
+          const lid = at(rows, x, y - 1);
+          if (lid === "#" || lid === "*") {
+            issues.push(issue("reveal-lid", "dirt lids a geyser", x, y));
+          }
           if (!solid(at(rows, x - 1, y)) && !solid(at(rows, x + 1, y))) {
             issues.push(issue("housing-vent", "geyser is not inset in #", x, y));
           }
           break;
         }
         case "j": {
+          const lid = at(rows, x, y - 1);
+          if (lid === "#" || lid === "*") {
+            issues.push(issue("reveal-lid", "dirt lids a grate", x, y));
+          }
           if (at(rows, x - 1, y) === "j") break;
           const x1 = runEnd(rows, x, y, "j");
           if (x1 - x + 1 >= 8) {

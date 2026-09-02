@@ -177,8 +177,10 @@ export function clearFightPorches(rows: string[]): string[] {
         if (xx < 1 || xx >= W - 1) continue;
         const yf = localFloorY(rows, xx);
         const floor = at(rows, xx, yf);
-        if (PORCH_FLOOR.includes(floor)) setCell(rows, xx, yf, "#");
-        if (d === 0 && floor === "^") setCell(rows, xx, yf, "#");
+        if (PORCH_FLOOR.includes(floor) || floor === "^") {
+          setCell(rows, xx, yf, "#");
+          if (at(rows, xx, yf + 1) === "^") setCell(rows, xx, yf + 1, "#");
+        }
         const walk = at(rows, xx, yf - 1);
         if (PORCH_HANG.includes(walk) && !FIGHT.includes(walk) && !RESERVED.includes(walk)) {
           setCell(rows, xx, yf - 1, ".");
@@ -333,6 +335,10 @@ export function fillDensity(
       setCell(rows, x, fy + 1, tooth);
       setCell(rows, x + 1, fy + 1, tooth);
     }
+    if (fy + 2 < H - 1) {
+      setCell(rows, x, fy + 2, "#");
+      setCell(rows, x + 1, fy + 2, "#");
+    }
     if (ink && at(rows, x, fy - 1) === ".") setCell(rows, x, fy - 1, "T");
     return true;
   };
@@ -363,8 +369,7 @@ export function fillDensity(
     if (skip.has(x) || skip.has(x + 1)) return false;
     if (at(rows, x, fy) !== "#" || at(rows, x + 1, fy) !== "#") return false;
     if (RESERVED.includes(at(rows, x, fy - 1)) || RESERVED.includes(at(rows, x + 1, fy - 1))) return false;
-    setCell(rows, x, fy, "^");
-    setCell(rows, x + 1, fy, "^");
+    if (!hopTeeth(rows, fy, x)) return false;
     skip.add(x);
     skip.add(x + 1);
     return true;
@@ -805,22 +810,56 @@ export function ensureCounts(rows: string[], n: number) {
   ensureMovers(rows, n);
 }
 
-function hazardKit(n: number): string[] {
-  if (n < 15) return ["^", "|"];
-  if (n < 31) return ["^", "|"];
-  return ["^", "|", "S"];
+/** Housing, Reveal, legal hazard refill, porches. Campaign and assemble share this. */
+export function finishLedger(rows: string[], n: number) {
+  houseAfter(rows);
+  if (n >= 16) ensureHazards(rows, n);
+  ensureMovers(rows, n);
+  houseAfter(rows);
+  clearFightPorches(rows);
+  if (n >= 16) ensureHazards(rows, n);
+  return rows;
 }
 
-/** Plant legal hazards after Housing strips illegal teeth and bounce. */
+/** Plant legal open wells and loft lasers. Never flood saws. */
 export function ensureHazards(rows: string[], n: number) {
   if (n < 16) return;
   const W = rows[0]?.length ?? 0;
   const need = densityFloors(n, W).hazards;
-  const kit = hazardKit(n);
+  const kit = ["^", "|"];
   let i = 0;
   for (let x = 4; x < W - 4 && tally(rows).hazards < need; x += 1) {
-    plantAt(rows, x, kit[i % kit.length]);
-    i += 1;
+    if (plantAt(rows, x, kit[i % kit.length])) i += 1;
+  }
+  for (let x = 8; x < W - 8 && tally(rows).hazards < need; x += 2) {
+    hopTeeth(rows, localFloorY(rows, x), x);
+  }
+  for (let x = 6; x < W - 8 && tally(rows).hazards < need; x += 2) {
+    let near = false;
+    for (let d = -3; d <= 3; d++) {
+      for (let y = 0; y < rows.length; y++) {
+        if (FIGHT.includes(at(rows, x + d, y))) near = true;
+      }
+    }
+    if (near) continue;
+    const yf = localFloorY(rows, x);
+    if (yf + 2 >= rows.length - 1) continue;
+    if (RESERVED.includes(at(rows, x, yf - 1)) || RESERVED.includes(at(rows, x + 1, yf - 1))) continue;
+    if (at(rows, x, yf) !== "#" || at(rows, x + 1, yf) !== "#") continue;
+    setCell(rows, x, yf, ".");
+    setCell(rows, x + 1, yf, ".");
+    setCell(rows, x, yf + 1, "^");
+    setCell(rows, x + 1, yf + 1, "^");
+    setCell(rows, x, yf + 2, "#");
+    setCell(rows, x + 1, yf + 2, "#");
+  }
+  for (let y = 3; y <= 6 && tally(rows).hazards < need; y++) {
+    for (let x = 5; x < W - 5 && tally(rows).hazards < need; x += 1) {
+      if (at(rows, x, y) !== "." || at(rows, x, y + 1) !== ".") continue;
+      setCell(rows, x, y, "|");
+      setCell(rows, x, y + 1, "|");
+      if (at(rows, x, y - 1) === ".") setCell(rows, x, y - 1, "#");
+    }
   }
 }
 

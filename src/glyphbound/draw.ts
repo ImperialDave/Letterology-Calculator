@@ -143,6 +143,8 @@ export function drawTiles(
         drawCrumble(ctx, x, y, t, theme, tx);
       } else if (ch === "~") {
         drawSluice(ctx, x, y, t, theme, tx, tileChar(rows, tx - 1, ty), tileChar(rows, tx + 1, ty));
+      } else if (ch === "." && tileChar(rows, tx, ty + 1) === "^") {
+        drawWell(ctx, x, y);
       } else if (ch === "." && !fxLite) {
         const left = tileChar(rows, tx - 1, ty);
         const right = tileChar(rows, tx + 1, ty);
@@ -663,12 +665,17 @@ function drawBlock(
   t: number,
   top: boolean,
 ) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, TILE, TILE);
+  ctx.clip();
   if (blitArt(ctx, "tiles", `solid-${theme}`, x, y, TILE, TILE)) {
     if (top) {
       ctx.fillStyle = "rgba(232,212,138,0.28)";
       ctx.fillRect(x, y, TILE, 4);
     }
     if (brk) paintBreak(ctx, x, y, tx, t);
+    ctx.restore();
     return;
   }
   const stamp = (tx * 13 + ty * 7) % 6;
@@ -676,6 +683,16 @@ function drawBlock(
   const sheet = cachedTile(key, (g) => paintBlock(g, 0, 0, tx, ty, theme, stamp, top));
   ctx.drawImage(sheet, x, y);
   if (brk) paintBreak(ctx, x, y, tx, t);
+  ctx.restore();
+}
+
+function drawWell(ctx: CanvasRenderingContext2D, x: number, y: number) {
+  ctx.fillStyle = "#0c0a08";
+  ctx.fillRect(x, y, TILE, TILE);
+  ctx.fillStyle = "rgba(12, 8, 6, 0.92)";
+  ctx.fillRect(x + 3, y + 6, TILE - 6, TILE - 8);
+  ctx.strokeStyle = "rgba(48, 36, 28, 0.7)";
+  ctx.strokeRect(x + 1.5, y + 1.5, TILE - 3, TILE - 3);
 }
 
 function paintBreak(ctx: CanvasRenderingContext2D, x: number, y: number, tx: number, t: number) {

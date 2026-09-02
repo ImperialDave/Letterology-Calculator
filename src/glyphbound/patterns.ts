@@ -74,6 +74,22 @@ export const PATTERNS: Pattern[] = [
     },
   },
   {
+    id: "mix-open-well",
+    beats: ["mix", "teach"],
+    verbs: ["T", "|"],
+    paint(g, ctx) {
+      g.fill(6, FY, 2, ".");
+      g.put(6, FY + 1, "^");
+      g.put(7, FY + 1, "^");
+      g.put(6, FY + 2, "#");
+      g.put(7, FY + 2, "#");
+      g.put(10, FY - 4, "#");
+      g.put(10, FY - 3, "|");
+      g.put(10, FY - 2, "|");
+      plantDeco(g, ctx, 13);
+    },
+  },
+  {
     id: "teach-crumble",
     beats: ["teach", "mix"],
     verbs: ["-"],
@@ -98,7 +114,8 @@ export const PATTERNS: Pattern[] = [
     verbs: ["|"],
     paint(g, ctx) {
       plantDeco(g, ctx, 6);
-      g.put(8, FY - 2, "|");
+      g.put(8, FY - 5, "#");
+      g.put(8, FY - 4, "|");
       g.put(8, FY - 3, "|");
       g.fill(11, FY - 4, 4, "=");
     },
@@ -162,6 +179,7 @@ export const PATTERNS: Pattern[] = [
     beats: ["teach", "mix"],
     verbs: ["l"],
     paint(g, ctx) {
+      g.put(8, FY - 3, "=");
       g.put(8, FY - 2, "l");
       plantDeco(g, ctx, 5);
       g.fill(12, FY - 3, 4, "=");
@@ -172,6 +190,7 @@ export const PATTERNS: Pattern[] = [
     beats: ["teach", "mix"],
     verbs: ["z"],
     paint(g, ctx) {
+      g.put(8, FY - 3, "=");
       g.put(8, FY - 2, "z");
       g.put(7, FY - 2, "#");
       g.put(9, FY - 2, "#");
@@ -183,6 +202,7 @@ export const PATTERNS: Pattern[] = [
     beats: ["teach", "mix"],
     verbs: ["x"],
     paint(g, ctx) {
+      g.put(7, FY - 2, "#");
       g.put(8, FY - 2, "x");
       g.fill(12, FY - 3, 4, "=");
       plantDeco(g, ctx, 5);
@@ -203,7 +223,9 @@ export const PATTERNS: Pattern[] = [
     beats: ["teach", "mix"],
     verbs: ["j"],
     paint(g, ctx) {
-      g.fill(6, FY, 4, "j");
+      g.put(5, FY, "#");
+      g.fill(6, FY, 2, "j");
+      g.put(8, FY, "#");
       plantDeco(g, ctx, 12);
     },
   },

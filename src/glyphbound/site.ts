@@ -371,7 +371,7 @@ function pitifyNub(rows: string[], x: number, y: number) {
     return;
   }
   if (y + 2 >= rows.length - 1 || reservedNear(rows, x, 1)) {
-    overwrite(rows, x, y, "#");
+    overwrite(rows, x, y, ".");
     return;
   }
   const below = at(rows, x, y + 1);
@@ -483,7 +483,50 @@ export function houseAfter(rows: string[]): string[] {
     }
   }
   liftWalkLasers(rows);
+  revealLids(rows);
   return rows;
+}
+
+const FLOOR_TRAP = "^jw~gT";
+
+/** Open short dirt lids over floor traps. Long packed slabs lose the teeth. */
+function revealLids(rows: string[]) {
+  const H = rows.length;
+  const W = rows[0]?.length ?? 0;
+  for (let y = 1; y < H - 1; y++) {
+    let x = 1;
+    while (x < W - 1) {
+      const ch = at(rows, x, y);
+      const up = at(rows, x, y - 1);
+      if (!FLOOR_TRAP.includes(ch) || (up !== "#" && up !== "*")) {
+        x += 1;
+        continue;
+      }
+      let x1 = x;
+      while (
+        x1 + 1 < W - 1 &&
+        FLOOR_TRAP.includes(at(rows, x1 + 1, y)) &&
+        (at(rows, x1 + 1, y - 1) === "#" || at(rows, x1 + 1, y - 1) === "*")
+      ) {
+        x1 += 1;
+      }
+      const wide = x1 - x + 1;
+      const porch = reservedNear(rows, x, 1) || reservedNear(rows, x1, 1);
+      for (let xx = x; xx <= x1; xx++) {
+        const trap = at(rows, xx, y);
+        if (trap === "^") {
+          if (porch || wide > 3) overwrite(rows, xx, y, "#");
+          else {
+            overwrite(rows, xx, y - 1, ".");
+            mount(rows, xx, y + 1, "#");
+          }
+        } else {
+          overwrite(rows, xx, y - 1, ".");
+        }
+      }
+      x = x1 + 1;
+    }
+  }
 }
 
 /** Match validate-level: | must not occupy fy or fy-1. */

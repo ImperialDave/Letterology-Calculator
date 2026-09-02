@@ -135,6 +135,18 @@ test("houseAfter puts an emitter above a loft laser", () => {
   assert.equal(at(g, 12, 4), "#");
 });
 
+test("houseAfter opens a dirt lid over short buried teeth", () => {
+  const g = room();
+  g.put(10, 8, "#");
+  g.put(11, 8, "#");
+  g.put(10, 9, "^");
+  g.put(11, 9, "^");
+  houseAfter(g);
+  assert.equal(at(g, 10, 8), ".");
+  assert.equal(at(g, 10, 9), "^");
+  assert.equal(at(g, 2, 7), "@");
+});
+
 test("bounce only in a gap, carriage only over a gap", () => {
   const g = room();
   assert.equal(plantAt(g, 10, "T"), false);
