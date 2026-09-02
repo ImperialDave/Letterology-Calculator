@@ -168,7 +168,13 @@ export interface Pickup {
     | "fang"
     | "scale"
     | "portal"
-    | "secret";
+    | "secret"
+    | "quoin"
+    | "ligature"
+    | "caret"
+    | "emdash"
+    | "tilde"
+    | "wake";
   id: string;
   x: number;
   y: number;
@@ -384,6 +390,8 @@ export interface SaveData {
   /** Missions that met the Proof hit count. */
   sortieProofs: string[];
   sortieForks: string[];
+  /** Best Endurance clear count. Campaign progress is never this. */
+  arcadeBest: number;
 }
 
 export interface UiSnap {
@@ -437,6 +445,9 @@ export interface UiSnap {
   sortieOpen: boolean;
   slot: number;
   slots: SlotInfo[];
+  runMode: "campaign" | "shuffle" | "arcade";
+  arcadeCleared: number;
+  arcadeBest: number;
 }
 
 export interface SlotInfo {

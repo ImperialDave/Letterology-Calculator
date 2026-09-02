@@ -50,6 +50,7 @@ export const defaultSave = (): SaveData => ({
   sortieCleared: [],
   sortieProofs: [],
   sortieForks: [],
+  arcadeBest: 0,
 });
 
 export function isEmptySave(data: SaveData) {
@@ -167,6 +168,7 @@ function parseSave(raw: string | null): SaveData {
       sortieCleared: Array.isArray(parsed.sortieCleared) ? parsed.sortieCleared : [],
       sortieProofs: Array.isArray(parsed.sortieProofs) ? parsed.sortieProofs : [],
       sortieForks: Array.isArray(parsed.sortieForks) ? parsed.sortieForks : [],
+      arcadeBest: Math.max(0, parsed.arcadeBest ?? 0),
       maxShield: Math.max(3, parsed.maxShield ?? 3),
       talked: parsed.talked ?? [],
       visited: parsed.visited ?? [],

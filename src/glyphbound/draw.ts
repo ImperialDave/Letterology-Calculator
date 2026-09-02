@@ -3402,6 +3402,64 @@ export function drawPickup(
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText("$", 0, 1);
+  } else if (kind === "quoin") {
+    ctx.fillStyle = "#e8ece8";
+    ctx.shadowColor = "#e8ece8";
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.moveTo(0, -8);
+    ctx.lineTo(7, 0);
+    ctx.lineTo(0, 8);
+    ctx.lineTo(-7, 0);
+    ctx.closePath();
+    ctx.fill();
+  } else if (kind === "ligature") {
+    ctx.strokeStyle = "#e8d48a";
+    ctx.shadowColor = "#e8d48a";
+    ctx.shadowBlur = 8;
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(-8, 4);
+    ctx.quadraticCurveTo(0, -10, 8, 4);
+    ctx.stroke();
+  } else if (kind === "caret") {
+    ctx.fillStyle = "#9af8de";
+    ctx.shadowColor = "#9af8de";
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.moveTo(0, -9);
+    ctx.lineTo(7, 5);
+    ctx.lineTo(-7, 5);
+    ctx.closePath();
+    ctx.fill();
+  } else if (kind === "emdash") {
+    ctx.fillStyle = "#e8d48a";
+    ctx.shadowColor = "#e8d48a";
+    ctx.shadowBlur = 8;
+    ctx.fillRect(-10, -2, 20, 4);
+  } else if (kind === "tilde") {
+    ctx.strokeStyle = "#8ec8d4";
+    ctx.shadowColor = "#8ec8d4";
+    ctx.shadowBlur = 8;
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(-8, 2);
+    ctx.quadraticCurveTo(-3, -6, 0, 0);
+    ctx.quadraticCurveTo(4, 6, 8, -1);
+    ctx.stroke();
+  } else if (kind === "wake") {
+    ctx.strokeStyle = "#e8d48a";
+    ctx.shadowColor = "#e8d48a";
+    ctx.shadowBlur = 10;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, 8, 0.2, Math.PI * 2 - 0.2);
+    ctx.stroke();
+    ctx.fillStyle = "#e8d48a";
+    ctx.font = "700 9px 'Cormorant Garamond', serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("+", 0, 1);
   } else if (kind === "relic") {
     ctx.fillStyle = "#e8d48a";
     ctx.shadowColor = "#e8d48a";
@@ -3469,6 +3527,8 @@ export function drawHudCanvas(
   comboHits = 0,
   lives = -1,
   heat = 0,
+  buffs: { id: string; t: number }[] = [],
+  freeFangs = 0,
 ) {
   ctx.fillStyle = "rgba(7,8,12,0.55)";
   roundRect(ctx, 132, 14, 210, p.smashKind ? 56 : 52, 10);
@@ -3498,6 +3558,25 @@ export function drawHudCanvas(
     ctx.fillStyle = "#e8d48a";
     ctx.font = "700 11px 'Source Sans 3', sans-serif";
     ctx.fillText(`×${lives}`, 328, 30);
+  }
+  const pips = [
+    ...buffs.filter((b) => b.t > 0).map((b) => b.id),
+    ...(freeFangs > 0 ? ["emdash"] : []),
+  ];
+  if (pips.length) {
+    const tint: Record<string, string> = {
+      quoin: "#e8ece8",
+      ligature: "#e8d48a",
+      caret: "#9af8de",
+      tilde: "#8ec8d4",
+      emdash: "#e8d48a",
+    };
+    pips.forEach((id, i) => {
+      ctx.fillStyle = tint[id] ?? "#5ee0c0";
+      ctx.beginPath();
+      ctx.arc(148 + i * 12, 62, 4, 0, Math.PI * 2);
+      ctx.fill();
+    });
   }
   ctx.fillStyle = p.flourish > 0 || p.smashKind || p.melee > 0 ? "#e8c878" : "#8ec8d4";
   ctx.font = "600 9px 'Source Sans 3', sans-serif";

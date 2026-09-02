@@ -192,7 +192,7 @@ export const LORE: Record<LoreId, LoreDef> = {
       "I used to mark footnotes. Now I mark exits. When a stage feels finished, look for a glowing gate. It will not open while the warden is still standing.",
       "The deeper ledgers invent new wardens. Dualis splits. G imports. Nullis erases. After them come symbols that were never meant to be numbers.",
       "End-Mark is the last of the second landing. It begins whole. When you crack it, the pieces chase you separately. Finish both arcs.",
-      "Five closed chapters. Ten Numberomicons. Then the Unbound Sentence through sixty. Clear them and the final gate will open.",
+      "Five closed chapters. Ten Numberomicons. Then the Unbound Sentence through the Remainder, then one hundred more. Clear them and the final gate will open.",
     ],
   },
   h: {
@@ -283,7 +283,7 @@ export const LORE: Record<LoreId, LoreDef> = {
     lines: [
       "Ink is the only currency that still belongs to us. Pick up every drop. Later stages place regenerating ink behind lasers or behind a Summoner you have to clear first.",
       "Triad-Splitters break into three small 1s when they die. Kill the pieces or they will try to reform.",
-      "The progressive book has sixty ledgers. The Numberomicons sit in the middle. Willingness, not fate, is what turns the page.",
+      "The book has one hundred sixty ledgers. The Numberomicons sit in the middle. The Second Century is a wing you can walk. Willingness, not fate, is what turns the page.",
     ],
   },
   c: {

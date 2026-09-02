@@ -18,6 +18,24 @@ import {
 } from "./draw";
 import { AudioBus } from "./audio";
 import { Input } from "./input";
+import {
+  ARCADE_WAKES,
+  ARCADE_WAKES_MAX,
+  BUFF_TIME,
+  CENTURY_START,
+  ENDURANCE_NEED,
+  SHUFFLE_NEED,
+  decadeLocked,
+  decadePlaque,
+  decadeTarget,
+  parseDecadeId,
+  pickEnduranceStage,
+  pickFromPool,
+  rollDrop,
+  shufflePool,
+  type BuffId,
+  type RunMode,
+} from "./arcade";
 import { lastClearedId, LEVELS, nextStageId, STAGE_COUNT, type LevelId } from "./levels";
 import { parseRows } from "./parse-map";
 import { CATALOG } from "./catalog";
@@ -270,6 +288,13 @@ export class GameEngine {
   proof = false;
   replayMenu = false;
   hangarOpen = false;
+  runMode: RunMode = "campaign";
+  arcadeCleared = 0;
+  arcadeLast = 0;
+  private arcadeSnap: SaveData | null = null;
+  buffs: { id: BuffId; t: number }[] = [];
+  freeFangs = 0;
+  private caretAir = true;
   debugGod = false;
   debugKit = true;
   debugWrite = false;
@@ -721,11 +746,13 @@ export class GameEngine {
     this.lastDone = new Set(this.currentTasks().filter((t) => t.done).map((t) => t.id));
     if (id === "hub")
       this.say(
-        this.save.progress >= 15
-          ? "The icon fell. Through the last arch: the Unbound Sentence, then Studio."
-          : this.save.progress >= 5
-            ? "Five chapters closed. Through the arch: the Numberomicons. k, n, and t walked into the count."
-            : "Five doors ahead, left to right. Through the arch: the Numberomicons, then the rest of the book.",
+        this.save.progress >= 60
+          ? "The Remainder closed. Past Shuffle and Endurance: the Second Century, decade doors through 160."
+          : this.save.progress >= 15
+            ? "The icon fell. Through the last arch: the Unbound Sentence, Shuffle, Endurance, then Studio."
+            : this.save.progress >= 5
+              ? "Five chapters closed. Through the arch: the Numberomicons. k, n, and t walked into the count."
+              : "Five doors ahead, left to right. Through the arch: the Numberomicons, then the rest of the book.",
       );
     this.persist();
     this.emit();
@@ -956,6 +983,7 @@ export class GameEngine {
 
   private markProgress() {
     if (this.sandbox) return;
+    if (this.runMode === "arcade") return;
     const n = this.stageIndex();
     if (n < 1) return;
     this.save.progress = Math.max(this.save.progress, n);
@@ -1087,6 +1115,7 @@ export class GameEngine {
 
   toTitle() {
     if (this.sandbox) this.leaveStudio();
+    if (this.runMode === "arcade") this.restoreArcadeCampaign();
     this.hangarOpen = false;
     this.input.enabled = true;
     this.persist();
@@ -1096,6 +1125,10 @@ export class GameEngine {
   }
 
   newGame(slot?: number) {
+    this.runMode = "campaign";
+    this.arcadeSnap = null;
+    this.buffs = [];
+    this.freeFangs = 0;
     this.audio.unlock();
     this.audio.sfxUi();
     if (slot != null) {
@@ -1165,6 +1198,19 @@ export class GameEngine {
   private persist() {
     if (this.sandbox) return;
     if (this.proof && !this.debugWrite) return;
+    if (this.runMode === "arcade" && this.arcadeSnap) {
+      const campaign = this.arcadeSnap;
+      campaign.arcadeBest = Math.max(campaign.arcadeBest ?? 0, this.save.arcadeBest ?? 0, this.arcadeCleared);
+      campaign.muted = this.audio.muted;
+      campaign.sfxVol = this.save.sfxVol;
+      campaign.musicVol = this.save.musicVol;
+      campaign.shake = this.save.shake;
+      campaign.shakeAmt = this.save.shakeAmt;
+      campaign.reducedMotion = this.save.reducedMotion;
+      campaign.keys = this.save.keys;
+      writeSave(campaign, this.slot);
+      return;
+    }
     const p = this.player;
     this.save.hp = p.hp;
     this.save.ink = p.ink;
@@ -1220,7 +1266,10 @@ export class GameEngine {
       return;
     }
     if (this.mode === "dead") {
-      if (this.lives === 0) return;
+      if (this.lives === 0) {
+        if (this.runMode === "arcade" && (a.jump || a.attack || a.interact)) this.endArcade();
+        return;
+      }
       if (a.jump || a.attack) this.respawn();
       return;
     }
@@ -1325,7 +1374,7 @@ export class GameEngine {
     const p = this.player;
     const large = isLarge(p.letter, p.capital);
     const kit = KITS[p.letter] ?? KITS.c;
-    const spd = kit.spd + (p.capital ? -12 : 0);
+    const spd = (kit.spd + (p.capital ? -12 : 0)) * (this.hasBuff("ligature") ? 1.38 : 1);
     const hanging = p.ledgeHang !== "";
     const dashing = p.melee > 0 && p.meleeMove === "dash";
     if (p.art > 0) a = { ...a, moveX: 0, jump: false, fang: false, fangHeld: false };
@@ -1351,7 +1400,7 @@ export class GameEngine {
       if ((a.moveX === 0 || smashHold) && Math.abs(p.vx) < 6) p.vx = 0;
     }
     const gUp = 1300;
-    const gDown = 2400;
+    const gDown = this.hasBuff("tilde") ? 960 : 2400;
     const aetherDash = p.roll > 0 && p.letter === "c";
     const risingUp =
       p.melee > 0 &&
@@ -1410,14 +1459,23 @@ export class GameEngine {
     }
     if (!aetherDash && !hanging) {
     if (p.jumpBuf > 0 && (p.coyote > 0 || p.upHop > 0) && allowJump) {
-      p.vy = Math.min(p.vy, -kit.jump);
+      p.vy = Math.min(p.vy, -(kit.jump * (this.hasBuff("caret") ? 1.18 : 1)));
       p.grounded = false;
       p.coyote = 0;
       p.upHop = 0;
       p.jumpBuf = 0;
       p.jumpCut = false;
       p.squash = 0.74;
+      this.caretAir = true;
       this.audio.sfxJump();
+    } else if (p.jumpBuf > 0 && this.hasBuff("caret") && this.caretAir && !p.grounded && allowJump) {
+      p.vy = -(kit.jump * 0.86);
+      this.caretAir = false;
+      p.jumpBuf = 0;
+      p.jumpCut = false;
+      p.squash = 0.8;
+      this.audio.sfxJump();
+      this.burst(p.x + p.w / 2, p.y + p.h, "#e8d48a", 6, "glyph");
     } else if (p.jumpBuf > 0 && p.letter === "s" && p.airHop > 0 && !p.grounded && allowJump) {
       p.vy = -(kit.jump * (p.capital ? 0.92 : 0.8));
       p.airHop = 0;
@@ -1506,6 +1564,9 @@ export class GameEngine {
     p.specialCd = Math.max(0, p.specialCd - dt);
     p.shotCd = Math.max(0, p.shotCd - dt);
     p.dashCd = Math.max(0, p.dashCd - dt);
+    this.tickBuffs(dt);
+    if (this.hasBuff("quoin")) p.invuln = Math.max(p.invuln, 0.12);
+    if (p.grounded) this.caretAir = true;
     p.shieldFlash = Math.max(0, p.shieldFlash - dt);
     if (p.shield < p.maxShield) {
       p.shieldCd -= dt;
@@ -2833,13 +2894,15 @@ export class GameEngine {
     const p = this.player;
     const kit = KITS[p.letter] ?? KITS.c;
     const cost = shotCostFor(p.letter);
-    if (p.ink < cost) {
+    const free = this.freeFangs > 0;
+    if (!free && p.ink < cost) {
       if (this.inkWarn > this.time) return;
       this.inkWarn = this.time + 0.9;
       this.say("Ink spent — strike instead.");
       return;
     }
-    p.ink = Math.max(0, p.ink - cost);
+    if (free) this.freeFangs -= 1;
+    else p.ink = Math.max(0, p.ink - cost);
     const cd = kit.shotCd - Math.min(3, p.shotLevel - 1) * 0.03;
     p.shotCd = Math.max(0.22, cd);
     p.squash = 0.92;
@@ -2872,8 +2935,8 @@ export class GameEngine {
       } else if (s.type === "laser") {
         if (!this.laserHot(s)) continue;
       } else if (s.type === "sluice") {
-        if (p.letter === "e") {
-          p.vy = Math.min(p.vy, p.capital ? 40 : 90);
+        if (p.letter === "e" || this.hasBuff("tilde")) {
+          p.vy = Math.min(p.vy, p.capital || this.hasBuff("tilde") ? 40 : 90);
           p.grounded = true;
           continue;
         }
@@ -3056,7 +3119,46 @@ export class GameEngine {
         this.say("End-Mark falls. The last gate opens.");
         this.objective = "Enter the FINAL gate.";
       }
+      if (!e.alive) this.spawnKillDrop(e);
     }
+  }
+
+  private hasBuff(id: BuffId) {
+    return this.buffs.some((b) => b.id === id && b.t > 0);
+  }
+
+  private grantBuff(id: BuffId) {
+    const t = BUFF_TIME[id];
+    const cur = this.buffs.find((b) => b.id === id);
+    if (cur) cur.t = Math.max(cur.t, t);
+    else this.buffs.push({ id, t });
+  }
+
+  private tickBuffs(dt: number) {
+    if (!this.buffs.length) return;
+    this.buffs = this.buffs.filter((b) => {
+      b.t -= dt;
+      return b.t > 0;
+    });
+  }
+
+  private spawnKillDrop(e: Enemy) {
+    const roll = rollDrop({
+      kind: e.kind,
+      boss: this.isBossKind(e.kind),
+      arcade: this.runMode === "arcade",
+    });
+    if (!roll) return;
+    this.pickups.push({
+      kind: roll.kind,
+      id: `drop-${roll.kind}-${Math.round(e.x)}-${Math.round(e.y)}`,
+      x: e.x + e.w / 2 - 10,
+      y: e.y + e.h * 0.35,
+      w: 20,
+      h: 20,
+      taken: false,
+      label: roll.ink ? String(roll.ink) : roll.kind,
+    });
   }
 
   private hurt(n: number, dir: number, kind: "contact" | "hazard" | "shot" = "contact") {
@@ -4125,6 +4227,10 @@ export class GameEngine {
     if (id === "replay") return this.save.progress < 1;
     if (id === "studio") return false;
     if (id === "sortie") return false;
+    if (id === "shuffle") return this.save.progress < SHUFFLE_NEED;
+    if (id === "endurance") return this.save.progress < ENDURANCE_NEED;
+    const decade = parseDecadeId(id);
+    if (decade != null) return decadeLocked(this.save.progress, decade);
     const m = /^stage(\d+)$/.exec(id);
     if (m) return this.save.progress < Number(m[1]) - 1;
     return false;
@@ -4136,7 +4242,14 @@ export class GameEngine {
     if (id === "stage2") return "The Fort is still counted shut.";
     if (id === "stage5") return "The Ledger is still counted shut.";
     if (id === "continue")
-      return "The rest of the book opens after you close the five chapters. Numberomicons first. Then this is the only door that keeps offering new ledgers through 60.";
+      return "The rest of the book opens after you close the five chapters. Numberomicons first. Then this door keeps offering new ledgers through 160.";
+    if (id === "shuffle") return "Shuffle opens after the Iconostasis. A random written ledger, including the next unread page.";
+    if (id === "endurance") return "Endurance opens after End-Mark. Nonstop ledgers. Three wakes.";
+    const decadeShut = parseDecadeId(id);
+    if (decadeShut != null) {
+      if (this.save.progress < CENTURY_START - 1) return "The Second Century opens after The Remainder.";
+      return `${decadePlaque(decadeShut)} is still counted shut.`;
+    }
     if (id === "stage7") return "Keystroke Yard opens after the Foundry.";
     if (id === "stage8") return "Fourfold Keep opens after k joins.";
     if (id === "stage10") return "Ampersand Dock is still counted shut.";
@@ -4162,6 +4275,29 @@ export class GameEngine {
     }
     if (id === "studio") return { title: "STUDIO", sub: "write a ledger · the book does not turn" };
     if (id === "sortie") return { title: "HANGAR", sub: "StarWords · fly the C-wing" };
+    if (id === "shuffle") {
+      if (this.save.progress < SHUFFLE_NEED) return { title: "SHUFFLE", sub: "locked · close the Iconostasis" };
+      const century = this.save.progress >= CENTURY_START - 1;
+      return {
+        title: "SHUFFLE",
+        sub: century ? "E a written page · Down+E the second century" : "E a random written ledger",
+      };
+    }
+    if (id === "endurance") {
+      if (this.save.progress < ENDURANCE_NEED) return { title: "ENDURANCE", sub: "locked · close End-Mark first" };
+      const best = this.save.arcadeBest ?? 0;
+      return { title: "ENDURANCE", sub: `three wakes · nonstop · best ${best}` };
+    }
+    const decade = parseDecadeId(id);
+    if (decade != null) {
+      const locked = decadeLocked(this.save.progress, decade);
+      const hi = Math.min(STAGE_COUNT, decade + 9);
+      const next = decadeTarget(this.save.progress, decade, hi);
+      return {
+        title: decadePlaque(decade).toUpperCase(),
+        sub: locked ? "locked · write the prior decade" : `enter ${next} / ${STAGE_COUNT}`,
+      };
+    }
     const chapters: Record<string, { title: string; sub: string }> = {
       stage1: { title: "I  EXCHANGE", sub: "one ledger · never changes" },
       stage2: { title: "II  FORT", sub: "one ledger · never changes" },
@@ -4242,6 +4378,20 @@ export class GameEngine {
     }
     this.audio.sfxTransform();
     this.markProgress();
+    if (this.runMode === "arcade") {
+      this.arcadeCleared += 1;
+      this.save.arcadeBest = Math.max(this.save.arcadeBest ?? 0, this.arcadeCleared);
+      const p = this.player;
+      p.ink = Math.min(p.maxInk, p.ink + 10);
+      p.hp = Math.min(p.maxHp, p.hp + 1);
+      this.say("Next ledger.");
+      const next = pickEnduranceStage(this.arcadeCleared, this.arcadeLast);
+      this.arcadeLast = next;
+      this.persist();
+      this.loadLevel(`stage${next}` as LevelId);
+      return;
+    }
+    if (this.runMode === "shuffle") this.runMode = "campaign";
     if (u.id === "win" || this.stageIndex() === STAGE_COUNT || LEVELS[this.stage]?.exit === "win") {
       this.mode = "win";
       this.persist();
@@ -4269,8 +4419,18 @@ export class GameEngine {
       else if (u.id === "continue") {
         this.nearHint =
           this.save.progress >= STAGE_COUNT
-            ? "All 60 written. Last Page rereads any closed ledger."
-            : "E  The Rest of the Book — the only door that keeps opening new ledgers until 60";
+            ? `All ${STAGE_COUNT} written. Last Page rereads any closed ledger.`
+            : `E  The Rest of the Book — next ${Math.min(STAGE_COUNT, this.save.progress + 1)} / ${STAGE_COUNT}`;
+      } else if (u.id === "shuffle") {
+        this.nearHint =
+          this.save.progress >= CENTURY_START - 1
+            ? "E  Shuffle a written ledger · Down+E the Second Century"
+            : "E  Shuffle — a random written ledger";
+      } else if (u.id === "endurance") {
+        this.nearHint = `E  Endurance — nonstop ledgers · ${ARCADE_WAKES} wakes · best ${this.save.arcadeBest ?? 0}`;
+      } else if (parseDecadeId(u.id) != null) {
+        const lo = parseDecadeId(u.id)!;
+        this.nearHint = `E  ${decadePlaque(lo)}`;
       } else if (u.id === "replay") {
         this.nearHint =
           this.save.progress < 1
@@ -4305,7 +4465,8 @@ export class GameEngine {
       if (!aabb(p, grab)) continue;
       if (u.kind === "ink") {
         u.taken = true;
-        p.ink = Math.min(p.maxInk, p.ink + 8);
+        const extra = Number(u.label);
+        p.ink = Math.min(p.maxInk, p.ink + (Number.isFinite(extra) && extra > 0 ? extra : 8));
         this.audio.sfxPickup();
         this.say("Ink.");
       } else if (u.kind === "heart") {
@@ -4315,22 +4476,63 @@ export class GameEngine {
         this.say("Curve mends.");
       } else if (u.kind === "fang") {
         u.taken = true;
-        if (!this.save.powerups.includes(u.id)) this.save.powerups.push(u.id);
+        if (this.runMode !== "arcade" && !this.save.powerups.includes(u.id)) this.save.powerups.push(u.id);
         p.shotLevel = Math.min(4, p.shotLevel + 1);
-        this.save.shotLevel = p.shotLevel;
+        if (this.runMode !== "arcade") this.save.shotLevel = p.shotLevel;
         this.audio.sfxWord();
         this.say("Fang " + ["I", "II", "III", "IV"][p.shotLevel - 1]);
-        this.persist();
+        if (this.runMode !== "arcade") this.persist();
       } else if (u.kind === "scale") {
         u.taken = true;
-        if (!this.save.powerups.includes(u.id)) this.save.powerups.push(u.id);
-        this.save.maxShield = Math.min(5, this.save.maxShield + 1);
-        if (!this.save.relics.includes("copper")) this.save.relics.push("copper");
-        this.syncVitals();
-        p.shield = p.maxShield;
+        if (this.runMode !== "arcade" && !this.save.powerups.includes(u.id)) this.save.powerups.push(u.id);
+        if (this.runMode === "arcade") {
+          p.maxShield = Math.min(p.maxShield + 1, 6);
+          p.shield = p.maxShield;
+        } else {
+          this.save.maxShield = Math.min(5, this.save.maxShield + 1);
+          if (!this.save.relics.includes("copper")) this.save.relics.push("copper");
+          this.syncVitals();
+          p.shield = p.maxShield;
+        }
         this.audio.sfxWord();
         this.say("Scale plate thickens.");
-        this.persist();
+        if (this.runMode !== "arcade") this.persist();
+      } else if (u.kind === "quoin") {
+        u.taken = true;
+        this.grantBuff("quoin");
+        this.audio.sfxPickup();
+        this.say("Quoin. The count cannot mark you.");
+      } else if (u.kind === "ligature") {
+        u.taken = true;
+        this.grantBuff("ligature");
+        this.audio.sfxPickup();
+        this.say("Ligature. The stride lengthens.");
+      } else if (u.kind === "caret") {
+        u.taken = true;
+        this.grantBuff("caret");
+        this.caretAir = true;
+        this.audio.sfxPickup();
+        this.say("Caret. Another hop.");
+      } else if (u.kind === "emdash") {
+        u.taken = true;
+        this.freeFangs += 3;
+        this.audio.sfxPickup();
+        this.say("Em-dash. Three fangs free.");
+      } else if (u.kind === "tilde") {
+        u.taken = true;
+        this.grantBuff("tilde");
+        this.audio.sfxPickup();
+        this.say("Tilde. The fall slows.");
+      } else if (u.kind === "wake") {
+        u.taken = true;
+        if (this.runMode === "arcade") {
+          this.lives = Math.min(ARCADE_WAKES_MAX, this.lives + 1);
+          this.say("A spare wake.");
+        } else {
+          p.hp = Math.min(p.maxHp, p.hp + 1);
+          this.say("Curve mends.");
+        }
+        this.audio.sfxWord();
       } else if (u.kind === "secret") {
         u.taken = true;
         if (!this.save.powerups.includes(u.id)) this.save.powerups.push(u.id);
@@ -4468,8 +4670,18 @@ export class GameEngine {
       }
       if (u.id === "continue") {
         if (this.save.progress >= STAGE_COUNT) {
-          this.say("All sixty ledgers are written. Last Page rereads any closed ledger.");
+          this.say(`All ${STAGE_COUNT} ledgers are written. Last Page rereads any closed ledger.`);
         } else this.loadLevel(nextStageId(this.save.progress));
+      } else if (u.id === "shuffle") {
+        const century = this.input.poll().down && this.save.progress >= CENTURY_START - 1;
+        this.enterShuffle(century);
+      } else if (u.id === "endurance") {
+        this.enterEndurance();
+      } else if (parseDecadeId(u.id) != null) {
+        const lo = parseDecadeId(u.id)!;
+        const hi = Math.min(STAGE_COUNT, lo + 9);
+        const n = decadeTarget(this.save.progress, lo, hi);
+        this.loadLevel(`stage${n}` as LevelId);
       } else if (u.id === "replay") {
         this.openReplay();
       } else if (u.id === "studio") {
@@ -4738,8 +4950,9 @@ export class GameEngine {
   respawn() {
     this.player.hp = this.player.maxHp;
     this.player.shield = this.player.maxShield;
-    this.player.x = this.checkX;
-    this.player.y = this.checkY;
+    const atSpawn = this.runMode === "arcade";
+    this.player.x = atSpawn ? this.spawnX : this.checkX;
+    this.player.y = atSpawn ? this.spawnY : this.checkY;
     this.player.vx = 0;
     this.player.vy = 0;
     this.player.invuln = 1;
@@ -4848,6 +5061,10 @@ export class GameEngine {
 
   retryLedger() {
     if (this.mode !== "dead") return;
+    if (this.runMode === "arcade") {
+      this.endArcade();
+      return;
+    }
     this.save.checkX = 0;
     this.save.checkY = 0;
     const stock = this.livesStock();
@@ -4858,10 +5075,12 @@ export class GameEngine {
 
   private livesStock() {
     if (this.sandbox) return -1;
+    if (this.runMode === "arcade") return ARCADE_WAKES;
     return livesFor(this.save.difficulty ?? "easy");
   }
 
   private syncLives(id: string, atCheck: boolean) {
+    if (this.runMode === "arcade") return;
     const stock = this.livesStock();
     if (stock < 0) {
       this.lives = -1;
@@ -4878,6 +5097,16 @@ export class GameEngine {
 
   private fileDeath() {
     this.mode = "dead";
+    if (this.runMode === "arcade") {
+      this.lives = Math.max(0, this.lives - 1);
+      if (this.lives <= 0) {
+        this.save.arcadeBest = Math.max(this.save.arcadeBest ?? 0, this.arcadeCleared);
+        this.persist();
+      }
+      this.audio.sfxDeath();
+      this.emit();
+      return;
+    }
     if (this.livesStock() >= 0) {
       this.lives = Math.max(0, this.lives - 1);
       this.save.lives = this.lives;
@@ -4900,6 +5129,79 @@ export class GameEngine {
   }
 
   returnHub() {
+    if (this.runMode === "arcade") {
+      this.endArcade();
+      return;
+    }
+    this.runMode = "campaign";
+    this.loadLevel("hub");
+  }
+
+  enterShuffle(centuryOnly = false) {
+    if (this.runMode === "arcade") return;
+    if (this.doorLocked("shuffle")) {
+      this.say(this.doorShutLine("shuffle"));
+      return;
+    }
+    const pool = shufflePool(this.save.progress, centuryOnly);
+    if (!pool.length) {
+      this.say("No pages in that shelf yet.");
+      return;
+    }
+    const n = pickFromPool(pool, this.stageIndex());
+    this.runMode = "shuffle";
+    this.audio.sfxTransform();
+    this.loadLevel(`stage${n}` as LevelId);
+    this.say(centuryOnly ? "A second-century page, at random." : "A written page, at random.");
+  }
+
+  enterEndurance() {
+    if (this.runMode === "arcade") return;
+    if (this.doorLocked("endurance")) {
+      this.say(this.doorShutLine("endurance"));
+      return;
+    }
+    if (this.mode === "title") this.audio.unlock();
+    this.arcadeSnap = structuredClone(this.save);
+    this.runMode = "arcade";
+    this.arcadeCleared = 0;
+    this.arcadeLast = 0;
+    this.lives = ARCADE_WAKES;
+    this.save.lives = ARCADE_WAKES;
+    this.buffs = [];
+    this.freeFangs = 0;
+    this.caretAir = true;
+    const n = pickEnduranceStage(0, 0);
+    this.arcadeLast = n;
+    this.audio.sfxTransform();
+    this.loadLevel(`stage${n}` as LevelId);
+    this.say(`Endurance. ${ARCADE_WAKES} wakes. The book does not turn.`);
+  }
+
+  private restoreArcadeCampaign() {
+    const best = Math.max(this.save.arcadeBest ?? 0, this.arcadeCleared);
+    const snap = this.arcadeSnap;
+    this.runMode = "campaign";
+    this.buffs = [];
+    this.freeFangs = 0;
+    this.arcadeCleared = 0;
+    this.arcadeLast = 0;
+    if (snap) {
+      snap.arcadeBest = Math.max(snap.arcadeBest ?? 0, best);
+      this.save = snap;
+      this.arcadeSnap = null;
+      this.player = this.makePlayer();
+    } else {
+      this.save.arcadeBest = best;
+    }
+    this.lives = this.livesStock();
+    this.save.lives = this.lives;
+  }
+
+  endArcade() {
+    const cleared = this.arcadeCleared;
+    this.restoreArcadeCampaign();
+    this.say(cleared ? `End-Mark. ${cleared} ledgers. Best ${this.save.arcadeBest}.` : "Endurance filed. Back on the stacks.");
     this.loadLevel("hub");
   }
 
@@ -4942,14 +5244,14 @@ export class GameEngine {
 
   replayEnter(id: string) {
     const n = this.stageIndex(id);
-    if (n < 1 || n > this.save.progress || !LEVELS[id]) {
+    if (n < 1 || n > this.save.progress + 1 || !LEVELS[id]) {
       this.say("That page is still unwritten.");
       return;
     }
     this.replayMenu = false;
     this.audio.sfxTransform();
     this.loadLevel(id as LevelId);
-    this.say("A closed page. The book does not turn.");
+    this.say(n > this.save.progress ? "The next unread page." : "A closed page. The book does not turn.");
   }
 
   pauseGame() {
@@ -5116,6 +5418,12 @@ export class GameEngine {
         return s.visited.includes("stage15");
       case "continue":
         return s.progress >= 6;
+      case "shuffle":
+        return s.visited.some((id) => id.startsWith("stage")) && s.progress >= SHUFFLE_NEED;
+      case "endurance":
+        return (s.arcadeBest ?? 0) > 0;
+      case "century":
+        return s.progress >= CENTURY_START;
       case "word-wall":
         return s.words.includes("WALL");
       case "word-burn":
@@ -5173,6 +5481,9 @@ export class GameEngine {
   }
 
   private activeObjective(): string {
+    if (this.runMode === "arcade" && !this.nearHint) {
+      return `Endurance · wakes ${this.lives} · cleared ${this.arcadeCleared} · best ${this.save.arcadeBest ?? 0}`;
+    }
     if (this.nearHint) return this.nearHint;
     const tasks = this.currentTasks();
     const open = tasks.find((t) => !t.done);
@@ -5338,6 +5649,9 @@ export class GameEngine {
       sortieOpen: this.hangarOpen,
       slot: this.slot,
       slots: listSlots(),
+      runMode: this.runMode,
+      arcadeCleared: this.arcadeCleared,
+      arcadeBest: this.save.arcadeBest ?? 0,
     });
   }
 
@@ -5524,7 +5838,17 @@ export class GameEngine {
           ctx.fillRect(0, 0, VIEW_W, h);
           ctx.fillRect(0, VIEW_H - h, VIEW_W, h);
         }
-        drawHudCanvas(ctx, this.player, this.nearHint, this.toast, this.comboHits, this.lives, this.player.heat);
+        drawHudCanvas(
+          ctx,
+          this.player,
+          this.nearHint,
+          this.toast,
+          this.comboHits,
+          this.lives,
+          this.player.heat,
+          this.buffs,
+          this.freeFangs,
+        );
       }
       if (this.mode === "transform") {
         ctx.fillStyle = `rgba(94,224,192,${0.15 + this.transformT * 0.1})`;
@@ -5638,7 +5962,14 @@ export class GameEngine {
     ctx.fillText("THE UNBOUND SENTENCE", wx(70), wy(1) + 22);
     ctx.fillStyle = "#b08a4a";
     ctx.font = "600 10px 'Source Sans 3', sans-serif";
-    ctx.fillText("hangar  ·  next ledger  ·  last page  ·  studio", wx(70), wy(1) + 38);
+    ctx.fillText("hangar  ·  next ledger  ·  shuffle  ·  endurance  ·  studio", wx(70), wy(1) + 38);
+
+    ctx.fillStyle = "#e8d48a";
+    ctx.font = "700 16px 'Cormorant Garamond', serif";
+    ctx.fillText("THE SECOND CENTURY", wx(94), wy(1) + 22);
+    ctx.fillStyle = "#b08a4a";
+    ctx.font = "600 10px 'Source Sans 3', sans-serif";
+    ctx.fillText("decade doors 61–160  ·  last page at the far wall", wx(94), wy(1) + 38);
 
     ctx.strokeStyle = "rgba(201,184,150,0.45)";
     ctx.lineWidth = 2;
@@ -5744,6 +6075,9 @@ export class GameEngine {
     if (u.id === "replay") ctx.fillStyle = locked ? "rgba(80,70,60,0.3)" : "rgba(140,120,90,0.22)";
     if (u.id === "studio") ctx.fillStyle = `rgba(94,224,192,${0.14 + pulse})`;
     if (u.id === "sortie") ctx.fillStyle = `rgba(94,224,192,${0.16 + pulse})`;
+    if (u.id === "shuffle") ctx.fillStyle = locked ? "rgba(80,70,60,0.3)" : `rgba(232,212,138,${0.18 + pulse})`;
+    if (u.id === "endurance") ctx.fillStyle = locked ? "rgba(80,70,60,0.3)" : `rgba(212,90,74,${0.16 + pulse})`;
+    if (parseDecadeId(u.id) != null) ctx.fillStyle = locked ? "rgba(80,70,60,0.28)" : `rgba(232,212,138,${0.16 + pulse})`;
     const chapter = /^stage[1-5]$/.test(u.id);
     if (u.id === "continue") {
       const cx = x + u.w / 2;

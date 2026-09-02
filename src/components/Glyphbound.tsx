@@ -194,6 +194,9 @@ const emptyUi = (): UiSnap => ({
   sortieOpen: false,
   slot: 0,
   slots: [],
+  runMode: "campaign",
+  arcadeCleared: 0,
+  arcadeBest: 0,
 });
 
 const FILE_MARK = ["I", "II", "III"];
@@ -482,6 +485,26 @@ export function Glyphbound() {
                 {ui.muted ? "Sound off" : "Sound on"}
               </button>
             </div>
+            {ui.progress >= 15 && (
+              <button
+                type="button"
+                data-ui="shuffle"
+                className="h-11 rounded-md border border-[#e8d48a]/40 bg-[#1a1410]/90 text-sm text-[#e8d48a]"
+                {...press(() => g()?.enterShuffle())}
+              >
+                Shuffle · a random ledger
+              </button>
+            )}
+            {ui.progress >= 30 && (
+              <button
+                type="button"
+                data-ui="endurance"
+                className="h-11 rounded-md border border-[#d45a4a]/40 bg-[#1a1010]/90 text-sm text-[#e8a090]"
+                {...press(() => g()?.enterEndurance())}
+              >
+                Endurance · {ui.arcadeBest ? `best ${ui.arcadeBest}` : "three wakes"}
+              </button>
+            )}
             <button
               type="button"
               data-ui="studio"
@@ -669,6 +692,11 @@ export function Glyphbound() {
               </button>
             </div>
             <div className="mt-4 flex flex-col gap-3">
+              {ui.runMode === "arcade" && (
+                <p className="mb-3 text-sm text-accent">
+                  Endurance · wakes {ui.lives} · cleared {ui.arcadeCleared} · best {ui.arcadeBest}
+                </p>
+              )}
               <button type="button" className="h-11 rounded-lg bg-fg text-bg" {...press(() => g()?.resume())}>
                 Resume
               </button>
@@ -700,14 +728,16 @@ export function Glyphbound() {
               >
                 New game
               </button>
-              <button
-                type="button"
-                data-ui="proof"
-                className="h-11 rounded-lg border border-accent/40 text-accent"
-                {...press(() => setShowProof(true))}
-              >
-                Proof desk
-              </button>
+              {ui.runMode !== "arcade" && (
+                <button
+                  type="button"
+                  data-ui="proof"
+                  className="h-11 rounded-lg border border-accent/40 text-accent"
+                  {...press(() => setShowProof(true))}
+                >
+                  Proof desk
+                </button>
+              )}
               {ui.proof && (
                 <button
                   type="button"
@@ -725,7 +755,22 @@ export function Glyphbound() {
       {ui.mode === "dead" && (
         <div data-ui="dead" className="pointer-events-auto absolute inset-0 z-20 flex items-center justify-center bg-bg/75 px-6">
           <div className="max-w-sm text-center">
-            {ui.lives === 0 ? (
+            {ui.runMode === "arcade" && ui.lives === 0 ? (
+              <>
+                <p className="text-sm uppercase tracking-[0.25em] text-accent">End-Mark</p>
+                <h2 className="mt-2 font-display text-5xl">The wakes ran out</h2>
+                <p className="mt-3 text-muted">
+                  {ui.arcadeCleared} ledger{ui.arcadeCleared === 1 ? "" : "s"} cleared. Best {ui.arcadeBest}.
+                </p>
+                <button
+                  type="button"
+                  className="mt-6 h-12 w-full rounded-lg bg-fg text-bg"
+                  {...press(() => g()?.endArcade())}
+                >
+                  Back to the Stacks
+                </button>
+              </>
+            ) : ui.lives === 0 ? (
               <>
                 <h2 className="font-display text-5xl">Filed away</h2>
                 <p className="mt-3 text-muted">The census closed this page.</p>
@@ -748,14 +793,18 @@ export function Glyphbound() {
               <>
                 <h2 className="font-display text-5xl">Rounded down</h2>
                 <p className="mt-3 text-muted">
-                  {ui.livesMax >= 0 ? `${ui.lives} remaining.` : "The census took a bite."}
+                  {ui.runMode === "arcade"
+                    ? `${ui.lives} wake${ui.lives === 1 ? "" : "s"} left. This ledger again.`
+                    : ui.livesMax >= 0
+                      ? `${ui.lives} remaining.`
+                      : "The census took a bite."}
                 </p>
                 <button
                   type="button"
                   className="mt-6 h-12 w-full rounded-lg bg-fg text-bg"
                   {...press(() => g()?.respawn())}
                 >
-                  Wake at last Case Font
+                  {ui.runMode === "arcade" ? "Retry this ledger" : "Wake at last Case Font"}
                 </button>
               </>
             )}
