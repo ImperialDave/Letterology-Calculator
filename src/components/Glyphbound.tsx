@@ -29,7 +29,7 @@ const INTRO = [
   "Calculara was a manuscript before it was an equation. Letters walked it. Words were weather.",
   "G opened the ports. Ships of digits landed overnight. The Decimal Dominion rounded magic down and filed every letter that would stand in line.",
   "Five letters close the First Book. Then k, n, and t leave the Stacks and walk into the count. Stomp. Pin. Compose. That is how the Numberomicons fall.",
-  "End-Mark is not the end. After the icon come the Unbound Sentence and the operators. Sixty ledgers. Willingness still turns them.",
+  "End-Mark is not the end. After the icon come the Unbound Sentence and the operators. One hundred sixty ledgers. Willingness still turns them.",
 ];
 
 function ControlsCard() {
@@ -769,7 +769,7 @@ export function Glyphbound() {
             <p className="text-sm uppercase tracking-[0.25em] text-accent">Remainder filed</p>
             <h2 className="mt-2 font-display text-5xl">The last sentence is yours</h2>
             <p className="mt-4 text-muted leading-relaxed">
-              Sixty ledgers. A period, then the operators, then the remainder the Dominion could not file. G opened
+              One hundred sixty ledgers. A period, then the operators, then a second century the Dominion could not file. G opened
               the ports. You kept writing. Willingness, not fate, turned every page.
             </p>
             <button

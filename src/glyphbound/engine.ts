@@ -4153,10 +4153,10 @@ export class GameEngine {
   private doorPlaque(id: string): { title: string; sub: string } {
     if (id === "continue") {
       if (this.save.progress < 5) return { title: "THE REST OF THE BOOK", sub: "locked · finish the five closed chapters" };
-      if (this.save.progress >= STAGE_COUNT) return { title: "THE REST OF THE BOOK", sub: "all 60 ledgers written" };
+      if (this.save.progress >= STAGE_COUNT) return { title: "THE REST OF THE BOOK", sub: `all ${STAGE_COUNT} ledgers written` };
       const n = Math.min(STAGE_COUNT, this.save.progress + 1);
       if (this.save.progress < 15) return { title: "THE NUMBEROMICONS", sub: `next ${n} / 15 · then Unbound` };
-      return { title: "THE REST OF THE BOOK", sub: `only door that keeps changing · next ${n} / 60` };
+      return { title: "THE REST OF THE BOOK", sub: `only door that keeps changing · next ${n} / ${STAGE_COUNT}` };
     }
     if (id === "replay") {
       if (this.save.progress < 1) return { title: "LAST PAGE", sub: "close a ledger to reread it" };

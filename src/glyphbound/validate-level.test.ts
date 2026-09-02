@@ -189,5 +189,11 @@ test("LEVELS stage30 is The Period with End-Mark and a gate", () => {
 
 test("LEVELS stage60 is The Remainder", () => {
   assert.equal(LEVELS.stage60.name, "The Remainder");
-  assert.equal(LEVELS.stage60.exit, "win");
+  assert.equal(LEVELS.stage60.exit, "hub");
+});
+
+test("LEVELS stage160 is the last ledger", () => {
+  assert.equal(LEVELS.stage160.exit, "win");
+  assert.ok(LEVELS.stage160.rows.some((r) => r.includes("!")));
+  assert.ok(LEVELS.stage160.rows.some((r) => r.includes("P")));
 });

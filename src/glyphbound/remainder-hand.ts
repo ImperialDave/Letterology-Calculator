@@ -705,5 +705,5 @@ export const FROZEN_REMAINDER: Record<number, LevelMeta> = {
     put(W - 12, fy - 2, "?");
     put(W - 8, fy - 1, "i");
     put(W - 4, fy - 1, "P");
-  }, { w: 120, exit: "win" }),
+  }, { w: 120 }),
 };

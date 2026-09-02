@@ -15,6 +15,7 @@ import {
   buildScriptorium,
 } from "./levels-numberomicons";
 import { assembleStage } from "./assemble";
+import { polishCentury } from "./century";
 import { finishLedger } from "./density";
 
 export type { LevelId, LevelMeta };
@@ -72,7 +73,7 @@ const hand: Record<string, LevelMeta> = {
     id: "hub",
     name: "Lower Register Stacks",
     theme: "hub",
-    objective: "Five chapter doors, then the Numberomicons. Past the icon: the Unbound Sentence, the Hangar, and the Studio desk.",
+    objective: "Five chapter doors, then the Numberomicons. Past the icon: the Unbound Sentence, the Hangar, the Studio desk, then one hundred more ledgers.",
     tasks: [
       { id: "talk-e", text: "Talk to e" },
       { id: "talk-t", text: "Learn scribing from t" },
@@ -303,6 +304,7 @@ for (let n = 16; n <= STAGE_COUNT; n++) {
 for (const id of Object.keys(LEVELS)) {
   if (id === "hub") continue;
   finishLedger(LEVELS[id].rows, LEVELS[id].index || 1);
+  polishCentury(LEVELS[id]);
 }
 
 export function getLevel(id: string): LevelMeta {

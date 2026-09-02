@@ -46,7 +46,7 @@ export const THEME_IDS: ThemeId[] = [
 /** hub + stage1..stageN. N is STAGE_COUNT. */
 export type LevelId = "hub" | `stage${number}`;
 
-export const STAGE_COUNT = 60;
+export const STAGE_COUNT = 160;
 export const FIRST_BOOK = 30;
 /** Last hand-authored Numberomicon ledger. Unbound Sentence starts at 16. */
 export const SECOND_BOOK = 15;

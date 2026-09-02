@@ -211,7 +211,7 @@ export const LORE: Record<LoreId, LoreDef> = {
       "I am the door that still remembers what a door was for. Most of the portals you see are counted shut until you clear the stage.",
       "The hub has milestone doors for the big districts. The Continue gate leads into the progressive ledgers — stages that grow tighter the further you go.",
       "Once you clear a stage, its number is written into your progress. The Continue gate always opens the next unread page. You can also replay what you have already finished.",
-      "Sixty stages is not a wall. It is a long sentence. The Numberomicons are the middle clause. Keep writing.",
+      "One hundred sixty stages is not a wall. It is a long sentence. The Numberomicons are the middle clause. Keep writing.",
     ],
   },
   v: {
