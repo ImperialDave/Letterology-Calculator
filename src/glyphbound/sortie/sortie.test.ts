@@ -3,7 +3,7 @@ import test from "node:test";
 import * as THREE from "three";
 import { makeCWing } from "./cwing";
 import { groundHeight } from "./height";
-import { rockRing, rocks, ROCK_GAP, ROCK_RING_R } from "./beats";
+import { BEATS, rockRing, rocks, ROCK_GAP, ROCK_RING_R } from "./beats";
 import {
   COAST_PATH,
   GUTTER_PATH,
@@ -1676,4 +1676,35 @@ test("Press censers sit on the road", () => {
     assert.ok(Math.abs(L.x - p.x) <= ENVELOPE_X, `${L.id} ${L.x - p.x}`);
     assert.ok(L.r >= HOLE_INNER_X);
   }
+});
+
+test("Coast's first lizard is an unarmed sit, not a lecture", () => {
+  const first = BEATS.coast.find((b) => b.kind === "spawn");
+  assert.ok(first?.ships?.[0]);
+  assert.equal(first.ships[0].kind, "fighter");
+  assert.equal(first.ships[0].armed, false);
+  assert.equal(first.ships[0].form, "hold");
+  const lines = BEATS.coast.filter((b) => b.kind === "radio").map((b) => b.text ?? "");
+  for (const line of lines) {
+    assert.ok(!/Space|Tap |Hold if/i.test(line), line);
+  }
+  const armedV = BEATS.coast.find((b) => b.ships?.some((sh) => sh.armed));
+  const silver = BEATS.coast.find((b) => b.loot?.kind === "silver");
+  assert.ok(armedV && silver && armedV.t > silver.t, "first shots after the pickup");
+});
+
+test("Coast plaza Scale is a pushover lesson", () => {
+  const scale = BEATS.coast.find((b) => b.when === "arena" && b.ships?.some((sh) => sh.kind === "mech"));
+  const mech = scale?.ships?.find((sh) => sh.kind === "mech");
+  assert.ok(mech);
+  assert.ok((mech.hp ?? 24) <= 12, `hp ${mech.hp}`);
+});
+
+test("Sorts names the hole after the first door is on the rail", () => {
+  const door = BEATS.sorts.find(
+    (b) => b.ships?.length === 8 && b.ships.every((sh) => sh.kind === "aster" && sh.hp === 1),
+  );
+  const line = BEATS.sorts.find((b) => /hole pays/i.test(b.text ?? ""));
+  assert.ok(door && line);
+  assert.ok(line.t > door.t, `radio ${line.t} door ${door.t}`);
 });
