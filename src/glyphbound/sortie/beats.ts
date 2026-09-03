@@ -1,3 +1,4 @@
+import type { KitId } from "./kits";
 import type { EnemyKind, FormName, PickupKind, SortieState } from "./sim";
 
 export interface Beat {
@@ -8,7 +9,7 @@ export interface Beat {
   who?: string;
   text?: string;
   ships?: { kind: EnemyKind; dx: number; dy: number; dz: number; hp?: number; form?: FormName; armed?: boolean }[];
-  loot?: { kind: PickupKind; dx: number; dy: number; dz: number };
+  loot?: { kind: PickupKind; kit?: KitId; dx: number; dy: number; dz: number };
   rings?: { dx: number; dy: number; dz: number }[];
 }
 
@@ -95,6 +96,8 @@ export const BEATS: Record<string, Beat[]> = {
     { id: 22, when: "rail", t: 0.88, kind: "spawn", ships: V(-42, 11) },
     { id: 23, when: "arena", t: 0.4, kind: "radio", who: "s", text: "Scale. Knees, frill, core. Don’t kiss the stamp." },
     { id: 24, when: "arena", t: 0.6, kind: "spawn", ships: [{ kind: "fighter", dx: -50, dy: 8, dz: -40 }, { kind: "fighter", dx: 50, dy: 8, dz: -40 }, { kind: "mech", dx: 0, dy: -20, dz: -160, hp: 24 }] },
+    { id: 101, when: "rail", t: 0.26, kind: "pickup", loot: { kind: "kit", kit: "ligature", dx: 16, dy: 6, dz: -28 } },
+    { id: 102, when: "rail", t: 0.56, kind: "pickup", loot: { kind: "kit", kit: "serif", dx: -18, dy: -4, dz: -30 } },
   ],
   slug: [
     { id: 1, when: "rail", t: 0.06, kind: "radio", who: "b", text: "Lead slugs. The big ones are already melted. Brake." },
@@ -107,6 +110,7 @@ export const BEATS: Record<string, Beat[]> = {
     { id: 8, when: "rail", t: 0.78, kind: "spawn", ships: V(-40, 11) },
     { id: 9, when: "arena", t: 0.5, kind: "spawn", ships: [{ kind: "bomber", dx: 0, dy: 24, dz: -120 }, { kind: "fighter", dx: -70, dy: 6, dz: -50 }, { kind: "fighter", dx: 70, dy: 6, dz: -50 }] },
     { id: 10, when: "arena", t: 0.7, kind: "radio", who: "s", text: "Bowl nest. That’s how he ships the rest. Cut the bomber." },
+    { id: 101, when: "rail", t: 0.3, kind: "pickup", loot: { kind: "kit", kit: "case", dx: -16, dy: 8, dz: -28 } },
   ],
   gutter: [
     { id: 1, when: "rail", t: 0.08, kind: "radio", who: "e", text: "Stay in the ink. The lights above bite. I can hear the Press." },
@@ -118,6 +122,7 @@ export const BEATS: Record<string, Beat[]> = {
     { id: 7, when: "rail", t: 0.74, kind: "spawn", ships: V(-42, 11) },
     { id: 8, when: "arena", t: 0.5, kind: "spawn", ships: [{ kind: "mothership", dx: 0, dy: 0, dz: -120 }, { kind: "fighter", dx: -70, dy: 8, dz: -40 }, { kind: "fighter", dx: 70, dy: 8, dz: -40 }] },
     { id: 9, when: "arena", t: 0.7, kind: "radio", who: "e", text: "Belly first. Then the core. Dualis is listening." },
+    { id: 101, when: "rail", t: 0.4, kind: "pickup", loot: { kind: "kit", kit: "inkwell", dx: 16, dy: -6, dz: -24 } },
   ],
   ice: [
     { id: 1, when: "arena", t: 1.2, kind: "radio", who: "b", text: "Hold the green pad. That ground is still a letter." },
@@ -126,6 +131,8 @@ export const BEATS: Record<string, Beat[]> = {
     { id: 4, when: "arena", t: 16, kind: "pickup", loot: { kind: "repair", dx: 0, dy: 6, dz: 20 } },
     { id: 5, when: "arena", t: 22, kind: "radio", who: "s", text: "Serifs. His proofreaders. Three. Don’t let them file you." },
     { id: 6, when: "arena", t: 22.4, kind: "spawn", ships: [{ kind: "ace", dx: -40, dy: 12, dz: -160 }, { kind: "ace", dx: 40, dy: 12, dz: -160 }, { kind: "ace", dx: 0, dy: 16, dz: -200 }] },
+    { id: 101, when: "arena", t: 10, kind: "pickup", loot: { kind: "kit", kit: "emquad", dx: 40, dy: 8, dz: -40 } },
+    { id: 102, when: "arena", t: 18, kind: "pickup", loot: { kind: "kit", kit: "swash", dx: -50, dy: 12, dz: 30 } },
   ],
   press: [
     { id: 1, when: "rail", t: 0.08, kind: "radio", who: "b", text: "Crater road. Thread the censers if you want the pay." },
@@ -136,6 +143,7 @@ export const BEATS: Record<string, Beat[]> = {
     { id: 6, when: "arena", t: 0.6, kind: "spawn", ships: [{ kind: "dualis", dx: 0, dy: 20, dz: -180 }, { kind: "fighter", dx: -50, dy: 12, dz: -80 }, { kind: "bomber", dx: 50, dy: 22, dz: -80 }] },
     { id: 7, when: "arena", t: 0.8, kind: "radio", who: "s", text: "That’s Dualis. A bar that thinks it’s a period. Hit it until it splits." },
     { id: 8, when: "arena", t: 1.2, kind: "radio", who: "!", text: "Submit the remainder. I will round you down." },
+    { id: 101, when: "rail", t: 0.4, kind: "pickup", loot: { kind: "kit", kit: "proof", dx: 0, dy: 12, dz: -36 } },
   ],
   sorts: [
     { id: 1, when: "rail", t: 0.03, kind: "radio", who: "s", text: "His drawers. Shoot the small type. Brake the crushers." },
@@ -164,6 +172,8 @@ export const BEATS: Record<string, Beat[]> = {
     { id: 16, when: "rail", t: 0.78, kind: "spawn", ships: rocks(-48, 8) },
     { id: 17, when: "arena", t: 0.5, kind: "spawn", ships: [{ kind: "mothership", dx: 0, dy: 8, dz: -140 }, { kind: "fighter", dx: -60, dy: 10, dz: -50 }, { kind: "fighter", dx: 60, dy: 10, dz: -50 }] },
     { id: 18, when: "arena", t: 0.7, kind: "radio", who: "s", text: "The quoin. Four teeth, then the well. Don’t kiss the bit." },
+    { id: 101, when: "rail", t: 0.21, kind: "pickup", loot: { kind: "kit", kit: "quoin", dx: 14, dy: 8, dz: -30 } },
+    { id: 102, when: "rail", t: 0.63, kind: "pickup", loot: { kind: "kit", kit: "hairline", dx: 18, dy: 10, dz: -80 } },
   ],
 };
 

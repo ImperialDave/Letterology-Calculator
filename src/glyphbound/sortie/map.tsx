@@ -1,3 +1,4 @@
+import { fittedKits, KIT_BY_CLEAR, kitOf, romanRank, type KitRanks } from "./kits";
 import { MISSIONS, unlockedIds, type MissionDef } from "./missions";
 import { CAMPAIGN, CREW_LINE, crewOf } from "./story";
 
@@ -5,6 +6,7 @@ export function RegisterMap({
   cleared,
   proofs,
   forks = [],
+  kits = {},
   onPick,
   onLeave,
   leaveLabel,
@@ -12,11 +14,13 @@ export function RegisterMap({
   cleared: string[];
   proofs: string[];
   forks?: string[];
+  kits?: KitRanks;
   onPick: (m: MissionDef) => void;
   onLeave: () => void;
   leaveLabel: string;
 }) {
   const open = unlockedIds(cleared, proofs, forks);
+  const caseRow = fittedKits(kits);
   return (
     <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-[#121018] text-[#f4f0e4]">
       <p className="text-[11px] uppercase tracking-[0.4em] text-[#e8d48a]">StarWords</p>
@@ -39,10 +43,25 @@ export function RegisterMap({
           );
         })}
       </div>
+      {caseRow.length > 0 && (
+        <div className="mt-4 flex max-w-xl flex-wrap justify-center gap-2 px-5">
+          {caseRow.map((k) => (
+            <span
+              key={k.id}
+              className="rounded-sm border border-[#e8d48a]/40 px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-[#e8d48a]"
+            >
+              {k.name} {k.roman}
+            </span>
+          ))}
+        </div>
+      )}
       <div className="mt-6 grid w-full max-w-xl gap-2 px-5">
         {MISSIONS.map((m) => {
           const locked = !open.has(m.id);
           const proof = proofs.includes(m.id);
+          const piece = KIT_BY_CLEAR[m.id];
+          const owned = piece ? kitOf(piece) : undefined;
+          const rank = piece ? romanRank(kits[piece] ?? 0) : "";
           return (
             <button
               key={m.id}
@@ -65,6 +84,11 @@ export function RegisterMap({
               </p>
               <p className="font-display text-2xl">{m.name}</p>
               <p className="text-sm text-[#c9b896]">{locked ? "Still counted shut." : m.blurb}</p>
+              {!locked && owned && rank ? (
+                <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-[#e8d48a]">
+                  {owned.name} {rank}
+                </p>
+              ) : null}
             </button>
           );
         })}

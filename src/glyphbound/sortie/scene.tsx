@@ -29,7 +29,7 @@ function fwd(yaw: number, pitch: number) {
 }
 
 function pickupColor(kind: PickupKind) {
-  if (kind === "gold") return 0xe8d48a;
+  if (kind === "gold" || kind === "kit") return 0xe8d48a;
   if (kind === "silver") return 0xd0d4d8;
   if (kind === "repair") return 0x7ad0a8;
   if (kind === "bomb") return 0xe8d48a;
@@ -130,6 +130,11 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
     state.camera.position.lerp(tmp, 1 - Math.exp(-CAM_POS_K * d));
     if (look.lengthSq() < 0.01) look.copy(lookT);
     else look.lerp(lookT, 1 - Math.exp(-CAM_LOOK_K * d));
+    if (s.shake && s.trauma > 0.02) {
+      const tr = s.trauma * s.trauma * (s.cockpit ? 0.5 : 1);
+      state.camera.position.x += Math.sin(s.t * 53.1) * tr * 0.55;
+      state.camera.position.y += Math.cos(s.t * 41.7) * tr * 0.38;
+    }
     state.camera.lookAt(look);
     state.camera.updateProjectionMatrix();
 
@@ -189,6 +194,21 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
       }
       wasAlive.current.set(e.id, e.alive);
     }
+    for (const imp of s.fxq) {
+      if (imp.kill) continue;
+      const palette = [0xfff4c8, 0xffb048];
+      for (let k = 0; k < 2; k++) {
+        const i = boomI.current % fx.booms.length;
+        boomI.current += 1;
+        const b = fx.booms[i];
+        b.visible = true;
+        b.position.set(imp.x + (k - 0.5) * 0.8, imp.y + k * 0.5, imp.z);
+        (b.material as THREE.MeshBasicMaterial).color.setHex(palette[k]);
+        boomLife.current[i] = 0.55 - k * 0.12;
+      }
+      sortieSfx.hit();
+    }
+    s.fxq.length = 0;
     for (let i = 0; i < fx.booms.length; i++) {
       if (boomLife.current[i] <= 0) {
         fx.booms[i].visible = false;
@@ -248,7 +268,7 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
       if (!sh) continue;
       m.position.set(sh.x, sh.y, sh.z);
       if (sh.kind === "laser") {
-        m.scale.set(1.6, 1.6, 16);
+        m.scale.set(2.4, 2.4, 22);
         tmp.set(sh.x + sh.vx, sh.y + sh.vy, sh.z + sh.vz);
         m.lookAt(tmp);
       } else if (sh.kind === "charge") {
@@ -259,7 +279,7 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
         m.scale.setScalar(3.8);
         m.rotation.set(s.t * 4, s.t * 2, 0);
       } else {
-        m.scale.set(2.4, 2.4, 2.4);
+        m.scale.set(3.1, 3.1, 3.1);
         tmp.set(sh.x + sh.vx, sh.y + sh.vy, sh.z + sh.vz);
         m.lookAt(tmp);
       }
@@ -302,6 +322,7 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
       if (!p) continue;
       m.position.set(p.x, p.y + Math.sin(s.t * 3 + i) * 0.6, p.z);
       m.rotation.y = s.t * 2.2;
+      m.scale.setScalar(p.kind === "kit" ? 1.45 : 1);
       const mat = m.material as THREE.MeshLambertMaterial;
       mat.color.setHex(pickupColor(p.kind));
       mat.emissive.setHex(pickupColor(p.kind));

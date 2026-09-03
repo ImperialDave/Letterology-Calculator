@@ -134,14 +134,16 @@ export function unlockedIds(cleared: string[], proofs: string[], forks: string[]
 export function scriptMissionWaves(s: SortieState) {
   const sheet = BEATS[s.missionId];
   if (!sheet) return false;
+  if (s.wave >= 90) return true;
   for (const b of sheet) {
-    if (s.wave >= b.id) continue;
+    if (s.doneBeats.includes(b.id)) continue;
     const p = progressOf(s, b.when);
     if (p < b.t) continue;
-    s.wave = b.id;
+    s.doneBeats.push(b.id);
+    s.wave = Math.max(s.wave, b.id);
     if (b.kind === "radio" || b.kind === "check") {
       s.radio = { who: b.who ?? "s", text: b.text ?? "", until: s.t + 3 };
-      if (b.kind === "check") s.hull = Math.min(6 + s.golds, s.hull + 1);
+      if (b.kind === "check") s.hull = Math.min(s.hullMax + s.golds, s.hull + 1);
     }
     if (b.kind === "spawn" && b.ships) {
       if (s.fork && b.ships.some((sh) => sh.kind === "mothership" || sh.kind === "mech")) continue;
@@ -178,6 +180,7 @@ export function scriptMissionWaves(s: SortieState) {
       s.pickups.push({
         id: s.enemyId++,
         kind: b.loot.kind as PickupKind,
+        kit: b.loot.kit,
         x: s.x + b.loot.dx,
         y: s.y + b.loot.dy,
         z: s.z + b.loot.dz,

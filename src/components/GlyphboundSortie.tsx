@@ -7,6 +7,7 @@ import { unlockSortieAudio, sortieSfx } from "@/glyphbound/sortie/audio";
 import { MISSIONS, missionById, type MissionDef } from "@/glyphbound/sortie/missions";
 import { RegisterMap } from "@/glyphbound/sortie/map";
 import { createSortie, stepSortie, type SortieState } from "@/glyphbound/sortie/sim";
+import { grantClear, sanitizeKits, type KitRanks } from "@/glyphbound/sortie/kits";
 import { loadSave, writeSave } from "@/glyphbound/save";
 import { SKY_CORRIDOR } from "@/glyphbound/sortie/path";
 import { CREW_LINE, crewOf } from "@/glyphbound/sortie/story";
@@ -51,17 +52,21 @@ export function StarWords({
   const [cleared, setCleared] = useState<string[]>([]);
   const [proofs, setProofs] = useState<string[]>([]);
   const [forks, setForks] = useState<string[]>([]);
+  const [kits, setKits] = useState<KitRanks>({});
   const lastMode = useRef(sim.current.mode);
   const lastHard = useRef(false);
   const lastIncoming = useRef(0);
 
   const bootMission = (m: MissionDef) => {
+    const data = loadSave();
     const next = createSortie({
       corridor: m.corridor,
       path: m.path.length ? m.path : SKY_CORRIDOR,
       name: m.name,
       missionId: m.id,
       biome: m.biome,
+      kits: sanitizeKits(data.sortieKits),
+      shake: data.shakeAmt !== 0 && !data.reducedMotion,
     });
     next.winKind = m.win;
     next.medal = m.medal;
@@ -78,6 +83,7 @@ export function StarWords({
     setCleared(data.sortieCleared ?? []);
     setProofs(data.sortieProofs ?? []);
     setForks(data.sortieForks ?? []);
+    setKits(sanitizeKits(data.sortieKits));
     const off = keys.current.attach();
     window.__controlsTest = {
       getYaw: () => sim.current.yaw,
@@ -115,6 +121,13 @@ export function StarWords({
       const before = sim.current.shots.length;
       const barrel = sim.current.barrel;
       stepSortie(sim.current, k, dt);
+      if (sim.current.kitDirty) {
+        sim.current.kitDirty = false;
+        const data = loadSave();
+        const nextKits = { ...sanitizeKits(data.sortieKits), ...sim.current.kitRanks };
+        writeSave({ ...data, sortieKits: nextKits });
+        setKits(nextKits);
+      }
       if (sim.current.shots.length > before && k.fireHeld && sim.current.charge < 0.5) sortieSfx.laser();
       if (sim.current.shots.length > before && !k.fireHeld) sortieSfx.charge();
       if (sim.current.lockHard && !lastHard.current) sortieSfx.lock();
@@ -137,11 +150,23 @@ export function StarWords({
               : data.sortieProofs;
           const forked =
             sim.current.fork && !data.sortieForks.includes(id) ? [...data.sortieForks, id] : data.sortieForks;
-          writeSave({ ...data, sortieBest: score, sortieCleared: written, sortieProofs: proved, sortieForks: forked });
+          const granted = grantClear(id, sim.current.fork, { ...sanitizeKits(data.sortieKits), ...sim.current.kitRanks });
+          writeSave({
+            ...data,
+            sortieBest: score,
+            sortieCleared: written,
+            sortieProofs: proved,
+            sortieForks: forked,
+            sortieKits: granted.ranks,
+          });
           setBest(score);
           setCleared(written);
           setProofs(proved);
           setForks(forked);
+          setKits(granted.ranks);
+          for (const gid of granted.gained) {
+            if (!sim.current.kitGained.includes(gid)) sim.current.kitGained.push(gid);
+          }
         }
         if (sim.current.mode === "dead") sortieSfx.dead();
         lastMode.current = sim.current.mode;
@@ -171,12 +196,21 @@ export function StarWords({
       className={`sw-play relative w-full overflow-hidden bg-[#b8e8f0] select-none [touch-action:none] ${embedded ? "h-full" : "h-[100dvh]"}`}
       style={{ WebkitTouchCallout: "none", WebkitUserSelect: "none", userSelect: "none" }}
       onContextMenu={(e) => e.preventDefault()}
+      onPointerDown={(e) => {
+        if (e.pointerType === "touch" || e.button !== 0) return;
+        if (!ready || !picked) return;
+        if (sim.current.mode !== "play") return;
+        if (typeof document !== "undefined" && document.pointerLockElement) return;
+        e.preventDefault();
+        wrapRef.current?.requestPointerLock?.();
+      }}
     >
       {!picked ? (
         <RegisterMap
           cleared={cleared}
           proofs={proofs}
           forks={forks}
+          kits={kits}
           onPick={bootMission}
           onLeave={leave}
           leaveLabel={leaveLabel}
@@ -230,7 +264,7 @@ export function StarWords({
             the mouse as the stick
           </p>
           <p className="mt-8 hidden max-w-md px-6 text-center text-[12px] leading-relaxed text-[#c8c4b8] [@media(hover:none)]:block">
-            Left thumb flies. Right thumb fires — slide on Fire to aim. Side buttons are boost and brake.
+            Left flies. Right sits the squares. Push the right stick out to fire. Hold out to charge.
           </p>
           </button>
           <button

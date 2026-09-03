@@ -2,7 +2,8 @@ import { useRef, useState, type PointerEvent } from "react";
 import { aimScreen } from "./cam";
 import type { SortieState } from "./sim";
 import { CHARGE_LOCK, HULL_MAX, INNER_R, OUTER_R, TGT_FAR, TGT_NEAR, WARN_FAR } from "./sim";
-import { analogFromDelta } from "./stick";
+import { analogFromDelta, fireFromStick } from "./stick";
+import { kitOf, romanRank } from "./kits";
 import { missionById } from "./missions";
 import { crewOf } from "./story";
 
@@ -16,8 +17,8 @@ const SORTIE_CONTROLS: { keys: string; does: string }[] = [
   { keys: "Q / E", does: "Barrel (eats orbs). One tap." },
   { keys: "Boost + W", does: "Somersault." },
   { keys: "Brake + W", does: "U-turn (all-range)." },
-  { keys: "Mouse", does: "Aims the squares. Click takeoff to lock." },
-  { keys: "Phone", does: "Left fly. Right fire. Slide on fire to aim. Top corners boost / brake." },
+  { keys: "Mouse", does: "Aims the squares. Click the sky if Escape drops it." },
+  { keys: "Phone", does: "Left flies. Right sits the squares. Push the right stick out to fire. Hold out to charge." },
   { keys: "Tab", does: "Break lock." },
   { keys: "V", does: "Cockpit cam." },
   { keys: "Esc", does: "Pause / resume." },
@@ -50,6 +51,11 @@ export function SortieHud({
       </div>
       <div className="absolute right-5 top-5 text-right text-sm tabular-nums drop-shadow-[0_2px_8px_#000]">
         <p style={{ color: s.proofLive ? "#e8d48a" : "#f4f0e4" }}>{s.hits}</p>
+        {s.popT > 0 && (
+          <p className="text-[11px] text-[#5ee0c0]" style={{ opacity: Math.min(1, s.popT * 2.4) }}>
+            +{s.popN}
+          </p>
+        )}
         <p className="text-[10px] text-[#c9b896]">
           hits · Proof {s.medal} · {s.score} · best {best}
         </p>
@@ -99,7 +105,16 @@ export function SortieHud({
       <Reticle s={s} />
       {s.flight === "allrange" && <Radar s={s} />}
       {(s.mode === "win" || s.mode === "dead" || s.mode === "pause") && (
-        <div className="pointer-events-auto absolute inset-0 flex flex-col items-center justify-center bg-[#07080c]/70">
+        <div
+          className="pointer-events-auto absolute inset-0 flex flex-col items-center justify-center bg-[#07080c]/70"
+          onPointerDown={(e) => {
+            if (s.mode !== "pause") return;
+            if ((e.target as HTMLElement).closest("button")) return;
+            e.preventDefault();
+            e.stopPropagation();
+            onResume();
+          }}
+        >
           <p className="font-display text-4xl text-[#f4f0e4]">
             {s.mode === "win" ? (s.proofLive ? "Proof" : "Written") : s.mode === "dead" ? "Hull gone" : "Hold"}
           </p>
@@ -107,6 +122,16 @@ export function SortieHud({
           {s.mode === "win" ? (
             <p className="mt-3 max-w-md px-6 text-center text-sm leading-relaxed text-[#c9b896]">
               {missionById(s.missionId).debrief}
+            </p>
+          ) : null}
+          {s.mode === "win" && s.kitGained.length > 0 ? (
+            <p className="mt-2 text-[11px] uppercase tracking-[0.2em] text-[#e8d48a]">
+              {s.kitGained
+                .map((id) => {
+                  const k = kitOf(id);
+                  return k ? `${k.name} ${romanRank(s.kitRanks[id] ?? 1)}` : id;
+                })
+                .join(" · ")}
             </p>
           ) : null}
           {s.mode === "dead" ? (
@@ -211,7 +236,8 @@ function Reticle({ s }: { s: SortieState }) {
           top: `${cy}%`,
           width: `${OUTER_R * 100}vh`,
           height: `${OUTER_R * 100}vh`,
-          border: `2px solid ${outerC}`,
+          border: `4px solid ${outerC}`,
+          boxShadow: "0 0 0 1.5px rgba(10,18,32,0.7)",
         }}
       />
       <div
@@ -221,7 +247,8 @@ function Reticle({ s }: { s: SortieState }) {
           top: `${iy}%`,
           width: `${INNER_R * 100}vh`,
           height: `${INNER_R * 100}vh`,
-          border: `1.5px solid ${innerC}`,
+          border: `3px solid ${innerC}`,
+          boxShadow: "0 0 0 1.5px rgba(10,18,32,0.7)",
         }}
       >
         <div
@@ -280,8 +307,8 @@ function TargetBoxes({ s }: { s: SortieState }) {
             top: `${50 - pip.sy * 50}%`,
             width: px,
             height: px,
-            border: `${hard ? 2 : 1.5}px solid ${color}`,
-            boxShadow: `0 0 0 1px rgba(10,18,32,0.45)`,
+            border: `${hard ? 3.5 : 3}px solid ${color}`,
+            boxShadow: `0 0 0 1.5px rgba(10,18,32,0.7)`,
           }}
         >
           {locked && (
@@ -305,8 +332,8 @@ function TargetBoxes({ s }: { s: SortieState }) {
             top: `${50 - pip.sy * 50}%`,
             width: px,
             height: px,
-            border: "1.5px solid #e8a84a",
-            boxShadow: "0 0 0 1px rgba(10,18,32,0.45)",
+            border: "2.5px solid #e8a84a",
+            boxShadow: "0 0 0 1.5px rgba(10,18,32,0.7)",
             opacity: 0.82,
           }}
         />,
@@ -435,9 +462,17 @@ export function TouchPads({
   onBomb?: () => void;
 }) {
   const origin = useRef<{ x: number; y: number; id: number } | null>(null);
-  const fireAt = useRef<{ x: number; y: number; id: number } | null>(null);
+  const aimAt = useRef<{ x: number; y: number; id: number } | null>(null);
+  const writing = useRef(false);
   const [knob, setKnob] = useState({ x: 0, y: 0, on: false, ox: 0.22, oy: 0.72 });
+  const [aimKnob, setAimKnob] = useState({ x: 0, y: 0, on: false, ox: 0.78, oy: 0.72, writing: false });
   const radius = 64;
+  const zoneStyle = {
+    touchAction: "none" as const,
+    WebkitTouchCallout: "none",
+    WebkitUserSelect: "none",
+    userSelect: "none",
+  };
 
   const move = (e: PointerEvent<HTMLDivElement>) => {
     const o = origin.current;
@@ -460,10 +495,33 @@ export function TouchPads({
     setKnob((k) => ({ ...k, x: 0, y: 0, on: false }));
   };
 
-  const fireEnd = () => {
-    fireAt.current = null;
-    onFire(false);
+  const aimMove = (e: PointerEvent<HTMLDivElement>) => {
+    const o = aimAt.current;
+    if (!o || o.id !== e.pointerId) return;
+    const a = analogFromDelta(e.clientX - o.x, e.clientY - o.y, radius);
+    onAim?.(a.kx, -a.ky);
+    const next = fireFromStick(a.mag, writing.current);
+    if (next !== writing.current) {
+      writing.current = next;
+      onFire(next);
+    }
+    const zone = e.currentTarget.getBoundingClientRect();
+    setAimKnob({
+      x: a.kx,
+      y: a.ky,
+      on: true,
+      ox: (o.x - zone.left) / zone.width,
+      oy: (o.y - zone.top) / zone.height,
+      writing: next,
+    });
+  };
+  const aimEnd = (e: PointerEvent<HTMLDivElement>) => {
+    if (aimAt.current?.id !== e.pointerId) return;
+    aimAt.current = null;
+    if (writing.current) onFire(false);
+    writing.current = false;
     onAim?.(0, 0);
+    setAimKnob((k) => ({ ...k, x: 0, y: 0, on: false, writing: false }));
   };
 
   return (
@@ -474,7 +532,7 @@ export function TouchPads({
     >
       <div
         className="pointer-events-auto absolute bottom-0 left-0 h-[62%] w-[48%]"
-        style={{ touchAction: "none", WebkitTouchCallout: "none", WebkitUserSelect: "none", userSelect: "none" }}
+        style={zoneStyle}
         onContextMenu={(e) => e.preventDefault()}
         onPointerDown={(e) => {
           silencePtr(e);
@@ -504,58 +562,75 @@ export function TouchPads({
           />
         </div>
       </div>
+      <div
+        className="pointer-events-auto absolute bottom-0 right-0 h-[62%] w-[48%]"
+        style={zoneStyle}
+        onContextMenu={(e) => e.preventDefault()}
+        onPointerDown={(e) => {
+          silencePtr(e);
+          aimAt.current = { x: e.clientX, y: e.clientY, id: e.pointerId };
+          e.currentTarget.setPointerCapture(e.pointerId);
+          writing.current = false;
+          const zone = e.currentTarget.getBoundingClientRect();
+          setAimKnob({
+            x: 0,
+            y: 0,
+            on: true,
+            ox: (e.clientX - zone.left) / zone.width,
+            oy: (e.clientY - zone.top) / zone.height,
+            writing: false,
+          });
+          onAim?.(0, 0);
+          onFire(false);
+        }}
+        onPointerMove={aimMove}
+        onPointerUp={aimEnd}
+        onPointerCancel={aimEnd}
+      >
+        <div
+          className="absolute h-[7.2rem] w-[7.2rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#121018]/45"
+          style={{
+            left: `${aimKnob.ox * 100}%`,
+            top: `${aimKnob.oy * 100}%`,
+            boxShadow: `inset 0 0 0 2px ${aimKnob.writing ? "#e8d48a" : "rgba(232,212,138,0.45)"}`,
+          }}
+        >
+          <span
+            className="absolute left-1/2 top-1/2 h-[4.4rem] w-[4.4rem] -translate-x-1/2 -translate-y-1/2 rounded-full"
+            style={{
+              boxShadow: `inset 0 0 0 1.5px ${aimKnob.writing ? "rgba(94,224,192,0.35)" : "rgba(94,224,192,0.95)"}`,
+            }}
+          />
+          <span
+            className="absolute left-1/2 top-1/2 h-11 w-11 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#e8d48a]/70 bg-[#e8d48a]/80"
+            style={{ transform: `translate(calc(-50% + ${aimKnob.x * 36}px), calc(-50% + ${aimKnob.y * 36}px))` }}
+          />
+        </div>
+      </div>
       <PadBtn
         label="Brake"
         hold
         onHold={onBrake}
-        className="absolute left-3 top-[36%] h-12 min-w-[44px] -translate-y-1/2 rounded-md border border-[#f4f0e4]/40 bg-[#121018]/55 px-3 text-sm text-[#f4f0e4]"
+        className="absolute left-3 top-[36%] z-10 h-12 min-w-[44px] -translate-y-1/2 rounded-md border border-[#f4f0e4]/40 bg-[#121018]/55 px-3 text-sm text-[#f4f0e4]"
       />
       <PadBtn
         label="Boost"
         hold
         onHold={onBoost}
-        className="absolute right-3 top-[36%] h-12 min-w-[44px] -translate-y-1/2 rounded-md border border-[#e8d48a]/50 bg-[#121018]/55 px-3 text-sm text-[#e8d48a]"
+        className="absolute right-3 top-[36%] z-10 h-12 min-w-[44px] -translate-y-1/2 rounded-md border border-[#e8d48a]/50 bg-[#121018]/55 px-3 text-sm text-[#e8d48a]"
       />
       <PadBtn
         label="Roll"
         onTap={onBarrel}
-        className="absolute bottom-[7.6rem] right-[6.8rem] h-12 min-w-[44px] rounded-md border border-[#5ee0c0]/50 bg-[#121018]/55 px-3 text-sm text-[#5ee0c0]"
+        className="absolute bottom-[11.5rem] right-[6.8rem] z-10 h-12 min-w-[44px] rounded-md border border-[#5ee0c0]/50 bg-[#121018]/55 px-3 text-sm text-[#5ee0c0]"
       />
       {onBomb && (
         <PadBtn
           label="Dash"
           onTap={onBomb}
-          className="absolute bottom-[7.6rem] right-3 h-12 min-w-[44px] rounded-md border border-[#e8d48a]/50 bg-[#121018]/55 px-3 text-sm text-[#e8d48a]"
+          className="absolute bottom-[11.5rem] right-3 z-10 h-12 min-w-[44px] rounded-md border border-[#e8d48a]/50 bg-[#121018]/55 px-3 text-sm text-[#e8d48a]"
         />
       )}
-      <button
-        type="button"
-        aria-label="Fire"
-        className="gb-pad-btn pointer-events-auto absolute bottom-4 right-3 h-[5.75rem] w-[5.75rem] rounded-full bg-[#5ee0c0] text-sm text-[#121018]"
-        style={{ WebkitTouchCallout: "none", WebkitUserSelect: "none", userSelect: "none", touchAction: "none" }}
-        onContextMenu={(e) => e.preventDefault()}
-        onPointerDown={(e) => {
-          silencePtr(e);
-          e.currentTarget.setPointerCapture(e.pointerId);
-          fireAt.current = { x: e.clientX, y: e.clientY, id: e.pointerId };
-          onFire(true);
-          onAim?.(0, 0);
-        }}
-        onPointerMove={(e) => {
-          const o = fireAt.current;
-          if (!o || o.id !== e.pointerId) return;
-          const a = analogFromDelta(e.clientX - o.x, e.clientY - o.y, 78);
-          onAim?.(a.kx, -a.ky);
-        }}
-        onPointerUp={(e) => {
-          silencePtr(e);
-          fireEnd();
-        }}
-        onPointerCancel={fireEnd}
-        onLostPointerCapture={fireEnd}
-      >
-        Fire
-      </button>
     </div>
   );
 }

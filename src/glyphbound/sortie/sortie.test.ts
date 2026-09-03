@@ -7,7 +7,8 @@ import { COAST_PATH, landmarksFor, riverX, SORTS_PATH } from "./landmarks";
 import { MISSIONS, unlockedIds } from "./missions";
 import { CAMPAIGN, crewOf } from "./story";
 import { ENVELOPE_X, pathLength } from "./path";
-import { analogFromDelta } from "./stick";
+import { analogFromDelta, fireFromStick } from "./stick";
+import { grantClear } from "./kits";
 import { SortieKeys } from "./input";
 import { aimOff, aimScreen, inBox, unproject } from "./cam";
 import { BARREL_T, CHARGE_LOCK, CHARGE_SEEK, GALLERY_LEAD, INNER_R, KEEP_R, LASER_LIFE, OUTER_R, SOMERSAULT_T, TGT_FAR, TGT_NEAR, WARN_FAR, createSortie, emptyInput, sightParallax, stepSortie } from "./sim";
@@ -60,6 +61,14 @@ test("stick left is roll left (screen left), stick up is pull-up", () => {
   assert.ok(right.roll < -0.4, `right roll ${right.roll}`);
   assert.ok(up.pitch > 0.4, `up pitch ${up.pitch}`);
   assert.ok(down.pitch < -0.4, `down pitch ${down.pitch}`);
+});
+
+test("right-stick inner disc aims, outer ring fires, rim has hysteresis", () => {
+  assert.equal(fireFromStick(0.2, false), false);
+  assert.equal(fireFromStick(0.6, false), true);
+  assert.equal(fireFromStick(0.42, true), true);
+  assert.equal(fireFromStick(0.2, true), false);
+  assert.equal(fireFromStick(0.42, false), false);
 });
 
 test("ground is a field, not a cylinder stamp", () => {
@@ -212,15 +221,17 @@ test("drawn square matches lock volume", () => {
   assert.ok(KEEP_R > OUTER_R, "keep is hysteresis, not a bigger gun");
 });
 
-test("quiet stick nudges a charged lock toward the director", () => {
+test("a charged lock does not sit the rail for you", () => {
   const s = createSortie({ corridor: true });
   stepSortie(s, emptyInput(), 1 / 60);
+  s.offsetX = 0;
+  s.offsetY = 0;
   const e = {
     id: 72,
     kind: "fighter" as const,
-    x: s.x + 2.4,
+    x: s.x + 6,
     y: s.y,
-    z: s.z - 90,
+    z: s.z - 80,
     vx: 0,
     vy: 0,
     vz: 0,
@@ -230,7 +241,7 @@ test("quiet stick nudges a charged lock toward the director", () => {
     staged: true,
   };
   s.enemies.push(e);
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 40; i++) {
     const pip = aimScreen(s, e.x, e.y, e.z);
     const held = emptyInput();
     held.fireHeld = true;
@@ -238,7 +249,8 @@ test("quiet stick nudges a charged lock toward the director", () => {
     held.sightY = pip.sy;
     stepSortie(s, held, 1 / 60);
   }
-  assert.ok(s.lockOn, "need a lock to nudge");
+  assert.ok(s.lockOn, "lock is a box, not a tow");
+  assert.ok(Math.abs(s.offsetX) < 2.5, `sit-nudge still pulling ${s.offsetX}`);
 });
 
 test("a fighter a few widths off the nose is outside the gunsight", () => {
@@ -582,17 +594,17 @@ test("rail envelope is a lane, not a wander", () => {
   assert.equal(ENVELOPE_X, 24);
 });
 
-test("lock moves the inner frame only", () => {
+test("inner frame stays on the director even while charging", () => {
   const s = createSortie();
   s.x = 0;
   s.y = 48;
   s.z = 0;
   s.yaw = 0;
   s.pitch = 0;
-  const e = {
+  s.enemies.push({
     id: 81,
-    kind: "fighter" as const,
-    x: 8,
+    kind: "fighter",
+    x: 0,
     y: 48,
     z: -80,
     vx: 0,
@@ -601,19 +613,16 @@ test("lock moves the inner frame only", () => {
     hp: 2,
     t: 0,
     alive: true,
-  };
-  s.enemies.push(e);
-  for (let i = 0; i < 50; i++) {
-    const pip = aimScreen(s, e.x, e.y, e.z);
+  });
+  for (let i = 0; i < 30; i++) {
     const held = emptyInput();
     held.fireHeld = true;
-    held.sightX = pip.sx;
-    held.sightY = pip.sy;
+    held.sightX = 0.1;
+    held.sightY = -0.04;
     stepSortie(s, held, 1 / 60);
   }
-  assert.equal(s.lockOn, true);
-  assert.ok(Math.abs(s.sightX - aimScreen(s, e.x, e.y, e.z).sx) < 0.04, "outer stays on the director");
-  assert.ok(Math.abs(s.innerSx - s.lockSx) < 0.05, `inner ${s.innerSx} lock ${s.lockSx}`);
+  assert.ok(Math.abs(s.innerSx - 0.1) < 0.04, `inner ${s.innerSx}`);
+  assert.ok(Math.abs(s.innerSy + 0.04) < 0.05, `innerY ${s.innerSy}`);
 });
 
 test("sight does not bank the craft", () => {
@@ -1451,4 +1460,80 @@ test("Dualis death wins the sortie", () => {
   });
   stepSortie(s, emptyInput(), 1 / 60);
   assert.equal(s.mode, "win");
+});
+
+test("hitStop freezes the craft for a beat", () => {
+  const s = createSortie();
+  s.x = 0;
+  s.y = 48;
+  s.z = 0;
+  s.yaw = 0;
+  s.pitch = 0;
+  s.hitStop = 0.2;
+  const yaw0 = s.yaw;
+  const inp = emptyInput();
+  inp.roll = 1;
+  stepSortie(s, inp, 1 / 60);
+  assert.ok(Math.abs(s.yaw - yaw0) < 0.002, `moved during hitStop ${s.yaw}`);
+  assert.ok(s.hitStop > 0.15);
+});
+
+test("ligature I adds a hull pip", () => {
+  const s = createSortie({ kits: { ligature: 1 } });
+  assert.equal(s.hullMax, 7);
+  assert.equal(s.hull, 7);
+});
+
+test("collecting a kit ranks it and dirties the save", () => {
+  const s = createSortie();
+  s.wave = 99;
+  s.x = 0;
+  s.y = 48;
+  s.z = 0;
+  s.pickups.push({
+    id: 3,
+    kind: "kit",
+    kit: "ligature",
+    x: 0,
+    y: 48,
+    z: 0,
+    taken: false,
+  });
+  stepSortie(s, emptyInput(), 1 / 60);
+  assert.equal(s.kitRanks.ligature, 1);
+  assert.equal(s.kitDirty, true);
+  assert.ok(s.kitGained.includes("ligature"));
+  s.kitDirty = false;
+  s.pickups.push({
+    id: 4,
+    kind: "kit",
+    kit: "ligature",
+    x: s.x,
+    y: s.y,
+    z: s.z,
+    taken: false,
+  });
+  stepSortie(s, emptyInput(), 1 / 60);
+  assert.equal(s.kitRanks.ligature, 2);
+  s.pickups.push({
+    id: 5,
+    kind: "kit",
+    kit: "ligature",
+    x: s.x,
+    y: s.y,
+    z: s.z,
+    taken: false,
+  });
+  stepSortie(s, emptyInput(), 1 / 60);
+  assert.equal(s.kitRanks.ligature, 2);
+});
+
+test("first writing seats a kit even without the pickup", () => {
+  const a = grantClear("coast", false, {});
+  assert.equal(a.ranks.ligature, 1);
+  assert.ok(a.gained.includes("ligature"));
+  const b = grantClear("coast", false, { ligature: 1 });
+  assert.equal(b.gained.length, 0);
+  const c = grantClear("coast", true, { ligature: 1 });
+  assert.equal(c.ranks.serif, 1);
 });

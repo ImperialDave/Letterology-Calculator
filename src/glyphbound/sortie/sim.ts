@@ -29,8 +29,6 @@ export const LASER_LIFE = 0.28;
 /** Staged rail lizards sit here once they have closed from the amber watch. */
 export const GALLERY_LEAD = 88;
 const GALLERY_CLOSE = 58;
-const NUDGE_STICK = 0.35;
-const NUDGE_SIT = 8;
 
 export type EnemyKind = "fighter" | "cork" | "bomber" | "turret" | "ace" | "mech" | "mothership" | "dualis" | "aster";
 export type FormName = "v" | "line" | "cross" | "guide" | "hold";
@@ -216,6 +214,12 @@ export interface SortieState {
   kitRanks: KitRanks;
   kitDirty: boolean;
   kitGained: KitId[];
+  doneBeats: number[];
+  trauma: number;
+  shake: boolean;
+  fxq: { x: number; y: number; z: number; kill: boolean }[];
+  popN: number;
+  popT: number;
 }
 
 const CRUISE = 52;
@@ -281,15 +285,8 @@ function flyCraft(s: SortieState, input: SortieInput, dt: number) {
     s.pathT = Math.min(1, s.pathT + (s.speed * dt) / len);
     const stickX = Math.max(-1, Math.min(1, input.roll + input.rudder * 0.25));
     const stickY = Math.max(-1, Math.min(1, input.pitch));
-    const quiet = Math.abs(input.roll) < NUDGE_STICK && Math.abs(input.pitch) < NUDGE_STICK;
-    let wantX = stickX * ENVELOPE_X;
-    let wantY = stickY * ENVELOPE_Y;
-    if (quiet && s.lockOn && s.charge >= s.mods.chargeSeek) {
-      wantX -= (s.lockSx - s.sightX) * NUDGE_SIT;
-      wantY += (s.lockSy - s.sightY) * NUDGE_SIT;
-    }
-    wantX = Math.max(-ENVELOPE_X, Math.min(ENVELOPE_X, wantX));
-    wantY = Math.max(-ENVELOPE_Y, Math.min(ENVELOPE_Y, wantY));
+    const wantX = Math.max(-ENVELOPE_X, Math.min(ENVELOPE_X, stickX * ENVELOPE_X));
+    const wantY = Math.max(-ENVELOPE_Y, Math.min(ENVELOPE_Y, stickY * ENVELOPE_Y));
     s.offsetX = follow(s.offsetX, wantX, STICK_POS_K, dt);
     s.offsetY = follow(s.offsetY, wantY, STICK_POS_K, dt);
     const sample = samplePath(s.path, s.pathT);
@@ -415,6 +412,7 @@ export function createSortie(opts?: {
   missionId?: string;
   biome?: BiomeId;
   kits?: KitRanks;
+  shake?: boolean;
 }): SortieState {
   const corridor = opts?.corridor === true;
   const path = opts?.path ?? (corridor ? SKY_CORRIDOR : []);
@@ -522,6 +520,12 @@ export function createSortie(opts?: {
     kitRanks: { ...kitRanks },
     kitDirty: false,
     kitGained: [],
+    doneBeats: [],
+    trauma: 0,
+    shake: opts?.shake !== false,
+    fxq: [],
+    popN: 0,
+    popT: 0,
   };
 }
 
@@ -651,11 +655,20 @@ function seatKit(s: SortieState, id: KitId) {
   }
 }
 
+function bumpFx(s: SortieState, x: number, y: number, z: number, kill: boolean, pts: number) {
+  s.fxq.push({ x, y, z, kill });
+  s.trauma = Math.min(1, s.trauma + (kill ? 0.28 : 0.12));
+  s.popN = pts;
+  s.popT = 0.45;
+  if (kill) s.hitStop = Math.max(s.hitStop, 0.045);
+}
+
 function hurt(s: SortieState, n: number, snap = false) {
   if (s.invuln > 0 || s.barrel > 0 || s.somersault > 0 || s.mode !== "play") return;
   s.hull -= n;
   s.invuln = s.mods.invuln;
   s.hitStop = 0.05;
+  s.trauma = Math.min(1, s.trauma + 0.4);
   if (snap && s.wings > 0) {
     s.wings = (s.wings - 1) as 0 | 1 | 2;
     if (s.stem > 0) s.stem = (s.stem - 1) as 0 | 1 | 2;
@@ -672,7 +685,9 @@ function killEnemy(s: SortieState, e: Enemy, splash = false) {
   if (!e.alive) return;
   e.alive = false;
   s.hits += 1;
-  s.score += e.kind === "dualis" || e.kind === "mech" || e.kind === "mothership" ? 1000 : splash ? 80 : 120;
+  const pts = e.kind === "dualis" || e.kind === "mech" || e.kind === "mothership" ? 1000 : splash ? 80 : 120;
+  s.score += pts;
+  bumpFx(s, e.x, e.y, e.z, true, pts);
   if (e.kind === "mech" && s.bossAt && s.t - s.bossAt < 25) {
     s.hits += 10;
     s.score += 400;
@@ -1096,7 +1111,13 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
     s.t += dt;
     return s;
   }
-  if (s.hitStop > 0) s.hitStop = Math.max(0, s.hitStop - dt);
+  if (s.hitStop > 0) {
+    s.hitStop = Math.max(0, s.hitStop - dt);
+    s.flash = Math.max(0, s.flash - dt * 4);
+    s.trauma = Math.max(0, s.trauma - dt * 1.8);
+    s.popT = Math.max(0, s.popT - dt);
+    return s;
+  }
 
   s.t += dt;
   s.invuln = Math.max(0, s.invuln - dt);
@@ -1104,6 +1125,8 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
   s.splash = Math.max(0, s.splash - dt);
   s.warned = Math.max(0, s.warned - dt);
   s.flash = Math.max(0, s.flash - dt * 4);
+  s.trauma = Math.max(0, s.trauma - dt * 1.6);
+  s.popT = Math.max(0, s.popT - dt);
   if (s.radio && s.t > s.radio.until) s.radio = null;
 
   if (input.barrel !== 0 && s.barrel <= 0) {
@@ -1253,10 +1276,8 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
     s.leadSy = 0;
   }
   const para = sightParallax(s);
-  const ix = s.lockOn ? s.lockSx : s.sightX + para.x;
-  const iy = s.lockOn ? s.lockSy : s.sightY + para.y;
-  s.innerSx = follow(s.innerSx, ix, 14, dt);
-  s.innerSy = follow(s.innerSy, iy, 14, dt);
+  s.innerSx = follow(s.innerSx, s.sightX + para.x, 14, dt);
+  s.innerSy = follow(s.innerSy, s.sightY + para.y, 14, dt);
 
   if (!input.fireHeld) {
     if (s.charge >= s.mods.chargeLock && !liveCharge) {
@@ -1371,7 +1392,9 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
           if (hit) {
             e.hp -= sh.kind === "charge" ? 6 : s.stem >= 2 ? 2 : 1;
             sh.life = 0;
-            s.score += sh.kind === "charge" ? 80 : 20;
+            const pts = sh.kind === "charge" ? 80 : 20;
+            s.score += pts;
+            if (e.hp > 0) bumpFx(s, e.x, e.y, e.z, false, pts);
             if (sh.kind === "charge") chargeSplash(s, sh.x, sh.y, sh.z, e.id);
             if (e.kind === "mech") {
               if (!s.bossAt) s.bossAt = s.t;

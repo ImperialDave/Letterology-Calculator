@@ -34,7 +34,7 @@ export const sortieSfx = {
   charge: () => beep(220, 0.22, "sawtooth", 0.06),
   lock: () => beep(980, 0.12, "square", 0.045),
   warn: () => beep(180, 0.16, "sawtooth", 0.05),
-  hit: () => beep(160, 0.12, "triangle", 0.07),
+  hit: () => beep(150 + Math.random() * 40, 0.1, "triangle", 0.065),
   boom: () => {
     beep(90 + Math.random() * 30, 0.22, "sawtooth", 0.07);
     beep(180, 0.12, "triangle", 0.04);
