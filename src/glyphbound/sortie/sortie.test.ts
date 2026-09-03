@@ -3,10 +3,24 @@ import test from "node:test";
 import * as THREE from "three";
 import { makeCWing } from "./cwing";
 import { groundHeight } from "./height";
-import { COAST_PATH, landmarksFor, riverX, SORTS_PATH } from "./landmarks";
+import { rockRing, rocks, ROCK_GAP, ROCK_RING_R } from "./beats";
+import {
+  COAST_PATH,
+  GUTTER_PATH,
+  HOLE_INNER_X,
+  inHole,
+  landmarksFor,
+  pointAtZ,
+  PRESS_PATH,
+  RING_COLLECT,
+  RING_R,
+  riverX,
+  SLUG_PATH,
+  SORTS_PATH,
+} from "./landmarks";
 import { MISSIONS, unlockedIds } from "./missions";
 import { CAMPAIGN, crewOf } from "./story";
-import { ENVELOPE_X, pathLength } from "./path";
+import { ENVELOPE_X, ENVELOPE_Y, pathLength } from "./path";
 import { analogFromDelta, fireFromStick } from "./stick";
 import { grantClear } from "./kits";
 import { SortieKeys } from "./input";
@@ -1537,4 +1551,129 @@ test("first writing seats a kit even without the pickup", () => {
   assert.equal(b.gained.length, 0);
   const c = grantClear("coast", true, { ligature: 1 });
   assert.equal(c.ranks.serif, 1);
+});
+
+const PAY_PATHS: Record<string, { x: number; y: number; z: number }[]> = {
+  coast: COAST_PATH,
+  slug: SLUG_PATH,
+  gutter: GUTTER_PATH,
+  press: PRESS_PATH,
+};
+
+test("pay holes are wider than the craft and sit on the rail", () => {
+  for (const id of ["coast", "slug", "gutter", "press"] as const) {
+    const path = PAY_PATHS[id];
+    for (const L of landmarksFor(id).filter((n) => n.pay)) {
+      assert.ok(L.r >= HOLE_INNER_X, `${id} ${L.id} r ${L.r}`);
+      const p = pointAtZ(path, L.z);
+      if (L.kind === "gate") {
+        assert.ok(Math.abs(L.x - p.x) <= ENVELOPE_X, `${id} ${L.id} off rail ${L.x - p.x}`);
+      } else {
+        assert.ok(Math.abs(L.x - p.x) <= 12, `${id} ${L.id} dx ${L.x - p.x}`);
+      }
+    }
+  }
+});
+
+test("the rail flies through pay holes, not over them", () => {
+  for (const id of ["coast", "slug", "gutter", "press"] as const) {
+    const path = PAY_PATHS[id];
+    for (const L of landmarksFor(id).filter((n) => n.pay)) {
+      const p = pointAtZ(path, L.z);
+      const y0 = groundHeight(id === "press" ? "press" : id === "gutter" ? "gutter" : id === "slug" ? "slug" : "coast", L.x, L.z, id);
+      if (L.kind === "gate") {
+        const dip = { x: L.x, y: p.y, z: L.z };
+        assert.ok(inHole(dip.x, dip.y, dip.z, L, y0), `${id} ${L.id} dip miss y ${p.y}`);
+        assert.equal(inHole(p.x, p.y, L.z, L, y0), false, `${id} ${L.id} paid on the street`);
+        continue;
+      }
+      assert.ok(inHole(p.x, p.y, p.z, L, y0), `${id} ${L.id} path y ${p.y} hole ${L.h} r ${L.r}`);
+    }
+  }
+});
+
+test("Coast street is low enough to go under the highways", () => {
+  for (const L of landmarksFor("coast").filter((n) => n.kind === "highway")) {
+    const p = pointAtZ(COAST_PATH, L.z);
+    const y0 = groundHeight("coast", L.x, L.z, "coast");
+    assert.ok(p.y < 32, `rail ${p.y} at ${L.id}`);
+    assert.ok(y0 + L.h >= p.y + 16, `deck ${y0 + L.h} rail ${p.y}`);
+  }
+  const mid = pointAtZ(COAST_PATH, 1500);
+  const floor = groundHeight("coast", mid.x, mid.z, "coast");
+  assert.ok(mid.y - ENVELOPE_Y >= floor + 6 - 0.5, `full dip ${mid.y - ENVELOPE_Y} floor ${floor + 6}`);
+});
+
+test("n-arches pay on the rail and miss at full sit", () => {
+  const s = createSortie({ corridor: true, path: COAST_PATH, missionId: "coast", biome: "coast" });
+  s.flight = "allrange";
+  s.speed = 0;
+  s.invuln = 4;
+  const arches = landmarksFor("coast").filter((L) => L.pay === "arch");
+  assert.equal(arches.length, 7);
+  for (const L of arches) {
+    const p = pointAtZ(COAST_PATH, L.z);
+    s.x = p.x;
+    s.y = p.y;
+    s.z = L.z;
+    stepSortie(s, emptyInput(), 1 / 60);
+  }
+  assert.equal(s.archHits, 7);
+  assert.equal(s.fork, true);
+
+  const miss = createSortie({ corridor: true, path: COAST_PATH, missionId: "coast", biome: "coast" });
+  miss.flight = "allrange";
+  miss.speed = 0;
+  miss.invuln = 4;
+  const L = arches[0];
+  miss.x = L.x + ENVELOPE_X;
+  miss.y = pointAtZ(COAST_PATH, L.z).y;
+  miss.z = L.z;
+  stepSortie(miss, emptyInput(), 1 / 60);
+  assert.equal(miss.archHits, 0);
+});
+
+test("gorge sit is reachable and the street does not pay it", () => {
+  const L = landmarksFor("coast").find((n) => n.id === "fall");
+  assert.ok(L);
+  const p = pointAtZ(COAST_PATH, L.z);
+  assert.ok(Math.abs(L.x - p.x) <= ENVELOPE_X);
+  assert.ok(p.y - ENVELOPE_Y < L.h);
+  const y0 = groundHeight("coast", L.x, L.z, "coast");
+  assert.equal(inHole(p.x, p.y, L.z, L, y0), false);
+  assert.ok(inHole(L.x, p.y, L.z, L, y0));
+});
+
+test("tanker hold is the rail, envelope-up is not", () => {
+  const L = landmarksFor("gutter").find((n) => n.pay === "tanker");
+  assert.ok(L);
+  const p = pointAtZ(GUTTER_PATH, L.z);
+  const y0 = groundHeight("gutter", L.x, L.z, "gutter");
+  assert.ok(inHole(p.x, p.y, p.z, L, y0), `path ${p.x},${p.y}`);
+  assert.equal(inHole(p.x, p.y + ENVELOPE_Y, p.z, L, y0), false);
+});
+
+test("Sorts rock doors leave a craft-sized hole", () => {
+  const hurt = 8;
+  for (const r of [32, 34, 30]) {
+    assert.ok(r - hurt >= HOLE_INNER_X, `ring r ${r}`);
+  }
+  const ring = rockRing(-40, ROCK_RING_R, 8);
+  assert.equal(ring?.length, 8);
+  const layer = (rocks(-50, 12) ?? []).slice(0, 4);
+  const xs = layer.map((sh) => sh.dx).sort((a, b) => a - b);
+  let minGap = 999;
+  for (let i = 1; i < xs.length; i++) minGap = Math.min(minGap, xs[i] - xs[i - 1]);
+  assert.ok(minGap >= 20, `gap ${minGap}`);
+  assert.equal(RING_COLLECT, RING_R + 4);
+  assert.ok(RING_R >= HOLE_INNER_X);
+  assert.equal(ROCK_GAP, 36);
+});
+
+test("Press censers sit on the road", () => {
+  for (const L of landmarksFor("press").filter((n) => n.pay)) {
+    const p = pointAtZ(PRESS_PATH, L.z);
+    assert.ok(Math.abs(L.x - p.x) <= ENVELOPE_X, `${L.id} ${L.x - p.x}`);
+    assert.ok(L.r >= HOLE_INNER_X);
+  }
 });

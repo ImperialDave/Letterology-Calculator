@@ -7,10 +7,26 @@ export interface Landmark {
   kind: LandmarkKind;
   x: number;
   z: number;
+  /** Kind meaning: arch/gate/highway = height above ground. ring/censer/tanker = world Y of the hole center. */
   h: number;
+  /** Kind meaning: arch/gate = inner half-width. ring/censer/tanker = inner radius. highway = deck half-span. */
   r: number;
   pay?: "arch" | "ring" | "tanker" | "gate";
 }
+
+/** Craft half-size used by hole law and landmark solids. */
+export const CRAFT_R = 4;
+/** Inner half-width a mandatory hole must clear (mesh, pay, and hurt). */
+export const HOLE_INNER_X = 18;
+export const HOLE_INNER_Y = 14;
+export const HOLE_COMFORT_X = 22;
+export const HOLE_COMFORT_Y = 16;
+/** Gold / warp / censer torus major radius. Collect is RING_R + CRAFT_R. */
+export const RING_R = 18;
+export const RING_TUBE = 0.9;
+export const RING_COLLECT = RING_R + CRAFT_R;
+export const TANKER_LEN = 70;
+export const ARCH_POST = 8;
 
 export function stripPath(z0: number, z1: number, steps: number, sample: (u: number) => { x: number; y: number }): { x: number; y: number; z: number }[] {
   const out: { x: number; y: number; z: number }[] = [];
@@ -30,26 +46,27 @@ export function riverX(z: number) {
 export const COAST_PATH = stripPath(4000, 100, 22, (u) => {
   const z = 4000 + (100 - 4000) * u;
   const x = riverX(z);
-  if (u < 0.12) return { x, y: 42 };
-  if (u < 0.28) return { x, y: 36 };
-  if (u < 0.5) return { x, y: 48 };
-  if (u < 0.78) return { x, y: 40 };
-  return { x, y: 52 };
+  // Street height: above ground+6 even at full dip (path.y - 18 ≥ 8).
+  if (u < 0.12) return { x, y: 28 };
+  if (u < 0.28) return { x, y: 26 };
+  if (u < 0.5) return { x, y: 26 };
+  if (u < 0.78) return { x, y: 26 };
+  return { x, y: 26 };
 });
 
 export const SLUG_PATH = stripPath(3200, 80, 16, (u) => ({
-  x: Math.sin(u * 9) * 28,
-  y: 48 + Math.sin(u * 14) * 16,
+  x: Math.sin(u * 9) * 12,
+  y: 36 + Math.sin(u * 14) * 6,
 }));
 
 export const GUTTER_PATH = stripPath(3000, 80, 16, (u) => ({
-  x: u > 0.4 && u < 0.7 ? -12 : 8,
-  y: 36 + (u > 0.5 ? 8 : 0),
+  x: u > 0.4 && u < 0.7 ? 0 : 8,
+  y: 28 + (u > 0.5 ? 2 : 0),
 }));
 
 export const PRESS_PATH = stripPath(2800, 40, 14, (u) => ({
   x: 0,
-  y: 44 + u * 22,
+  y: 32 + u * 8,
 }));
 
 /** Space belt: slight weave so the field isn't a tube. */
@@ -57,6 +74,23 @@ export const SORTS_PATH = stripPath(3800, 80, 20, (u) => ({
   x: Math.sin(u * 7) * 16,
   y: 48 + Math.sin(u * 11) * 10,
 }));
+
+/** Lerp the strip at a world z (paths run toward −Z). */
+export function pointAtZ(pts: { x: number; y: number; z: number }[], z: number) {
+  if (pts.length === 0) return { x: 0, y: 28, z };
+  if (z >= pts[0].z) return { x: pts[0].x, y: pts[0].y, z };
+  const last = pts[pts.length - 1];
+  if (z <= last.z) return { x: last.x, y: last.y, z };
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1];
+    const b = pts[i];
+    if ((a.z - z) * (b.z - z) > 0) continue;
+    const span = b.z - a.z;
+    const t = Math.abs(span) < 1e-6 ? 0 : (z - a.z) / span;
+    return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, z };
+  }
+  return { x: pts[0].x, y: pts[0].y, z };
+}
 
 function arches(z0: number, n: number, gap: number): Landmark[] {
   return Array.from({ length: n }, (_, i) => {
@@ -66,9 +100,25 @@ function arches(z0: number, n: number, gap: number): Landmark[] {
       kind: "arch" as const,
       x: riverX(z),
       z,
-      h: 28,
-      r: 16,
+      h: 42,
+      r: HOLE_COMFORT_X,
       pay: "arch" as const,
+    };
+  });
+}
+
+function ringsAlong(path: { x: number; y: number; z: number }[], z0: number, n: number, gap: number, kind: "ring" | "censer"): Landmark[] {
+  return Array.from({ length: n }, (_, i) => {
+    const z = z0 - i * gap;
+    const p = pointAtZ(path, z);
+    return {
+      id: `${kind}-${i}`,
+      kind,
+      x: kind === "censer" ? p.x + Math.sin(i * 1.7) * 8 : p.x,
+      z,
+      h: p.y,
+      r: RING_R,
+      pay: kind === "ring" ? ("ring" as const) : i % 2 === 0 ? ("gate" as const) : undefined,
     };
   });
 }
@@ -90,10 +140,10 @@ export const LANDMARKS: Record<string, Landmark[]> = {
         r: 10 + (i % 3) * 3,
       };
     }),
-    { id: "hwy-a", kind: "highway", x: riverX(2280), z: 2280, h: 18, r: 70 },
-    { id: "hwy-b", kind: "highway", x: riverX(2040), z: 2040, h: 18, r: 70 },
+    { id: "hwy-a", kind: "highway", x: riverX(2280), z: 2280, h: 48, r: 70 },
+    { id: "hwy-b", kind: "highway", x: riverX(2040), z: 2040, h: 48, r: 70 },
     ...arches(1680, 7, 110),
-    { id: "fall", kind: "gate", x: riverX(720) - 20, z: 720, h: 40, r: 18, pay: "gate" },
+    { id: "fall", kind: "gate", x: riverX(720) - 22, z: 720, h: 36, r: HOLE_INNER_X, pay: "gate" },
     { id: "plaza", kind: "pad", x: 0, z: -160, h: 22, r: 90 },
   ],
   slug: [
@@ -105,15 +155,7 @@ export const LANDMARKS: Record<string, Landmark[]> = {
       h: 14 + (i % 5) * 8,
       r: 16 + (i % 3) * 6,
     })),
-    ...Array.from({ length: 7 }, (_, i) => ({
-      id: `ring-${i}`,
-      kind: "ring" as const,
-      x: Math.sin(i * 0.4) * 12,
-      z: 1600 - i * 90,
-      h: 48,
-      r: 10,
-      pay: "ring" as const,
-    })),
+    ...ringsAlong(SLUG_PATH, 1600, 7, 90, "ring"),
     { id: "bowl", kind: "pad", x: 0, z: -40, h: 8, r: 70 },
   ],
   gutter: [
@@ -125,7 +167,7 @@ export const LANDMARKS: Record<string, Landmark[]> = {
       h: 70,
       r: 14,
     })),
-    { id: "tanker", kind: "tanker", x: 0, z: 1400, h: 16, r: 48, pay: "tanker" },
+    { id: "tanker", kind: "tanker", x: 0, z: 1400, h: 28, r: HOLE_INNER_X, pay: "tanker" },
     { id: "yard", kind: "pad", x: 0, z: -80, h: 10, r: 80 },
   ],
   ice: [
@@ -136,15 +178,7 @@ export const LANDMARKS: Record<string, Landmark[]> = {
   ],
   sorts: [],
   press: [
-    ...Array.from({ length: 5 }, (_, i) => ({
-      id: `cen-${i}`,
-      kind: "censer" as const,
-      x: Math.cos((i / 5) * Math.PI * 2) * 70,
-      z: 900 - i * 140,
-      h: 36,
-      r: 12,
-      pay: i % 2 === 0 ? ("gate" as const) : undefined,
-    })),
+    ...ringsAlong(PRESS_PATH, 900, 5, 140, "censer"),
     { id: "crater", kind: "pad", x: 0, z: -40, h: 6, r: 110 },
   ],
   sky: [],
@@ -182,8 +216,8 @@ export function landmarkHeight(missionId: string, x: number, z: number) {
 
     // Waterfall: bright fall on the left, a darker gorge you can dip into.
     if (z > 640 && z < 820) {
-      const inLane = x < rx - 10 && x > rx - 64 && Math.abs(z - 720) < 18;
-      const cliff = x < rx - 48 && Math.abs(z - 720) < 48;
+      const inLane = x < rx + 4 && x > rx - 40 && Math.abs(z - 720) < 24;
+      const cliff = x < rx - 44 && Math.abs(z - 720) < 48;
       if (inLane) land = Math.min(land, 1.1);
       else if (cliff) land = Math.max(land, 32 + n * 0.35);
     }
@@ -205,4 +239,44 @@ export function landmarkHeight(missionId: string, x: number, z: number) {
     }
   }
   return h;
+}
+
+function holeDepth(L: Landmark) {
+  return Math.max(10, L.r * 0.45);
+}
+
+/** True when the craft is inside the authored opening. y0 is ground at the landmark. */
+export function inHole(x: number, y: number, z: number, L: Landmark, y0 = 0) {
+  if (!L.pay && L.kind !== "ring" && L.kind !== "censer") return false;
+  if (L.pay === "tanker" || L.kind === "tanker") {
+    const rad = Math.hypot(x - L.x, y - L.h);
+    return rad < L.r * 0.85 && Math.abs(z - L.z) < 22;
+  }
+  if (L.kind === "ring" || L.kind === "censer") {
+    return Math.hypot(x - L.x, y - L.h, z - L.z) < L.r + CRAFT_R;
+  }
+  return Math.abs(x - L.x) < L.r && Math.abs(z - L.z) < holeDepth(L) && y > y0 + 4 && y < y0 + L.h;
+}
+
+/** Solid of a pay-hole or highway deck. Caller skips this when `inHole` is true. */
+export function inLandmarkSolid(x: number, y: number, z: number, L: Landmark, y0 = 0) {
+  const dz = holeDepth(L);
+  if (L.kind === "arch" || L.kind === "gate") {
+    const post = L.r + ARCH_POST * 0.5;
+    const inSpan = Math.abs(x - L.x) < post + ARCH_POST * 0.5 + CRAFT_R && Math.abs(z - L.z) < dz + 4;
+    if (!inSpan) return false;
+    const onPost = Math.abs(Math.abs(x - L.x) - post) < ARCH_POST * 0.5 + CRAFT_R && y < y0 + L.h + 6;
+    const onCap = y > y0 + L.h - 2 && y < y0 + L.h + 10;
+    return onPost || onCap;
+  }
+  if (L.kind === "tanker") {
+    if (Math.abs(z - L.z) > TANKER_LEN * 0.5) return false;
+    const rad = Math.hypot(x - L.x, y - L.h);
+    return rad > L.r - 2 && rad < L.r + 4;
+  }
+  if (L.kind === "highway") {
+    const deckY = y0 + L.h;
+    return Math.abs(x - L.x) < L.r * 0.62 && Math.abs(z - L.z) < 10 && Math.abs(y - deckY) < 3 + CRAFT_R;
+  }
+  return false;
 }

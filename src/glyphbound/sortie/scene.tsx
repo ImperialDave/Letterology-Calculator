@@ -20,6 +20,7 @@ import {
   COCKPIT_LOOK,
   COCKPIT_UP,
 } from "./cam";
+import { RING_R, RING_TUBE } from "./landmarks";
 import { BARREL_T, type EnemyKind, type PickupKind, type SortieState } from "./sim";
 import { makeSky, makeWorld } from "./world";
 
@@ -241,7 +242,8 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
       }
       node.position.set(e.x, e.y, e.z);
       if (e.kind === "aster") {
-        node.scale.setScalar(e.hp >= 8 ? 3.2 : 1.15);
+        const body = e.hp >= 8 ? 22 : 10;
+        node.scale.setScalar((body * 0.9) / 1.15);
       } else if (e.kind === "turret" || e.kind === "mech" || e.kind === "mothership" || e.kind === "dualis") {
         node.lookAt(s.x, e.kind === "turret" ? e.y : s.y, s.z);
       } else {
@@ -290,7 +292,7 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
 
     while (rings.current.length < s.rings.length) {
       const m = new THREE.Mesh(
-        new THREE.TorusGeometry(5.5, 0.45, 6, 14),
+        new THREE.TorusGeometry(RING_R, RING_TUBE, 8, 18),
         new THREE.MeshLambertMaterial({ color: 0xe8d48a, emissive: 0x6a5428, emissiveIntensity: 0.7 }),
       );
       g.add(m);

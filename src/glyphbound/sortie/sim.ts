@@ -5,7 +5,7 @@ import { collectRank, kitMods, kitOf, romanRank, type KitId, type KitMods, type 
 import { scriptMissionWaves } from "./missions";
 import { ENVELOPE_X, ENVELOPE_Y, SHIFT_T, SKY_CORRIDOR, UTURN_T, pathLength, pathFrame, samplePath, type PathPoint } from "./path";
 import { groundHeight } from "./height";
-import { landmarksFor } from "./landmarks";
+import { inHole, inLandmarkSolid, landmarksFor, RING_COLLECT } from "./landmarks";
 import type { BiomeId } from "./terrain";
 export { aimOff, aimScreen, CONVERGE_DIST, gunPip, inBox, unproject } from "./cam";
 export type { KitId, KitMods, KitRanks } from "./kits";
@@ -539,6 +539,11 @@ function flyerKind(kind: EnemyKind) {
   return kind === "fighter" || kind === "cork" || kind === "bomber" || kind === "ace";
 }
 
+function laneOf(i: number) {
+  const col = (i % 5) - 2;
+  return col === 0 ? (i % 2 === 0 ? -1 : 1) : col;
+}
+
 function seedWarpField(s: SortieState) {
   const d = railDir(s);
   const side = sideOf(d);
@@ -547,9 +552,9 @@ function seedWarpField(s: SortieState) {
     spawnEnemy(
       s,
       "aster",
-      s.x + d.x * ahead + side.x * ((i % 5) - 2) * 18,
+      s.x + d.x * ahead + side.x * laneOf(i) * 28,
       s.y + ((i % 4) - 1.5) * 11,
-      s.z + d.z * ahead + side.z * ((i % 5) - 2) * 18,
+      s.z + d.z * ahead + side.z * laneOf(i) * 28,
       { hp: i % 5 === 0 ? 12 : 1, staged: false, armed: false },
     );
   }
@@ -757,12 +762,8 @@ function islandHeight(s: SortieState, x: number, z: number) {
 function payLandmarks(s: SortieState) {
   for (const L of landmarksFor(s.missionId)) {
     if (!L.pay || s.takenLandmarks.includes(L.id)) continue;
-    const hole =
-      Math.abs(s.x - L.x) < (L.pay === "tanker" ? 18 : 14) &&
-      Math.abs(s.z - L.z) < (L.pay === "tanker" ? 12 : 9) &&
-      s.y > L.h * 0.2 &&
-      s.y < L.h + 12;
-    if (!hole) continue;
+    const y0 = islandHeight(s, L.x, L.z);
+    if (!inHole(s.x, s.y, s.z, L, y0)) continue;
     s.takenLandmarks.push(L.id);
     s.hits += 1;
     s.score += L.pay === "arch" ? 80 : 120;
@@ -779,6 +780,30 @@ function payLandmarks(s: SortieState) {
       s.radio = { who: "e", text: "Through the hold. Em-dash aboard.", until: s.t + 2.2 };
     }
     if (L.pay === "gate") s.hull = Math.min(HULL_MAX + s.golds, s.hull + 1);
+  }
+}
+
+function bumpHoleSolids(s: SortieState) {
+  for (const L of landmarksFor(s.missionId)) {
+    if (L.kind !== "arch" && L.kind !== "gate" && L.kind !== "tanker" && L.kind !== "highway") continue;
+    const y0 = islandHeight(s, L.x, L.z);
+    if (inHole(s.x, s.y, s.z, L, y0)) continue;
+    if (!inLandmarkSolid(s.x, s.y, s.z, L, y0)) continue;
+    hurt(s, 1);
+    if (L.kind === "tanker") {
+      const dx = s.x - L.x;
+      const dy = s.y - L.h;
+      const rad = Math.hypot(dx, dy) || 1;
+      const inner = L.r * 0.8;
+      s.x = L.x + (dx / rad) * inner;
+      s.y = L.h + (dy / rad) * inner;
+    } else if (L.kind === "highway") {
+      s.y = Math.min(s.y, y0 + L.h - 4);
+    } else {
+      const side = s.x >= L.x ? 1 : -1;
+      if (Math.abs(s.x - L.x) >= L.r) s.x = L.x + side * (L.r + 8);
+      if (s.y > y0 + L.h - 2) s.y = y0 + L.h - 4;
+    }
   }
 }
 
@@ -1202,6 +1227,7 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
   }
 
   payLandmarks(s);
+  bumpHoleSolids(s);
 
   if (s.missionId === "sorts" && s.warpT > 0 && s.mode === "play" && s.t - s.warpT > 7) {
     s.mode = "win";
@@ -1210,7 +1236,7 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
 
   for (const r of s.rings) {
     if (r.taken) continue;
-    if (dist2(s, r) < 13 * 13) {
+    if (dist2(s, r) < RING_COLLECT * RING_COLLECT) {
       r.taken = true;
       s.score += 150;
       s.hull = Math.min(HULL_MAX + s.golds, s.hull + 1);

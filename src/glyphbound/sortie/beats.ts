@@ -17,11 +17,14 @@ export function far(dz: number) {
   return Math.min(dz, -200);
 }
 
-function rocks(dz: number, n = 8): Beat["ships"] {
+export const ROCK_RING_R = 32;
+export const ROCK_GAP = 36;
+
+export function rocks(dz: number, n = 8): Beat["ships"] {
   const z0 = far(dz);
   return Array.from({ length: n }, (_, i) => ({
     kind: "aster" as const,
-    dx: ((i % 4) - 1.5) * 12 + (i % 3) * 4,
+    dx: ((i % 4) - 1.5) * ROCK_GAP + (i % 3) * 4,
     dy: (i % 5) * 9 - 14,
     dz: z0 - Math.floor(i / 4) * 36,
     hp: i % 6 === 0 ? 12 : 1,
@@ -56,7 +59,7 @@ function Line(dz: number): Beat["ships"] {
   ];
 }
 
-function rockRing(dz: number, r = 26, n = 8): Beat["ships"] {
+export function rockRing(dz: number, r = ROCK_RING_R, n = 8): Beat["ships"] {
   const z = far(dz);
   return Array.from({ length: n }, (_, i) => {
     const a = (i / n) * Math.PI * 2;
@@ -149,23 +152,23 @@ export const BEATS: Record<string, Beat[]> = {
     { id: 1, when: "rail", t: 0.03, kind: "radio", who: "s", text: "His drawers. Shoot the small type. Brake the crushers." },
     { id: 2, when: "rail", t: 0.04, kind: "spawn", ships: rocks(-50, 10) },
     { id: 3, when: "rail", t: 0.08, kind: "radio", who: "e", text: "Three rings. The hole pays. I’m with you." },
-    { id: 4, when: "rail", t: 0.09, kind: "spawn", ships: rockRing(-40, 16, 8) },
-    { id: 5, when: "rail", t: 0.14, kind: "spawn", ships: rockRing(-42, 17, 8) },
-    { id: 6, when: "rail", t: 0.19, kind: "spawn", ships: rockRing(-44, 15, 9) },
+    { id: 4, when: "rail", t: 0.09, kind: "spawn", ships: rockRing(-40, 32, 8) },
+    { id: 5, when: "rail", t: 0.14, kind: "spawn", ships: rockRing(-42, 34, 8) },
+    { id: 6, when: "rail", t: 0.19, kind: "spawn", ships: rockRing(-44, 30, 8) },
     { id: 7, when: "rail", t: 0.2, kind: "pickup", loot: { kind: "stem", dx: 0, dy: 0, dz: -44 } },
     { id: 8, when: "rail", t: 0.24, kind: "spawn", ships: V(-48, 11) },
     { id: 9, when: "rail", t: 0.3, kind: "radio", who: "b", text: "Big sort. Go high or brake. I would brake." },
-    { id: 10, when: "rail", t: 0.32, kind: "spawn", ships: [{ kind: "aster", dx: 0, dy: 0, dz: -36, hp: 16 }, { kind: "aster", dx: -16, dy: 8, dz: -70, hp: 1 }, { kind: "aster", dx: 16, dy: -6, dz: -70, hp: 1 }] },
+    { id: 10, when: "rail", t: 0.32, kind: "spawn", ships: [{ kind: "aster", dx: 0, dy: -8, dz: -36, hp: 16 }, { kind: "aster", dx: -32, dy: 8, dz: -70, hp: 1 }, { kind: "aster", dx: 32, dy: -6, dz: -70, hp: 1 }] },
     { id: 11, when: "rail", t: 0.4, kind: "spawn", ships: rocks(-52, 12) },
     { id: 12, when: "rail", t: 0.5, kind: "check", who: "e", text: "Still here. Seven rings if you want the frozen stock." },
     { id: 13, when: "rail", t: 0.56, kind: "spawn", ships: V(-40, 11) },
     { id: 14, when: "rail", t: 0.62, kind: "rings", rings: [
-      { dx: -10, dy: 0, dz: -180 },
-      { dx: 10, dy: 4, dz: -250 },
-      { dx: -10, dy: -2, dz: -320 },
-      { dx: 12, dy: 6, dz: -390 },
-      { dx: -10, dy: 2, dz: -460 },
-      { dx: 10, dy: -4, dz: -530 },
+      { dx: -14, dy: 0, dz: -180 },
+      { dx: 14, dy: 4, dz: -250 },
+      { dx: -14, dy: -2, dz: -320 },
+      { dx: 14, dy: 6, dz: -390 },
+      { dx: -14, dy: 2, dz: -460 },
+      { dx: 14, dy: -4, dz: -530 },
       { dx: 0, dy: 0, dz: -600 },
     ] },
     { id: 15, when: "rail", t: 0.64, kind: "radio", who: "s", text: "Zigzag. All seven warp you off his page. Miss one and the quoin stays to lie." },

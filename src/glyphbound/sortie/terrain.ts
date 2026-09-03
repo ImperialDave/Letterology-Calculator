@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { groundHeight } from "./height";
-import { landmarksFor, riverX, type Landmark } from "./landmarks";
+import { ARCH_POST, HOLE_COMFORT_X, landmarksFor, RING_TUBE, riverX, TANKER_LEN, type Landmark } from "./landmarks";
 import { FOG, PAPER, RUST, ashTex, brassTex, grassLeadTex, iceGroundTex, iceWaterTex, inkWaterTex, leadTex, n64Mat, rockTex, rustTex, slagWaterTex } from "./n64";
 
 const ARENA_R = 420;
@@ -104,20 +104,23 @@ function placeLandmark(root: THREE.Group, L: Landmark, kit: BiomeKit, biome: Bio
   const rock = n64Mat(0xc8b89a, { map: rockTex() });
   if (L.kind === "arch") {
     const moss = n64Mat(0x7a9a58, { map: rockTex() });
-    const postL = new THREE.Mesh(new THREE.BoxGeometry(8, 22, 11), rock);
-    const postR = new THREE.Mesh(new THREE.BoxGeometry(8, 22, 11), rock);
-    postL.position.set(L.x - 16, y0 + 11, L.z);
-    postR.position.set(L.x + 16, y0 + 11, L.z);
-    postL.rotation.z = 0.08;
-    postR.rotation.z = -0.08;
-    const cap = new THREE.Mesh(new THREE.BoxGeometry(42, 9, 13), rock);
-    cap.position.set(L.x, y0 + 24, L.z);
-    cap.rotation.z = hash01(L.z) * 0.08 - 0.04;
-    const inner = new THREE.Mesh(new THREE.BoxGeometry(28, 6, 8), moss);
-    inner.position.set(L.x, y0 + 22, L.z);
+    const postX = L.r + ARCH_POST * 0.5;
+    const postH = L.h;
+    const postL = new THREE.Mesh(new THREE.BoxGeometry(ARCH_POST, postH, 14), rock);
+    const postR = new THREE.Mesh(new THREE.BoxGeometry(ARCH_POST, postH, 14), rock);
+    postL.position.set(L.x - postX, y0 + postH * 0.5, L.z);
+    postR.position.set(L.x + postX, y0 + postH * 0.5, L.z);
+    postL.rotation.z = 0.04;
+    postR.rotation.z = -0.04;
+    const capW = (L.r + ARCH_POST) * 2 + 4;
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(capW, 10, 16), rock);
+    cap.position.set(L.x, y0 + L.h + 4, L.z);
+    cap.rotation.z = hash01(L.z) * 0.06 - 0.03;
+    const inner = new THREE.Mesh(new THREE.BoxGeometry(L.r * 2, 7, 10), moss);
+    inner.position.set(L.x, y0 + L.h + 1, L.z);
     postL.castShadow = postR.castShadow = cap.castShadow = true;
     root.add(postL, postR, cap, inner);
-    for (const s of [-16, 16]) {
+    for (const s of [-postX, postX]) {
       const foot = new THREE.Mesh(new THREE.DodecahedronGeometry(7.2, 0), rock);
       foot.position.set(L.x + s, y0 + 4.5, L.z + 1);
       foot.rotation.y = hash01(L.z + s) * 2;
@@ -126,10 +129,11 @@ function placeLandmark(root: THREE.Group, L: Landmark, kit: BiomeKit, biome: Bio
     return;
   }
   if (L.kind === "gate") {
-    const left = new THREE.Mesh(new THREE.BoxGeometry(22, L.h + 16, 22), rock);
-    left.position.set(L.x - 16, y0 + (L.h + 16) * 0.42, L.z - 4);
-    const right = new THREE.Mesh(new THREE.BoxGeometry(14, L.h * 0.7, 16), rock);
-    right.position.set(L.x + 18, y0 + L.h * 0.28, L.z + 8);
+    const postX = L.r + 6;
+    const left = new THREE.Mesh(new THREE.BoxGeometry(14, L.h + 16, 18), rock);
+    left.position.set(L.x - postX, y0 + (L.h + 16) * 0.42, L.z - 4);
+    const right = new THREE.Mesh(new THREE.BoxGeometry(12, L.h * 0.7, 16), rock);
+    right.position.set(L.x + postX, y0 + L.h * 0.28, L.z + 8);
     left.castShadow = right.castShadow = true;
     root.add(left, right);
     const mist = new THREE.Mesh(
@@ -219,7 +223,8 @@ function placeLandmark(root: THREE.Group, L: Landmark, kit: BiomeKit, biome: Bio
     deck.position.set(L.x, y0 + L.h, L.z);
     deck.castShadow = true;
     root.add(deck);
-    for (const s of [-28, -10, 10, 28]) {
+    const pierX = HOLE_COMFORT_X + 8;
+    for (const s of [-pierX - 16, -pierX, pierX, pierX + 16]) {
       const pier = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.8, L.h, 5), rock);
       pier.position.set(L.x + s, y0 + L.h * 0.5, L.z);
       root.add(pier);
@@ -232,15 +237,24 @@ function placeLandmark(root: THREE.Group, L: Landmark, kit: BiomeKit, biome: Bio
     return;
   }
   if (L.kind === "tanker") {
-    const hull = new THREE.Mesh(new THREE.CylinderGeometry(9, 9, 70, 8, 1, true), metal);
+    const hull = new THREE.Mesh(new THREE.CylinderGeometry(L.r, L.r, TANKER_LEN, 10, 1, true), metal);
     hull.rotation.x = Math.PI / 2;
-    hull.position.set(L.x, y0 + 11, L.z);
+    hull.position.set(L.x, L.h, L.z);
     root.add(hull);
-    for (const s of [-34, 34]) {
-      const lip = new THREE.Mesh(new THREE.TorusGeometry(9.2, 1.1, 6, 10), metal);
-      lip.position.set(L.x, y0 + 11, L.z + s);
+    for (const s of [-TANKER_LEN * 0.48, TANKER_LEN * 0.48]) {
+      const lip = new THREE.Mesh(new THREE.TorusGeometry(L.r, 1.4, 6, 12), metal);
+      lip.position.set(L.x, L.h, L.z + s);
       root.add(lip);
     }
+    return;
+  }
+  if (L.kind === "ring") {
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(L.r, RING_TUBE, 8, 18),
+      n64Mat(0xe8d48a, { map: brassTex(), emissive: 0x6a5428, glow: 0.55 }),
+    );
+    ring.position.set(L.x, L.h, L.z);
+    root.add(ring);
     return;
   }
   if (L.kind === "stack") {
@@ -264,9 +278,9 @@ function placeLandmark(root: THREE.Group, L: Landmark, kit: BiomeKit, biome: Bio
     return;
   }
   if (L.kind === "censer") {
-    const b = new THREE.Mesh(new THREE.SphereGeometry(8, 6, 5), metal);
-    b.position.set(L.x, y0 + L.h, L.z);
-    root.add(b);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(L.r, RING_TUBE * 1.2, 8, 16), metal);
+    ring.position.set(L.x, L.h, L.z);
+    root.add(ring);
     return;
   }
   if (L.kind === "pad") {
@@ -331,6 +345,7 @@ function scatterSorts(root: THREE.Group) {
     const z = 200 + hash01(i * 3.3) * 3400;
     const x = (hash01(i * 8.1) - 0.5) * 420;
     const y = (hash01(i * 5.7) - 0.5) * 180;
+    if (Math.abs(x) < 48 && Math.abs(y - 48) < 40) continue;
     const r = 6 + hash01(i * 2) * 16;
     const b = new THREE.Mesh(new THREE.DodecahedronGeometry(r * 0.45, 0), rock);
     b.position.set(x, y, z);
