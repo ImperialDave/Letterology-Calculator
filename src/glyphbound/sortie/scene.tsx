@@ -108,7 +108,7 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
     ship.position.set(s.x, s.y, s.z);
     ship.rotation.order = "YXZ";
     ship.rotation.y = s.yaw;
-    ship.rotation.x = -s.pitch;
+    ship.rotation.x = s.pitch;
     const spin = s.barrel > 0 ? s.barrelDir * Math.PI * 2 * (1 - s.barrel / BARREL_T) : 0;
     ship.rotation.z = s.roll + spin;
     poseCWing(ship, s);

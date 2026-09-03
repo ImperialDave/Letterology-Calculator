@@ -67,6 +67,22 @@ test("C-wing nose is parent -Z so yaw 0 flies forward", () => {
   assert.ok(Math.abs(nose.x) < 0.25, `nose x ${nose.x}`);
 });
 
+test("scene Euler pitches the tip the way the hull flies", () => {
+  const g = makeCWing();
+  g.rotation.order = "YXZ";
+  g.rotation.y = 0;
+  g.rotation.x = 0.4;
+  g.updateWorldMatrix(true, true);
+  const up = new THREE.Vector3(0, 0, -2);
+  g.localToWorld(up);
+  assert.ok(up.y > 0.4, `climb should lift the tip, y ${up.y}`);
+  g.rotation.x = -0.4;
+  g.updateWorldMatrix(true, true);
+  const down = new THREE.Vector3(0, 0, -2);
+  g.localToWorld(down);
+  assert.ok(down.y < -0.4, `dive should drop the tip, y ${down.y}`);
+});
+
 test("stick left is roll left (screen left), stick up is pull-up", () => {
   const left = analogFromDelta(-40, 0, 64);
   const right = analogFromDelta(40, 0, 64);
