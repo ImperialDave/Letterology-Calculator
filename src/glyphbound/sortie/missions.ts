@@ -140,7 +140,10 @@ export function lockCopy(id: string) {
 
 export function objectiveLine(s: SortieState) {
   if (s.missionId === "coast") {
-    return s.flight === "allrange" ? "Scale is on the plaza." : "Seven n, then Scale on the plaza.";
+    if (s.flight === "allrange") return "Scale is on the plaza.";
+    if (s.z > 2500) return "Canyon teeth. Then n-street.";
+    if (s.z > 1700) return "Type-city. Drawers and letters.";
+    return "Seven n, then Scale on the plaza.";
   }
   if (s.missionId === "sorts") {
     if (s.warpT > 0) return "Warp corridor.";

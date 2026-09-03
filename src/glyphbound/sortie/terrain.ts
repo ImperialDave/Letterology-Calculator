@@ -1,7 +1,8 @@
 import * as THREE from "three";
 import { groundHeight } from "./height";
 import { ARCH_POST, HOLE_COMFORT_X, landmarksFor, RING_TUBE, riverX, TANKER_LEN, type Landmark } from "./landmarks";
-import { FOG, PAPER, RUST, ashTex, brassTex, grassLeadTex, iceGroundTex, iceWaterTex, inkWaterTex, leadTex, n64Mat, rockTex, rustTex, slagWaterTex } from "./n64";
+import { scatterDressing } from "./dressing";
+import { FOG, PAPER, RUST, ashTex, brassTex, grassLeadTex, iceGroundTex, iceWaterTex, inkWaterTex, leadTex, letterStoneTex, n64Mat, rockTex, rustTex, slagWaterTex, woodCrateTex } from "./n64";
 
 const ARENA_R = 420;
 
@@ -303,31 +304,153 @@ function placeLandmark(root: THREE.Group, L: Landmark, kit: BiomeKit, biome: Bio
     b.rotation.set(hash01(L.x) * 1.2, hash01(L.z) * 2, 0);
     b.castShadow = true;
     root.add(b);
+    return;
   }
+  placeKind(root, L, { y0, metal, paper, dirt, rock, kit });
 }
 
-function scatterTrees(root: THREE.Group, kit: BiomeKit, missionId: string) {
-  const grass = n64Mat(0x5ad848, { map: kit.groundTex() });
-  const trunk = n64Mat(0x8a6a40);
-  for (let i = 0; i < 70; i++) {
-    const z = 900 + hash01(i * 3.1) * 2900;
-    const side = hash01(i * 7.7) > 0.5 ? 1 : -1;
-    const x = riverX(z) + side * (48 + hash01(i * 2.2) * 90);
-    const y0 = sit(kit.id, x, z, missionId);
-    if (y0 < 6) continue;
-    const s = 0.7 + hash01(i) * 1.1;
-    const tree = new THREE.Group();
-    tree.name = "tree";
-    tree.position.set(x, y0, z);
-    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.5 * s, 0.7 * s, 4 * s, 4), trunk);
-    stem.position.y = 2 * s;
-    const leaf = new THREE.Mesh(new THREE.ConeGeometry(3.4 * s, 6.2 * s, 5), grass);
-    leaf.position.y = 5.6 * s;
-    const leaf2 = new THREE.Mesh(new THREE.ConeGeometry(2.4 * s, 4.4 * s, 5), grass);
-    leaf2.position.y = 8.4 * s;
-    tree.add(stem, leaf, leaf2);
-    tree.userData.phase = hash01(i * 9);
-    root.add(tree);
+function addMesh(
+  root: THREE.Group,
+  geo: THREE.BufferGeometry,
+  mat: THREE.Material,
+  x: number,
+  y: number,
+  z: number,
+  extra?: { rx?: number; ry?: number; rz?: number; sx?: number; sy?: number; sz?: number; name?: string },
+) {
+  const m = new THREE.Mesh(geo, mat);
+  m.position.set(x, y, z);
+  if (extra?.rx) m.rotation.x = extra.rx;
+  if (extra?.ry) m.rotation.y = extra.ry;
+  if (extra?.rz) m.rotation.z = extra.rz;
+  if (extra?.sx || extra?.sy || extra?.sz) m.scale.set(extra.sx ?? 1, extra.sy ?? 1, extra.sz ?? 1);
+  if (extra?.name) m.name = extra.name;
+  m.castShadow = true;
+  root.add(m);
+  return m;
+}
+
+function placeKind(
+  root: THREE.Group,
+  L: Landmark,
+  ctx: { y0: number; metal: THREE.Material; paper: THREE.Material; dirt: THREE.Material; rock: THREE.Material; kit: BiomeKit },
+) {
+  const { y0, metal, paper, dirt, rock, kit } = ctx;
+  const stone = n64Mat(0xe8d8b0, { map: letterStoneTex() });
+  const wood = n64Mat(0xc48848, { map: woodCrateTex() });
+  const v = L.variant ?? "";
+  if (L.kind === "tunnel") {
+    const hull = new THREE.Mesh(new THREE.CylinderGeometry(L.r, L.r, 48, 10, 1, true), rock);
+    hull.rotation.x = Math.PI / 2;
+    hull.position.set(L.x, L.h, L.z);
+    hull.castShadow = true;
+    root.add(hull);
+    for (const s of [-22, 22]) {
+      addMesh(root, new THREE.TorusGeometry(L.r, 1.6, 6, 12), metal, L.x, L.h, L.z + s);
+    }
+    return;
+  }
+  if (L.kind === "drawer" || L.kind === "case") {
+    const deep = L.kind === "case" ? 36 : 28;
+    const wallH = L.h;
+    const wallX = L.r + 6;
+    addMesh(root, new THREE.BoxGeometry(4, wallH, deep), wood, L.x - wallX, y0 + wallH * 0.5, L.z);
+    addMesh(root, new THREE.BoxGeometry(4, wallH, deep), wood, L.x + wallX, y0 + wallH * 0.5, L.z);
+    addMesh(root, new THREE.BoxGeometry(wallX * 2 + 4, 3, deep), wood, L.x, y0 + wallH, L.z);
+    if (v === "ruin") {
+      addMesh(root, new THREE.BoxGeometry(6, wallH * 0.4, 8), metal, L.x + wallX + 8, y0 + wallH * 0.2, L.z + 6);
+    }
+    if (L.kind === "case") {
+      addMesh(root, new THREE.BoxGeometry(2.4, wallH * 0.7, deep * 0.4), paper, L.x - wallX + 8, y0 + wallH * 0.4, L.z - 8);
+    }
+    return;
+  }
+  if (L.kind === "crusher" || L.kind === "colonnade" || L.kind === "quoin") {
+    const post = L.r + 8;
+    const plateW = L.kind === "crusher" ? 10 : L.kind === "quoin" ? 14 : 6;
+    const plate = L.kind === "quoin" ? metal : rock;
+    addMesh(root, new THREE.BoxGeometry(plateW, L.h, 16), plate, L.x - post, y0 + L.h * 0.5, L.z, { rz: L.kind === "quoin" ? 0.28 : 0 });
+    addMesh(root, new THREE.BoxGeometry(plateW, L.h, 16), plate, L.x + post, y0 + L.h * 0.5, L.z, { rz: L.kind === "quoin" ? -0.28 : 0 });
+    if (L.kind === "colonnade") {
+      addMesh(root, new THREE.BoxGeometry(plateW, L.h * 0.7, 12), plate, L.x - post, y0 + L.h * 0.35, L.z - 22);
+      addMesh(root, new THREE.BoxGeometry(plateW, L.h * 0.7, 12), plate, L.x + post, y0 + L.h * 0.35, L.z - 22);
+    }
+    if (L.kind === "crusher") {
+      addMesh(root, new THREE.BoxGeometry(L.r * 2 + 20, 3, 4), metal, L.x, y0 + L.h + 2, L.z);
+    }
+    return;
+  }
+  if (L.kind === "aqueduct") {
+    const post = L.r + 8;
+    addMesh(root, new THREE.BoxGeometry(6, L.h, 12), rock, L.x - post, y0 + L.h * 0.5, L.z);
+    addMesh(root, new THREE.BoxGeometry(6, L.h, 12), rock, L.x + post, y0 + L.h * 0.5, L.z);
+    addMesh(root, new THREE.BoxGeometry(L.r * 2 + 24, 4, 18), metal, L.x, y0 + L.h, L.z);
+    const water = new THREE.Mesh(
+      new THREE.PlaneGeometry(L.r * 2 + 16, 14),
+      new THREE.MeshLambertMaterial({ map: kit.waterTex(), color: 0xffffff, transparent: true, opacity: 0.75 }),
+    );
+    water.rotation.x = -Math.PI / 2;
+    water.position.set(L.x, y0 + L.h + 2.2, L.z);
+    root.add(water);
+    return;
+  }
+  if (L.kind === "letter") {
+    const mark = v || "n";
+    const post = L.r + 8;
+    addMesh(root, new THREE.BoxGeometry(7, L.h, 12), stone, L.x - post, y0 + L.h * 0.5, L.z);
+    if (mark !== "c") addMesh(root, new THREE.BoxGeometry(7, L.h, 12), stone, L.x + post, y0 + L.h * 0.5, L.z);
+    addMesh(root, new THREE.BoxGeometry(L.r * 2 + 22, 8, 14), stone, L.x, y0 + L.h + 2, L.z);
+    if (mark === "e") addMesh(root, new THREE.BoxGeometry(L.r + 8, 5, 10), stone, L.x - 4, y0 + L.h * 0.5, L.z);
+    if (mark === "c") addMesh(root, new THREE.BoxGeometry(8, L.h * 0.45, 12), stone, L.x + post * 0.2, y0 + L.h * 0.22, L.z);
+    return;
+  }
+  if (L.kind === "drum") {
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(L.r, 4.2, 8, 16), metal);
+    rim.position.set(L.x, L.h, L.z);
+    rim.castShadow = true;
+    root.add(rim);
+    addMesh(root, new THREE.CylinderGeometry(2.2, 2.2, 6, 8), wood, L.x, L.h, L.z, { rx: Math.PI / 2 });
+    return;
+  }
+  if (L.kind === "iceberg") {
+    addMesh(root, new THREE.ConeGeometry(L.r * 0.7, L.h, 6), paper, L.x, y0 + L.h * 0.45, L.z);
+    addMesh(root, new THREE.DodecahedronGeometry(L.r * 0.35, 0), paper, L.x + L.r * 0.4, y0 + L.h * 0.2, L.z + 6);
+    return;
+  }
+  if (L.kind === "wreck") {
+    addMesh(root, new THREE.TetrahedronGeometry(L.r * 0.4, 0), metal, L.x, y0 + L.h * 0.25, L.z, { rx: 0.4, ry: hash01(L.z) });
+    addMesh(root, new THREE.BoxGeometry(L.r * 0.8, 2.2, 4), metal, L.x + 4, y0 + 3, L.z - 3, { ry: 0.5 });
+    return;
+  }
+  if (L.kind === "statue") {
+    addMesh(root, new THREE.CylinderGeometry(L.r * 0.25, L.r * 0.32, L.h * 0.55, 6), stone, L.x, y0 + L.h * 0.28, L.z);
+    addMesh(root, new THREE.SphereGeometry(L.r * 0.28, 6, 5), stone, L.x, y0 + L.h * 0.7, L.z);
+    addMesh(root, new THREE.BoxGeometry(L.r * 0.9, 2, 4), stone, L.x, y0 + 1.2, L.z);
+    return;
+  }
+  if (L.kind === "piston") {
+    addMesh(root, new THREE.CylinderGeometry(L.r * 0.4, L.r * 0.5, L.h, 8), metal, L.x, y0 + L.h * 0.5, L.z);
+    addMesh(root, new THREE.BoxGeometry(L.r * 1.4, 3, L.r * 1.4), metal, L.x, y0 + L.h, L.z);
+    return;
+  }
+  if (L.kind === "deck") {
+    addMesh(root, new THREE.BoxGeometry(L.r * 1.4, 3.2, 18), metal, L.x, y0 + L.h, L.z);
+    addMesh(root, new THREE.CylinderGeometry(2, 2.4, L.h, 5), rock, L.x - L.r * 0.5, y0 + L.h * 0.5, L.z);
+    addMesh(root, new THREE.CylinderGeometry(2, 2.4, L.h, 5), rock, L.x + L.r * 0.5, y0 + L.h * 0.5, L.z);
+    return;
+  }
+  if (L.kind === "fall") {
+    const fallMap = kit.waterTex().clone();
+    fallMap.repeat.set(1, 4);
+    const sheet = new THREE.Mesh(
+      new THREE.PlaneGeometry(L.r, L.h + 8),
+      new THREE.MeshBasicMaterial({ map: fallMap, transparent: true, opacity: 0.72, side: THREE.DoubleSide, depthWrite: false }),
+    );
+    sheet.position.set(L.x, y0 + L.h * 0.4, L.z);
+    sheet.name = "fall";
+    root.add(sheet);
+    addMesh(root, new THREE.BoxGeometry(8, L.h * 0.6, 10), rock, L.x - L.r * 0.7, y0 + L.h * 0.3, L.z);
+    return;
   }
 }
 
@@ -345,38 +468,16 @@ function farRidges(root: THREE.Group, kit: BiomeKit, missionId: string) {
   }
 }
 
-function scatterSorts(root: THREE.Group) {
-  const rock = n64Mat(0xb8a888, { map: rockTex() });
-  const star = new THREE.MeshBasicMaterial({ color: 0xf4f0e4 });
-  for (let i = 0; i < 40; i++) {
-    const z = 200 + hash01(i * 3.3) * 3400;
-    const x = (hash01(i * 8.1) - 0.5) * 420;
-    const y = (hash01(i * 5.7) - 0.5) * 180;
-    if (Math.abs(x) < 90 && Math.abs(y - 48) < 56) continue;
-    const r = 6 + hash01(i * 2) * 16;
-    const b = new THREE.Mesh(new THREE.DodecahedronGeometry(r * 0.45, 0), rock);
-    b.position.set(x, y, z);
-    b.rotation.set(hash01(i) * 2, hash01(i * 4) * 3, 0);
-    root.add(b);
-  }
-  for (let i = 0; i < 48; i++) {
-    const card = new THREE.Mesh(new THREE.SphereGeometry(0.7 + hash01(i) * 1.4, 5, 4), star);
-    const a = i * 0.71;
-    card.position.set(Math.cos(a) * (380 + (i % 5) * 40), 40 + (i % 7) * 28, Math.sin(a) * 400 + 1800);
-    root.add(card);
-  }
-}
-
 export function dressBiome(root: THREE.Group, kit: BiomeKit, missionId = kit.id) {
   const biome = kit.id;
   if (missionId === "sorts") {
-    scatterSorts(root);
+    scatterDressing(root, biome, missionId);
     for (const L of landmarksFor(missionId)) placeLandmark(root, L, kit, biome, missionId);
     return;
   }
   root.add(makeSheet(kit, missionId));
   if (missionId !== "ice" && missionId !== "sky") root.add(makeStrip(kit, missionId));
   for (const L of landmarksFor(missionId)) placeLandmark(root, L, kit, biome, missionId);
-  if (missionId === "coast" || missionId === "slug") scatterTrees(root, kit, missionId);
+  if (missionId !== "sky") scatterDressing(root, biome, missionId);
   if (missionId !== "sky") farRidges(root, kit, missionId);
 }

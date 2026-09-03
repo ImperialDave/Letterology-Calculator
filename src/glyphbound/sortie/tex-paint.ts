@@ -254,18 +254,99 @@ export function paintRock(plot: Plot, n: number) {
   }
 }
 
+function fbmPaint(a: string, b: string, opts?: { spark?: string; sparkT?: number; ox?: number; oy?: number }) {
+  const A = rgb(a);
+  const B = rgb(b);
+  const S = opts?.spark ? rgb(opts.spark) : null;
+  const sparkT = opts?.sparkT ?? 0.84;
+  const ox = opts?.ox ?? 0;
+  const oy = opts?.oy ?? 0;
+  return (plot: Plot, n: number) => {
+    for (let y = 0; y < n; y++) {
+      for (let x = 0; x < n; x++) {
+        const t = fbm(x + ox, y + oy, n);
+        put(plot, x, y, mix(A, B, t));
+        if (S && t > sparkT) put(plot, x, y, S);
+      }
+    }
+  };
+}
+
+export const paintSand = fbmPaint("#e8d2a0", "#f8ecc8", { spark: "#fff8e0", sparkT: 0.86, ox: 3 });
+export const paintTypeGround = fbmPaint("#c8b898", "#ece0c4", { spark: "#fff4d8", ox: 6, oy: 2 });
+export const paintSlagGround = fbmPaint("#b07040", "#e8b878", { spark: "#ffd090", ox: 4 });
+export const paintWaterFall = fbmPaint("#6ee8e0", "#e8fff8", { spark: "#ffffff", sparkT: 0.7, oy: 9 });
+export const paintMetalLead = fbmPaint("#9aa8b4", "#d0d8e0", { spark: "#f0f4f8", ox: 8 });
+export const paintMetalQuoin = fbmPaint("#c89840", "#f0dc88", { spark: "#fff6c4", ox: 2, oy: 5 });
+export const paintPaperPage = fbmPaint("#e8dcc0", "#fff8e8", { spark: "#ffffff", sparkT: 0.88 });
+export const paintWoodCase = fbmPaint("#b07a40", "#e0b070", { spark: "#f4d8a0", ox: 11 });
+export const paintWoodCrate = fbmPaint("#c48848", "#e8c080", { spark: "#f8e0b0", oy: 4 });
+export const paintLeafCone = fbmPaint("#3aaa38", "#b4e878", { spark: "#d8f8a8", sparkT: 0.8 });
+export const paintLeafFlat = fbmPaint("#2e9a50", "#88d868", { spark: "#c0f090", ox: 5 });
+export const paintBark = fbmPaint("#8a5a30", "#c49860", { spark: "#e0c088", ox: 7 });
+export const paintRidgeHaze = fbmPaint("#c8b8a0", "#ece4d4", { spark: "#fff8ec" });
+export const paintCityFar = fbmPaint("#b8a888", "#e0d4c0", { spark: "#f4ead8", ox: 9 });
+export const paintLetterStone = fbmPaint("#b8a078", "#e8d8b0", { spark: "#fff0c8", oy: 7 });
+export const paintIceSpire = fbmPaint("#c8e8f4", "#ffffff", { spark: "#ffffff", sparkT: 0.72, ox: 1 });
+export const paintPressBar = fbmPaint("#c06038", "#f0a060", { spark: "#ffd090", ox: 12 });
+export const paintSortNight = fbmPaint("#3a4a78", "#8aa0c8", { spark: "#c8d8f0", sparkT: 0.86, oy: 3 });
+
+export function paintFlagInk(plot: Plot, n: number) {
+  const ink = rgb("#2ec8c0");
+  const paper = rgb("#f4f0e4");
+  const brass = rgb("#e8c468");
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      put(plot, x, y, Math.floor(y / 8) % 2 === 0 ? ink : paper);
+      if (x < 7) put(plot, x, y, brass);
+    }
+  }
+}
+
+export function paintFlagBrass(plot: Plot, n: number) {
+  const gold = rgb("#e8c468");
+  const paper = rgb("#fff4c4");
+  const rust = rgb("#d87850");
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      put(plot, x, y, Math.floor(x / 10) % 2 === 0 ? gold : paper);
+      if (y < 5) put(plot, x, y, rust);
+    }
+  }
+}
+
 export const PAINTS: Record<string, (plot: Plot, n: number) => void> = {
   "water-ink": paintInkWater,
   "water-ice": paintIceWater,
   "water-slag": paintSlagWater,
+  "water-fall": paintWaterFall,
   "ground-lead": paintLead,
   "ground-grass": paintGrass,
   "ground-ice": paintIce,
   "ground-ash": paintAsh,
+  "ground-rock": paintRock,
+  "ground-sand": paintSand,
+  "ground-type": paintTypeGround,
+  "ground-slag": paintSlagGround,
   "metal-brass": paintBrass,
   "metal-rust": paintRust,
+  "metal-lead": paintMetalLead,
+  "metal-quoin": paintMetalQuoin,
   "scale-olive": paintScale,
   "cloud-paper": paintCloud,
   "ship-hull": paintHull,
-  "ground-rock": paintRock,
+  "paper-page": paintPaperPage,
+  "wood-case": paintWoodCase,
+  "wood-crate": paintWoodCrate,
+  "leaf-cone": paintLeafCone,
+  "leaf-flat": paintLeafFlat,
+  "bark": paintBark,
+  "flag-ink": paintFlagInk,
+  "flag-brass": paintFlagBrass,
+  "ridge-haze": paintRidgeHaze,
+  "city-far": paintCityFar,
+  "letter-stone": paintLetterStone,
+  "ice-spire": paintIceSpire,
+  "press-bar": paintPressBar,
+  "sort-night": paintSortNight,
 };

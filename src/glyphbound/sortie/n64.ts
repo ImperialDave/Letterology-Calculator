@@ -14,7 +14,7 @@ const cache = new Map<string, THREE.Texture>();
 export function n64Mat(color: number, opts?: { map?: THREE.Texture; emissive?: number; glow?: number; vertexColors?: boolean }) {
   return new THREE.MeshLambertMaterial({
     color: opts?.map || opts?.vertexColors ? 0xffffff : color,
-    map: opts?.map,
+    ...(opts?.map ? { map: opts.map } : {}),
     vertexColors: opts?.vertexColors ?? false,
     emissive: opts?.emissive ?? 0x000000,
     emissiveIntensity: opts?.glow ?? (opts?.emissive ? 0.55 : 0),
@@ -62,6 +62,12 @@ export function tileTex(paint: (plot: Plot, n: number) => void, n = 64) {
   return fromPaint("anon-" + paint.name, paint, n);
 }
 
+export function paintTex(name: string, n = 64) {
+  const paint = PAINTS[name];
+  if (!paint) throw new Error(`missing paint ${name}`);
+  return fromPaint(name, paint, n);
+}
+
 export const inkWaterTex = () => fromPaint("water-ink", paintInkWater, 128);
 export const iceWaterTex = () => fromPaint("water-ice", PAINTS["water-ice"], 128);
 export const slagWaterTex = () => fromPaint("water-slag", paintSlagWater, 128);
@@ -75,3 +81,15 @@ export const scaleOliveTex = () => fromPaint("scale-olive", paintScale);
 export const cloudTex = () => fromPaint("cloud-paper", paintCloud, 128);
 export const hullTex = () => fromPaint("ship-hull", paintHull);
 export const rockTex = () => fromPaint("ground-rock", paintRock, 128);
+export const sandTex = () => paintTex("ground-sand", 128);
+export const typeGroundTex = () => paintTex("ground-type", 128);
+export const leafConeTex = () => paintTex("leaf-cone");
+export const leafFlatTex = () => paintTex("leaf-flat");
+export const barkTex = () => paintTex("bark");
+export const flagInkTex = () => paintTex("flag-ink");
+export const woodCrateTex = () => paintTex("wood-crate");
+export const paperPageTex = () => paintTex("paper-page");
+export const iceSpireTex = () => paintTex("ice-spire");
+export const cityFarTex = () => paintTex("city-far", 128);
+export const letterStoneTex = () => paintTex("letter-stone", 128);
+export const sortNightTex = () => paintTex("sort-night", 128);
