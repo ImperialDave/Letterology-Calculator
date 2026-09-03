@@ -1,12 +1,13 @@
 /** Virtual stick → sim roll/pitch. Screen: +x right, +y down. Sim: +roll left, +pitch pull-up. */
 
-export const FIRE_ENTER = 0.48;
-export const FIRE_LEAVE = 0.38;
+export const TAP_PX = 14;
+export const TAP_S = 0.22;
+export const BURST_N = 3;
+export const BURST_CAP = 6;
 
-/** Right-stick rim is the trigger. Inner disc aims only. */
-export function fireFromStick(mag: number, wasFiring: boolean) {
-  if (wasFiring) return mag >= FIRE_LEAVE;
-  return mag >= FIRE_ENTER;
+/** Short still press = tap. Drag or a long still press is not a tap. */
+export function isTap(dx: number, dy: number, dt: number) {
+  return dt > 0 && dt < TAP_S && Math.hypot(dx, dy) < TAP_PX;
 }
 
 export function analogFromDelta(dx: number, dy: number, radius: number) {

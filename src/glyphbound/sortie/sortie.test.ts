@@ -21,7 +21,8 @@ import {
 import { MISSIONS, unlockedIds } from "./missions";
 import { CAMPAIGN, crewOf } from "./story";
 import { ENVELOPE_X, ENVELOPE_Y, pathLength } from "./path";
-import { analogFromDelta, fireFromStick } from "./stick";
+import { analogFromDelta, BURST_N, isTap } from "./stick";
+import { bindNoSelect } from "./hud";
 import { grantClear } from "./kits";
 import { SortieKeys } from "./input";
 import { aimOff, aimScreen, inBox, unproject } from "./cam";
@@ -77,12 +78,53 @@ test("stick left is roll left (screen left), stick up is pull-up", () => {
   assert.ok(down.pitch < -0.4, `down pitch ${down.pitch}`);
 });
 
-test("right-stick inner disc aims, outer ring fires, rim has hysteresis", () => {
-  assert.equal(fireFromStick(0.2, false), false);
-  assert.equal(fireFromStick(0.6, false), true);
-  assert.equal(fireFromStick(0.42, true), true);
-  assert.equal(fireFromStick(0.2, true), false);
-  assert.equal(fireFromStick(0.42, false), false);
+test("pad long-press binds a canceling touchstart", () => {
+  const hits: { type: string; passive?: boolean }[] = [];
+  const el = {
+    addEventListener(type: string, _fn: unknown, opts?: { passive?: boolean } | boolean) {
+      hits.push({ type, passive: typeof opts === "object" ? opts.passive : undefined });
+    },
+    removeEventListener() {},
+  };
+  const off = bindNoSelect(el as unknown as HTMLElement);
+  assert.ok(hits.some((h) => h.type === "touchstart" && h.passive === false));
+  assert.ok(hits.some((h) => h.type === "selectstart"));
+  off();
+});
+
+test("a short still press is a tap; a drag or a hold is not", () => {
+  assert.equal(isTap(0, 0, 0.1), true);
+  assert.equal(isTap(40, 0, 0.1), false);
+  assert.equal(isTap(0, 0, 0.4), false);
+});
+
+test("a phone tap queues three lasers through the director", () => {
+  const s = createSortie();
+  s.flight = "allrange";
+  s.burst = BURST_N;
+  s.cooldown = 0;
+  s.charge = 0;
+  const n0 = s.shots.filter((q) => q.kind === "laser").length;
+  for (let i = 0; i < 12; i++) {
+    s.cooldown = 0;
+    stepSortie(s, emptyInput(), 1 / 60);
+  }
+  const lasers = s.shots.filter((q) => q.kind === "laser" && q.friendly);
+  assert.ok(lasers.length >= n0 + 3, `burst ${lasers.length - n0}`);
+  assert.equal(s.burst, 0);
+});
+
+test("a Space tap is still one laser", () => {
+  const s = createSortie();
+  s.flight = "allrange";
+  s.cooldown = 0;
+  s.stem = 0;
+  const inp = emptyInput();
+  inp.fire = true;
+  stepSortie(s, inp, 1 / 60);
+  const n = s.shots.filter((q) => q.kind === "laser" && q.friendly).length;
+  assert.equal(n, 1);
+  assert.equal(s.burst, 0);
 });
 
 test("ground is a field, not a cylinder stamp", () => {

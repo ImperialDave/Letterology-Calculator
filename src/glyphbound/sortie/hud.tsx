@@ -1,8 +1,8 @@
-import { useRef, useState, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { aimScreen } from "./cam";
 import type { SortieState } from "./sim";
 import { CHARGE_LOCK, HULL_MAX, INNER_R, OUTER_R, TGT_FAR, TGT_NEAR, WARN_FAR } from "./sim";
-import { analogFromDelta, fireFromStick } from "./stick";
+import { analogFromDelta, isTap, TAP_PX, TAP_S } from "./stick";
 import { kitOf, romanRank } from "./kits";
 import { missionById } from "./missions";
 import { crewOf } from "./story";
@@ -18,7 +18,7 @@ const SORTIE_CONTROLS: { keys: string; does: string }[] = [
   { keys: "Boost + W", does: "Climb faster. Full-stick pull + boost loops." },
   { keys: "Brake + W", does: "U-turn (all-range)." },
   { keys: "Mouse", does: "Aims the squares. They hold. Click the sky if Escape drops the lock." },
-  { keys: "Phone", does: "Left flies. Right sits the squares. Push the right stick out to fire. Hold out to charge." },
+  { keys: "Phone", does: "Left flies. Right drag aims. Tap writes three. Hold still to charge." },
   { keys: "Tab", does: "Break lock." },
   { keys: "V", does: "Cockpit cam." },
   { keys: "Esc", does: "Pause / resume." },
@@ -403,6 +403,26 @@ function Radar({ s }: { s: SortieState }) {
 function silencePtr(e: PointerEvent<HTMLElement>) {
   e.preventDefault();
   e.stopPropagation();
+  const ae = typeof document !== "undefined" ? document.activeElement : null;
+  if (ae instanceof HTMLElement && ae !== e.currentTarget) ae.blur();
+  e.currentTarget.blur();
+}
+
+/** iOS/Android long-press select is tied to touchstart, not pointerdown. */
+export function bindNoSelect(el: HTMLElement) {
+  const stop = (e: Event) => {
+    e.preventDefault();
+  };
+  el.addEventListener("touchstart", stop, { passive: false });
+  el.addEventListener("touchmove", stop, { passive: false });
+  el.addEventListener("selectstart", stop);
+  el.addEventListener("gesturestart", stop);
+  return () => {
+    el.removeEventListener("touchstart", stop);
+    el.removeEventListener("touchmove", stop);
+    el.removeEventListener("selectstart", stop);
+    el.removeEventListener("gesturestart", stop);
+  };
 }
 
 function PadBtn({
@@ -418,14 +438,24 @@ function PadBtn({
   onHold?: (v: boolean) => void;
   onTap?: () => void;
 }) {
+  const ref = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    return bindNoSelect(el);
+  }, []);
   const end = () => onHold?.(false);
   return (
     <button
+      ref={ref}
       type="button"
+      tabIndex={-1}
+      draggable={false}
       aria-label={label}
       className={`gb-pad-btn pointer-events-auto select-none ${className}`}
       style={{ WebkitTouchCallout: "none", WebkitUserSelect: "none", userSelect: "none" }}
       onContextMenu={(e) => e.preventDefault()}
+      onSelectStart={(e) => e.preventDefault()}
       onPointerDown={(e) => {
         silencePtr(e);
         e.currentTarget.setPointerCapture(e.pointerId);
@@ -439,7 +469,9 @@ function PadBtn({
       onPointerCancel={end}
       onLostPointerCapture={end}
     >
-      {label}
+      <span className="pointer-events-none select-none" aria-hidden>
+        {label}
+      </span>
     </button>
   );
 }
@@ -448,6 +480,7 @@ export function TouchPads({
   onStick,
   onAim,
   onFire,
+  onBurst,
   onBoost,
   onBrake,
   onBarrel,
@@ -456,17 +489,26 @@ export function TouchPads({
   onStick: (roll: number, pitch: number) => void;
   onAim?: (x: number, y: number) => void;
   onFire: (v: boolean) => void;
+  onBurst?: () => void;
   onBoost: (v: boolean) => void;
   onBrake: (v: boolean) => void;
   onBarrel: () => void;
   onBomb?: () => void;
 }) {
   const origin = useRef<{ x: number; y: number; id: number } | null>(null);
-  const aimAt = useRef<{ x: number; y: number; id: number } | null>(null);
-  const writing = useRef(false);
+  const rightPtrs = useRef(
+    new Map<number, { x0: number; y0: number; t0: number; role: "pending" | "aim" | "charge"; timer: number }>(),
+  );
+  const aimId = useRef<number | null>(null);
   const [knob, setKnob] = useState({ x: 0, y: 0, on: false, ox: 0.22, oy: 0.72 });
-  const [aimKnob, setAimKnob] = useState({ x: 0, y: 0, on: false, ox: 0.78, oy: 0.72, writing: false });
+  const [aimKnob, setAimKnob] = useState({ x: 0, y: 0, on: false, ox: 0.78, oy: 0.72 });
   const radius = 64;
+  const padRoot = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = padRoot.current;
+    if (!el) return;
+    return bindNoSelect(el);
+  }, []);
   const zoneStyle = {
     touchAction: "none" as const,
     WebkitTouchCallout: "none",
@@ -495,39 +537,59 @@ export function TouchPads({
     setKnob((k) => ({ ...k, x: 0, y: 0, on: false }));
   };
 
+  const clearTimer = (p: { timer: number }) => {
+    if (p.timer) window.clearTimeout(p.timer);
+    p.timer = 0;
+  };
+
   const aimMove = (e: PointerEvent<HTMLDivElement>) => {
-    const o = aimAt.current;
-    if (!o || o.id !== e.pointerId) return;
-    const a = analogFromDelta(e.clientX - o.x, e.clientY - o.y, radius);
-    if (a.mag > 0) onAim?.(a.kx, -a.ky);
-    const next = fireFromStick(a.mag, writing.current);
-    if (next !== writing.current) {
-      writing.current = next;
-      onFire(next);
+    const p = rightPtrs.current.get(e.pointerId);
+    if (!p) return;
+    const dist = Math.hypot(e.clientX - p.x0, e.clientY - p.y0);
+    if (p.role === "pending" && dist >= TAP_PX) {
+      clearTimer(p);
+      p.role = "aim";
+      if (aimId.current == null) aimId.current = e.pointerId;
     }
+    if (p.role === "charge" && dist >= TAP_PX) {
+      clearTimer(p);
+      onFire(false);
+      p.role = "aim";
+      if (aimId.current == null) aimId.current = e.pointerId;
+    }
+    if (p.role !== "aim" || aimId.current !== e.pointerId) return;
+    const a = analogFromDelta(e.clientX - p.x0, e.clientY - p.y0, radius);
+    if (a.mag > 0) onAim?.(a.kx, -a.ky);
     const zone = e.currentTarget.getBoundingClientRect();
     setAimKnob({
       x: a.kx,
       y: a.ky,
       on: true,
-      ox: (o.x - zone.left) / zone.width,
-      oy: (o.y - zone.top) / zone.height,
-      writing: next,
+      ox: (p.x0 - zone.left) / zone.width,
+      oy: (p.y0 - zone.top) / zone.height,
     });
   };
   const aimEnd = (e: PointerEvent<HTMLDivElement>) => {
-    if (aimAt.current?.id !== e.pointerId) return;
-    aimAt.current = null;
-    if (writing.current) onFire(false);
-    writing.current = false;
-    setAimKnob((k) => ({ ...k, x: 0, y: 0, on: false, writing: false }));
+    const p = rightPtrs.current.get(e.pointerId);
+    if (!p) return;
+    clearTimer(p);
+    const dt = (performance.now() - p.t0) / 1000;
+    if (p.role === "pending" && isTap(e.clientX - p.x0, e.clientY - p.y0, dt)) onBurst?.();
+    if (p.role === "charge") onFire(false);
+    if (aimId.current === e.pointerId) {
+      aimId.current = null;
+      setAimKnob((k) => ({ ...k, x: 0, y: 0, on: false }));
+    }
+    rightPtrs.current.delete(e.pointerId);
   };
 
   return (
     <div
+      ref={padRoot}
       className="pointer-events-none absolute inset-0 z-[15] select-none [@media(hover:hover)_and_(pointer:fine)]:hidden"
       style={{ WebkitTouchCallout: "none", WebkitUserSelect: "none", userSelect: "none" }}
       onContextMenu={(e) => e.preventDefault()}
+      onSelectStart={(e) => e.preventDefault()}
     >
       <div
         className="pointer-events-auto absolute bottom-0 left-0 h-[62%] w-[48%]"
@@ -567,43 +629,36 @@ export function TouchPads({
         onContextMenu={(e) => e.preventDefault()}
         onPointerDown={(e) => {
           silencePtr(e);
-          aimAt.current = { x: e.clientX, y: e.clientY, id: e.pointerId };
           e.currentTarget.setPointerCapture(e.pointerId);
-          writing.current = false;
-          const zone = e.currentTarget.getBoundingClientRect();
-          setAimKnob({
-            x: 0,
-            y: 0,
-            on: true,
-            ox: (e.clientX - zone.left) / zone.width,
-            oy: (e.clientY - zone.top) / zone.height,
-            writing: false,
-          });
-          onFire(false);
+          const rec = {
+            x0: e.clientX,
+            y0: e.clientY,
+            t0: performance.now(),
+            role: "pending" as const,
+            timer: window.setTimeout(() => {
+              const p = rightPtrs.current.get(e.pointerId);
+              if (!p || p.role !== "pending") return;
+              p.role = "charge";
+              onFire(true);
+            }, TAP_S * 1000),
+          };
+          rightPtrs.current.set(e.pointerId, rec);
         }}
         onPointerMove={aimMove}
         onPointerUp={aimEnd}
         onPointerCancel={aimEnd}
       >
-        <div
-          className="absolute h-[7.2rem] w-[7.2rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#121018]/45"
-          style={{
-            left: `${aimKnob.ox * 100}%`,
-            top: `${aimKnob.oy * 100}%`,
-            boxShadow: `inset 0 0 0 2px ${aimKnob.writing ? "#e8d48a" : "rgba(232,212,138,0.45)"}`,
-          }}
-        >
-          <span
-            className="absolute left-1/2 top-1/2 h-[4.4rem] w-[4.4rem] -translate-x-1/2 -translate-y-1/2 rounded-full"
-            style={{
-              boxShadow: `inset 0 0 0 1.5px ${aimKnob.writing ? "rgba(94,224,192,0.35)" : "rgba(94,224,192,0.95)"}`,
-            }}
-          />
-          <span
-            className="absolute left-1/2 top-1/2 h-11 w-11 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#e8d48a]/70 bg-[#e8d48a]/80"
-            style={{ transform: `translate(calc(-50% + ${aimKnob.x * 36}px), calc(-50% + ${aimKnob.y * 36}px))` }}
-          />
-        </div>
+        {aimKnob.on && (
+          <div
+            className="absolute h-[7.2rem] w-[7.2rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#e8d48a]/35 bg-[#121018]/45"
+            style={{ left: `${aimKnob.ox * 100}%`, top: `${aimKnob.oy * 100}%` }}
+          >
+            <span
+              className="absolute left-1/2 top-1/2 h-11 w-11 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#e8d48a]/70 bg-[#e8d48a]/80"
+              style={{ transform: `translate(calc(-50% + ${aimKnob.x * 36}px), calc(-50% + ${aimKnob.y * 36}px))` }}
+            />
+          </div>
+        )}
       </div>
       <PadBtn
         label="Brake"

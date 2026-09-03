@@ -217,6 +217,7 @@ export interface SortieState {
   kitDirty: boolean;
   kitGained: KitId[];
   doneBeats: number[];
+  burst: number;
   trauma: number;
   shake: boolean;
   fxq: { x: number; y: number; z: number; kill: boolean }[];
@@ -533,6 +534,7 @@ export function createSortie(opts?: {
     kitDirty: false,
     kitGained: [],
     doneBeats: [],
+    burst: 0,
     trauma: 0,
     shake: opts?.shake !== false,
     fxq: [],
@@ -1341,7 +1343,7 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
     }
   }
 
-  if (input.fire && s.charge < 0.12 && s.cooldown <= 0) {
+  if ((input.fire || s.burst > 0) && s.charge < 0.12 && s.cooldown <= 0) {
     const r = right(s);
     const aim = worldAim(s);
     const dmgLife = (s.stem >= 2 ? LASER_LIFE * 1.15 : LASER_LIFE) * s.mods.laserLifeMul;
@@ -1364,6 +1366,7 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
     });
     s.cooldown = s.mods.rapidCd;
     s.flash = 1;
+    if (s.burst > 0) s.burst -= 1;
   }
   if (!input.fireHeld) s.gunHeat = Math.max(0, s.gunHeat - dt * 0.95);
 

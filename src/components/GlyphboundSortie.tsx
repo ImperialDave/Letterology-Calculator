@@ -7,6 +7,7 @@ import { unlockSortieAudio, sortieSfx } from "@/glyphbound/sortie/audio";
 import { MISSIONS, missionById, type MissionDef } from "@/glyphbound/sortie/missions";
 import { RegisterMap } from "@/glyphbound/sortie/map";
 import { createSortie, stepSortie, type SortieState } from "@/glyphbound/sortie/sim";
+import { BURST_CAP, BURST_N } from "@/glyphbound/sortie/stick";
 import { grantClear, sanitizeKits, type KitRanks } from "@/glyphbound/sortie/kits";
 import { loadSave, writeSave } from "@/glyphbound/save";
 import { SKY_CORRIDOR } from "@/glyphbound/sortie/path";
@@ -264,7 +265,7 @@ export function StarWords({
             the mouse as the stick
           </p>
           <p className="mt-8 hidden max-w-md px-6 text-center text-[12px] leading-relaxed text-[#c8c4b8] [@media(hover:none)]:block">
-            Left flies. Right sits the squares. Push the right stick out to fire. Hold out to charge.
+            Left flies. Right drag aims. Tap writes three. Hold still to charge.
           </p>
           </button>
           <button
@@ -305,6 +306,9 @@ export function StarWords({
             }}
             onFire={(v) => {
               keys.current.touchFire = v;
+            }}
+            onBurst={() => {
+              sim.current.burst = Math.min(BURST_CAP, sim.current.burst + BURST_N);
             }}
             onBoost={(v) => {
               keys.current.touchBoost = v;
