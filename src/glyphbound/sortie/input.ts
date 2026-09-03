@@ -116,11 +116,11 @@ export class SortieKeys {
     this.my = c.y;
   }
 
-  poll(dt: number, allRange = false): SortieInput & { pause: boolean } {
+  poll(dt: number, _allRange = false): SortieInput & { pause: boolean } {
     this.t += dt;
     const has = (c: string) => (this.injected ? this.injected.includes(c) : this.keys.has(c));
     const pad = this.pad();
-    const keyScale = allRange ? 0.62 : 1;
+    const keyScale = 1;
     let keyWantR = 0;
     let keyWantP = 0;
     if (has("KeyA") || has("ArrowLeft") || pad.left) keyWantR += keyScale;

@@ -155,6 +155,8 @@ export interface SortieState {
   barrelDir: number;
   cmdRoll: number;
   cmdPitch: number;
+  pitchQuiet: number;
+  pitchPull: number;
   charge: number;
   lockId: number;
   score: number;
@@ -225,8 +227,12 @@ export interface SortieState {
 const CRUISE = 52;
 const BOOST = 110;
 const BRAKE = 12;
-const PITCH_R = 1.35;
-const PITCH_MAX = 0.55;
+const PITCH_MAX = 1.15;
+const PITCH_NOSE_K = 10;
+const PITCH_TRIM_K = 0.7;
+const PITCH_TRIM_WAIT = 1.8;
+const LOOP_PITCH = 0.95;
+const LOOP_HOLD = 0.2;
 const BANK = 0.92;
 const YAW_FROM_BANK = 2.2;
 const CEIL_Y = 260;
@@ -311,7 +317,6 @@ function flyCraft(s: SortieState, input: SortieInput, dt: number) {
     s.cmdRoll = follow(s.cmdRoll, 0, 10, dt);
     s.cmdPitch = follow(s.cmdPitch, 0, 10, dt);
     s.roll = follow(s.roll, 0, 8, dt);
-    s.pitch = follow(s.pitch, 0, 5, dt);
     const fBreak = fwd(s);
     s.x += fBreak.x * s.speed * dt;
     s.y += fBreak.y * s.speed * dt;
@@ -369,9 +374,12 @@ function flyCraft(s: SortieState, input: SortieInput, dt: number) {
   s.yaw += s.roll * YAW_FROM_BANK * turnMul * dt;
   s.yaw += input.rudder * 1.35 * dt;
   if (Math.abs(input.pitch) >= 0.08) {
-    s.pitch += s.cmdPitch * PITCH_R * dt;
+    s.pitchQuiet = 0;
+    const wantPitch = Math.max(-PITCH_MAX, Math.min(PITCH_MAX, input.pitch * PITCH_MAX));
+    s.pitch = follow(s.pitch, wantPitch, PITCH_NOSE_K, dt);
   } else {
-    s.pitch = follow(s.pitch, 0, 1.6, dt);
+    s.pitchQuiet += dt;
+    if (s.pitchQuiet > PITCH_TRIM_WAIT) s.pitch = follow(s.pitch, 0, PITCH_TRIM_K, dt);
   }
   s.pitch = Math.max(-PITCH_MAX, Math.min(PITCH_MAX, s.pitch));
 
@@ -449,6 +457,8 @@ export function createSortie(opts?: {
     barrelDir: 1,
     cmdRoll: 0,
     cmdPitch: 0,
+    pitchQuiet: 0,
+    pitchPull: 0,
     charge: 0,
     lockId: -1,
     score: 0,
@@ -1170,8 +1180,10 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
   const speedK = (input.boost || input.brake) && canBoost ? 5.6 : 3.8;
   s.speed += (want - s.speed) * Math.min(1, dt * speedK);
 
+  if (input.boost && canBoost && input.pitch > LOOP_PITCH) s.pitchPull += dt;
+  else s.pitchPull = 0;
   if (
-    (input.somersault || (input.boost && canBoost && input.pitch > 0.55)) &&
+    (input.somersault || (input.boost && canBoost && s.pitchPull >= LOOP_HOLD)) &&
     s.somersault <= 0 &&
     s.barrel <= 0 &&
     s.uturn <= 0

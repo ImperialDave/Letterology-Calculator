@@ -648,11 +648,12 @@ test("sight does not bank the craft", () => {
   assert.ok(Math.abs(s.cmdRoll) < 0.05, `cmdRoll ${s.cmdRoll}`);
 });
 
-test("pitch auto-levels when stick is released", () => {
+test("all-range nose holds when the stick is still", () => {
   const s = createSortie();
+  s.flight = "allrange";
   s.pitch = 0.5;
   for (let i = 0; i < 40; i++) stepSortie(s, emptyInput(), 1 / 60);
-  assert.ok(Math.abs(s.pitch) < 0.25, `pitch ${s.pitch}`);
+  assert.ok(Math.abs(s.pitch - 0.5) < 0.08, `yanked ${s.pitch}`);
 });
 
 test("laser hits a fighter", () => {
@@ -839,12 +840,26 @@ test("W without boost does not somersault", () => {
   assert.ok(s.pitch > 0.2, `pitch ${s.pitch}`);
 });
 
-test("boost and pull-up somersaults", () => {
+test("boost and keyboard pull-up climbs instead of looping", () => {
   const s = createSortie();
+  s.flight = "allrange";
+  s.y = 48;
+  const inp = emptyInput();
+  inp.boost = true;
+  inp.pitch = 0.62;
+  for (let i = 0; i < 20; i++) stepSortie(s, inp, 1 / 60);
+  assert.equal(s.somersault, 0);
+  assert.ok(s.pitch > 0.4, `tip ${s.pitch}`);
+  assert.ok(s.y > 52, `climb ${s.y}`);
+});
+
+test("boost and full-stick pull loops after a beat", () => {
+  const s = createSortie();
+  s.flight = "allrange";
   const inp = emptyInput();
   inp.boost = true;
   inp.pitch = 1;
-  stepSortie(s, inp, 1 / 60);
+  for (let i = 0; i < 20; i++) stepSortie(s, inp, 1 / 60);
   assert.ok(s.somersault > 0);
 });
 
@@ -975,7 +990,8 @@ test("hold pull-up clamps; somersault is the only loop", () => {
     maxY = Math.max(maxY, s.y);
     maxAbsPitch = Math.max(maxAbsPitch, Math.abs(s.pitch));
   }
-  assert.ok(maxAbsPitch < 0.6, `pitch clamped, got ${maxAbsPitch}`);
+  assert.ok(maxAbsPitch > 0.7, `tip too shallow ${maxAbsPitch}`);
+  assert.ok(maxAbsPitch < 1.25, `pitch clamped, got ${maxAbsPitch}`);
   assert.equal(s.somersault, 0);
   assert.ok(maxY > 85, `should climb, maxY ${maxY}`);
 });
@@ -992,7 +1008,7 @@ test("all-range full A is a wide left turn", () => {
   assert.ok(d < 2.2, `blender ${d}`);
 });
 
-test("release after a bank returns to the horizon", () => {
+test("release after a bank levels the wings; the nose holds then trims", () => {
   const s = createSortie();
   s.flight = "allrange";
   const inp = emptyInput();
@@ -1001,8 +1017,9 @@ test("release after a bank returns to the horizon", () => {
   for (let i = 0; i < 40; i++) stepSortie(s, inp, 1 / 60);
   for (let i = 0; i < 30; i++) stepSortie(s, emptyInput(), 1 / 60);
   assert.ok(Math.abs(s.roll) < 0.08, `roll ${s.roll}`);
-  for (let i = 0; i < 90; i++) stepSortie(s, emptyInput(), 1 / 60);
-  assert.ok(Math.abs(s.pitch) < 0.12, `pitch ${s.pitch}`);
+  assert.ok(Math.abs(s.pitch) > 0.4, `nose yanked ${s.pitch}`);
+  for (let i = 0; i < 240; i++) stepSortie(s, emptyInput(), 1 / 60);
+  assert.ok(Math.abs(s.pitch) < 0.2, `trim ${s.pitch}`);
 });
 
 test("lock does not steal pull-up", () => {

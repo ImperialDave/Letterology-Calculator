@@ -62,16 +62,16 @@ export function tileTex(paint: (plot: Plot, n: number) => void, n = 64) {
   return fromPaint("anon-" + paint.name, paint, n);
 }
 
-export const inkWaterTex = () => fromPaint("water-ink", paintInkWater);
-export const iceWaterTex = () => fromPaint("water-ice", PAINTS["water-ice"]);
-export const slagWaterTex = () => fromPaint("water-slag", paintSlagWater);
-export const leadTex = () => fromPaint("ground-lead", paintLead);
-export const brassTex = () => fromPaint("metal-brass", paintBrass);
-export const rustTex = () => fromPaint("metal-rust", paintRust);
-export const grassLeadTex = () => fromPaint("ground-grass", paintGrass);
-export const iceGroundTex = () => fromPaint("ground-ice", paintIce);
-export const ashTex = () => fromPaint("ground-ash", PAINTS["ground-ash"]);
+export const inkWaterTex = () => fromPaint("water-ink", paintInkWater, 128);
+export const iceWaterTex = () => fromPaint("water-ice", PAINTS["water-ice"], 128);
+export const slagWaterTex = () => fromPaint("water-slag", paintSlagWater, 128);
+export const leadTex = () => fromPaint("ground-lead", paintLead, 128);
+export const brassTex = () => fromPaint("metal-brass", paintBrass, 128);
+export const rustTex = () => fromPaint("metal-rust", paintRust, 128);
+export const grassLeadTex = () => fromPaint("ground-grass", paintGrass, 128);
+export const iceGroundTex = () => fromPaint("ground-ice", paintIce, 128);
+export const ashTex = () => fromPaint("ground-ash", PAINTS["ground-ash"], 128);
 export const scaleOliveTex = () => fromPaint("scale-olive", paintScale);
-export const cloudTex = () => fromPaint("cloud-paper", paintCloud);
+export const cloudTex = () => fromPaint("cloud-paper", paintCloud, 128);
 export const hullTex = () => fromPaint("ship-hull", paintHull);
-export const rockTex = () => fromPaint("ground-rock", paintRock);
+export const rockTex = () => fromPaint("ground-rock", paintRock, 128);

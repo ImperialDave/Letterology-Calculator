@@ -3,7 +3,7 @@
 export const CHASE_BACK = 14;
 export const CHASE_UP = 5.5;
 export const CHASE_LOOK = 40;
-export const CHASE_LOOK_LIFT = 5;
+export const CHASE_LOOK_LIFT = 0;
 export const SIGHT_DIST = 100;
 export const CONVERGE_DIST = 110;
 export const SIGHT_CLAMP = 0.62;
@@ -87,7 +87,7 @@ function camFrame(s: AimCraft): CamFrame {
     oy = s.y - f.y * CHASE_BACK + CHASE_UP;
     oz = s.z - f.z * CHASE_BACK;
     lx = s.x + f.x * CHASE_LOOK;
-    ly = s.y + f.y * CHASE_LOOK + CHASE_LOOK_LIFT;
+    ly = s.y + f.y * CHASE_LOOK;
     lz = s.z + f.z * CHASE_LOOK;
     fov = s.speed > 70 ? BOOST_FOV : CHASE_FOV;
   }

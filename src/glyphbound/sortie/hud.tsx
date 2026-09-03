@@ -9,13 +9,13 @@ import { crewOf } from "./story";
 
 const SORTIE_CONTROLS: { keys: string; does: string }[] = [
   { keys: "A D  ← →", does: "Stick left / right. Bank. On a rail, sit in the window." },
-  { keys: "W S  ↑ ↓", does: "Pull-up / dive." },
+  { keys: "W S  ↑ ↓", does: "The stick is the tip. W climbs. S dives. The nose holds." },
   { keys: "Space / click", does: "Tap laser. Hold charge. Release bolt." },
   { keys: "Shift", does: "Boost." },
   { keys: "Ctrl", does: "Brake." },
   { keys: "B", does: "Em-dash. Tap again to pop." },
   { keys: "Q / E", does: "Barrel (eats orbs). One tap." },
-  { keys: "Boost + W", does: "Somersault." },
+  { keys: "Boost + W", does: "Climb faster. Full-stick pull + boost loops." },
   { keys: "Brake + W", does: "U-turn (all-range)." },
   { keys: "Mouse", does: "Aims the squares. They hold. Click the sky if Escape drops the lock." },
   { keys: "Phone", does: "Left flies. Right sits the squares. Push the right stick out to fire. Hold out to charge." },

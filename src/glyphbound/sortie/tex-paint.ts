@@ -35,6 +35,17 @@ function band(plot: Plot, x: number, y: number, lo: [number, number, number], hi
   put(plot, x, y, dither(x, y, t) ? hi : lo);
 }
 
+/** Seamless value in 0..1. Periods are integer cycles of the tile. */
+function fbm(x: number, y: number, n: number) {
+  const u = (x / n) * Math.PI * 2;
+  const v = (y / n) * Math.PI * 2;
+  const a = Math.sin(u * 3) * Math.cos(v * 2);
+  const b = Math.sin(u * 7 + 1.1) * Math.cos(v * 5 + 0.4) * 0.45;
+  const c = Math.sin(u * 4 + v * 3) * 0.22;
+  const d = Math.sin(u * 11 - v * 8) * 0.12;
+  return (a + b + c + d) * 0.5 + 0.5;
+}
+
 export function fillTex(n: number, paint: (plot: Plot, n: number) => void) {
   const buf = new Uint8ClampedArray(n * n * 4);
   const plot: Plot = (x, y, r, g, b, a = 255) => {
@@ -49,129 +60,131 @@ export function fillTex(n: number, paint: (plot: Plot, n: number) => void) {
 }
 
 export function paintInkWater(plot: Plot, n: number) {
-  const deep = rgb("#1aa8b0");
-  const mid = rgb("#5aeee0");
+  const deep = rgb("#0e6e78");
+  const mid = rgb("#2ec8c0");
+  const crest = rgb("#9af8ee");
   const foam = rgb("#e8fff8");
-  const glint = rgb("#ffffff");
   for (let y = 0; y < n; y++) {
     for (let x = 0; x < n; x++) {
-      const w = Math.sin((x / n) * Math.PI * 4 + y * 0.12) * 0.5 + 0.5;
-      const row = (y + w * 6) / n;
-      const t = (Math.sin(row * Math.PI * 6) + 1) * 0.5 * 0.55 + w * 0.25;
-      band(plot, x, y, deep, mid, 0.45 + t * 0.5);
-      if (((x * 13 + y * 7) % 29 === 0) && dither(x, y, 0.55)) put(plot, x, y, foam);
-      if ((x + y * 3) % 41 === 0) put(plot, x, y, glint);
+      const u = (x / n) * Math.PI * 2;
+      const v = (y / n) * Math.PI * 2;
+      const wave = Math.sin(v * 6 + Math.sin(u * 3) * 0.8) * 0.5 + 0.5;
+      const chop = fbm(x, y, n);
+      const t = wave * 0.7 + chop * 0.3;
+      const c = t > 0.72 ? mix(mid, crest, (t - 0.72) / 0.28) : mix(deep, mid, t / 0.72);
+      put(plot, x, y, c);
+      if (t > 0.86 && dither(x, y, 0.4)) put(plot, x, y, foam);
     }
   }
 }
 
 export function paintIceWater(plot: Plot, n: number) {
-  const a = rgb("#7ad0e8");
-  const b = rgb("#e8f8ff");
+  const a = rgb("#5ab0c8");
+  const b = rgb("#d4eef8");
   const c = rgb("#ffffff");
   for (let y = 0; y < n; y++) {
     for (let x = 0; x < n; x++) {
-      const t = (Math.sin(x * 0.2) + Math.sin(y * 0.15) + 2) / 4;
-      band(plot, x, y, a, b, 0.4 + t * 0.6);
-      if ((x + y) % 17 === 0) put(plot, x, y, c);
+      const t = fbm(x + 4, y, n);
+      put(plot, x, y, mix(a, b, t));
+      if (t > 0.78 && dither(x, y, 0.35)) put(plot, x, y, c);
     }
   }
 }
 
 export function paintSlagWater(plot: Plot, n: number) {
-  const a = rgb("#c06038");
-  const b = rgb("#f0a060");
-  const c = rgb("#ffd080");
+  const a = rgb("#8a3818");
+  const b = rgb("#d87840");
+  const c = rgb("#ffc070");
   for (let y = 0; y < n; y++) {
     for (let x = 0; x < n; x++) {
-      const t = ((x * 3 + y * 5) % 23) / 23;
-      band(plot, x, y, a, b, 0.4 + t * 0.55);
-      if ((x * y) % 37 === 1) put(plot, x, y, c);
+      const t = fbm(x, y + 8, n);
+      put(plot, x, y, mix(a, b, t));
+      if (t > 0.8) put(plot, x, y, mix(b, c, (t - 0.8) / 0.2));
     }
   }
 }
 
 export function paintLead(plot: Plot, n: number) {
-  const plate = rgb("#c8d4dc");
-  const rib = rgb("#e8eef2");
-  const rivet = rgb("#ffe08a");
-  const shade = rgb("#8aa0b0");
+  const plate = rgb("#b8c4cc");
+  const warm = rgb("#d8c8b0");
+  const shade = rgb("#8a98a4");
   for (let y = 0; y < n; y++) {
     for (let x = 0; x < n; x++) {
-      put(plot, x, y, y % 8 < 2 ? rib : plate);
-      if (x % 11 === 0) put(plot, x, y, shade);
-      if (x % 16 === 4 && y % 16 === 4) put(plot, x, y, rivet);
-      if (x % 16 === 12 && y % 16 === 12) put(plot, x, y, rivet);
+      const t = fbm(x, y, n);
+      put(plot, x, y, mix(shade, mix(plate, warm, t), 0.45 + t * 0.5));
     }
   }
 }
 
 export function paintBrass(plot: Plot, n: number) {
-  const dark = rgb("#d4a040");
-  const gold = rgb("#ffe08a");
-  const shine = rgb("#fff8d8");
-  const ink = rgb("#5ee0c0");
+  const dark = rgb("#b87828");
+  const gold = rgb("#e8c468");
+  const shine = rgb("#fff0b8");
   for (let y = 0; y < n; y++) {
     for (let x = 0; x < n; x++) {
-      const t = ((x + y) % 12) / 12;
-      band(plot, x, y, dark, gold, 0.55 + t * 0.4);
-      if ((x % 8 === 2 && y % 8 === 2) || (x % 8 === 6 && y % 8 === 6)) put(plot, x, y, shine);
-      if (x % 32 === 0 && y % 4 < 2) put(plot, x, y, ink);
+      const t = fbm(x + 9, y, n);
+      put(plot, x, y, mix(dark, gold, t));
+      if (t > 0.84) put(plot, x, y, shine);
     }
   }
 }
 
 export function paintRust(plot: Plot, n: number) {
-  const a = rgb("#e07048");
-  const b = rgb("#ffb080");
-  const c = rgb("#ffe0b0");
+  const a = rgb("#a04828");
+  const b = rgb("#d87850");
+  const c = rgb("#f0c090");
   for (let y = 0; y < n; y++) {
     for (let x = 0; x < n; x++) {
-      const nse = ((x * 19 + y * 13) % 17) / 17;
-      band(plot, x, y, a, b, 0.35 + nse * 0.55);
-      if (nse > 0.82) put(plot, x, y, c);
+      const t = fbm(x, y + 3, n);
+      put(plot, x, y, mix(a, b, t));
+      if (t > 0.82) put(plot, x, y, c);
     }
   }
 }
 
 export function paintGrass(plot: Plot, n: number) {
-  const dirt = rgb("#d8c068");
-  const leaf = rgb("#5ad848");
-  const blade = rgb("#c8f878");
+  const dirt = rgb("#c4a050");
+  const leaf = rgb("#3aaa38");
+  const lush = rgb("#68c848");
+  const blade = rgb("#b4e878");
   for (let y = 0; y < n; y++) {
     for (let x = 0; x < n; x++) {
-      put(plot, x, y, leaf);
-      const h = ((x * 7 + y * 3) % 11) / 11;
-      if (dither(x, y, 0.25 + h * 0.2)) put(plot, x, y, dirt);
-      if ((x + y * 2) % 9 === 0) put(plot, x, y, blade);
+      const t = fbm(x, y, n);
+      put(plot, x, y, mix(leaf, lush, t));
+      if (t < 0.28) put(plot, x, y, mix(dirt, leaf, t / 0.28));
+      if (t > 0.78 && dither(x, y, 0.45)) put(plot, x, y, blade);
     }
   }
 }
 
 export function paintIce(plot: Plot, n: number) {
-  const a = rgb("#c8ecf8");
-  const b = rgb("#f4ffff");
+  const a = rgb("#b0d8e8");
+  const b = rgb("#e8f8fc");
   const c = rgb("#ffffff");
-  const crack = rgb("#88c0d4");
+  const crack = rgb("#7aa8bc");
   for (let y = 0; y < n; y++) {
     for (let x = 0; x < n; x++) {
-      band(plot, x, y, a, b, ((x ^ y) % 9) / 9);
-      if (x % 21 === y % 13) put(plot, x, y, crack);
-      if ((x + y) % 15 === 0) put(plot, x, y, c);
+      const t = fbm(x + 2, y + 6, n);
+      put(plot, x, y, mix(a, b, t));
+      const u = (x / n) * Math.PI * 2;
+      const v = (y / n) * Math.PI * 2;
+      if (Math.abs(Math.sin(u * 2 + v * 3)) < 0.04 && t < 0.55) put(plot, x, y, crack);
+      if (t > 0.85) put(plot, x, y, c);
     }
   }
 }
 
 export function paintAsh(plot: Plot, n: number) {
-  const a = rgb("#d88858");
-  const b = rgb("#f0c090");
-  const c = rgb("#ffe8b0");
-  const ember = rgb("#ff8060");
+  const a = rgb("#a06038");
+  const b = rgb("#d8a070");
+  const c = rgb("#f0d8a8");
+  const ember = rgb("#e06840");
   for (let y = 0; y < n; y++) {
     for (let x = 0; x < n; x++) {
-      band(plot, x, y, a, b, 0.4 + ((x * 5 + y * 9) % 16) / 16 * 0.5);
-      if ((x * 3 + y) % 23 === 0) put(plot, x, y, ember);
-      if ((x + y * 4) % 29 === 0) put(plot, x, y, c);
+      const t = fbm(x + 5, y, n);
+      put(plot, x, y, mix(a, b, t));
+      if (t > 0.82) put(plot, x, y, c);
+      if (t > 0.9 && dither(x, y, 0.5)) put(plot, x, y, ember);
     }
   }
 }
@@ -229,14 +242,14 @@ export function paintHull(plot: Plot, n: number) {
 }
 
 export function paintRock(plot: Plot, n: number) {
-  const a = rgb("#8a7a68");
-  const b = rgb("#c8b89a");
-  const c = rgb("#e8dcc0");
+  const a = rgb("#6a5a48");
+  const b = rgb("#a89880");
+  const c = rgb("#d4c8b0");
   for (let y = 0; y < n; y++) {
     for (let x = 0; x < n; x++) {
-      const nse = ((x * 17 + y * 11) % 19) / 19;
-      band(plot, x, y, a, b, 0.4 + nse * 0.5);
-      if (nse > 0.85) put(plot, x, y, c);
+      const t = fbm(x + 7, y + 2, n);
+      put(plot, x, y, mix(a, b, t));
+      if (t > 0.8) put(plot, x, y, mix(b, c, (t - 0.8) / 0.2));
     }
   }
 }

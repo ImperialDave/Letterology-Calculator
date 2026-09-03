@@ -142,6 +142,7 @@ export const LANDMARKS: Record<string, Landmark[]> = {
     }),
     { id: "hwy-a", kind: "highway", x: riverX(2280), z: 2280, h: 48, r: 70 },
     { id: "hwy-b", kind: "highway", x: riverX(2040), z: 2040, h: 48, r: 70 },
+    { id: "hwy-c", kind: "highway", x: riverX(1860), z: 1860, h: 48, r: 70 },
     ...arches(1680, 7, 110),
     { id: "fall", kind: "gate", x: riverX(720) - 22, z: 720, h: 36, r: HOLE_INNER_X, pay: "gate" },
     { id: "plaza", kind: "pad", x: 0, z: -160, h: 22, r: 90 },
@@ -168,6 +169,7 @@ export const LANDMARKS: Record<string, Landmark[]> = {
       r: 14,
     })),
     { id: "tanker", kind: "tanker", x: 0, z: 1400, h: 28, r: HOLE_INNER_X, pay: "tanker" },
+    { id: "tanker-b", kind: "tanker", x: 8, z: 880, h: 30, r: HOLE_INNER_X, pay: "tanker" },
     { id: "yard", kind: "pad", x: 0, z: -80, h: 10, r: 80 },
   ],
   ice: [
