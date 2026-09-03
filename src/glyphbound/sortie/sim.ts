@@ -2,9 +2,10 @@
 
 import { aimOff, aimScreen, CONVERGE_DIST, inBox, unproject } from "./cam";
 import { collectRank, kitMods, kitOf, romanRank, type KitId, type KitMods, type KitRanks } from "./kits";
-import { scriptMissionWaves } from "./missions";
+import { missionById, scriptMissionWaves } from "./missions";
 import { ENVELOPE_X, ENVELOPE_Y, SHIFT_T, SKY_CORRIDOR, UTURN_T, pathLength, pathFrame, samplePath, type PathPoint } from "./path";
 import { groundHeight } from "./height";
+import { endCopy, type EndWhy } from "./story";
 import { inHole, inLandmarkSolid, landmarksFor, RING_COLLECT } from "./landmarks";
 import type { BiomeId } from "./terrain";
 export { aimOff, aimScreen, CONVERGE_DIST, gunPip, inBox, unproject } from "./cam";
@@ -71,6 +72,7 @@ export interface Enemy {
   slot?: number;
   lead?: number;
   life?: number;
+  setPiece?: boolean;
 }
 
 export interface Shot {
@@ -223,6 +225,7 @@ export interface SortieState {
   fxq: { x: number; y: number; z: number; kill: boolean }[];
   popN: number;
   popT: number;
+  endWhy: EndWhy;
 }
 
 const CRUISE = 52;
@@ -431,6 +434,8 @@ export function createSortie(opts?: {
   const framed = start ? pathFrame(start, 0, 0) : null;
   const kitRanks = opts?.kits ?? {};
   const mods = kitMods(kitRanks);
+  const def = opts?.missionId ? missionById(opts.missionId) : null;
+  const fromRegister = Boolean(def && opts?.missionId && def.id === opts.missionId);
   return {
     t: 0,
     mode: "play",
@@ -489,7 +494,7 @@ export function createSortie(opts?: {
     warned: 0,
     wave: 0,
     hits: 0,
-    winKind: "dualis",
+    winKind: fromRegister ? def!.win : "dualis",
     flash: 0,
     gunHeat: 0,
     lockDist: 0,
@@ -511,7 +516,7 @@ export function createSortie(opts?: {
     incoming: 0,
     cockpit: false,
     aboutFace: false,
-    medal: 80,
+    medal: fromRegister ? def!.medal : 80,
     bombs: 1 + mods.bombsAdd,
     stem: mods.startStem,
     wings: 2,
@@ -540,6 +545,7 @@ export function createSortie(opts?: {
     fxq: [],
     popN: 0,
     popT: 0,
+    endWhy: "none",
   };
 }
 
@@ -578,7 +584,7 @@ export function spawnEnemy(
   x: number,
   y: number,
   z: number,
-  extra?: { hp?: number; staged?: boolean; armed?: boolean; form?: FormName; formId?: number; slot?: number; lead?: number; life?: number },
+  extra?: { hp?: number; staged?: boolean; armed?: boolean; form?: FormName; formId?: number; slot?: number; lead?: number; life?: number; setPiece?: boolean },
 ) {
   const hp =
     extra?.hp ??
@@ -618,6 +624,7 @@ export function spawnEnemy(
     slot: extra?.slot ?? 0,
     lead: extra?.lead,
     life: extra?.life,
+    setPiece: extra?.setPiece,
   });
 }
 
@@ -682,7 +689,7 @@ function bumpFx(s: SortieState, x: number, y: number, z: number, kill: boolean, 
   if (kill) s.hitStop = Math.max(s.hitStop, 0.045);
 }
 
-function hurt(s: SortieState, n: number, snap = false) {
+function hurt(s: SortieState, n: number, snap = false, why: EndWhy = "kill") {
   if (s.invuln > 0 || s.barrel > 0 || s.somersault > 0 || s.mode !== "play") return;
   s.hull -= n;
   s.invuln = s.mods.invuln;
@@ -696,7 +703,9 @@ function hurt(s: SortieState, n: number, snap = false) {
   if (s.hull <= 0) {
     s.hull = 0;
     s.mode = "dead";
-    s.radio = { who: "b", text: "Hull gone. Wake the press.", until: s.t + 4 };
+    s.endWhy = why;
+    const copy = endCopy(why);
+    s.radio = { who: copy.who, text: copy.line, until: s.t + 4 };
   }
 }
 
@@ -713,10 +722,12 @@ function killEnemy(s: SortieState, e: Enemy, splash = false) {
   }
   const acesGone = s.winKind === "aces" && !s.enemies.some((n) => n.alive && n.kind === "ace") && s.enemies.some((n) => n.kind === "ace");
   const dualisGone = s.winKind === "dualis" && !s.enemies.some((n) => n.alive && n.kind === "dualis");
-  const otherWin = s.winKind !== "aces" && s.winKind !== "dualis" && e.kind === s.winKind;
-  if (otherWin || acesGone || dualisGone) {
+  const pieceWin = Boolean(e.setPiece) && s.winKind !== "aces" && s.winKind !== "dualis" && e.kind === s.winKind;
+  if (pieceWin || acesGone || dualisGone) {
     s.mode = "win";
-    s.radio = { who: "s", text: "Press clear. C, that was a sentence.", until: s.t + 5 };
+    s.endWhy = "win";
+    const copy = endCopy("win", s.hits >= s.medal);
+    s.radio = { who: copy.who, text: copy.line, until: s.t + 5 };
   }
 }
 
@@ -786,7 +797,19 @@ function payLandmarks(s: SortieState) {
         s.radio = { who: "s", text: "Seven n. That’s a sentence. Ice is open.", until: s.t + 3 };
       }
     }
-    if (L.pay === "ring") s.golds = Math.min(3, s.golds + 1);
+    if (L.pay === "ring") {
+      s.golds = Math.min(3, s.golds + 1);
+      if (s.missionId === "sorts") {
+        s.archHits += 1;
+        s.speed = Math.min(110, s.speed + 16);
+        if (s.archHits >= 7 && !s.warpT) {
+          s.fork = true;
+          s.warpT = s.t;
+          s.radio = { who: "s", text: "Warp corridor. The sorts run thick.", until: s.t + 3 };
+          seedWarpField(s);
+        }
+      }
+    }
     if (L.pay === "tanker") {
       s.bombs = Math.min(9, s.bombs + 1);
       s.radio = { who: "e", text: "Through the hold. Em-dash aboard.", until: s.t + 2.2 };
@@ -797,12 +820,12 @@ function payLandmarks(s: SortieState) {
 
 function bumpHoleSolids(s: SortieState) {
   for (const L of landmarksFor(s.missionId)) {
-    if (L.kind !== "arch" && L.kind !== "gate" && L.kind !== "tanker" && L.kind !== "highway") continue;
+    if (L.kind !== "arch" && L.kind !== "gate" && L.kind !== "tanker" && L.kind !== "highway" && !(L.kind === "rock" && L.pay)) continue;
     const y0 = islandHeight(s, L.x, L.z);
     if (inHole(s.x, s.y, s.z, L, y0)) continue;
     if (!inLandmarkSolid(s.x, s.y, s.z, L, y0)) continue;
-    hurt(s, 1);
-    if (L.kind === "tanker") {
+    hurt(s, 1, false, "crash");
+    if (L.kind === "tanker" || L.kind === "rock") {
       const dx = s.x - L.x;
       const dy = s.y - L.h;
       const rad = Math.hypot(dx, dy) || 1;
@@ -891,6 +914,33 @@ function aimDir(s: SortieState, origin: Vec3, shotSpeed = LASER_SPD, home = fals
   return { x: x / m, y: y / m, z: z / m };
 }
 
+function ensureSetPiece(s: SortieState) {
+  if (s.mode !== "play" || s.flight !== "allrange" || s.warpT > 0) return;
+  const arenaAge = s.t - (s.arenaT || 0);
+  if (arenaAge < 2) return;
+  if (s.winKind === "aces") {
+    const aces = s.enemies.filter((e) => e.kind === "ace");
+    if (aces.length === 0 && arenaAge > 8) {
+      spawnEnemy(s, "ace", -40, 52, -160, { setPiece: true });
+      spawnEnemy(s, "ace", 40, 52, -160, { setPiece: true });
+      spawnEnemy(s, "ace", 0, 56, -200, { setPiece: true });
+      s.radio = { who: "s", text: "Serifs. Three. Don’t let them file you.", until: s.t + 3 };
+    }
+    return;
+  }
+  const kind = s.winKind;
+  if (kind === "dualis") {
+    if (!s.enemies.some((e) => e.kind === "dualis" && e.alive) && !s.enemies.some((e) => e.kind === "dualis")) {
+      spawnEnemy(s, "dualis", 0, 70, -180, { setPiece: true });
+    }
+    return;
+  }
+  if (s.enemies.some((e) => e.setPiece)) return;
+  if (kind === "mech") spawnEnemy(s, "mech", 0, 20, -160, { hp: 12, setPiece: true });
+  else if (kind === "mothership") spawnEnemy(s, "mothership", 0, 8, -140, { setPiece: true });
+  else if (kind === "bomber") spawnEnemy(s, "bomber", 0, 24, -120, { setPiece: true });
+}
+
 function scriptWaves(s: SortieState) {
   if (s.missionId !== "sky" && scriptMissionWaves(s)) return;
   if (s.wave < 1 && s.t > 2.2) {
@@ -911,7 +961,7 @@ function scriptWaves(s: SortieState) {
   if (s.wave < 3 && s.t > 38 && s.mode === "play") {
     const live = s.enemies.filter((e) => e.alive && e.kind !== "dualis").length;
     if (live <= 1) {
-      spawnEnemy(s, "dualis", 0, 70, -180);
+      spawnEnemy(s, "dualis", 0, 70, -180, { setPiece: true });
       s.wave = 3;
       s.radio = { who: "s", text: "Dualis over the Press. Hit the bar.", until: s.t + 4 };
     }
@@ -1039,9 +1089,22 @@ function steerEnemy(s: SortieState, e: Enemy, dt: number) {
   const armed = e.armed ?? defaultArmed(e.kind);
 
   if (e.kind === "aster") {
-    e.vx = 0;
-    e.vy = 0;
-    e.vz = 0;
+    if (rail) {
+      const close = e.hp >= 8 ? 14 : 26;
+      e.vx = -d.x * close;
+      e.vy = 0;
+      e.vz = -d.z * close;
+      if (e.hp >= 8 && e.form === "cross") {
+        const dir = (e.slot ?? 0) % 2 === 0 ? 1 : -1;
+        const slide = Math.sin(e.t * 1.35) * 28;
+        e.vx += side.x * dir * slide;
+        e.vz += side.z * dir * slide;
+      }
+    } else {
+      e.vx = 0;
+      e.vy = 0;
+      e.vz = 0;
+    }
     return;
   }
 
@@ -1219,13 +1282,13 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
   if (!space && s.y < ground + 6) {
     s.y = ground + 6;
     if (s.pitch < 0.22) s.pitch = follow(s.pitch, 0.22, 8, dt);
-    hurt(s, 1, ground > 2);
+    hurt(s, 1, ground > 2, "crash");
     s.splash = 0.35;
   }
   if (!space && s.y < WATER_Y + 5) {
     s.y = WATER_Y + 8;
     if (s.pitch < 0.28) s.pitch = follow(s.pitch, 0.28, 8, dt);
-    hurt(s, 1);
+    hurt(s, 1, false, "crash");
     s.splash = 0.5;
   }
   if (s.y > CEIL_Y) s.y = CEIL_Y;
@@ -1245,7 +1308,9 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
 
   if (s.missionId === "sorts" && s.warpT > 0 && s.mode === "play" && s.t - s.warpT > 7) {
     s.mode = "win";
-    s.radio = { who: "s", text: "Seven rings. Warp. Ice is open.", until: s.t + 4 };
+    s.endWhy = "win";
+    const copy = endCopy("win", s.hits >= s.medal);
+    s.radio = { who: copy.who, text: copy.line, until: s.t + 4 };
   }
 
   for (const r of s.rings) {
@@ -1371,6 +1436,7 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
   if (!input.fireHeld) s.gunHeat = Math.max(0, s.gunHeat - dt * 0.95);
 
   scriptWaves(s);
+  ensureSetPiece(s);
 
   const groundNow = islandHeight(s, s.x, s.z);
   s.skim = s.y < 14 && groundNow < 5;

@@ -4,8 +4,8 @@ import type { SortieState } from "./sim";
 import { CHARGE_LOCK, HULL_MAX, INNER_R, OUTER_R, TGT_FAR, TGT_NEAR, WARN_FAR } from "./sim";
 import { analogFromDelta, isTap, TAP_PX, TAP_S } from "./stick";
 import { kitOf, romanRank } from "./kits";
-import { missionById } from "./missions";
-import { crewOf } from "./story";
+import { missionById, objectiveLine } from "./missions";
+import { crewOf, endCopy } from "./story";
 
 const SORTIE_CONTROLS: { keys: string; does: string }[] = [
   { keys: "A D  ← →", does: "Stick left / right. Bank. On a rail, sit in the window." },
@@ -39,6 +39,8 @@ export function SortieHud({
   onRegister: () => void;
   onResume: () => void;
 }) {
+  const ended = s.mode === "win" || s.mode === "dead" ? endCopy(s.mode === "win" ? "win" : s.endWhy, s.proofLive) : null;
+  const objective = objectiveLine(s);
   return (
     <div className="pointer-events-none absolute inset-0 z-10 font-display text-[#f4f0e4]">
       <span className="absolute left-3 top-3 h-8 w-8 border-l-2 border-t-2 border-[#e8d48a]/70" />
@@ -48,6 +50,9 @@ export function SortieHud({
       <div className="absolute left-5 top-5 text-[11px] uppercase tracking-[0.28em] text-[#e8d48a] drop-shadow-[0_2px_8px_#000]">
         <p>C-wing</p>
         <p className="mt-1 tracking-[0.18em] text-[#f4f0e4]">{s.missionName}</p>
+        {objective ? (
+          <p className="mt-2 max-w-[16rem] text-[10px] normal-case tracking-[0.08em] text-[#c9b896]">{objective}</p>
+        ) : null}
       </div>
       <div className="absolute right-5 top-5 text-right text-sm tabular-nums drop-shadow-[0_2px_8px_#000]">
         <p style={{ color: s.proofLive ? "#e8d48a" : "#f4f0e4" }}>{s.hits}</p>
@@ -116,11 +121,16 @@ export function SortieHud({
           }}
         >
           <p className="font-display text-4xl text-[#f4f0e4]">
-            {s.mode === "win" ? (s.proofLive ? "Proof" : "Written") : s.mode === "dead" ? "Hull gone" : "Hold"}
+            {ended ? ended.title : "Hold"}
           </p>
           <p className="mt-2 text-[#e8d48a]">{s.score} scored · {s.hits} hits</p>
-          {s.mode === "win" ? (
+          {ended ? (
             <p className="mt-3 max-w-md px-6 text-center text-sm leading-relaxed text-[#c9b896]">
+              {ended.line}
+            </p>
+          ) : null}
+          {s.mode === "win" ? (
+            <p className="mt-2 max-w-md px-6 text-center text-sm leading-relaxed text-[#c9b896]">
               {missionById(s.missionId).debrief}
             </p>
           ) : null}
@@ -132,11 +142,6 @@ export function SortieHud({
                   return k ? `${k.name} ${romanRank(s.kitRanks[id] ?? 1)}` : id;
                 })
                 .join(" · ")}
-            </p>
-          ) : null}
-          {s.mode === "dead" ? (
-            <p className="mt-3 max-w-md px-6 text-center text-sm text-[#c9b896]">
-              The census took a bite. Wake at the Register.
             </p>
           ) : null}
           {s.mode === "pause" && (

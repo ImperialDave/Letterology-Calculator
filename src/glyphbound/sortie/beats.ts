@@ -8,7 +8,17 @@ export interface Beat {
   kind: "spawn" | "radio" | "pickup" | "check" | "rings";
   who?: string;
   text?: string;
-  ships?: { kind: EnemyKind; dx: number; dy: number; dz: number; hp?: number; form?: FormName; armed?: boolean }[];
+  ships?: {
+    kind: EnemyKind;
+    dx: number;
+    dy: number;
+    dz: number;
+    hp?: number;
+    form?: FormName;
+    armed?: boolean;
+    setPiece?: boolean;
+    slot?: number;
+  }[];
   loot?: { kind: PickupKind; kit?: KitId; dx: number; dy: number; dz: number };
   rings?: { dx: number; dy: number; dz: number }[];
 }
@@ -124,12 +134,13 @@ export const BEATS: Record<string, Beat[]> = {
     { id: 35, when: "rail", t: 0.92, kind: "spawn", ships: Cross(-40) },
     { id: 36, when: "arena", t: 0.2, kind: "spawn", ships: [{ kind: "fighter", dx: -40, dy: 6, dz: -80, armed: true }, { kind: "fighter", dx: 40, dy: 6, dz: -80, armed: true }] },
     { id: 23, when: "arena", t: 0.4, kind: "radio", who: "s", text: "Scale. Don’t kiss the stamp." },
-    { id: 24, when: "arena", t: 0.6, kind: "spawn", ships: [{ kind: "fighter", dx: -50, dy: 8, dz: -40 }, { kind: "fighter", dx: 50, dy: 8, dz: -40 }, { kind: "mech", dx: 0, dy: -20, dz: -160, hp: 12 }] },
+    { id: 24, when: "arena", t: 0.6, kind: "spawn", ships: [{ kind: "fighter", dx: -50, dy: 8, dz: -40 }, { kind: "fighter", dx: 50, dy: 8, dz: -40 }, { kind: "mech", dx: 0, dy: -20, dz: -160, hp: 12, setPiece: true }] },
     { id: 101, when: "rail", t: 0.24, kind: "pickup", loot: { kind: "kit", kit: "ligature", dx: 16, dy: 6, dz: -28 } },
     { id: 102, when: "rail", t: 0.56, kind: "pickup", loot: { kind: "kit", kit: "serif", dx: -18, dy: -4, dz: -30 } },
   ],
   slug: [
     { id: 1, when: "rail", t: 0.06, kind: "radio", who: "b", text: "Lead slugs. The big ones are already melted. Brake." },
+    { id: 25, when: "rail", t: 0.07, kind: "spawn", ships: [{ kind: "aster", dx: -10, dy: 2, dz: -40, hp: 1 }, { kind: "aster", dx: 12, dy: -4, dz: -55, hp: 1 }, { kind: "aster", dx: 0, dy: 8, dz: -70, hp: 8 }, { kind: "aster", dx: -16, dy: 6, dz: -90, hp: 1 }] },
     { id: 2, when: "rail", t: 0.08, kind: "spawn", ships: [{ kind: "fighter", dx: -12, dy: 6, dz: -40 }, { kind: "cork", dx: 14, dy: 10, dz: -55 }] },
     { id: 3, when: "rail", t: 0.18, kind: "spawn", ships: V(-48) },
     { id: 4, when: "rail", t: 0.28, kind: "radio", who: "s", text: "Gold rings. Dualis hasn’t spent those letters. Thread them." },
@@ -141,7 +152,7 @@ export const BEATS: Record<string, Beat[]> = {
     { id: 21, when: "rail", t: 0.34, kind: "spawn", ships: Line(-44) },
     { id: 22, when: "rail", t: 0.46, kind: "spawn", ships: V(-42, 11, true) },
     { id: 23, when: "rail", t: 0.7, kind: "spawn", ships: Cross(-40) },
-    { id: 9, when: "arena", t: 0.5, kind: "spawn", ships: [{ kind: "bomber", dx: 0, dy: 24, dz: -120 }, { kind: "fighter", dx: -70, dy: 6, dz: -50 }, { kind: "fighter", dx: 70, dy: 6, dz: -50 }] },
+    { id: 9, when: "arena", t: 0.5, kind: "spawn", ships: [{ kind: "bomber", dx: 0, dy: 24, dz: -120, setPiece: true }, { kind: "fighter", dx: -70, dy: 6, dz: -50 }, { kind: "fighter", dx: 70, dy: 6, dz: -50 }] },
     { id: 24, when: "arena", t: 0.9, kind: "spawn", ships: [{ kind: "fighter", dx: -50, dy: 8, dz: 40, armed: true }, { kind: "fighter", dx: 50, dy: 8, dz: 40, armed: true }, { kind: "cork", dx: 0, dy: 16, dz: -90 }] },
     { id: 10, when: "arena", t: 0.7, kind: "radio", who: "s", text: "Bowl nest. That’s how he ships the rest. Cut the bomber." },
     { id: 101, when: "rail", t: 0.3, kind: "pickup", loot: { kind: "kit", kit: "case", dx: -16, dy: 8, dz: -28 } },
@@ -158,7 +169,7 @@ export const BEATS: Record<string, Beat[]> = {
     { id: 21, when: "rail", t: 0.3, kind: "spawn", ships: [{ kind: "turret", dx: 22, dy: -10, dz: -40 }, { kind: "turret", dx: -22, dy: -8, dz: -60 }, { kind: "cork", dx: 0, dy: 10, dz: -36 }] },
     { id: 22, when: "rail", t: 0.52, kind: "spawn", ships: V(-48, 11, true) },
     { id: 23, when: "rail", t: 0.66, kind: "spawn", ships: Cross(-42) },
-    { id: 8, when: "arena", t: 0.5, kind: "spawn", ships: [{ kind: "mothership", dx: 0, dy: 0, dz: -120 }, { kind: "fighter", dx: -70, dy: 8, dz: -40 }, { kind: "fighter", dx: 70, dy: 8, dz: -40 }] },
+    { id: 8, when: "arena", t: 0.5, kind: "spawn", ships: [{ kind: "mothership", dx: 0, dy: 0, dz: -120, setPiece: true }, { kind: "fighter", dx: -70, dy: 8, dz: -40 }, { kind: "fighter", dx: 70, dy: 8, dz: -40 }] },
     { id: 24, when: "arena", t: 1.1, kind: "spawn", ships: [{ kind: "bomber", dx: 40, dy: 18, dz: -80 }, { kind: "fighter", dx: -40, dy: 8, dz: 50, armed: true }] },
     { id: 9, when: "arena", t: 0.7, kind: "radio", who: "e", text: "Belly first. Then the core. Dualis is listening." },
     { id: 101, when: "rail", t: 0.4, kind: "pickup", loot: { kind: "kit", kit: "inkwell", dx: 16, dy: -6, dz: -24 } },
@@ -168,8 +179,8 @@ export const BEATS: Record<string, Beat[]> = {
     { id: 2, when: "arena", t: 1.4, kind: "spawn", ships: V(-70, 28) },
     { id: 3, when: "arena", t: 8, kind: "spawn", ships: [{ kind: "fighter", dx: -80, dy: 6, dz: 40 }, { kind: "fighter", dx: 80, dy: 6, dz: 40 }, { kind: "fighter", dx: 0, dy: 8, dz: -90 }] },
     { id: 4, when: "arena", t: 16, kind: "pickup", loot: { kind: "repair", dx: 0, dy: 6, dz: 20 } },
-    { id: 5, when: "arena", t: 22, kind: "radio", who: "s", text: "Serifs. His proofreaders. Three. Don’t let them file you." },
-    { id: 6, when: "arena", t: 22.4, kind: "spawn", ships: [{ kind: "ace", dx: -40, dy: 12, dz: -160 }, { kind: "ace", dx: 40, dy: 12, dz: -160 }, { kind: "ace", dx: 0, dy: 16, dz: -200 }] },
+    { id: 5, when: "arena", t: 7.6, kind: "radio", who: "s", text: "Serifs. His proofreaders. Three. Don’t let them file you." },
+    { id: 6, when: "arena", t: 8, kind: "spawn", ships: [{ kind: "ace", dx: -40, dy: 12, dz: -160, setPiece: true }, { kind: "ace", dx: 40, dy: 12, dz: -160, setPiece: true }, { kind: "ace", dx: 0, dy: 16, dz: -200, setPiece: true }] },
     { id: 22, when: "arena", t: 6, kind: "spawn", ships: [{ kind: "fighter", dx: -60, dy: 10, dz: -40, armed: true }, { kind: "fighter", dx: 60, dy: 10, dz: -40, armed: true }] },
     { id: 23, when: "arena", t: 14, kind: "spawn", ships: V(-80, 28) },
     { id: 101, when: "arena", t: 10, kind: "pickup", loot: { kind: "kit", kit: "emquad", dx: 40, dy: 8, dz: -40 } },
@@ -185,42 +196,28 @@ export const BEATS: Record<string, Beat[]> = {
     { id: 21, when: "rail", t: 0.38, kind: "spawn", ships: Cross(-40) },
     { id: 22, when: "rail", t: 0.56, kind: "spawn", ships: [{ kind: "bomber", dx: -14, dy: 16, dz: -44 }, { kind: "bomber", dx: 14, dy: 16, dz: -44 }, { kind: "cork", dx: 0, dy: 8, dz: -28 }] },
     { id: 23, when: "rail", t: 0.8, kind: "spawn", ships: V(-42, 11, true) },
-    { id: 6, when: "arena", t: 0.6, kind: "spawn", ships: [{ kind: "dualis", dx: 0, dy: 20, dz: -180 }, { kind: "fighter", dx: -50, dy: 12, dz: -80 }, { kind: "bomber", dx: 50, dy: 22, dz: -80 }] },
+    { id: 6, when: "arena", t: 0.6, kind: "spawn", ships: [{ kind: "dualis", dx: 0, dy: 20, dz: -180, setPiece: true }, { kind: "fighter", dx: -50, dy: 12, dz: -80 }, { kind: "bomber", dx: 50, dy: 22, dz: -80 }] },
     { id: 24, when: "arena", t: 1.6, kind: "spawn", ships: [{ kind: "fighter", dx: -80, dy: 10, dz: 20, armed: true }, { kind: "fighter", dx: 80, dy: 10, dz: 20, armed: true }, { kind: "bomber", dx: 0, dy: 24, dz: -100 }] },
     { id: 7, when: "arena", t: 0.8, kind: "radio", who: "s", text: "That’s Dualis. A bar that thinks it’s a period. Hit it until it splits." },
     { id: 8, when: "arena", t: 1.2, kind: "radio", who: "!", text: "Submit the remainder. I will round you down." },
     { id: 101, when: "rail", t: 0.4, kind: "pickup", loot: { kind: "kit", kit: "proof", dx: 0, dy: 12, dz: -36 } },
   ],
   sorts: [
-    { id: 1, when: "rail", t: 0.03, kind: "radio", who: "s", text: "His drawers." },
-    { id: 2, when: "rail", t: 0.04, kind: "spawn", ships: rocks(-50, 10) },
-    { id: 3, when: "rail", t: 0.07, kind: "spawn", ships: clump(-44, 5) },
+    { id: 1, when: "rail", t: 0.03, kind: "radio", who: "s", text: "His drawers. Small sorts die to a tap." },
+    { id: 2, when: "rail", t: 0.04, kind: "spawn", ships: clump(-44, 6) },
     { id: 4, when: "rail", t: 0.09, kind: "spawn", ships: rockRing(-40, 32, 8) },
     { id: 25, when: "rail", t: 0.12, kind: "radio", who: "e", text: "The hole pays." },
-    { id: 5, when: "rail", t: 0.14, kind: "spawn", ships: rockRing(-42, 34, 8) },
-    { id: 6, when: "rail", t: 0.19, kind: "spawn", ships: rockRing(-44, 30, 8) },
-    { id: 26, when: "rail", t: 0.22, kind: "spawn", ships: clump(-48, 6) },
-    { id: 27, when: "rail", t: 0.28, kind: "spawn", ships: rockRing(-50, 32, 8) },
-    { id: 28, when: "rail", t: 0.36, kind: "spawn", ships: rockRing(-46, 34, 8) },
-    { id: 7, when: "rail", t: 0.2, kind: "pickup", loot: { kind: "stem", dx: 0, dy: 0, dz: -44 } },
-    { id: 8, when: "rail", t: 0.24, kind: "spawn", ships: V(-48, 11) },
-    { id: 9, when: "rail", t: 0.3, kind: "radio", who: "b", text: "Big sort. Go high or brake. I would brake." },
-    { id: 10, when: "rail", t: 0.32, kind: "spawn", ships: [{ kind: "aster", dx: 0, dy: -8, dz: -36, hp: 16 }, { kind: "aster", dx: -32, dy: 8, dz: -70, hp: 1 }, { kind: "aster", dx: 32, dy: -6, dz: -70, hp: 1 }] },
-    { id: 11, when: "rail", t: 0.4, kind: "spawn", ships: rocks(-52, 12) },
+    { id: 7, when: "rail", t: 0.16, kind: "pickup", loot: { kind: "stem", dx: 0, dy: 0, dz: -44 } },
+    { id: 8, when: "rail", t: 0.2, kind: "spawn", ships: V(-48, 11) },
+    { id: 9, when: "rail", t: 0.28, kind: "radio", who: "b", text: "Crushers. Wait, then the hole. I would brake." },
+    { id: 10, when: "rail", t: 0.3, kind: "spawn", ships: [{ kind: "aster", dx: -22, dy: 0, dz: -36, hp: 12, form: "cross", slot: 0 }, { kind: "aster", dx: 22, dy: 0, dz: -36, hp: 12, form: "cross", slot: 1 }] },
+    { id: 26, when: "rail", t: 0.38, kind: "spawn", ships: clump(-48, 5) },
+    { id: 11, when: "rail", t: 0.46, kind: "spawn", ships: rocks(-52, 8) },
     { id: 12, when: "rail", t: 0.5, kind: "check", who: "e", text: "Still here. Seven rings if you want the frozen stock." },
-    { id: 13, when: "rail", t: 0.56, kind: "spawn", ships: V(-40, 11) },
-    { id: 14, when: "rail", t: 0.62, kind: "rings", rings: [
-      { dx: -14, dy: 0, dz: -180 },
-      { dx: 14, dy: 4, dz: -250 },
-      { dx: -14, dy: -2, dz: -320 },
-      { dx: 14, dy: 6, dz: -390 },
-      { dx: -14, dy: 2, dz: -460 },
-      { dx: 14, dy: -4, dz: -530 },
-      { dx: 0, dy: 0, dz: -600 },
-    ] },
-    { id: 15, when: "rail", t: 0.64, kind: "radio", who: "s", text: "Zigzag. All seven warp you off his page. Miss one and the quoin stays to lie." },
-    { id: 16, when: "rail", t: 0.78, kind: "spawn", ships: rocks(-48, 8) },
-    { id: 17, when: "arena", t: 0.5, kind: "spawn", ships: [{ kind: "mothership", dx: 0, dy: 8, dz: -140 }, { kind: "fighter", dx: -60, dy: 10, dz: -50 }, { kind: "fighter", dx: 60, dy: 10, dz: -50 }] },
+    { id: 13, when: "rail", t: 0.56, kind: "spawn", ships: V(-40, 11, true) },
+    { id: 15, when: "rail", t: 0.6, kind: "radio", who: "s", text: "Zigzag. All seven warp you off his page. Miss one and the quoin stays to lie." },
+    { id: 16, when: "rail", t: 0.72, kind: "spawn", ships: rocks(-48, 8) },
+    { id: 17, when: "arena", t: 0.5, kind: "spawn", ships: [{ kind: "mothership", dx: 0, dy: 8, dz: -140, setPiece: true }, { kind: "fighter", dx: -60, dy: 10, dz: -50 }, { kind: "fighter", dx: 60, dy: 10, dz: -50 }] },
     { id: 18, when: "arena", t: 0.7, kind: "radio", who: "s", text: "The quoin. Four teeth, then the well. Don’t kiss the bit." },
     { id: 101, when: "rail", t: 0.21, kind: "pickup", loot: { kind: "kit", kit: "quoin", dx: 14, dy: 8, dz: -30 } },
     { id: 102, when: "rail", t: 0.63, kind: "pickup", loot: { kind: "kit", kit: "hairline", dx: 18, dy: 10, dz: -80 } },

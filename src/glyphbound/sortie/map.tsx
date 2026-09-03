@@ -1,5 +1,5 @@
 import { fittedKits, KIT_BY_CLEAR, kitOf, romanRank, type KitRanks } from "./kits";
-import { MISSIONS, unlockedIds, type MissionDef } from "./missions";
+import { lockCopy, MISSIONS, nextRequired, unlockedIds, type MissionDef } from "./missions";
 import { CAMPAIGN, CREW_LINE, crewOf } from "./story";
 
 export function RegisterMap({
@@ -20,6 +20,7 @@ export function RegisterMap({
   leaveLabel: string;
 }) {
   const open = unlockedIds(cleared, proofs, forks);
+  const next = nextRequired(cleared);
   const caseRow = fittedKits(kits);
   return (
     <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-[#121018] text-[#f4f0e4]">
@@ -80,10 +81,12 @@ export function RegisterMap({
               }}
             >
               <p className="text-[11px] uppercase tracking-[0.22em] text-[#5ee0c0]">
-                {m.roman} {proof ? "· Proof" : cleared.includes(m.id) ? "· written" : ""}
+                {m.roman}
+                {proof ? " · Proof" : cleared.includes(m.id) ? " · written" : ""}
+                {!locked && next === m.id ? " · next" : ""}
               </p>
               <p className="font-display text-2xl">{m.name}</p>
-              <p className="text-sm text-[#c9b896]">{locked ? "Still counted shut." : m.blurb}</p>
+              <p className="text-sm text-[#c9b896]">{locked ? lockCopy(m.id) : m.blurb}</p>
               {!locked && owned && rank ? (
                 <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-[#e8d48a]">
                   {owned.name} {rank}

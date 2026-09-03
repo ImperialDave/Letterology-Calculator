@@ -18,8 +18,8 @@ import {
   SLUG_PATH,
   SORTS_PATH,
 } from "./landmarks";
-import { MISSIONS, unlockedIds } from "./missions";
-import { CAMPAIGN, crewOf } from "./story";
+import { lockCopy, MISSIONS, nextRequired, objectiveLine, unlockedIds } from "./missions";
+import { CAMPAIGN, crewOf, endCopy } from "./story";
 import { ENVELOPE_X, ENVELOPE_Y, pathLength } from "./path";
 import { analogFromDelta, BURST_N, isTap } from "./stick";
 import { bindNoSelect } from "./hud";
@@ -953,9 +953,24 @@ test("Register unlocks Sorts after Coast, Ice on Proof or warp", () => {
   assert.equal(unlockedIds(["coast"], []).has("sorts"), true);
   assert.equal(unlockedIds(["coast"], []).has("slug"), false);
   assert.equal(unlockedIds(["coast"], []).has("ice"), false);
+  assert.equal(unlockedIds(["coast"], ["coast"]).has("sorts"), true);
   assert.equal(unlockedIds(["coast"], ["coast"]).has("ice"), true);
   assert.equal(unlockedIds(["sorts"], []).has("slug"), true);
   assert.equal(unlockedIds(["sorts"], [], ["sorts"]).has("ice"), true);
+  assert.equal(unlockedIds(["sorts"], [], ["sorts"]).has("slug"), true);
+  assert.equal(unlockedIds(["ice"], []).has("gutter"), false);
+  assert.equal(unlockedIds(["gutter"], []).has("press"), true);
+  assert.equal(unlockedIds(["slug"], []).has("gutter"), true);
+  assert.equal(unlockedIds(["press"], []).has("press"), false);
+  assert.equal(nextRequired([]), "coast");
+  assert.equal(nextRequired(["coast"]), "sorts");
+  assert.equal(lockCopy("sorts"), "Write Exchange Coast.");
+  assert.match(lockCopy("ice"), /Proof the Coast or warp The Sorts/);
+  for (const m of MISSIONS) {
+    for (const n of m.next) {
+      assert.notEqual(n, "ice", `${m.id} must not skip to Ice`);
+    }
+  }
 });
 
 test("Coast strip is a long course", () => {
@@ -1370,6 +1385,7 @@ test("the quoin sheds its bit then lies", () => {
     hp: 24,
     t: 0,
     alive: true,
+    setPiece: true,
   });
   s.x = 0;
   s.y = 48;
@@ -1550,6 +1566,80 @@ test("Dualis death wins the sortie", () => {
   });
   stepSortie(s, emptyInput(), 1 / 60);
   assert.equal(s.mode, "win");
+  assert.equal(s.endWhy, "win");
+  const win = endCopy("win", s.proofLive);
+  assert.equal(s.radio?.text, win.line);
+});
+
+test("end copy is unique for kill, crash, and a beaten mission", () => {
+  const kill = endCopy("kill");
+  const crash = endCopy("crash");
+  const win = endCopy("win", false);
+  const proof = endCopy("win", true);
+  assert.equal(kill.title, "Cut down");
+  assert.equal(crash.title, "Struck the page");
+  assert.equal(win.title, "Written");
+  assert.equal(proof.title, "Proof");
+  const titles = new Set([kill.title, crash.title, win.title, proof.title]);
+  assert.equal(titles.size, 4);
+  const lines = new Set([kill.line, crash.line, win.line, proof.line]);
+  assert.equal(lines.size, 4);
+  assert.match(kill.line, /filed us in the air|under fire/i);
+  assert.match(crash.line, /land took too many bites/i);
+  assert.match(win.line, /ledger is written/i);
+  assert.match(proof.line, /sentence, not a draft/i);
+});
+
+test("terrain bites end the sortie as a crash, not a kill", () => {
+  const s = createSortie({ biome: "coast", missionId: "coast" });
+  s.wave = 99;
+  s.speed = 0;
+  s.x = 0;
+  s.z = 0;
+  s.enemies = [];
+  s.shots = [];
+  let bites = 0;
+  while (s.mode === "play" && bites < 20) {
+    s.invuln = 0;
+    s.hitStop = 0;
+    s.y = 0;
+    const hull = s.hull;
+    stepSortie(s, emptyInput(), 1 / 60);
+    if (s.hull < hull || s.mode === "dead") bites += 1;
+  }
+  assert.ok(bites >= 2, `needed more than one bite, got ${bites}`);
+  assert.equal(s.mode, "dead");
+  assert.equal(s.endWhy, "crash");
+  assert.equal(s.radio?.who, "b");
+  assert.match(s.radio?.text ?? "", /too many bites/);
+});
+
+test("an orb kill is cut down, not a crash", () => {
+  const s = createSortie();
+  s.wave = 99;
+  s.y = 48;
+  s.hull = 1;
+  s.invuln = 0;
+  s.hitStop = 0;
+  s.enemies = [];
+  s.shots.push({
+    id: 99,
+    kind: "orb",
+    friendly: false,
+    x: s.x,
+    y: s.y,
+    z: s.z,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    life: 1,
+    lockId: -1,
+  });
+  stepSortie(s, emptyInput(), 1 / 60);
+  assert.equal(s.mode, "dead");
+  assert.equal(s.endWhy, "kill");
+  assert.equal(s.radio?.who, "e");
+  assert.match(s.radio?.text ?? "", /filed us in the air|under fire/);
 });
 
 test("hitStop freezes the craft for a beat", () => {
@@ -1633,15 +1723,16 @@ const PAY_PATHS: Record<string, { x: number; y: number; z: number }[]> = {
   slug: SLUG_PATH,
   gutter: GUTTER_PATH,
   press: PRESS_PATH,
+  sorts: SORTS_PATH,
 };
 
 test("pay holes are wider than the craft and sit on the rail", () => {
-  for (const id of ["coast", "slug", "gutter", "press"] as const) {
+  for (const id of ["coast", "slug", "gutter", "press", "sorts"] as const) {
     const path = PAY_PATHS[id];
     for (const L of landmarksFor(id).filter((n) => n.pay)) {
       assert.ok(L.r >= HOLE_INNER_X, `${id} ${L.id} r ${L.r}`);
       const p = pointAtZ(path, L.z);
-      if (L.kind === "gate") {
+      if (L.kind === "gate" || L.kind === "ring") {
         assert.ok(Math.abs(L.x - p.x) <= ENVELOPE_X, `${id} ${L.id} off rail ${L.x - p.x}`);
       } else {
         assert.ok(Math.abs(L.x - p.x) <= 12, `${id} ${L.id} dx ${L.x - p.x}`);
@@ -1651,15 +1742,16 @@ test("pay holes are wider than the craft and sit on the rail", () => {
 });
 
 test("the rail flies through pay holes, not over them", () => {
-  for (const id of ["coast", "slug", "gutter", "press"] as const) {
+  for (const id of ["coast", "slug", "gutter", "press", "sorts"] as const) {
     const path = PAY_PATHS[id];
     for (const L of landmarksFor(id).filter((n) => n.pay)) {
       const p = pointAtZ(path, L.z);
-      const y0 = groundHeight(id === "press" ? "press" : id === "gutter" ? "gutter" : id === "slug" ? "slug" : "coast", L.x, L.z, id);
-      if (L.kind === "gate") {
-        const dip = { x: L.x, y: p.y, z: L.z };
-        assert.ok(inHole(dip.x, dip.y, dip.z, L, y0), `${id} ${L.id} dip miss y ${p.y}`);
-        assert.equal(inHole(p.x, p.y, L.z, L, y0), false, `${id} ${L.id} paid on the street`);
+      const biome = id === "press" ? "press" : id === "gutter" ? "gutter" : id === "slug" ? "slug" : id === "sorts" ? "sorts" : "coast";
+      const y0 = groundHeight(biome, L.x, L.z, id);
+      if (L.kind === "gate" || L.kind === "ring") {
+        const dip = { x: L.x, y: L.kind === "ring" ? L.h : p.y, z: L.z };
+        assert.ok(inHole(dip.x, dip.y, dip.z, L, y0), `${id} ${L.id} dip miss y ${dip.y}`);
+        if (L.kind === "gate") assert.equal(inHole(p.x, p.y, L.z, L, y0), false, `${id} ${L.id} paid on the street`);
         continue;
       }
       assert.ok(inHole(p.x, p.y, p.z, L, y0), `${id} ${L.id} path y ${p.y} hole ${L.h} r ${L.r}`);
@@ -1773,6 +1865,7 @@ test("Coast plaza Scale is a pushover lesson", () => {
   const mech = scale?.ships?.find((sh) => sh.kind === "mech");
   assert.ok(mech);
   assert.ok((mech.hp ?? 24) <= 12, `hp ${mech.hp}`);
+  assert.equal(mech.setPiece, true);
 });
 
 test("Sorts names the hole after the first door is on the rail", () => {
@@ -1782,4 +1875,175 @@ test("Sorts names the hole after the first door is on the rail", () => {
   const line = BEATS.sorts.find((b) => /hole pays/i.test(b.text ?? ""));
   assert.ok(door && line);
   assert.ok(line.t > door.t, `radio ${line.t} door ${door.t}`);
+  const hoops = landmarksFor("sorts").filter((L) => L.kind === "rock" && L.pay);
+  assert.ok(hoops.length >= 5, `hoops ${hoops.length}`);
+  for (const L of hoops) {
+    const p = pointAtZ(SORTS_PATH, L.z);
+    assert.ok(inHole(p.x, p.y, p.z, L, 0), `${L.id} not on the rail`);
+  }
+});
+
+test("a rail mech does not write the Coast", () => {
+  const s = createSortie({ corridor: true, path: COAST_PATH, missionId: "coast", biome: "coast" });
+  s.wave = 99;
+  s.winKind = "mech";
+  s.invuln = 99;
+  s.enemies.push({
+    id: 11,
+    kind: "mech",
+    x: s.x,
+    y: s.y,
+    z: s.z - 20,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    hp: 1,
+    t: 0,
+    alive: true,
+  });
+  s.shots.push({
+    id: 8,
+    kind: "charge",
+    friendly: true,
+    x: s.x,
+    y: s.y,
+    z: s.z - 20,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    life: 1,
+    lockId: 11,
+  });
+  stepSortie(s, emptyInput(), 1 / 60);
+  assert.equal(s.mode, "play");
+  assert.equal(s.endWhy, "none");
+});
+
+test("tagged Scale writes the Coast", () => {
+  const s = createSortie({ corridor: true, path: COAST_PATH, missionId: "coast", biome: "coast" });
+  s.wave = 99;
+  s.flight = "allrange";
+  s.winKind = "mech";
+  s.invuln = 99;
+  s.enemies.push({
+    id: 12,
+    kind: "mech",
+    x: 0,
+    y: 20,
+    z: -40,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    hp: 1,
+    t: 0,
+    alive: true,
+    setPiece: true,
+  });
+  s.x = 0;
+  s.y = 20;
+  s.z = 0;
+  s.shots.push({
+    id: 9,
+    kind: "charge",
+    friendly: true,
+    x: 0,
+    y: 20,
+    z: -40,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    life: 1,
+    lockId: 12,
+  });
+  stepSortie(s, emptyInput(), 1 / 60);
+  assert.equal(s.mode, "win");
+  assert.equal(s.endWhy, "win");
+});
+
+test("a rail bomber does not write Slug", () => {
+  const s = createSortie({ corridor: true, path: SLUG_PATH, missionId: "slug", biome: "slug" });
+  s.wave = 99;
+  s.winKind = "bomber";
+  s.invuln = 99;
+  s.enemies.push({
+    id: 13,
+    kind: "bomber",
+    x: s.x,
+    y: s.y,
+    z: s.z - 20,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    hp: 1,
+    t: 0,
+    alive: true,
+  });
+  s.shots.push({
+    id: 10,
+    kind: "charge",
+    friendly: true,
+    x: s.x,
+    y: s.y,
+    z: s.z - 20,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    life: 1,
+    lockId: 13,
+  });
+  stepSortie(s, emptyInput(), 1 / 60);
+  assert.equal(s.mode, "play");
+});
+
+test("Ice Serifs spawn before the bowl goes empty", () => {
+  const s = createSortie({ missionId: "ice", biome: "ice" });
+  s.invuln = 99;
+  for (let i = 0; i < 10 * 60; i++) stepSortie(s, emptyInput(), 1 / 60);
+  assert.ok(s.enemies.some((e) => e.kind === "ace" && e.alive), "no Serifs by t=10");
+  assert.match(objectiveLine(s), /Serifs/);
+});
+
+test("all-range never hunts a missing set piece", () => {
+  for (const id of ["coast", "sorts", "slug", "gutter", "press"] as const) {
+    const m = MISSIONS.find((n) => n.id === id)!;
+    const s = createSortie({ corridor: true, path: m.path, missionId: id, biome: m.biome, name: m.name });
+    s.wave = 99;
+    s.invuln = 99;
+    s.pathT = 1;
+    s.shift = 0.01;
+    stepSortie(s, emptyInput(), 0.05);
+    for (let i = 0; i < 180; i++) stepSortie(s, emptyInput(), 1 / 60);
+    if (s.warpT > 0) continue;
+    const living =
+      s.winKind === "dualis"
+        ? s.enemies.some((e) => e.alive && e.kind === "dualis")
+        : s.winKind === "aces"
+          ? s.enemies.some((e) => e.alive && e.kind === "ace")
+          : s.enemies.some((e) => e.alive && e.setPiece);
+    assert.ok(living, `${id} all-range with no win target`);
+  }
+});
+
+test("sorts on the rail close instead of sitting still", () => {
+  const s = createSortie({ corridor: true, path: SORTS_PATH, missionId: "sorts", biome: "sorts" });
+  s.wave = 99;
+  s.invuln = 99;
+  s.enemies.push({
+    id: 77,
+    kind: "aster",
+    x: s.x,
+    y: s.y,
+    z: s.z - 80,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    hp: 1,
+    t: 0,
+    alive: true,
+    armed: false,
+  });
+  const e = s.enemies[s.enemies.length - 1];
+  const z0 = e.z;
+  stepSortie(s, emptyInput(), 1 / 60);
+  assert.ok(e.z > z0, `aster did not close ${e.z} from ${z0}`);
 });

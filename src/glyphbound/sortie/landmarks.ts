@@ -178,7 +178,34 @@ export const LANDMARKS: Record<string, Landmark[]> = {
     { id: "h2", kind: "hangar", x: 80, z: 40, h: 18, r: 28 },
     { id: "h3", kind: "hangar", x: 0, z: -90, h: 18, r: 28 },
   ],
-  sorts: [],
+  sorts: [
+    ...Array.from({ length: 6 }, (_, i) => {
+      const z = 3400 - i * 380;
+      const p = pointAtZ(SORTS_PATH, z);
+      return {
+        id: `hoop-${i}`,
+        kind: "rock" as const,
+        x: p.x,
+        z,
+        h: p.y,
+        r: HOLE_INNER_X,
+        pay: "gate" as const,
+      };
+    }),
+    ...Array.from({ length: 7 }, (_, i) => {
+      const z = 2100 - i * 170;
+      const p = pointAtZ(SORTS_PATH, z);
+      return {
+        id: `ring-${i}`,
+        kind: "ring" as const,
+        x: p.x + (i % 2 === 0 ? -22 : 22),
+        z,
+        h: p.y,
+        r: RING_R,
+        pay: "ring" as const,
+      };
+    }),
+  ],
   press: [
     ...ringsAlong(PRESS_PATH, 900, 5, 140, "censer"),
     { id: "crater", kind: "pad", x: 0, z: -40, h: 6, r: 110 },
@@ -235,7 +262,7 @@ export function landmarkHeight(missionId: string, x: number, z: number) {
     h = Math.max(h, 5 + (z / 2400) * 8 + Math.max(0, Math.abs(x) - 50) * 0.22 + n * 0.3);
   }
   for (const L of landmarksFor(missionId)) {
-    if (L.kind === "bank" || L.kind === "pad" || L.kind === "slug" || L.kind === "rock") {
+    if (L.kind === "bank" || L.kind === "pad" || L.kind === "slug" || (L.kind === "rock" && !L.pay)) {
       if (missionId === "coast" && L.kind === "bank" && Math.abs(x - riverX(z)) < 30) continue;
       h = Math.max(h, mound(x, z, L.x, L.z, L.r * 1.4, L.h));
     }
@@ -256,6 +283,9 @@ export function inHole(x: number, y: number, z: number, L: Landmark, y0 = 0) {
   }
   if (L.kind === "ring" || L.kind === "censer") {
     return Math.hypot(x - L.x, y - L.h, z - L.z) < L.r + CRAFT_R;
+  }
+  if (L.kind === "rock" && L.pay) {
+    return Math.hypot(x - L.x, y - L.h) < L.r && Math.abs(z - L.z) < 12;
   }
   return Math.abs(x - L.x) < L.r && Math.abs(z - L.z) < holeDepth(L) && y > y0 + 4 && y < y0 + L.h;
 }
@@ -279,6 +309,11 @@ export function inLandmarkSolid(x: number, y: number, z: number, L: Landmark, y0
   if (L.kind === "highway") {
     const deckY = y0 + L.h;
     return Math.abs(x - L.x) < L.r * 0.62 && Math.abs(z - L.z) < 10 && Math.abs(y - deckY) < 3 + CRAFT_R;
+  }
+  if (L.kind === "rock" && L.pay) {
+    if (Math.abs(z - L.z) > 10) return false;
+    const rad = Math.hypot(x - L.x, y - L.h);
+    return rad > L.r - 2 && rad < L.r + 8;
   }
   return false;
 }

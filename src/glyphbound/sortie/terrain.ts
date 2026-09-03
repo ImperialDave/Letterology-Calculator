@@ -290,6 +290,13 @@ function placeLandmark(root: THREE.Group, L: Landmark, kit: BiomeKit, biome: Bio
     root.add(disk);
     return;
   }
+  if (L.kind === "rock" && L.pay) {
+    const hoop = new THREE.Mesh(new THREE.TorusGeometry(L.r, 5.5, 8, 18), rock);
+    hoop.position.set(L.x, L.h, L.z);
+    hoop.castShadow = true;
+    root.add(hoop);
+    return;
+  }
   if (L.kind === "slug" || L.kind === "rock") {
     const b = new THREE.Mesh(new THREE.DodecahedronGeometry(L.r * 0.45, 0), rock);
     b.position.set(L.x, y0 + L.h * 0.35, L.z);
@@ -345,7 +352,7 @@ function scatterSorts(root: THREE.Group) {
     const z = 200 + hash01(i * 3.3) * 3400;
     const x = (hash01(i * 8.1) - 0.5) * 420;
     const y = (hash01(i * 5.7) - 0.5) * 180;
-    if (Math.abs(x) < 48 && Math.abs(y - 48) < 40) continue;
+    if (Math.abs(x) < 90 && Math.abs(y - 48) < 56) continue;
     const r = 6 + hash01(i * 2) * 16;
     const b = new THREE.Mesh(new THREE.DodecahedronGeometry(r * 0.45, 0), rock);
     b.position.set(x, y, z);
@@ -364,6 +371,7 @@ export function dressBiome(root: THREE.Group, kit: BiomeKit, missionId = kit.id)
   const biome = kit.id;
   if (missionId === "sorts") {
     scatterSorts(root);
+    for (const L of landmarksFor(missionId)) placeLandmark(root, L, kit, biome, missionId);
     return;
   }
   root.add(makeSheet(kit, missionId));

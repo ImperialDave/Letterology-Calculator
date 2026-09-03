@@ -33,7 +33,7 @@ export const MISSIONS: MissionDef[] = [
     path: COAST_PATH,
     medal: 80,
     win: "mech",
-    next: ["sorts", "ice"],
+    next: ["sorts"],
   },
   {
     id: "sorts",
@@ -93,7 +93,7 @@ export const MISSIONS: MissionDef[] = [
     path: [],
     medal: 50,
     win: "aces",
-    next: ["gutter"],
+    next: [],
   },
   {
     id: "press",
@@ -116,19 +116,53 @@ export function missionById(id: string) {
   return MISSIONS.find((m) => m.id === id) ?? MISSIONS[0];
 }
 
+export const REQUIRED_IDS = ["coast", "sorts", "slug", "gutter", "press"] as const;
+
 export function unlockedIds(cleared: string[], proofs: string[], forks: string[] = []) {
   const open = new Set<string>(["coast"]);
   for (const id of cleared) {
-    const m = missionById(id);
-    if (id === "coast") {
-      open.add(proofs.includes("coast") || forks.includes("coast") ? "ice" : "sorts");
-    } else if (id === "sorts") {
-      open.add(forks.includes("sorts") ? "ice" : "slug");
-    } else {
-      for (const n of m.next) open.add(n);
-    }
+    for (const n of missionById(id).next) open.add(n);
   }
+  if (proofs.includes("coast") || forks.includes("coast") || forks.includes("sorts")) open.add("ice");
   return open;
+}
+
+export function nextRequired(cleared: string[]) {
+  return REQUIRED_IDS.find((id) => !cleared.includes(id)) ?? null;
+}
+
+export function lockCopy(id: string) {
+  if (id === "ice") return "Proof the Coast or warp The Sorts.";
+  const i = REQUIRED_IDS.indexOf(id as (typeof REQUIRED_IDS)[number]);
+  if (i <= 0) return "Write Exchange Coast.";
+  return `Write ${missionById(REQUIRED_IDS[i - 1]).name}.`;
+}
+
+export function objectiveLine(s: SortieState) {
+  if (s.missionId === "coast") {
+    return s.flight === "allrange" ? "Scale is on the plaza." : "Seven n, then Scale on the plaza.";
+  }
+  if (s.missionId === "sorts") {
+    if (s.warpT > 0) return "Warp corridor.";
+    return `Rings ${s.archHits}/7 — warp, or stay for the quoin.`;
+  }
+  if (s.missionId === "slug") {
+    const n = s.takenLandmarks.filter((id) => id.startsWith("ring-")).length;
+    return n < 7 ? `Bowl bomber. Rings ${n}/7.` : "Bowl bomber.";
+  }
+  if (s.missionId === "gutter") {
+    return s.flight === "allrange" ? "Belly, then the core." : "Through the tanker. The press waits.";
+  }
+  if (s.missionId === "ice") {
+    const live = s.enemies.filter((e) => e.kind === "ace" && e.alive).length;
+    const dead = s.enemies.filter((e) => e.kind === "ace" && !e.alive).length;
+    if (live + dead === 0) return "Three Serifs incoming.";
+    return `Serifs ${dead}/3.`;
+  }
+  if (s.missionId === "press") {
+    return s.flight === "allrange" ? "Dualis. Hit the bar." : "Crater road. Dualis at the end.";
+  }
+  return "";
 }
 
 export function scriptMissionWaves(s: SortieState) {
@@ -146,7 +180,6 @@ export function scriptMissionWaves(s: SortieState) {
       if (b.kind === "check") s.hull = Math.min(s.hullMax + s.golds, s.hull + 1);
     }
     if (b.kind === "spawn" && b.ships) {
-      if (s.fork && b.ships.some((sh) => sh.kind === "mothership" || sh.kind === "mech")) continue;
       const formId = s.enemyId;
       const form = (b.ships[0]?.form ?? (b.ships.length > 1 ? "v" : "guide")) as FormName;
       for (let i = 0; i < b.ships.length; i++) {
@@ -157,10 +190,11 @@ export function scriptMissionWaves(s: SortieState) {
           staged: flyer && s.flight === "corridor",
           form: sh.form ?? form,
           formId,
-          slot: i,
+          slot: sh.slot ?? i,
           armed: sh.armed,
           lead: Math.max(88, -(push ? far(sh.dz) : sh.dz)),
           life: 12,
+          setPiece: sh.setPiece,
         });
         if (sh.kind === "mech" && !s.bossAt) s.bossAt = s.t;
       }
@@ -198,7 +232,7 @@ function spawn(
   y: number,
   z: number,
   hp?: number,
-  extra?: { staged?: boolean; armed?: boolean; form?: FormName; formId?: number; slot?: number; lead?: number; life?: number },
+  extra?: { staged?: boolean; armed?: boolean; form?: FormName; formId?: number; slot?: number; lead?: number; life?: number; setPiece?: boolean },
 ) {
   const auto =
     kind === "dualis"
@@ -238,5 +272,6 @@ function spawn(
     slot: extra?.slot ?? 0,
     lead: extra?.lead,
     life: extra?.life,
+    setPiece: extra?.setPiece,
   });
 }

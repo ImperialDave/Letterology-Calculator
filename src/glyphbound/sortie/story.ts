@@ -52,3 +52,29 @@ export function crewOf(who: string) {
   if (who === "dualis") return CREW["!"];
   return CREW[who] ?? CREW.s;
 }
+
+export type EndWhy = "none" | "win" | "kill" | "crash";
+
+export function endCopy(why: EndWhy, proof = false): { title: string; line: string; who: CrewId } {
+  if (why === "win") {
+    return {
+      title: proof ? "Proof" : "Written",
+      who: "s",
+      line: proof
+        ? "Gale: that was a sentence, not a draft. The Register keeps the mark."
+        : "The ledger is written. Dualis missed a clause. Wake when you want the next page.",
+    };
+  }
+  if (why === "crash") {
+    return {
+      title: "Struck the page",
+      who: "b",
+      line: "Brace read the ground. We didn’t. The land took too many bites. Wake at the Register.",
+    };
+  }
+  return {
+    title: "Cut down",
+    who: "e",
+    line: "Well: they filed us in the air. The hull failed under fire, not the ground. Wake at the Register.",
+  };
+}
