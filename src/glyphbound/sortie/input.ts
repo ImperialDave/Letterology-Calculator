@@ -167,10 +167,6 @@ export class SortieKeys {
       const c = clampSight(pad.aimX, pad.aimY);
       this.mx = c.x;
       this.my = c.y;
-    } else {
-      const spring = Math.exp(-10 * dt);
-      this.mx *= spring;
-      this.my *= spring;
     }
     this.mouseMoved = false;
 

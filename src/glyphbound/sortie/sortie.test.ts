@@ -538,15 +538,13 @@ test("keyboard stick eases in instead of slamming", () => {
   assert.ok(letGo.roll > 0.15 && letGo.roll < held.roll, `release ${letGo.roll}`);
 });
 
-test("keyboard sight recenters", () => {
+test("sight holds when the mouse is still", () => {
   const keys = new SortieKeys();
   keys.setSight(0.4, -0.2);
-  const a = keys.poll(0.05, false);
-  assert.ok(Math.abs(a.sightX) < 0.4);
   for (let i = 0; i < 40; i++) keys.poll(0.05, false);
   const b = keys.poll(0.05, false);
-  assert.ok(Math.abs(b.sightX) < 0.02, `sightX ${b.sightX}`);
-  assert.ok(Math.abs(b.sightY) < 0.02, `sightY ${b.sightY}`);
+  assert.ok(Math.abs(b.sightX - 0.4) < 0.02, `sightX ${b.sightX}`);
+  assert.ok(Math.abs(b.sightY + 0.2) < 0.02, `sightY ${b.sightY}`);
 });
 
 test("two frames nest at rest", () => {
@@ -806,14 +804,16 @@ test("A still yaws left on a corridor envelope", () => {
   assert.ok(s.roll > 0.05, `bank ${s.roll}`);
 });
 
-test("corridor stick sits in the window then springs home", () => {
+test("corridor stick sits in the window then drifts home", () => {
   const s = createSortie({ corridor: true });
   const inp = emptyInput();
   inp.roll = 1;
   for (let i = 0; i < 24; i++) stepSortie(s, inp, 1 / 60);
   assert.ok(s.offsetX > ENVELOPE_X * 0.7, `sit ${s.offsetX}`);
   for (let i = 0; i < 18; i++) stepSortie(s, emptyInput(), 1 / 60);
-  assert.ok(Math.abs(s.offsetX) < 4, `home ${s.offsetX}`);
+  assert.ok(Math.abs(s.offsetX) > 8, `yanked home ${s.offsetX}`);
+  for (let i = 0; i < 150; i++) stepSortie(s, emptyInput(), 1 / 60);
+  assert.ok(Math.abs(s.offsetX) < 6, `trim ${s.offsetX}`);
 });
 
 test("W without boost does not somersault", () => {
@@ -987,7 +987,8 @@ test("release after a bank returns to the horizon", () => {
   for (let i = 0; i < 40; i++) stepSortie(s, inp, 1 / 60);
   for (let i = 0; i < 30; i++) stepSortie(s, emptyInput(), 1 / 60);
   assert.ok(Math.abs(s.roll) < 0.08, `roll ${s.roll}`);
-  assert.ok(Math.abs(s.pitch) < 0.1, `pitch ${s.pitch}`);
+  for (let i = 0; i < 90; i++) stepSortie(s, emptyInput(), 1 / 60);
+  assert.ok(Math.abs(s.pitch) < 0.12, `pitch ${s.pitch}`);
 });
 
 test("lock does not steal pull-up", () => {

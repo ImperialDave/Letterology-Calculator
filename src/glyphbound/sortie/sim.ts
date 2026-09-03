@@ -234,6 +234,7 @@ const CMD_K = 8;
 const CMD_K_RANGE = 8;
 const BANK_K = 9;
 const STICK_POS_K = 8;
+const STICK_HOME_K = 1.5;
 const HEAT_PER_SHOT = 0.012;
 const RAPID_CD = 0.08;
 const HEAT_CD = 0.02;
@@ -287,8 +288,9 @@ function flyCraft(s: SortieState, input: SortieInput, dt: number) {
     const stickY = Math.max(-1, Math.min(1, input.pitch));
     const wantX = Math.max(-ENVELOPE_X, Math.min(ENVELOPE_X, stickX * ENVELOPE_X));
     const wantY = Math.max(-ENVELOPE_Y, Math.min(ENVELOPE_Y, stickY * ENVELOPE_Y));
-    s.offsetX = follow(s.offsetX, wantX, STICK_POS_K, dt);
-    s.offsetY = follow(s.offsetY, wantY, STICK_POS_K, dt);
+    const sitK = (want: number, cur: number) => (Math.abs(want) > Math.abs(cur) + 1 ? STICK_POS_K : STICK_HOME_K);
+    s.offsetX = follow(s.offsetX, wantX, sitK(wantX, s.offsetX), dt);
+    s.offsetY = follow(s.offsetY, wantY, sitK(wantY, s.offsetY), dt);
     const sample = samplePath(s.path, s.pathT);
     const posed = pathFrame(sample, s.offsetX, s.offsetY);
     s.x = posed.x;
@@ -366,10 +368,10 @@ function flyCraft(s: SortieState, input: SortieInput, dt: number) {
   s.roll = follow(s.roll, s.cmdRoll * BANK, BANK_K, dt);
   s.yaw += s.roll * YAW_FROM_BANK * turnMul * dt;
   s.yaw += input.rudder * 1.35 * dt;
-  if (Math.abs(input.pitch) >= 0.06) {
+  if (Math.abs(input.pitch) >= 0.08) {
     s.pitch += s.cmdPitch * PITCH_R * dt;
   } else {
-    s.pitch = follow(s.pitch, 0, 5, dt);
+    s.pitch = follow(s.pitch, 0, 1.6, dt);
   }
   s.pitch = Math.max(-PITCH_MAX, Math.min(PITCH_MAX, s.pitch));
 

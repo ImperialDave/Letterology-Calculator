@@ -17,7 +17,7 @@ const SORTIE_CONTROLS: { keys: string; does: string }[] = [
   { keys: "Q / E", does: "Barrel (eats orbs). One tap." },
   { keys: "Boost + W", does: "Somersault." },
   { keys: "Brake + W", does: "U-turn (all-range)." },
-  { keys: "Mouse", does: "Aims the squares. Click the sky if Escape drops it." },
+  { keys: "Mouse", does: "Aims the squares. They hold. Click the sky if Escape drops the lock." },
   { keys: "Phone", does: "Left flies. Right sits the squares. Push the right stick out to fire. Hold out to charge." },
   { keys: "Tab", does: "Break lock." },
   { keys: "V", does: "Cockpit cam." },
@@ -499,7 +499,7 @@ export function TouchPads({
     const o = aimAt.current;
     if (!o || o.id !== e.pointerId) return;
     const a = analogFromDelta(e.clientX - o.x, e.clientY - o.y, radius);
-    onAim?.(a.kx, -a.ky);
+    if (a.mag > 0) onAim?.(a.kx, -a.ky);
     const next = fireFromStick(a.mag, writing.current);
     if (next !== writing.current) {
       writing.current = next;
@@ -520,7 +520,6 @@ export function TouchPads({
     aimAt.current = null;
     if (writing.current) onFire(false);
     writing.current = false;
-    onAim?.(0, 0);
     setAimKnob((k) => ({ ...k, x: 0, y: 0, on: false, writing: false }));
   };
 
@@ -580,7 +579,6 @@ export function TouchPads({
             oy: (e.clientY - zone.top) / zone.height,
             writing: false,
           });
-          onAim?.(0, 0);
           onFire(false);
         }}
         onPointerMove={aimMove}
