@@ -152,12 +152,12 @@ export function scriptMissionWaves(s: SortieState) {
         const flyer = sh.kind === "fighter" || sh.kind === "cork" || sh.kind === "bomber" || sh.kind === "ace";
         const push = flyer || sh.kind === "aster" || sh.kind === "turret";
         spawn(s, sh.kind, s.x + sh.dx, s.y + sh.dy, s.z + (push ? far(sh.dz) : sh.dz), sh.hp, {
-          staged: flyer,
+          staged: flyer && s.flight === "corridor",
           form: sh.form ?? form,
           formId,
           slot: i,
           armed: sh.armed,
-          lead: Math.max(180, -sh.dz),
+          lead: Math.max(88, -(push ? far(sh.dz) : sh.dz)),
           life: 12,
         });
         if (sh.kind === "mech" && !s.bossAt) s.bossAt = s.t;
@@ -228,7 +228,7 @@ function spawn(
     hp: hp ?? auto,
     t: 0,
     alive: true,
-    staged: extra?.staged ?? true,
+    staged: extra?.staged ?? false,
     armed,
     form: extra?.form,
     formId: extra?.formId,

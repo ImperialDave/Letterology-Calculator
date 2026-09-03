@@ -18,6 +18,9 @@ declare global {
       getRoll: () => number;
       getSpeed: () => number;
       getX: () => number;
+      getHits: () => number;
+      getLockId: () => number;
+      getLockOn: () => boolean;
       setKeys: (codes: string[]) => void;
     };
   }
@@ -81,6 +84,9 @@ export function StarWords({
       getRoll: () => sim.current.roll,
       getSpeed: () => sim.current.speed,
       getX: () => sim.current.x,
+      getHits: () => sim.current.hits,
+      getLockId: () => sim.current.lockId,
+      getLockOn: () => sim.current.lockOn,
       setKeys: (codes) => keys.current.setKeys(codes),
     };
     return () => {
@@ -162,7 +168,9 @@ export function StarWords({
   return (
     <div
       ref={wrapRef}
-      className={`relative w-full overflow-hidden bg-[#b8e8f0] [touch-action:none] ${embedded ? "h-full" : "h-[100dvh]"}`}
+      className={`sw-play relative w-full overflow-hidden bg-[#b8e8f0] select-none [touch-action:none] ${embedded ? "h-full" : "h-[100dvh]"}`}
+      style={{ WebkitTouchCallout: "none", WebkitUserSelect: "none", userSelect: "none" }}
+      onContextMenu={(e) => e.preventDefault()}
     >
       {!picked ? (
         <RegisterMap
@@ -214,12 +222,15 @@ export function StarWords({
             })}
           </div>
           <p className="mt-6 text-sm text-[#5ee0c0]">Tap to take off</p>
-          <p className="mt-8 max-w-md px-6 text-center text-[12px] leading-relaxed text-[#c8c4b8]">
+          <p className="mt-8 max-w-md px-6 text-center text-[12px] leading-relaxed text-[#c8c4b8] [@media(hover:none)]:hidden">
             <span className="text-[#f4f0e4]">A D</span> bank · <span className="text-[#f4f0e4]">W</span> pull-up ·{" "}
             <span className="text-[#f4f0e4]">Space</span> tap laser, hold charge · <span className="text-[#f4f0e4]">Q E</span>{" "}
             barrel · <span className="text-[#f4f0e4]">Shift</span>+<span className="text-[#f4f0e4]">W</span> loop ·{" "}
             <span className="text-[#f4f0e4]">Ctrl</span>+<span className="text-[#f4f0e4]">W</span> U-turn · click locks
             the mouse as the stick
+          </p>
+          <p className="mt-8 hidden max-w-md px-6 text-center text-[12px] leading-relaxed text-[#c8c4b8] [@media(hover:none)]:block">
+            Left thumb flies. Right thumb fires — slide on Fire to aim. Side buttons are boost and brake.
           </p>
           </button>
           <button

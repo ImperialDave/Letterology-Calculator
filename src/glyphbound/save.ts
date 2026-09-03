@@ -50,6 +50,7 @@ export const defaultSave = (): SaveData => ({
   sortieCleared: [],
   sortieProofs: [],
   sortieForks: [],
+  sortieKits: {},
   arcadeBest: 0,
 });
 
@@ -168,6 +169,14 @@ function parseSave(raw: string | null): SaveData {
       sortieCleared: Array.isArray(parsed.sortieCleared) ? parsed.sortieCleared : [],
       sortieProofs: Array.isArray(parsed.sortieProofs) ? parsed.sortieProofs : [],
       sortieForks: Array.isArray(parsed.sortieForks) ? parsed.sortieForks : [],
+      sortieKits:
+        parsed.sortieKits && typeof parsed.sortieKits === "object" && !Array.isArray(parsed.sortieKits)
+          ? Object.fromEntries(
+              Object.entries(parsed.sortieKits as Record<string, unknown>)
+                .filter(([, v]) => typeof v === "number" && v >= 1)
+                .map(([k, v]) => [k, Math.min(2, Math.floor(v as number))]),
+            )
+          : {},
       arcadeBest: Math.max(0, parsed.arcadeBest ?? 0),
       maxShield: Math.max(3, parsed.maxShield ?? 3),
       talked: parsed.talked ?? [],

@@ -390,6 +390,8 @@ export interface SaveData {
   /** Missions that met the Proof hit count. */
   sortieProofs: string[];
   sortieForks: string[];
+  /** StarWords C-wing kit ranks, 1–2. */
+  sortieKits: Record<string, number>;
   /** Best Endurance clear count. Campaign progress is never this. */
   arcadeBest: number;
 }

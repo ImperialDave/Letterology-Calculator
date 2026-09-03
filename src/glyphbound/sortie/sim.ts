@@ -1,12 +1,14 @@
 /** StarWords — arcade flight. No three.js. */
 
 import { aimOff, aimScreen, CONVERGE_DIST, inBox, unproject } from "./cam";
+import { collectRank, kitMods, kitOf, romanRank, type KitId, type KitMods, type KitRanks } from "./kits";
 import { scriptMissionWaves } from "./missions";
 import { ENVELOPE_X, ENVELOPE_Y, SHIFT_T, SKY_CORRIDOR, UTURN_T, pathLength, pathFrame, samplePath, type PathPoint } from "./path";
 import { groundHeight } from "./height";
 import { landmarksFor } from "./landmarks";
 import type { BiomeId } from "./terrain";
 export { aimOff, aimScreen, CONVERGE_DIST, gunPip, inBox, unproject } from "./cam";
+export type { KitId, KitMods, KitRanks } from "./kits";
 
 export const ARENA_R = 420;
 export const WATER_Y = 0;
@@ -20,13 +22,20 @@ export const OUTER_R = 0.13;
 export const KEEP_R = 0.17;
 export const MAGNET = 0;
 export const CHARGE_SEEK = 0.15;
+export const TGT_NEAR = 18;
+export const TGT_FAR = 120;
+export const WARN_FAR = 240;
+export const LASER_LIFE = 0.28;
+/** Staged rail lizards sit here once they have closed from the amber watch. */
+export const GALLERY_LEAD = 88;
+const GALLERY_CLOSE = 58;
 const NUDGE_STICK = 0.35;
 const NUDGE_SIT = 8;
 
 export type EnemyKind = "fighter" | "cork" | "bomber" | "turret" | "ace" | "mech" | "mothership" | "dualis" | "aster";
 export type FormName = "v" | "line" | "cross" | "guide" | "hold";
 export type ShotKind = "laser" | "orb" | "charge" | "bomb";
-export type PickupKind = "silver" | "gold" | "stem" | "bomb" | "repair";
+export type PickupKind = "silver" | "gold" | "stem" | "bomb" | "repair" | "kit";
 export type SortieMode = "play" | "win" | "dead" | "pause";
 export type FlightMode = "corridor" | "allrange";
 
@@ -91,6 +100,7 @@ export interface Ring {
 export interface Pickup {
   id: number;
   kind: PickupKind;
+  kit?: KitId;
   x: number;
   y: number;
   z: number;
@@ -141,6 +151,7 @@ export interface SortieState {
   roll: number;
   speed: number;
   hull: number;
+  hullMax: number;
   invuln: number;
   barrel: number;
   barrelDir: number;
@@ -201,6 +212,10 @@ export interface SortieState {
   split: boolean;
   takenLandmarks: string[];
   warpT: number;
+  mods: KitMods;
+  kitRanks: KitRanks;
+  kitDirty: boolean;
+  kitGained: KitId[];
 }
 
 const CRUISE = 52;
@@ -269,7 +284,7 @@ function flyCraft(s: SortieState, input: SortieInput, dt: number) {
     const quiet = Math.abs(input.roll) < NUDGE_STICK && Math.abs(input.pitch) < NUDGE_STICK;
     let wantX = stickX * ENVELOPE_X;
     let wantY = stickY * ENVELOPE_Y;
-    if (quiet && s.lockOn && s.charge >= CHARGE_SEEK) {
+    if (quiet && s.lockOn && s.charge >= s.mods.chargeSeek) {
       wantX -= (s.lockSx - s.sightX) * NUDGE_SIT;
       wantY += (s.lockSy - s.sightY) * NUDGE_SIT;
     }
@@ -308,6 +323,9 @@ function flyCraft(s: SortieState, input: SortieInput, dt: number) {
       s.cmdPitch = 0;
       s.pitch = Math.max(-PITCH_MAX, Math.min(PITCH_MAX, s.pitch));
       if (!s.arenaT) s.arenaT = s.t;
+      for (const e of s.enemies) {
+        if (flyerKind(e.kind)) e.staged = false;
+      }
     }
     return;
   }
@@ -338,7 +356,7 @@ function flyCraft(s: SortieState, input: SortieInput, dt: number) {
 
   if (s.somersault > 0) {
     s.somersault = Math.max(0, s.somersault - dt);
-    s.pitch += (Math.PI * 2 * dt) / SOMERSAULT_T;
+    s.pitch += (Math.PI * 2 * dt) / Math.max(0.2, s.mods.somersaultT);
     s.roll = follow(s.roll, 0, 5, dt);
     const fS = fwd(s);
     s.x += fS.x * s.speed * dt;
@@ -396,11 +414,14 @@ export function createSortie(opts?: {
   name?: string;
   missionId?: string;
   biome?: BiomeId;
+  kits?: KitRanks;
 }): SortieState {
   const corridor = opts?.corridor === true;
   const path = opts?.path ?? (corridor ? SKY_CORRIDOR : []);
   const start = corridor && path.length ? samplePath(path, 0) : null;
   const framed = start ? pathFrame(start, 0, 0) : null;
+  const kitRanks = opts?.kits ?? {};
+  const mods = kitMods(kitRanks);
   return {
     t: 0,
     mode: "play",
@@ -421,7 +442,8 @@ export function createSortie(opts?: {
     pitch: corridor ? 0 : 0.04,
     roll: 0,
     speed: CRUISE,
-    hull: HULL_MAX,
+    hull: HULL_MAX + mods.hullAdd,
+    hullMax: HULL_MAX + mods.hullAdd,
     invuln: 1.2,
     barrel: 0,
     barrelDir: 1,
@@ -479,8 +501,8 @@ export function createSortie(opts?: {
     cockpit: false,
     aboutFace: false,
     medal: 80,
-    bombs: 1,
-    stem: 1,
+    bombs: 1 + mods.bombsAdd,
+    stem: mods.startStem,
     wings: 2,
     golds: 0,
     pickups: [
@@ -496,6 +518,10 @@ export function createSortie(opts?: {
     split: false,
     takenLandmarks: [],
     warpT: 0,
+    mods,
+    kitRanks: { ...kitRanks },
+    kitDirty: false,
+    kitGained: [],
   };
 }
 
@@ -562,7 +588,7 @@ export function spawnEnemy(
     hp,
     t: 0,
     alive: true,
-    staged: extra?.staged ?? true,
+    staged: extra?.staged ?? false,
     armed: extra?.armed ?? defaultArmed(kind),
     form: extra?.form,
     formId: extra?.formId,
@@ -594,15 +620,41 @@ function fireShot(
     vx: (dir.x / n) * speed,
     vy: (dir.y / n) * speed,
     vz: (dir.z / n) * speed,
-    life: kind === "bomb" ? 2.8 : kind === "charge" ? 2.4 : 1.35,
+    life: kind === "bomb" ? 2.8 : kind === "charge" ? (lockId >= 0 ? 2.4 : LASER_LIFE) : LASER_LIFE,
     lockId,
   });
+}
+
+function seatKit(s: SortieState, id: KitId) {
+  const before = kitMods(s.kitRanks);
+  const took = collectRank(s.kitRanks, id);
+  s.kitRanks = took.ranks;
+  const after = kitMods(s.kitRanks);
+  const def = kitOf(id);
+  const name = def?.name ?? id;
+  s.hullMax += after.hullAdd - before.hullAdd;
+  s.hull += after.hullAdd - before.hullAdd;
+  s.bombs += after.bombsAdd - before.bombsAdd;
+  if (after.startStem > s.stem) s.stem = after.startStem;
+  s.mods = after;
+  if (!took.maxed) {
+    s.kitDirty = true;
+    if (!s.kitGained.includes(id)) s.kitGained.push(id);
+    s.radio = {
+      who: def?.who ?? "e",
+      text: `${name}. Rank ${romanRank(took.next)}. The C-wing keeps it.`,
+      until: s.t + 3.2,
+    };
+  } else {
+    s.radio = { who: def?.who ?? "e", text: `${name} is already seated.`, until: s.t + 2.2 };
+    s.hull = Math.min(s.hullMax + s.golds, s.hull + 1);
+  }
 }
 
 function hurt(s: SortieState, n: number, snap = false) {
   if (s.invuln > 0 || s.barrel > 0 || s.somersault > 0 || s.mode !== "play") return;
   s.hull -= n;
-  s.invuln = 0.85;
+  s.invuln = s.mods.invuln;
   s.hitStop = 0.05;
   if (snap && s.wings > 0) {
     s.wings = (s.wings - 1) as 0 | 1 | 2;
@@ -669,7 +721,7 @@ function chargeSplash(s: SortieState, x: number, y: number, z: number, skipId: n
 }
 
 function detonate(s: SortieState, x: number, y: number, z: number) {
-  const R = 36;
+  const R = s.mods.bombR;
   for (const e of s.enemies) {
     if (!e.alive) continue;
     const d = Math.hypot(e.x - x, e.y - y, e.z - z);
@@ -728,19 +780,19 @@ function kindRank(kind: EnemyKind) {
 }
 
 function pickTarget(s: SortieState) {
-  if (s.charge < CHARGE_SEEK) return -1;
+  if (s.charge < s.mods.chargeSeek) return -1;
   const aspect = s.aspect || 16 / 9;
   const kept = s.enemies.find((e) => e.id === s.lockId && e.alive && listable(e.kind));
   if (kept) {
     const off = aimOff(s, kept.x, kept.y, kept.z);
-    if (off.z <= 320 && off.z >= 6 && inBox(off.sx, off.sy, KEEP_R, aspect)) return kept.id;
+    if (off.z <= TGT_FAR && off.z >= TGT_NEAR && inBox(off.sx, off.sy, KEEP_R, aspect)) return kept.id;
   }
   let best = -1;
   let bestScore = -1;
   for (const e of s.enemies) {
     if (!e.alive || !listable(e.kind)) continue;
     const off = aimOff(s, e.x, e.y, e.z);
-    if (off.z > 320 || off.z < 6 || !inBox(off.sx, off.sy, OUTER_R, aspect)) continue;
+    if (off.z > TGT_FAR || off.z < TGT_NEAR || !inBox(off.sx, off.sy, OUTER_R, aspect)) continue;
     const center = 1 - Math.min(1, Math.hypot(off.sx * aspect, off.sy));
     const score = kindRank(e.kind) * 10 + center;
     if (score > bestScore) {
@@ -788,9 +840,9 @@ function aimDir(s: SortieState, origin: Vec3, shotSpeed = LASER_SPD, home = fals
 function scriptWaves(s: SortieState) {
   if (s.missionId !== "sky" && scriptMissionWaves(s)) return;
   if (s.wave < 1 && s.t > 2.2) {
-    spawnEnemy(s, "fighter", -12, 50, -40, { form: "v", formId: 1, slot: 1, staged: true });
-    spawnEnemy(s, "fighter", 0, 54, -70, { form: "v", formId: 1, slot: 0, staged: true });
-    spawnEnemy(s, "fighter", 12, 50, -40, { form: "v", formId: 1, slot: 2, staged: true });
+    spawnEnemy(s, "fighter", -12, 50, -40, { form: "v", formId: 1, slot: 1, staged: false });
+    spawnEnemy(s, "fighter", 0, 54, -70, { form: "v", formId: 1, slot: 0, staged: false });
+    spawnEnemy(s, "fighter", 12, 50, -40, { form: "v", formId: 1, slot: 2, staged: false });
     s.wave = 1;
     s.radio = { who: "s", text: "Lizards in a V. Cut the lead.", until: s.t + 3 };
   }
@@ -976,7 +1028,8 @@ function steerEnemy(s: SortieState, e: Enemy, dt: number) {
   }
 
   if (rail && e.staged && flyerKind(e.kind)) {
-    e.lead = e.lead ?? 180;
+    e.lead = e.lead ?? GALLERY_LEAD;
+    if (e.lead > GALLERY_LEAD) e.lead = Math.max(GALLERY_LEAD, e.lead - GALLERY_CLOSE * dt);
     e.life = e.life ?? 12;
     e.life -= dt;
     const off = formOffset(e.form, e.slot ?? 0, e.t);
@@ -1002,18 +1055,7 @@ function steerEnemy(s: SortieState, e: Enemy, dt: number) {
     return;
   }
 
-  if (!rail && e.staged && flyerKind(e.kind)) {
-    const f = fwd(s);
-    const r = right(s);
-    const slot = (e.slot ?? 0) - 1;
-    const tx = s.x + f.x * 140 + r.x * slot * 22;
-    const ty = s.y + 6;
-    const tz = s.z + f.z * 140 + r.z * slot * 22;
-    springTo(e, tx, ty, tz, dt);
-    turnTo(e, f.x, f.y * 0.2, f.z, e.kind === "ace" ? 30 : 22, ENEMY_TURN, dt);
-    fireIfArmed(s, e, toP, dt);
-    return;
-  }
+  if (!rail && e.staged && flyerKind(e.kind)) e.staged = false;
 
   if (rail) {
     const weave = Math.sin(e.t * 2.1 + e.id) * (e.kind === "cork" ? 22 : 8);
@@ -1065,16 +1107,16 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
   if (s.radio && s.t > s.radio.until) s.radio = null;
 
   if (input.barrel !== 0 && s.barrel <= 0) {
-    s.barrel = BARREL_T;
+    s.barrel = s.mods.barrelT;
     s.barrelDir = input.barrel >= 0 ? 1 : -1;
   }
   if (s.barrel > 0) s.barrel = Math.max(0, s.barrel - dt);
 
   const canBoost = s.boostMeter > 0.12;
   const want = input.boost && canBoost ? BOOST : input.brake && canBoost ? BRAKE : CRUISE;
-  if (input.boost && canBoost) s.boostMeter = Math.max(0, s.boostMeter - BOOST_DRAIN * dt);
-  else if (input.brake && canBoost) s.boostMeter = Math.max(0, s.boostMeter - BRAKE_DRAIN * dt);
-  else s.boostMeter = Math.min(1, s.boostMeter + METER_REGEN * dt);
+  if (input.boost && canBoost) s.boostMeter = Math.max(0, s.boostMeter - BOOST_DRAIN * s.mods.boostDrainMul * dt);
+  else if (input.brake && canBoost) s.boostMeter = Math.max(0, s.boostMeter - BRAKE_DRAIN * s.mods.boostDrainMul * dt);
+  else s.boostMeter = Math.min(1, s.boostMeter + s.mods.boostRegen * dt);
   const speedK = (input.boost || input.brake) && canBoost ? 5.6 : 3.8;
   s.speed += (want - s.speed) * Math.min(1, dt * speedK);
 
@@ -1084,8 +1126,8 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
     s.barrel <= 0 &&
     s.uturn <= 0
   ) {
-    s.somersault = SOMERSAULT_T;
-    s.boostMeter = Math.max(0, s.boostMeter - 0.22);
+    s.somersault = s.mods.somersaultT;
+    s.boostMeter = Math.max(0, s.boostMeter - s.mods.somersaultCost);
   }
   if (
     s.flight === "allrange" &&
@@ -1170,14 +1212,16 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
         s.bombs = Math.min(9, s.bombs + 1);
         s.radio = { who: "b", text: "Em-dash aboard.", until: s.t + 2 };
       } else if (p.kind === "silver") {
-        s.hull = Math.min(HULL_MAX + s.golds, s.hull + 2);
+        s.hull = Math.min(s.hullMax + s.golds, s.hull + 2);
       } else if (p.kind === "gold") {
         s.golds = Math.min(3, s.golds + 1);
-        s.hull = Math.min(HULL_MAX + s.golds, s.hull + 2);
+        s.hull = Math.min(s.hullMax + s.golds, s.hull + 2);
         if (s.golds === 3) s.radio = { who: "e", text: "Three golds. Extra curve.", until: s.t + 2.4 };
       } else if (p.kind === "repair") {
         s.wings = Math.min(2, s.wings + 1) as 0 | 1 | 2;
         s.radio = { who: "e", text: "Wing patched.", until: s.t + 2 };
+      } else if (p.kind === "kit" && p.kit) {
+        seatKit(s, p.kit);
       }
       s.score += 80;
     }
@@ -1185,7 +1229,7 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
 
   if (input.cockpit) s.cockpit = !s.cockpit;
   const liveCharge = s.shots.some((q) => q.friendly && q.kind === "charge" && q.life > 0);
-  if (input.fireHeld && !liveCharge) s.charge = Math.min(CHARGE_LOCK + 0.4, s.charge + dt);
+  if (input.fireHeld && !liveCharge) s.charge = Math.min(s.mods.chargeLock + 0.4, s.charge + dt);
 
   if (input.lockBreak) s.lockId = -1;
   else s.lockId = pickTarget(s);
@@ -1195,7 +1239,7 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
     s.lockSx = off.pipSx;
     s.lockSy = off.pipSy;
     s.lockOn = inBox(off.sx, off.sy, OUTER_R, s.aspect);
-    s.lockHard = s.charge >= CHARGE_LOCK && inBox(off.sx, off.sy, INNER_R, s.aspect);
+    s.lockHard = s.charge >= s.mods.chargeLock && inBox(off.sx, off.sy, INNER_R, s.aspect);
     s.lockDist = off.z;
     const lead = leadPoint(s, locked, LASER_SPD);
     const lp = aimScreen(s, lead.x, lead.y, lead.z);
@@ -1215,7 +1259,7 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
   s.innerSy = follow(s.innerSy, iy, 14, dt);
 
   if (!input.fireHeld) {
-    if (s.charge >= CHARGE_LOCK && !liveCharge) {
+    if (s.charge >= s.mods.chargeLock && !liveCharge) {
       const home = s.lockHard ? s.lockId : -1;
       fireShot(s, "charge", true, s.x, s.y, s.z, aimDir(s, s, CHARGE_SPD, home >= 0), CHARGE_SPD, home);
     }
@@ -1239,7 +1283,7 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
   if (input.fire && s.charge < 0.12 && s.cooldown <= 0) {
     const r = right(s);
     const aim = worldAim(s);
-    const dmgLife = s.stem >= 2 ? 1.6 : 1.35;
+    const dmgLife = (s.stem >= 2 ? LASER_LIFE * 1.15 : LASER_LIFE) * s.mods.laserLifeMul;
     const nose = aimDir(s, s, LASER_SPD, false);
     const mx = s.x + nose.x * 4;
     const my = s.y + nose.y * 4;
@@ -1254,10 +1298,10 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
       fireShot(s, "laser", true, lx, my, lz, dirTo({ x: lx, y: my, z: lz }, aim), LASER_SPD);
       fireShot(s, "laser", true, rx, my, rz, dirTo({ x: rx, y: my, z: rz }, aim), LASER_SPD);
     }
-    s.shots.filter((q) => q.kind === "laser" && q.life > 1.3).forEach((q) => {
+    s.shots.filter((q) => q.kind === "laser" && q.life > LASER_LIFE * 0.9).forEach((q) => {
       q.life = dmgLife;
     });
-    s.cooldown = RAPID_CD;
+    s.cooldown = s.mods.rapidCd;
     s.flash = 1;
   }
   if (!input.fireHeld) s.gunHeat = Math.max(0, s.gunHeat - dt * 0.95);
@@ -1388,7 +1432,7 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
     const closing = (sh.vx * dx + sh.vy * dy + sh.vz * dz) / spd;
     const eta = dist / spd;
     if (closing > 8 && eta < 1.2) {
-      s.incoming = 0.35;
+      s.incoming = s.mods.incomingT;
       if (s.warned <= 0) {
         s.radio = { who: "b", text: "Break. Ink inbound.", until: s.t + 1.6 };
         s.warned = 2.8;

@@ -10,7 +10,7 @@ import { ENVELOPE_X, pathLength } from "./path";
 import { analogFromDelta } from "./stick";
 import { SortieKeys } from "./input";
 import { aimOff, aimScreen, inBox, unproject } from "./cam";
-import { BARREL_T, CHARGE_LOCK, CHARGE_SEEK, INNER_R, KEEP_R, OUTER_R, SOMERSAULT_T, createSortie, emptyInput, sightParallax, stepSortie } from "./sim";
+import { BARREL_T, CHARGE_LOCK, CHARGE_SEEK, GALLERY_LEAD, INNER_R, KEEP_R, LASER_LIFE, OUTER_R, SOMERSAULT_T, TGT_FAR, TGT_NEAR, WARN_FAR, createSortie, emptyInput, sightParallax, stepSortie } from "./sim";
 import { fillTex, paintBrass, paintGrass, paintHull, paintInkWater, paintLead, paintScale, type Plot } from "./tex-paint";
 
 function meanLuma(paint: (plot: Plot, n: number) => void) {
@@ -297,6 +297,161 @@ test("lasers down the nose miss a target outside the squares", () => {
   const shot = s.shots.find((q) => q.kind === "laser");
   assert.ok(shot);
   assert.ok(Math.abs(shot!.vx) < 12, `no magnet vx ${shot!.vx}`);
+});
+
+test("lock only works in combat range", () => {
+  const near = createSortie();
+  near.x = 0;
+  near.y = 48;
+  near.z = 0;
+  near.yaw = 0;
+  near.pitch = 0;
+  const e = {
+    id: 88,
+    kind: "fighter" as const,
+    x: 0,
+    y: 48,
+    z: -80,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    hp: 2,
+    t: 0,
+    alive: true,
+  };
+  near.enemies.push(e);
+  for (let i = 0; i < 50; i++) {
+    const pip = aimScreen(near, e.x, e.y, e.z);
+    const held = emptyInput();
+    held.fireHeld = true;
+    held.sightX = pip.sx;
+    held.sightY = pip.sy;
+    stepSortie(near, held, 1 / 60);
+  }
+  assert.equal(near.lockOn, true);
+
+  const far = createSortie();
+  far.x = 0;
+  far.y = 48;
+  far.z = 0;
+  far.yaw = 0;
+  far.pitch = 0;
+  far.enemies.push({
+    id: 89,
+    kind: "fighter",
+    x: 0,
+    y: 48,
+    z: -200,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    hp: 2,
+    t: 0,
+    alive: true,
+  });
+  for (let i = 0; i < 50; i++) {
+    const pip = aimScreen(far, 0, 48, -200);
+    const held = emptyInput();
+    held.fireHeld = true;
+    held.sightX = pip.sx;
+    held.sightY = pip.sy;
+    stepSortie(far, held, 1 / 60);
+  }
+  assert.notEqual(far.lockId, 89);
+  assert.equal(far.lockOn, false);
+});
+
+test("lasers die before warn range", () => {
+  const s = createSortie();
+  s.stem = 0;
+  s.x = 0;
+  s.y = 48;
+  s.z = 0;
+  s.yaw = 0;
+  s.pitch = 0;
+  const inp = emptyInput();
+  inp.fire = true;
+  stepSortie(s, inp, 1 / 60);
+  const shot0 = s.shots.find((q) => q.kind === "laser");
+  assert.ok(shot0);
+  for (let i = 0; i < 36; i++) stepSortie(s, emptyInput(), 1 / 60);
+  const shot = s.shots.find((q) => q.kind === "laser");
+  assert.ok(!shot || shot.life <= 0, `laser still alive ${shot?.life}`);
+  assert.ok(TGT_FAR < WARN_FAR);
+  assert.ok(TGT_FAR * 2 < 400 * 1.35);
+  assert.ok(LASER_LIFE * 400 < TGT_FAR + 20);
+  assert.ok(LASER_LIFE * 400 < WARN_FAR);
+  assert.ok(GALLERY_LEAD > TGT_NEAR && GALLERY_LEAD < TGT_FAR);
+});
+
+test("lasers cannot snipe the amber watch", () => {
+  const s = createSortie();
+  s.wave = 99;
+  s.stem = 0;
+  s.invuln = 99;
+  s.x = 0;
+  s.y = 48;
+  s.z = 0;
+  s.yaw = 0;
+  s.pitch = 0;
+  s.enemies.push({
+    id: 91,
+    kind: "aster",
+    x: 0,
+    y: 48,
+    z: -200,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    hp: 12,
+    t: 0,
+    alive: true,
+    staged: false,
+    armed: false,
+  });
+  const inp = emptyInput();
+  inp.fire = true;
+  stepSortie(s, inp, 1 / 60);
+  for (let i = 0; i < 40; i++) stepSortie(s, emptyInput(), 1 / 60);
+  const rock = s.enemies.find((e) => e.id === 91);
+  assert.ok(rock?.alive);
+  assert.equal(rock?.hp, 12);
+});
+
+test("gallery lizards close from watch range into the gun", () => {
+  const s = createSortie({ corridor: true, path: COAST_PATH, missionId: "coast", biome: "coast" });
+  s.wave = 99;
+  s.invuln = 99;
+  s.enemies.push({
+    id: 82,
+    kind: "fighter",
+    x: s.x,
+    y: s.y,
+    z: s.z - 200,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    hp: 2,
+    t: 0,
+    alive: true,
+    staged: true,
+    armed: false,
+    form: "guide",
+    lead: 200,
+    life: 12,
+    slot: 0,
+  });
+  const e = s.enemies[s.enemies.length - 1];
+  const held = emptyInput();
+  held.fireHeld = true;
+  stepSortie(s, held, 1 / 60);
+  assert.notEqual(s.lockId, 82);
+  for (let i = 0; i < 150; i++) stepSortie(s, emptyInput(), 1 / 60);
+  const dist = Math.hypot(e.x - s.x, e.y - s.y, e.z - s.z);
+  assert.ok(e.alive);
+  assert.ok(dist < TGT_FAR, `still out of the gun ${dist}`);
+  assert.ok(dist > TGT_NEAR + 20, `overshot the window ${dist}`);
+  assert.ok(Math.abs((e.lead ?? 0) - GALLERY_LEAD) < 1, `lead ${e.lead}`);
 });
 
 test("Dualis cannot be lock-on targeted", () => {
@@ -1146,6 +1301,45 @@ test("low flight over water sets skim", () => {
   s.pitch = 0;
   stepSortie(s, emptyInput(), 1 / 60);
   assert.equal(s.skim, true);
+});
+
+test("all-range lizards keep the sky instead of sitting on the nose", () => {
+  const s = createSortie();
+  s.wave = 99;
+  s.invuln = 99;
+  s.x = 0;
+  s.y = 48;
+  s.z = 0;
+  s.yaw = 0;
+  s.pitch = 0;
+  s.enemies.push({
+    id: 44,
+    kind: "fighter",
+    x: 0,
+    y: 48,
+    z: -90,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    hp: 2,
+    t: 0,
+    alive: true,
+    staged: true,
+    armed: false,
+  });
+  const e = s.enemies[s.enemies.length - 1];
+  const yaw = emptyInput();
+  yaw.roll = 1;
+  for (let i = 0; i < 90; i++) stepSortie(s, yaw, 1 / 60);
+  assert.ok(s.yaw > 0.35, `yaw ${s.yaw}`);
+  const cp = Math.cos(s.pitch);
+  const fx = -Math.sin(s.yaw) * cp;
+  const fz = -Math.cos(s.yaw) * cp;
+  const glueX = s.x + fx * 88;
+  const glueZ = s.z + fz * 88;
+  const dist = Math.hypot(e.x - glueX, e.z - glueZ);
+  assert.ok(dist > 40, `still glued to the nose ${dist}`);
+  assert.equal(e.staged, false);
 });
 
 test("all-range lizards need about a second to reverse, like the C-wing", () => {
