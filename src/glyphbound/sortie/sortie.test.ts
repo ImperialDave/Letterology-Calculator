@@ -29,7 +29,7 @@ import { bindNoSelect } from "./hud";
 import { grantClear } from "./kits";
 import { SortieKeys } from "./input";
 import { aimOff, aimScreen, inBox, unproject } from "./cam";
-import { BARREL_T, CHARGE_LOCK, CHARGE_SEEK, GALLERY_LEAD, INNER_R, KEEP_R, LASER_LIFE, OUTER_R, SOMERSAULT_T, TGT_FAR, TGT_NEAR, WARN_FAR, createSortie, emptyInput, sightParallax, stepSortie } from "./sim";
+import { BARREL_T, CHARGE_LOCK, CHARGE_SEEK, GALLERY_LEAD, INNER_R, KEEP_R, LASER_LIFE, MARK_PX_MAX, MARK_PX_MIN, MARK_REF_H, OUTER_R, SOMERSAULT_T, TGT_FAR, TGT_NEAR, WARN_FAR, createSortie, emptyInput, markHalf, markInSquares, markPx, sightParallax, stepSortie } from "./sim";
 import { DRESSING_FLOOR, dressingCatalogCount, meetsDressingFloor } from "./audit";
 import { fillTex, PAINTS, paintBrass, paintGrass, paintHull, paintInkWater, paintLead, paintScale, type Plot } from "./tex-paint";
 import { makeWorld } from "./world";
@@ -349,6 +349,12 @@ test("drawn square matches lock volume", () => {
   assert.ok(KEEP_R > OUTER_R, "keep is hysteresis, not a bigger gun");
 });
 
+test("blue mark size is shared by HUD and the hit test", () => {
+  assert.equal(markPx(80), markHalf(80) * MARK_REF_H);
+  assert.equal(markPx(12), MARK_PX_MAX);
+  assert.equal(markPx(400), MARK_PX_MIN);
+});
+
 test("a charged lock does not sit the rail for you", () => {
   const s = createSortie({ corridor: true });
   stepSortie(s, emptyInput(), 1 / 60);
@@ -410,10 +416,11 @@ test("a fighter a few widths off the nose is outside the gunsight", () => {
 
 test("lasers down the nose miss a target outside the squares", () => {
   const s = createSortie();
+  s.wave = 99;
   s.enemies.push({
     id: 51,
     kind: "fighter",
-    x: 90,
+    x: 10,
     y: 48,
     z: -80,
     vx: 0,
@@ -429,14 +436,113 @@ test("lasers down the nose miss a target outside the squares", () => {
   s.yaw = 0;
   s.pitch = 0;
   s.stem = 0;
+  s.aspect = 16 / 9;
   stepSortie(s, emptyInput(), 1 / 60);
-  assert.notEqual(s.lockId, 51);
+  const e = s.enemies.find((n) => n.id === 51)!;
+  assert.equal(markInSquares(s, e), false);
   const inp = emptyInput();
   inp.fire = true;
   stepSortie(s, inp, 1 / 60);
   const shot = s.shots.find((q) => q.kind === "laser");
   assert.ok(shot);
   assert.ok(Math.abs(shot!.vx) < 12, `no magnet vx ${shot!.vx}`);
+  for (let i = 0; i < 40; i++) stepSortie(s, emptyInput(), 1 / 60);
+  assert.ok(e.alive);
+  assert.equal(e.hp, 2);
+});
+
+test("a laser hits only when the squares overlap the blue mark", () => {
+  const s = createSortie();
+  s.wave = 99;
+  s.stem = 0;
+  s.x = 0;
+  s.y = 48;
+  s.z = 0;
+  s.yaw = 0;
+  s.pitch = 0;
+  s.aspect = 16 / 9;
+  const e = {
+    id: 52,
+    kind: "fighter" as const,
+    x: 0,
+    y: 48,
+    z: -80,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    hp: 2,
+    t: 0,
+    alive: true,
+  };
+  s.enemies.push(e);
+  const pip = aimScreen(s, e.x, e.y, e.z);
+  const look = emptyInput();
+  look.sightX = pip.sx;
+  look.sightY = pip.sy;
+  stepSortie(s, look, 1 / 60);
+  assert.equal(markInSquares(s, e), true);
+  const inp = emptyInput();
+  inp.fire = true;
+  inp.sightX = pip.sx;
+  inp.sightY = pip.sy;
+  stepSortie(s, inp, 1 / 60);
+  for (let i = 0; i < 40; i++) {
+    const hold = emptyInput();
+    hold.sightX = pip.sx;
+    hold.sightY = pip.sy;
+    stepSortie(s, hold, 1 / 60);
+  }
+  assert.ok(e.hp < 2 || !e.alive);
+});
+
+test("a mark that only clips the outer square still takes a laser", () => {
+  const s = createSortie();
+  s.wave = 99;
+  s.stem = 0;
+  s.x = 0;
+  s.y = 48;
+  s.z = 0;
+  s.yaw = 0;
+  s.pitch = 0;
+  s.aspect = 16 / 9;
+  const e = {
+    id: 53,
+    kind: "fighter" as const,
+    x: 0,
+    y: 48,
+    z: -80,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    hp: 2,
+    t: 0,
+    alive: true,
+  };
+  s.enemies.push(e);
+  const pip = aimScreen(s, e.x, e.y, e.z);
+  const er = markHalf(pip.z);
+  const aspect = 16 / 9;
+  const sx = pip.sx - (OUTER_R * 0.92 + er * 0.55) / aspect;
+  const sy = pip.sy;
+  const look = emptyInput();
+  look.sightX = sx;
+  look.sightY = sy;
+  stepSortie(s, look, 1 / 60);
+  const off = aimOff(s, e.x, e.y, e.z);
+  assert.equal(inBox(off.sx, off.sy, OUTER_R, aspect), false, "center is outside the square");
+  assert.equal(markInSquares(s, e), true, "mark still clips the square");
+  const inp = emptyInput();
+  inp.fire = true;
+  inp.sightX = sx;
+  inp.sightY = sy;
+  stepSortie(s, inp, 1 / 60);
+  for (let i = 0; i < 40; i++) {
+    const hold = emptyInput();
+    hold.sightX = sx;
+    hold.sightY = sy;
+    stepSortie(s, hold, 1 / 60);
+  }
+  assert.ok(e.hp < 2 || !e.alive);
 });
 
 test("lock only works in combat range", () => {
@@ -772,19 +878,41 @@ test("all-range nose holds when the stick is still", () => {
 
 test("laser hits a fighter", () => {
   const s = createSortie();
-  for (let i = 0; i < 140; i++) stepSortie(s, emptyInput(), 1 / 60);
-  const one = s.enemies.find((e) => e.kind === "fighter" && e.alive);
-  assert.ok(one, "wave A should spawn");
-  s.x = one!.x;
-  s.y = one!.y;
-  s.z = one!.z + 10;
+  s.wave = 99;
+  s.stem = 0;
+  s.x = 0;
+  s.y = 48;
+  s.z = 0;
   s.yaw = 0;
   s.pitch = 0;
+  s.aspect = 16 / 9;
+  const one = {
+    id: 54,
+    kind: "fighter" as const,
+    x: 0,
+    y: 48,
+    z: -80,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    hp: 2,
+    t: 0,
+    alive: true,
+  };
+  s.enemies.push(one);
+  const pip = aimScreen(s, one.x, one.y, one.z);
   const inp = emptyInput();
   inp.fire = true;
+  inp.sightX = pip.sx;
+  inp.sightY = pip.sy;
   stepSortie(s, inp, 1 / 60);
-  for (let i = 0; i < 20; i++) stepSortie(s, emptyInput(), 1 / 60);
-  assert.ok(one!.hp < 2 || !one!.alive);
+  for (let i = 0; i < 40; i++) {
+    const hold = emptyInput();
+    hold.sightX = pip.sx;
+    hold.sightY = pip.sy;
+    stepSortie(s, hold, 1 / 60);
+  }
+  assert.ok(one.hp < 2 || !one.alive);
 });
 
 test("em-dash splash kills a cluster and counts hits", () => {
@@ -849,10 +977,19 @@ test("hyper stem doubles laser damage", () => {
   s.z = -10;
   s.yaw = 0;
   s.pitch = 0;
+  s.aspect = 16 / 9;
+  const pip = aimScreen(s, 0, 48, -20);
   const inp = emptyInput();
   inp.fire = true;
+  inp.sightX = pip.sx;
+  inp.sightY = pip.sy;
   stepSortie(s, inp, 1 / 60);
-  for (let i = 0; i < 12; i++) stepSortie(s, emptyInput(), 1 / 60);
+  for (let i = 0; i < 12; i++) {
+    const hold = emptyInput();
+    hold.sightX = pip.sx;
+    hold.sightY = pip.sy;
+    stepSortie(s, hold, 1 / 60);
+  }
   const e = s.enemies.find((n) => n.id === 77);
   assert.ok(e && (!e.alive || e.hp <= 0), `hp ${e?.hp} alive ${e?.alive}`);
 });
@@ -1086,9 +1223,14 @@ test("Scale advances through three phases before it can die as a set piece", () 
   s.x = 0;
   s.y = 20;
   s.z = -10;
-  const hit = emptyInput();
-  hit.fire = true;
+  s.aspect = 16 / 9;
   for (let i = 0; i < 80; i++) {
+    const mech = s.enemies.find((n) => n.id === 3 && n.alive);
+    const pip = mech ? aimScreen(s, mech.x, mech.y, mech.z) : { sx: 0, sy: 0 };
+    const hit = emptyInput();
+    hit.fire = true;
+    hit.sightX = pip.sx;
+    hit.sightY = pip.sy;
     s.cooldown = 0;
     stepSortie(s, hit, 1 / 60);
   }

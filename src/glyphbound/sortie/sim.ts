@@ -26,6 +26,11 @@ export const CHARGE_SEEK = 0.15;
 export const TGT_NEAR = 18;
 export const TGT_FAR = 120;
 export const WARN_FAR = 240;
+/** Blue-mark pixel size at a 900px-tall frame. HUD and hit test share this. */
+export const MARK_PX_MIN = 18;
+export const MARK_PX_MAX = 52;
+export const MARK_PX_SCALE = 2800;
+export const MARK_REF_H = 900;
 export const LASER_LIFE = 0.28;
 /** Staged rail lizards sit here once they have closed from the amber watch. */
 export const GALLERY_LEAD = 88;
@@ -737,6 +742,35 @@ function bodyR(e: Enemy) {
   if (e.kind === "bomber") return 15;
   if (e.kind === "ace") return 13;
   return 12;
+}
+
+/** Tight 3D pad for player beams. Hull/orb pain still uses bodyR. */
+export function shotR(e: Enemy) {
+  if (e.kind === "aster") return e.hp >= 8 ? 14 : 6;
+  if (e.kind === "dualis" || e.kind === "mothership" || e.kind === "mech") return 12;
+  if (e.kind === "bomber") return 8;
+  if (e.kind === "ace") return 6;
+  return 5;
+}
+
+/** NDC half-extent of the blue mark. Same units as INNER_R / OUTER_R. */
+export function markHalf(z: number) {
+  const px = Math.max(MARK_PX_MIN, Math.min(MARK_PX_MAX, MARK_PX_SCALE / Math.max(12, z)));
+  return px / MARK_REF_H;
+}
+
+export function markPx(z: number) {
+  return markHalf(z) * MARK_REF_H;
+}
+
+/** True when the outer aiming square overlaps this lizard's blue mark. */
+export function markInSquares(s: SortieState, e: Enemy) {
+  const off = aimOff(s, e.x, e.y, e.z);
+  if (!off.on) return false;
+  if (off.z > TGT_FAR) return false;
+  const er = markHalf(off.z);
+  const aspect = s.aspect || 16 / 9;
+  return Math.abs(off.sy) < OUTER_R + er && Math.abs(off.sx) * aspect < OUTER_R + er;
 }
 
 function distSeg(px: number, py: number, pz: number, ax: number, ay: number, az: number, bx: number, by: number, bz: number) {
@@ -1493,7 +1527,8 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
       } else {
         for (const e of s.enemies) {
           if (!e.alive) continue;
-          const rad = bodyR(e) + (sh.kind === "charge" ? 8 : sh.kind === "laser" ? 8 : 3);
+          if (sh.kind === "laser" && !markInSquares(s, e)) continue;
+          const rad = sh.kind === "laser" ? bodyR(e) : sh.kind === "charge" ? shotR(e) + 4 : shotR(e);
           const hit =
             sh.kind === "laser"
               ? distSeg(e.x, e.y, e.z, sh.x - sh.vx * dt, sh.y - sh.vy * dt, sh.z - sh.vz * dt, sh.x, sh.y, sh.z) < rad

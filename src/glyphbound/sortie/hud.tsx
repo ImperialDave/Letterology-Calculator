@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { aimScreen } from "./cam";
 import type { SortieState } from "./sim";
-import { CHARGE_LOCK, HULL_MAX, INNER_R, OUTER_R, TGT_FAR, TGT_NEAR, WARN_FAR } from "./sim";
+import { CHARGE_LOCK, HULL_MAX, INNER_R, OUTER_R, TGT_FAR, WARN_FAR, markPx } from "./sim";
 import { analogFromDelta, isTap, TAP_PX, TAP_S } from "./stick";
 import { kitOf, romanRank } from "./kits";
 import { missionById, objectiveLine } from "./missions";
@@ -290,9 +290,9 @@ function TargetBoxes({ s }: { s: SortieState }) {
   for (const e of s.enemies) {
     if (!e.alive) continue;
     const pip = aimScreen(s, e.x, e.y, e.z);
-    if (pip.z < TGT_NEAR || pip.z > WARN_FAR) continue;
-    const hot = pip.z <= TGT_FAR && e.kind !== "dualis";
-    const warn = pip.z > TGT_FAR || e.kind === "dualis";
+    if (pip.z < 8 || pip.z > WARN_FAR) continue;
+    const hot = pip.z <= TGT_FAR;
+    const warn = !hot;
     if (!pip.on) {
       if (pip.z < 8) continue;
       chevs.push({ id: e.id, z: pip.z, sx: pip.sx, sy: pip.sy, hot });
@@ -302,7 +302,7 @@ function TargetBoxes({ s }: { s: SortieState }) {
       const locked = e.id === s.lockId && s.lockOn;
       const hard = locked && s.lockHard;
       const color = hard ? "#d45a4a" : "#4aa3ff";
-      const px = Math.max(18, Math.min(52, 2800 / pip.z));
+      const px = markPx(pip.z);
       marks.push(
         <div
           key={e.id}
