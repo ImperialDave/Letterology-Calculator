@@ -9,6 +9,7 @@ import {
   GUTTER_PATH,
   HOLE_INNER_X,
   inHole,
+  inLandmarkSolid,
   landmarksFor,
   pointAtZ,
   PRESS_PATH,
@@ -17,6 +18,8 @@ import {
   riverX,
   SLUG_PATH,
   SORTS_PATH,
+  type Landmark,
+  type LandmarkKind,
 } from "./landmarks";
 import { lockCopy, MISSIONS, nextRequired, objectiveLine, unlockedIds } from "./missions";
 import { CAMPAIGN, crewOf, endCopy } from "./story";
@@ -27,7 +30,9 @@ import { grantClear } from "./kits";
 import { SortieKeys } from "./input";
 import { aimOff, aimScreen, inBox, unproject } from "./cam";
 import { BARREL_T, CHARGE_LOCK, CHARGE_SEEK, GALLERY_LEAD, INNER_R, KEEP_R, LASER_LIFE, OUTER_R, SOMERSAULT_T, TGT_FAR, TGT_NEAR, WARN_FAR, createSortie, emptyInput, sightParallax, stepSortie } from "./sim";
-import { fillTex, paintBrass, paintGrass, paintHull, paintInkWater, paintLead, paintScale, type Plot } from "./tex-paint";
+import { DRESSING_FLOOR, dressingCatalogCount, meetsDressingFloor } from "./audit";
+import { fillTex, PAINTS, paintBrass, paintGrass, paintHull, paintInkWater, paintLead, paintScale, type Plot } from "./tex-paint";
+import { makeWorld } from "./world";
 
 function meanLuma(paint: (plot: Plot, n: number) => void) {
   const buf = fillTex(64, paint);
@@ -54,6 +59,57 @@ test("sortie paints are daytime-bright", () => {
   assert.ok(lead > 140, `lead ${lead}`);
   assert.ok(scale > 100, `scale ${scale}`);
   assert.ok(brass > 150, `brass ${brass}`);
+});
+
+test("paint library covers the 10x set and stays readable", () => {
+  const need = [
+    "ground-sand",
+    "ground-type",
+    "wood-crate",
+    "leaf-cone",
+    "flag-ink",
+    "paper-page",
+    "ice-spire",
+    "letter-stone",
+    "city-far",
+    "sort-night",
+  ];
+  for (const name of need) {
+    assert.ok(PAINTS[name], `missing paint ${name}`);
+    const luma = meanLuma(PAINTS[name]);
+    const floor = name === "sort-night" ? 70 : 100;
+    assert.ok(luma > floor, `${name} luma ${luma}`);
+  }
+  assert.ok(Object.keys(PAINTS).length >= 30, `paint count ${Object.keys(PAINTS).length}`);
+});
+
+test("each mission catalog meets the dressing floor", () => {
+  for (const [id, floor] of Object.entries(DRESSING_FLOOR)) {
+    assert.ok(meetsDressingFloor(id), `${id} catalog ${dressingCatalogCount(id)} < ${floor}`);
+  }
+});
+
+test("Exchange Coast geography is named, not a tower row", () => {
+  const coast = landmarksFor("coast");
+  assert.ok(coast.length >= 22, `coast landmarks ${coast.length}`);
+  assert.ok(coast.some((L) => L.id === "n-street"));
+  assert.ok(coast.some((L) => L.id === "c-block" && L.variant === "c"));
+  assert.ok(coast.filter((L) => L.id.startsWith("seven-n-")).length === 7);
+  assert.equal(coast.filter((L) => L.pay === "arch").length, 7);
+  assert.ok(!coast.some((L) => /^t\d+$/.test(L.id)));
+});
+
+test("coast world places an instanced dressing pool at the floor", () => {
+  const { root } = makeWorld("coast", "coast");
+  const dress = root.getObjectByName("dressing");
+  assert.ok(dress, "missing dressing group");
+  const n = Number(dress?.userData.dressCount ?? 0);
+  assert.ok(n >= DRESSING_FLOOR.coast, `placed ${n}`);
+  let instances = 0;
+  dress?.traverse((o) => {
+    if (o instanceof THREE.InstancedMesh) instances += 1;
+  });
+  assert.ok(instances >= 8, `instance meshes ${instances}`);
 });
 
 test("C-wing nose is parent -Z so yaw 0 flies forward", () => {
@@ -2046,4 +2102,38 @@ test("sorts on the rail close instead of sitting still", () => {
   const z0 = e.z;
   stepSortie(s, emptyInput(), 1 / 60);
   assert.ok(e.z > z0, `aster did not close ${e.z} from ${z0}`);
+});
+
+function sample(kind: LandmarkKind, extra: Partial<Landmark> = {}): Landmark {
+  return { id: kind, kind, x: 0, z: 0, h: 28, r: HOLE_INNER_X, ...extra };
+}
+
+test("new landmark kinds have a through-hole and a blocked wall", () => {
+  const y0 = 0;
+  const cases: { kind: LandmarkKind; extra?: Partial<Landmark>; holeY: number; wallX: number; wallY: number }[] = [
+    { kind: "tunnel", extra: { pay: "tunnel", h: 18 }, holeY: 18, wallX: 18, wallY: 18 },
+    { kind: "drawer", extra: { pay: "drawer" }, holeY: 12, wallX: 24, wallY: 14 },
+    { kind: "letter", extra: { pay: "arch", variant: "n" }, holeY: 12, wallX: 26, wallY: 14 },
+    { kind: "case", extra: { pay: "drawer" }, holeY: 12, wallX: 24, wallY: 14 },
+    { kind: "colonnade", extra: { pay: "arch" }, holeY: 12, wallX: 26, wallY: 14 },
+    { kind: "aqueduct", extra: { pay: "arch" }, holeY: 12, wallX: 26, wallY: 14 },
+    { kind: "quoin", extra: { pay: "gate" }, holeY: 12, wallX: 26, wallY: 14 },
+    { kind: "crusher", extra: { pay: "gate" }, holeY: 12, wallX: 26, wallY: 14 },
+    { kind: "drum", extra: { h: 28 }, holeY: 28, wallX: 18, wallY: 28 },
+  ];
+  for (const c of cases) {
+    const L = sample(c.kind, c.extra);
+    assert.ok(inHole(0, c.holeY, 0, L, y0), `${c.kind} center should be a hole`);
+    assert.ok(inLandmarkSolid(c.wallX, c.wallY, 0, L, y0), `${c.kind} wall should be solid`);
+    assert.ok(!inHole(c.wallX, c.wallY, 0, L, y0), `${c.kind} wall is not a hole`);
+  }
+  const statue = sample("statue", { r: 12, h: 22 });
+  assert.ok(inLandmarkSolid(0, 8, 0, statue, 0));
+  assert.ok(!inHole(0, 8, 0, statue, 0));
+  const piston = sample("piston", { r: 10, h: 30 });
+  assert.ok(inLandmarkSolid(0, 10, 0, piston, 0));
+  const wreck = sample("wreck", { r: 16, h: 14 });
+  assert.ok(!inHole(0, 8, 0, wreck, 0));
+  const ice = sample("iceberg", { pay: "tunnel", h: 24 });
+  assert.ok(inHole(0, 12, 0, ice, 0), "iceberg cave");
 });

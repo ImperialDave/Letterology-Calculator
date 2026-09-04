@@ -104,14 +104,14 @@ export function rockRing(dz: number, r = ROCK_RING_R, n = 8): Beat["ships"] {
 
 export const BEATS: Record<string, Beat[]> = {
   coast: [
-    { id: 1, when: "rail", t: 0.03, kind: "radio", who: "s", text: "Sea’s a page." },
+    { id: 1, when: "rail", t: 0.03, kind: "radio", who: "s", text: "Mouth of the page. Follow the water." },
     { id: 2, when: "rail", t: 0.04, kind: "spawn", ships: [{ kind: "fighter", dx: 0, dy: 2, dz: -36, form: "hold", armed: false }] },
     { id: 3, when: "rail", t: 0.09, kind: "spawn", ships: arrows(-48) },
     { id: 4, when: "rail", t: 0.14, kind: "radio", who: "b", text: "Canyon teeth." },
     { id: 5, when: "rail", t: 0.16, kind: "spawn", ships: [{ kind: "turret", dx: 20, dy: -20, dz: -30 }, { kind: "turret", dx: -20, dy: -20, dz: -48 }] },
     { id: 6, when: "rail", t: 0.22, kind: "pickup", loot: { kind: "silver", dx: 0, dy: 2, dz: -24 } },
     { id: 7, when: "rail", t: 0.26, kind: "spawn", ships: V(-50, 11, true) },
-    { id: 8, when: "rail", t: 0.3, kind: "radio", who: "s", text: "Type-city. The street is the hole." },
+    { id: 8, when: "rail", t: 0.3, kind: "radio", who: "s", text: "n-street. Type-city. The street is the hole." },
     { id: 9, when: "rail", t: 0.32, kind: "spawn", ships: Cross(-44) },
     { id: 10, when: "rail", t: 0.36, kind: "spawn", ships: [{ kind: "mech", dx: -22, dy: -8, dz: -50, hp: 6 }, { kind: "mech", dx: 22, dy: -8, dz: -70, hp: 6 }] },
     { id: 11, when: "rail", t: 0.4, kind: "spawn", ships: [{ kind: "fighter", dx: -8, dy: 6, dz: -42, form: "guide" }, { kind: "fighter", dx: 12, dy: 8, dz: -55, form: "guide" }] },
@@ -121,7 +121,7 @@ export const BEATS: Record<string, Beat[]> = {
     { id: 12, when: "rail", t: 0.42, kind: "pickup", loot: { kind: "stem", dx: -8, dy: 4, dz: -20 } },
     { id: 13, when: "rail", t: 0.48, kind: "check", who: "e", text: "I’m still here." },
     { id: 14, when: "rail", t: 0.5, kind: "spawn", ships: Line(-34) },
-    { id: 15, when: "rail", t: 0.55, kind: "radio", who: "s", text: "Seven n. Follow the water." },
+    { id: 15, when: "rail", t: 0.55, kind: "radio", who: "s", text: "Seven n. The counters are the hole." },
     { id: 16, when: "rail", t: 0.58, kind: "spawn", ships: [{ kind: "fighter", dx: 12, dy: 8, dz: -40, form: "guide" }, { kind: "fighter", dx: -12, dy: 8, dz: -52, form: "guide" }] },
     { id: 17, when: "rail", t: 0.64, kind: "pickup", loot: { kind: "gold", dx: 0, dy: 2, dz: -20 } },
     { id: 18, when: "rail", t: 0.68, kind: "spawn", ships: [{ kind: "bomber", dx: 0, dy: 18, dz: -48 }, { kind: "cork", dx: 14, dy: 10, dz: -36 }] },
