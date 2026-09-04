@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { aimScreen } from "./cam";
 import type { SortieState } from "./sim";
 import { CHARGE_LOCK, HULL_MAX, INNER_R, OUTER_R, TGT_FAR, WARN_FAR, markPx } from "./sim";
+import { robotOf, scaleWorld } from "./robots";
+import { partAlive } from "./brain";
 import { analogFromDelta, isTap, TAP_PX, TAP_S } from "./stick";
 import { kitOf, romanRank } from "./kits";
 import { missionById, objectiveLine } from "./missions";
@@ -289,6 +291,36 @@ function TargetBoxes({ s }: { s: SortieState }) {
   const chevs: { id: number; z: number; sx: number; sy: number; hot: boolean }[] = [];
   for (const e of s.enemies) {
     if (!e.alive) continue;
+    if (e.robot) {
+      const def = robotOf(e.robot.id);
+      const world = scaleWorld(e);
+      if (def) {
+        for (const pid of e.robot.glow) {
+          if (!partAlive(e.robot, pid)) continue;
+          const part = def.parts.find((p) => p.id === pid);
+          const w = part ? world[part.joint] : null;
+          if (!w) continue;
+          const pip = aimScreen(s, w.x, w.y, w.z);
+          if (!pip.on || pip.z > TGT_FAR || pip.z < 8) continue;
+          const px = markPx(pip.z);
+          marks.push(
+            <div
+              key={`${e.id}-${pid}`}
+              className="absolute -translate-x-1/2 -translate-y-1/2"
+              style={{
+                left: `${50 + pip.sx * 50}%`,
+                top: `${50 - pip.sy * 50}%`,
+                width: px,
+                height: px,
+                border: "3px solid #4aa3ff",
+                boxShadow: "0 0 0 1.5px rgba(10,18,32,0.7)",
+              }}
+            />,
+          );
+        }
+        continue;
+      }
+    }
     const pip = aimScreen(s, e.x, e.y, e.z);
     if (pip.z < 8 || pip.z > WARN_FAR) continue;
     const hot = pip.z <= TGT_FAR;

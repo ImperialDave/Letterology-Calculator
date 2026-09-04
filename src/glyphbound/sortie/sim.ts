@@ -7,6 +7,9 @@ import { ENVELOPE_X, ENVELOPE_Y, SHIFT_T, SKY_CORRIDOR, UTURN_T, pathLength, pat
 import { groundHeight } from "./height";
 import { endCopy, type EndWhy } from "./story";
 import { inHole, inLandmarkSolid, landmarksFor, RING_COLLECT } from "./landmarks";
+import { enterState, killPartsHp, partAlive, tickBrain } from "./brain";
+import type { RobotLive } from "./brain";
+import { SCALE, bootScale, poseScaleWalk, robotOf, scaleCtx, scaleWorld } from "./robots";
 import type { BiomeId } from "./terrain";
 export { aimOff, aimScreen, CONVERGE_DIST, gunPip, inBox, unproject } from "./cam";
 export type { KitId, KitMods, KitRanks } from "./kits";
@@ -78,6 +81,7 @@ export interface Enemy {
   lead?: number;
   life?: number;
   setPiece?: boolean;
+  robot?: RobotLive;
 }
 
 export interface Shot {
@@ -630,6 +634,7 @@ export function spawnEnemy(
     lead: extra?.lead,
     life: extra?.life,
     setPiece: extra?.setPiece,
+    robot: kind === "mech" && extra?.setPiece ? bootScale() : undefined,
   });
 }
 
@@ -763,14 +768,32 @@ export function markPx(z: number) {
   return markHalf(z) * MARK_REF_H;
 }
 
-/** True when the outer aiming square overlaps this lizard's blue mark. */
-export function markInSquares(s: SortieState, e: Enemy) {
-  const off = aimOff(s, e.x, e.y, e.z);
+/** True when the outer aiming square overlaps a world point's blue mark. */
+export function markAt(s: SortieState, x: number, y: number, z: number) {
+  const off = aimOff(s, x, y, z);
   if (!off.on) return false;
   if (off.z > TGT_FAR) return false;
   const er = markHalf(off.z);
   const aspect = s.aspect || 16 / 9;
   return Math.abs(off.sy) < OUTER_R + er && Math.abs(off.sx) * aspect < OUTER_R + er;
+}
+
+/** True when the outer aiming square overlaps this lizard's blue mark. */
+export function markInSquares(s: SortieState, e: Enemy) {
+  if (e.robot) {
+    const def = robotOf(e.robot.id);
+    if (!def) return markAt(s, e.x, e.y, e.z);
+    const world = scaleWorld(e);
+    for (const pid of e.robot.glow) {
+      if (!partAlive(e.robot, pid)) continue;
+      const part = def.parts.find((p) => p.id === pid);
+      if (!part) continue;
+      const w = world[part.joint];
+      if (w && markAt(s, w.x, w.y, w.z)) return true;
+    }
+    return false;
+  }
+  return markAt(s, e.x, e.y, e.z);
 }
 
 function distSeg(px: number, py: number, pz: number, ax: number, ay: number, az: number, bx: number, by: number, bz: number) {
@@ -1101,6 +1124,59 @@ function springTo(e: Enemy, tx: number, ty: number, tz: number, dt: number) {
   e.z += (tz - e.z) * k;
 }
 
+function angToward(from: number, to: number, max: number) {
+  let d = to - from;
+  while (d > Math.PI) d -= Math.PI * 2;
+  while (d < -Math.PI) d += Math.PI * 2;
+  if (d > max) d = max;
+  if (d < -max) d = -max;
+  return from + d;
+}
+
+function stepScale(s: SortieState, e: Enemy, dt: number) {
+  const live = e.robot;
+  if (!live) return;
+  poseScaleWalk(live, s.t + e.t);
+  const ctx = scaleCtx(e, s.x, s.z);
+  const ev = tickBrain(live, SCALE, ctx, dt);
+  if (ev.radio) s.radio = { who: ev.radio.who, text: ev.radio.text, until: s.t + 2.6 };
+  const dx = s.x - e.x;
+  const dz = s.z - e.z;
+  const want = Math.atan2(-dx, -dz);
+  const st = SCALE.states[live.state];
+  if (st?.move === "walk" || st?.move === "stand") {
+    live.yaw = angToward(live.yaw, want, 2.2 * dt);
+  }
+  if (st?.move === "walk") {
+    const n = Math.hypot(dx, dz) || 1;
+    e.x += (dx / n) * SCALE.walkSpeed * dt;
+    e.z += (dz / n) * SCALE.walkSpeed * dt;
+  }
+  if (st?.move === "fallen" || st?.move === "topple") {
+    e.y = 14;
+  } else {
+    e.y = 28 + Math.abs(Math.sin((s.t + e.t) * 2.4)) * 2;
+  }
+  live.phase = !partAlive(live, "legL") || !partAlive(live, "legR") ? 2 : live.phase;
+  if (live.phase >= 2) s.bossPhase = Math.max(s.bossPhase, 2);
+  else if (!partAlive(live, "legL") || !partAlive(live, "legR")) s.bossPhase = Math.max(s.bossPhase, 1);
+
+  const world = scaleWorld(e);
+  if (live.strike && ev.attack?.kind === "volley") {
+    const from = partAlive(live, "armL") ? "handL" : partAlive(live, "armR") ? "handR" : null;
+    const w = from ? world[from] : null;
+    if (w && e.t % 0.12 < dt + 0.02) {
+      const toP = { x: s.x - w.x, y: s.y - w.y, z: s.z - w.z };
+      fireShot(s, "orb", false, w.x, w.y, w.z, toP, 46);
+    }
+  }
+  if (live.strike && ev.attack?.kind === "stomp") {
+    const d = Math.hypot(s.x - e.x, s.z - e.z);
+    if (d < ev.attack.radius && s.y < e.y + 18) hurt(s, 1, false, "kill");
+  }
+  e.hp = Math.max(1, killPartsHp(SCALE, live));
+}
+
 function fireIfArmed(s: SortieState, e: Enemy, toP: Vec3, dt: number) {
   const armed = e.armed ?? defaultArmed(e.kind);
   if (!armed) return;
@@ -1154,6 +1230,11 @@ function steerEnemy(s: SortieState, e: Enemy, dt: number) {
         fireShot(s, "orb", false, e.x + Math.cos(a) * 14, e.y + Math.sin(a) * 8, e.z, toP, 42);
       }
     }
+    return;
+  }
+
+  if (e.kind === "mech" && e.robot) {
+    stepScale(s, e, dt);
     return;
   }
 
@@ -1527,6 +1608,42 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
       } else {
         for (const e of s.enemies) {
           if (!e.alive) continue;
+          if (e.robot && sh.kind === "laser") {
+            const def = robotOf(e.robot.id);
+            if (!def) continue;
+            const world = scaleWorld(e);
+            let hitId: string | null = null;
+            for (const pid of e.robot.glow) {
+              if (!partAlive(e.robot, pid)) continue;
+              const part = def.parts.find((p) => p.id === pid);
+              if (!part) continue;
+              const w = world[part.joint];
+              if (!w) continue;
+              if (!markAt(s, w.x, w.y, w.z)) continue;
+              if (distSeg(w.x, w.y, w.z, sh.x - sh.vx * dt, sh.y - sh.vy * dt, sh.z - sh.vz * dt, sh.x, sh.y, sh.z) < part.radius) {
+                hitId = pid;
+                break;
+              }
+            }
+            if (!hitId) continue;
+            const dmg = s.stem >= 2 ? 2 : 1;
+            e.robot.parts[hitId] = Math.max(0, (e.robot.parts[hitId] ?? 0) - dmg);
+            sh.life = 0;
+            s.score += 20;
+            const w = world[def.parts.find((p) => p.id === hitId)?.joint ?? "pelvis"];
+            if (w) bumpFx(s, w.x, w.y, w.z, false, 20);
+            if (!s.bossAt) s.bossAt = s.t;
+            if (hitId === "legL" || hitId === "legR") {
+              s.bossPhase = Math.max(s.bossPhase, 1);
+              if (e.robot.state !== "topple" && e.robot.state !== "fallen") {
+                enterState(e.robot, def, "topple");
+                s.radio = { who: "s", text: "A stem went. The pack is the stamp.", until: s.t + 2.6 };
+              }
+            }
+            e.hp = Math.max(0, killPartsHp(def, e.robot));
+            if (e.hp <= 0) killEnemy(s, e, false);
+            continue;
+          }
           if (sh.kind === "laser" && !markInSquares(s, e)) continue;
           const rad = sh.kind === "laser" ? bodyR(e) : sh.kind === "charge" ? shotR(e) + 4 : shotR(e);
           const hit =

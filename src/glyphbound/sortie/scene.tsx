@@ -5,6 +5,7 @@ THREE.ColorManagement.enabled = true;
 import { makeCWing, poseCWing } from "./cwing";
 import { makeDigit } from "./digits";
 import { makeLizard, poseLizard } from "./lizards";
+import { makeRobotMesh, poseRobot } from "./robots";
 import { sortieSfx } from "./audio";
 import {
   BOOST_FOV,
@@ -232,14 +233,22 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
       const e = s.enemies[i];
       node.visible = Boolean(e?.alive);
       if (!e?.alive) continue;
-      if (node.userData.kind !== e.kind) {
+      if (node.userData.kind !== e.kind || node.userData.robot !== Boolean(e.robot)) {
         node.clear();
-        const mold = molds[e.kind] ?? molds.fighter;
-        if (mold) node.add(mold.clone());
+        if (e.robot) node.add(makeRobotMesh(e.robot.id));
+        else {
+          const mold = molds[e.kind] ?? molds.fighter;
+          if (mold) node.add(mold.clone());
+        }
         node.userData.kind = e.kind;
+        node.userData.robot = Boolean(e.robot);
       }
-      node.position.set(e.x, e.y, e.z);
-      if (e.kind === "aster") {
+      node.position.set(e.x, e.robot ? 0 : e.y, e.z);
+      if (e.robot) {
+        node.rotation.order = "YXZ";
+        node.rotation.set(0, e.robot.yaw, 0);
+        poseRobot(node, e.robot);
+      } else if (e.kind === "aster") {
         const body = e.hp >= 8 ? 22 : 10;
         node.scale.setScalar((body * 0.9) / 1.15);
       } else if (e.kind === "turret" || e.kind === "mech" || e.kind === "mothership" || e.kind === "dualis") {
@@ -250,7 +259,7 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
         else node.lookAt(e.x, e.y, e.z - 10);
       }
       const body = node.children[0];
-      if (body) poseLizard(body, s.t + e.t, e.kind, e.hp);
+      if (body && !e.robot) poseLizard(body, s.t + e.t, e.kind, e.hp);
     }
 
     while (shots.current.length < s.shots.length) {
