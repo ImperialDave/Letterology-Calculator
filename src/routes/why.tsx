@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { AppShell } from "@/components/SiteChrome";
-import { DOCTRINE, DOCTRINE_PREFACE } from "@/lib/letterology/doctrine";
+import { DOCTRINE, DOCTRINE_CLOSE, DOCTRINE_PREFACE } from "@/lib/letterology/doctrine";
 import { pageCardMeta } from "@/lib/letterology/share";
 import { useTongue } from "@/components/letterology/TongueProvider";
 import { VOICE } from "@/lib/letterology/voice";
@@ -85,6 +85,10 @@ function WhyPage() {
           </article>
         ))}
       </section>
+
+      <p className="mt-16 max-w-xl font-display text-xl leading-snug text-ink">
+        {DOCTRINE_CLOSE}
+      </p>
     </AppShell>
   );
 }

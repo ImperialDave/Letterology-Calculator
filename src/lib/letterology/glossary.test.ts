@@ -25,3 +25,10 @@ test("gloss() is the same string as the catalog", () => {
   assert.match(gloss("enemies"), /blind spot/i);
   assert.match(gloss("handle"), /username/i);
 });
+
+test("the circuit terms stay ordinary English", () => {
+  assert.match(gloss("whole"), /username/i);
+  assert.match(gloss("piece"), /not the portrait/i);
+  assert.match(gloss("return"), /does not replace/i);
+  assert.deepEqual(entryOf("master-emissary").surfaces, ["why"]);
+});

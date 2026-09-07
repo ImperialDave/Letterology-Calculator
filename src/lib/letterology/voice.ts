@@ -47,7 +47,7 @@ export const VOICE = {
   stoicheiaEmpty:
     "We could not turn that into Greek letters. Try a Latin username, or type it in Greek.",
   doctrineAbstract:
-    "We read usernames, not birth names. First letter is the role. The next two by how often they return are how you work and where. Luck is the day’s willingness. Letterize an act to time it. Use the reading. Do not spend it.",
+    "We read the whole username first, not a birth name and not a lucky digit. We count letters, dates, and sums on purpose. Then we come back. The total is not the person. Luck is the day's willingness. Use the reading. Do not spend it.",
   footerLine:
     "Official instrument. Usernames, not birth names. Luck is willingness. The decision is yours.",
   moreLetters: "More about these letters",
@@ -93,4 +93,7 @@ export const FORBIDDEN_UI = [
   /letterological horoscope/i,
   /old number/i,
   /civic labor/i,
+  /left-brain/i,
+  /right-brain/i,
+  /hemisphere/i,
 ];

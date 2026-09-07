@@ -9,17 +9,28 @@ export type DoctrineSection = {
  * Written backward from the mechanics so every rule looks like a consequence.
  */
 export const DOCTRINE_PREFACE = [
-  "We read usernames, not birth names. The first letter is the role. The next two, by how often they return, are how you work and where. We do not turn letters into one digit. We do tell you whether today's court is willing — that is luck — and whether an act will travel.",
-  "A letter does not change its nature. It changes its willingness. Favorable glyphs run warm. Contrary glyphs withdraw. You do not obey the current. You use it to time a decision.",
-  "What follows is not a manual. The Key is the manual. This is the reason the machine is shaped the way it is. Every rule on the site was chosen. This page says why those choices, and not others, are the ones that can be kept.",
+  "There are two ways of looking at a life. One way looks at the whole living thing: this username, this day, this act you will stand behind. The other way looks at pieces — letters, dates, sums, scores. It counts. It is useful.",
+  "The second way was hired to serve the first. It goes out, does the close work, and brings what it found back to the person it came from. When it does not come home — when the pile of pieces is treated as the person — the servant has become a king.",
+  "That is Numerology's last step. It is also what the games call the Dominion. Letterology is the circuit kept. See the whole. Use the pieces. Come back.",
+  "What follows is not a manual. The cheat sheet is the manual. This is why the machine is shaped the way it is. Every rule on the site was chosen. This page says why those choices, and not others, are the ones that can be kept.",
 ];
 
 export const DOCTRINE: DoctrineSection[] = [
   {
+    kicker: "The circuit",
+    title: "The Master and the Emissary",
+    paragraphs: [
+      "Iain McGilchrist told a fable of a wise Master and the Emissary he sent to do the close work. The Master sees the living thing. The Emissary grasps, counts, and sorts. He is a good servant. He is a bad king. We take the fable, not the brain maps.",
+      "The Master is a way of seeing that looks at the whole living thing — this username, this day, this act you will stand behind. The Emissary is a way of seeing that looks at isolated facts and measurements. The second was hired to help the first, not to replace it.",
+      "So the rule is simple. The emissary must come home. Count the letters. Name the date. Write the sum. Then look back at the person those pieces came from. A count that does not return is a lie about a life.",
+      "We are not trying to insult anyone who used Numerology. They already suspected a name means something. We keep that suspicion. We finish the circuit they stopped in the middle: the pieces report back, and the whole remains the person.",
+    ],
+  },
+  {
     kicker: "The refusal",
     title: "What we will not do",
     paragraphs: [
-      "A system that reads a birth name as fate has already decided the person is property of a record office. We do not do that. A system that folds twenty-six letters into nine digits has already decided that difference is an inconvenience. We do not do that. Luck is not fate. Luck is willingness: which letters run warm today, and which withdraw.",
+      "The unread total is the emissary who never came home. A system that reads a birth name as fate has already decided the person is property of a record office. We do not do that. A system that folds twenty-six letters into nine digits has already decided that difference is an inconvenience. We do not do that. Luck is not fate. Luck is willingness: which letters run warm today, and which withdraw.",
       "Numerology asks a name to become a number so a life can be held in one hand. Astrology asks a birth hour to become a weather report. Both are serious in their own houses. This house is different. We ask only: what letters did you put into the world, and what work do those letters already know how to do?",
       "The sentence on every portrait is not decoration. This is a portrait you can act on. A portrait can be wrong about a soul and still be true about a face. We claim the face, then we tell you if the day will have the move.",
     ],
@@ -28,7 +39,7 @@ export const DOCTRINE: DoctrineSection[] = [
     kicker: "The material",
     title: "We read the username you chose",
     paragraphs: [
-      "A legal name is an inheritance. It was spoken over you before you could refuse it. A username is a vow. You chose it in public, or you accepted the one the room gave you and then lived inside it long enough that it became a second skin. Either way, it is the name that does work.",
+      "We start with the living whole, not the file. A legal name is an inheritance. It was spoken over you before you could refuse it. A username is a vow. You chose it in public, or you accepted the one the room gave you and then lived inside it long enough that it became a second skin. Either way, it is the name that does work.",
       "That is why the door does not ask for your legal name. It asks for the username you use. @ is optional because the at-sign is furniture. Only A through Z are read, because those are the twenty-six roles. Accents fold so a mark from another tongue can still name a role without being punished for its origin.",
       "If you sit the house with X, the screen name arrives as the handle and is not offered back for editing. Destiny you already posted under is not a preference. If you come by Google, you claim. Claiming is not branding. It is taking responsibility for a spelling.",
     ],
@@ -37,7 +48,7 @@ export const DOCTRINE: DoctrineSection[] = [
     kicker: "The first mark",
     title: "Why the first letter is the role",
     paragraphs: [
-      "A house is a role, not a personality. The first letter of the first token is the first mark the handle makes on the world. Before repetition, before weight, before the clever middle, there is the threshold. That threshold is the house.",
+      "A role is how the whole enters, not a tally. A house is a role, not a personality. The first letter of the first token is the first mark the handle makes on the world. Before repetition, before weight, before the clever middle, there is the threshold. That threshold is the house.",
       "We could have let the most common letter sit the house. That would have made the role a popularity contest. We could have let the last letter sit it. That would have made the role an ending. A role is how you enter. So the first letter enters.",
       "L is the Lover. A is the Seeker. The rest of the name may argue, complete, or betray that entrance. It does not get to pretend the entrance did not happen.",
     ],
@@ -46,7 +57,7 @@ export const DOCTRINE: DoctrineSection[] = [
     kicker: "How and where",
     title: "Why manner and field are weight, not order",
     paragraphs: [
-      "Once the house is sat, the question is not who you are. The question is how the work is done, and in what kind of place. Those are the second and third seats of the Letter Path: manner and field.",
+      "We count the pieces, then name three seats as one path so the count cannot stay a code. Once the house is sat, the question is not who you are. The question is how the work is done, and in what kind of place. Those are the second and third seats of the Letter Path: manner and field.",
       "Order after the first letter is an accident of spelling. Weight is not. A letter that returns, a letter that opens a word, a letter that closes one — these are decisions the handle keeps making. The engine counts them. Repeats count more because insistence is information. First and last letters of a token count extra because edges are where a name touches the air.",
       "The two letters that weigh most after the signature become manner and field. Three letters, one path. The path has a title because a nameless triad is a code, and a code is how you hide from the person you are reading. We name it so it can be spoken.",
     ],
@@ -99,7 +110,7 @@ export const DOCTRINE: DoctrineSection[] = [
     kicker: "The inverse",
     title: "We write amounts as letters",
     paragraphs: [
-      "A number arrives claiming neutrality. It is not neutral. It is a compression: of rank, of year, of money, of a phone that can reach a body. Numerology accepted that compression and then compressed further, folding the leftover into a single digit so the hand could close.",
+      "A number is the emissary sent out. Writing it as letters is how it comes home. A number arrives claiming neutrality. It is not neutral. It is a compression: of rank, of year, of money, of a phone that can reach a body. Numerology accepted that compression and then compressed further, folding the leftover into a single digit so the hand could close.",
       "We refuse the fold. An amount is written as letters or it is not read. A is one. Z is twenty-six. AA is twenty-seven. The whole amount also has a role — the same letter a date or a year already uses — so a year and that year’s amount cannot disagree. If the amount walked the twenty-six more than once, those walks are letters too. Nested, not reduced.",
       "Zero is the Fool as absence: you write nothing. Six is the Fool as the sixth role, only when an old digit arrives. Same figure, two doors. There is no 0th of the month, so zero cannot name a date-role; it is the blank, which the calendar already knew. J is not 1. J is the tenth role. To wrap J back to A is to say the walk never happened.",
       "The old number may be typed so we can translate it. The reading will not say it back.",
@@ -109,7 +120,7 @@ export const DOCTRINE: DoctrineSection[] = [
     kicker: "Luck",
     title: "Willingness, not fate",
     paragraphs: [
-      "The old magi were right about one thing and wrong about another. Right: the letters make findings. Wrong: that a finding is a sentence you serve. A finding is a weather report for a name. You still walk out the door.",
+      "Luck is a weather report. It is a piece. It is not a king. The old magi were right about one thing and wrong about another. Right: the letters make findings. Wrong: that a finding is a sentence you serve. A finding is a weather report for a name. You still walk out the door.",
       "Each day the date names a house, the way the thirteenth is M. That house keeps a court: three allies, three enemies. Allies run warm — favorable currents. Enemies withdraw — contrary currents. The letters do not change their nature. Only their willingness.",
       "Your luck today is the meeting of your Path with that court. If your house is in the warm seats, doors ajar. If your manner withdraws, do not force the method you usually trust. If the day's letter is already in your handle, the day is using something you already carry — home-field, not destiny.",
       "A decision is also a name. Letterize the act. Ask two questions only: is this my kind of move, and is this house willing today? That is how you predict your own luck — not by asking a priest, but by reading the materials you already put into the world against the court the calendar already named.",
@@ -119,7 +130,7 @@ export const DOCTRINE: DoctrineSection[] = [
     kicker: "The ethic",
     title: "A portrait can be used. It cannot be obeyed.",
     paragraphs: [
-      "A coherent reading is one you can act on before noon. It names the Path, the day's willingness, one move to lean into, one move to wait on, and who to ask. If it cannot do that, it is incense.",
+      "You are the Master in the room. The site is the Emissary. A coherent reading is one you can act on before noon. It names the Path, the day's willingness, one move to lean into, one move to wait on, and who to ask. If it cannot do that, it is incense.",
       "Do not spend the reading. Do not let a Letter Path become an excuse. The Seeker who never crosses is not fulfilling a house. They are hiding in one. The enemy house is not your villain. It is the work you will not look at.",
       "No sentence here is generated by a model that forgets tomorrow. The copy is composed from tables you can open. If the system cannot show its work, it has become a priest.",
     ],
@@ -128,12 +139,12 @@ export const DOCTRINE: DoctrineSection[] = [
     kicker: "The club",
     title: "CC33",
     paragraphs: [
-      "Letterology is the reading. CC33 is whose house it is. The club did not rent a personality system. It took the alphabet — the one tool every member already used to appear in public — and asked it to tell the truth about the marks it was already making.",
+      "CC33 is the house where the circuit is practiced. Letterology is the reading. The club did not rent a personality system. It took the alphabet — the one tool every member already used to appear in public — and asked it to tell the truth about the marks it was already making, without becoming a total.",
       "Read a username. Compare two. Write an amount as letters. Walk the year. The names stay — Seeker, Fool, Letter Path — because they are the product. The rest is English, because a house that cannot welcome a guest is only a vault.",
-      "You do not have to believe any of this. You only have to admit that you chose some letters, or some letters were chosen for the day, and that those letters can be looked at without being worshipped. That looking is the practice.",
+      "You do not have to believe any of this. You only have to admit that you chose some letters, or some letters were chosen for the day, and that those letters can be looked at without being worshipped. That looking is the practice. Looking, then counting, then looking again: that is the circuit.",
     ],
   },
 ];
 
 export const DOCTRINE_CLOSE =
-  "The letters you already carry are the material. The day is the current. The decision is yours.";
+  "See the whole. Use the pieces. Come back. The decision is yours.";

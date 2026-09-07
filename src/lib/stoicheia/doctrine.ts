@@ -2,7 +2,7 @@ export const STOICHEIA_DOCTRINE = [
   {
     title: "Not a translation",
     paragraphs: [
-      "Letterology is the commons of the Roman twenty-six. Stoicheia is the older instrument: twenty-four marks that were already elements, numbers, and sounds. If we had kept first-letter-as-house, two-by-weight, and the March walk, we would have dressed another system in a chiton and called it Greek. We did not.",
+      "Letterology is the commons of the Roman twenty-six. Stoicheia is the older instrument: twenty-four marks that were already elements, numbers, and sounds. Two instruments, one circuit: go out, come back. If we had kept first-letter-as-house, two-by-weight, and the March walk, we would have dressed another system in a chiton and called it Greek. We did not.",
       "Two clocks share one club. Latin asks: what role does the first letter name, and how do the heavy returns work? Greek asks: how does the name enter, how does it finish, what does it sing between those doors, and what total does the script already carry? The answers cannot be mapped one-to-one without lying.",
     ],
   },
@@ -16,7 +16,7 @@ export const STOICHEIA_DOCTRINE = [
   {
     title: "Why last equals first",
     paragraphs: [
-      "A Greek inscription knows alpha and omega as a pair. Procession and return — proodos and epistrophe — are how late philosophy described every living thing: outflow from the source, and the turning-back that completes the circuit. A name enters on its first stoicheion and completes on its last. That axis is not a triad. The Greeks thought in beginning and end before they thought in threes.",
+      "A Greek inscription knows alpha and omega as a pair. Procession and return — proodos and epistrophe — are how late philosophy described every living thing: outflow from the source, and the turning-back that completes the circuit. That is the same return, in an older tongue. A name enters on its first stoicheion and completes on its last. That axis is not a triad. The Greeks thought in beginning and end before they thought in threes.",
       "When first and last are the same mark, the road is closed. The voyage returns to the hour it left. That is not a prison. It is a rite that must be finished, or the same threshold will meet you again.",
     ],
   },
@@ -31,7 +31,7 @@ export const STOICHEIA_DOCTRINE = [
     title: "Why the number was always a letter",
     paragraphs: [
       "Milesian numerals are the Greek Count. Α is one. Ι is ten. Ρ is a hundred. A name already has a sum. We let that sum sit the twenty-four. We do not fold it to a single digit. Ἰησοῦς is eight hundred eighty-eight. That is a fact of the script, not a joke we invented.",
-      "Isopsephy is not luck-digits. It is the hour of the total — a daimon of the sum, an attendant face, not a soulmate. When an old word weighs the same, that is a sign in the commons of letters, not a claim that two lives are one.",
+      "Isopsephy is not luck-digits. It is the hour of the total — a daimon of the sum, an attendant face, not a soulmate. A sum is something the name can carry. It is not the name. When an old word weighs the same, that is a sign in the commons of letters, not a claim that two lives are one.",
     ],
   },
   {
