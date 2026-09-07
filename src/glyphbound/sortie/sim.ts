@@ -8,8 +8,8 @@ import { groundHeight } from "./height";
 import { endCopy, type EndWhy } from "./story";
 import { inHole, inLandmarkSolid, landmarksFor, RING_COLLECT } from "./landmarks";
 import { enterState, killPartsHp, partAlive, tickBrain } from "./brain";
-import type { RobotLive } from "./brain";
-import { SCALE, bootScale, poseScaleWalk, robotOf, scaleCtx, scaleWorld } from "./robots";
+import type { AttackKind, RobotDef, RobotLive } from "./brain";
+import { bootGalley, bootDualis, bootKite, bootScale, bootUnbound, poseLive, robotCtx, robotOf, robotWorld } from "./robots";
 import type { BiomeId } from "./terrain";
 export { aimOff, aimScreen, CONVERGE_DIST, gunPip, inBox, unproject } from "./cam";
 export type { KitId, KitMods, KitRanks } from "./kits";
@@ -634,8 +634,15 @@ export function spawnEnemy(
     lead: extra?.lead,
     life: extra?.life,
     setPiece: extra?.setPiece,
-    robot: kind === "mech" && extra?.setPiece ? bootScale() : undefined,
+    robot: extra?.setPiece ? bootSetPiece(s, kind) : undefined,
   });
+}
+
+function bootSetPiece(s: SortieState, kind: EnemyKind): RobotLive | undefined {
+  if (kind === "mech") return s.missionId === "ice" ? bootKite() : bootScale();
+  if (kind === "mothership" && s.missionId === "sorts") return bootUnbound();
+  if (kind === "dualis" && s.missionId === "press") return bootGalley();
+  return undefined;
 }
 
 function fireShot(
@@ -650,7 +657,7 @@ function fireShot(
   lockId = -1,
 ) {
   const n = Math.hypot(dir.x, dir.y, dir.z) || 1;
-  s.shots.push({
+  const sh: Shot = {
     id: s.shotId++,
     kind,
     friendly,
@@ -660,9 +667,11 @@ function fireShot(
     vx: (dir.x / n) * speed,
     vy: (dir.y / n) * speed,
     vz: (dir.z / n) * speed,
-    life: kind === "bomb" ? 2.8 : kind === "charge" ? (lockId >= 0 ? 2.4 : LASER_LIFE) : LASER_LIFE,
+    life: kind === "bomb" ? 2.8 : kind === "charge" ? (lockId >= 0 ? 2.4 : LASER_LIFE) : lockId < -1 ? 2.2 : LASER_LIFE,
     lockId,
-  });
+  };
+  s.shots.push(sh);
+  return sh;
 }
 
 function seatKit(s: SortieState, id: KitId) {
@@ -743,6 +752,13 @@ function killEnemy(s: SortieState, e: Enemy, splash = false) {
 
 function bodyR(e: Enemy) {
   if (e.kind === "aster") return e.hp >= 8 ? 22 : 10;
+  if (e.robot) {
+    if (e.robot.id === "unbound") return 10;
+    if (e.robot.id === "kite") return 16;
+    if (e.robot.id === "dualis") return 22;
+    if (e.robot.id === "galley") return e.robot.state === "core" ? 12 : 24;
+    return 18;
+  }
   if (e.kind === "dualis" || e.kind === "mothership" || e.kind === "mech") return 20;
   if (e.kind === "bomber") return 15;
   if (e.kind === "ace") return 13;
@@ -752,6 +768,7 @@ function bodyR(e: Enemy) {
 /** Tight 3D pad for player beams. Hull/orb pain still uses bodyR. */
 export function shotR(e: Enemy) {
   if (e.kind === "aster") return e.hp >= 8 ? 14 : 6;
+  if (e.robot) return e.robot.id === "unbound" ? 8 : 12;
   if (e.kind === "dualis" || e.kind === "mothership" || e.kind === "mech") return 12;
   if (e.kind === "bomber") return 8;
   if (e.kind === "ace") return 6;
@@ -783,7 +800,7 @@ export function markInSquares(s: SortieState, e: Enemy) {
   if (e.robot) {
     const def = robotOf(e.robot.id);
     if (!def) return markAt(s, e.x, e.y, e.z);
-    const world = scaleWorld(e);
+    const world = robotWorld(e);
     for (const pid of e.robot.glow) {
       if (!partAlive(e.robot, pid)) continue;
       const part = def.parts.find((p) => p.id === pid);
@@ -809,13 +826,29 @@ function distSeg(px: number, py: number, pz: number, ax: number, ay: number, az:
   return Math.hypot(px - (ax + abx * t), py - (ay + aby * t), pz - (az + abz * t));
 }
 
+function splashRobot(e: Enemy, dmg: number) {
+  if (!e.robot) {
+    e.hp -= dmg;
+    return;
+  }
+  const def = robotOf(e.robot.id);
+  if (!def) {
+    e.hp -= dmg;
+    return;
+  }
+  for (const p of def.parts) {
+    if (p.kill || e.robot.glow.includes(p.id)) e.robot.parts[p.id] = Math.max(0, (e.robot.parts[p.id] ?? 0) - dmg);
+  }
+  e.hp = killPartsHp(def, e.robot);
+}
+
 function chargeSplash(s: SortieState, x: number, y: number, z: number, skipId: number) {
   const R = 32;
   for (const e of s.enemies) {
     if (!e.alive || e.id === skipId) continue;
     const d = Math.hypot(e.x - x, e.y - y, e.z - z);
     if (d > R) continue;
-    e.hp -= 4;
+    splashRobot(e, 4);
     s.hits += 1;
     s.score += 40;
     if (e.hp <= 0) killEnemy(s, e, true);
@@ -828,7 +861,7 @@ function detonate(s: SortieState, x: number, y: number, z: number) {
     if (!e.alive) continue;
     const d = Math.hypot(e.x - x, e.y - y, e.z - z);
     if (d > R) continue;
-    e.hp -= 8;
+    splashRobot(e, 8);
     s.hits += 1;
     s.score += 40;
     if (e.hp <= 0) killEnemy(s, e, true);
@@ -993,8 +1026,10 @@ function ensureSetPiece(s: SortieState) {
     return;
   }
   if (s.enemies.some((e) => e.setPiece)) return;
-  if (kind === "mech") spawnEnemy(s, "mech", 0, 20, -160, { hp: 12, setPiece: true });
-  else if (kind === "mothership") spawnEnemy(s, "mothership", 0, 8, -140, { setPiece: true });
+  if (kind === "mech") {
+    if (s.missionId === "ice") spawnEnemy(s, "mech", 0, 48, -140, { setPiece: true });
+    else spawnEnemy(s, "mech", 0, 20, -160, { hp: 12, setPiece: true });
+  } else if (kind === "mothership") spawnEnemy(s, "mothership", 0, 8, -140, { setPiece: true });
   else if (kind === "bomber") spawnEnemy(s, "bomber", 0, 24, -120, { setPiece: true });
 }
 
@@ -1133,48 +1168,243 @@ function angToward(from: number, to: number, max: number) {
   return from + d;
 }
 
-function stepScale(s: SortieState, e: Enemy, dt: number) {
+function volleyFrom(live: RobotLive, atk: AttackKind & { kind: "volley" }) {
+  if (atk.from === "handL" || atk.from === "handR") {
+    if (partAlive(live, "armL")) return "handL";
+    if (partAlive(live, "armR")) return "handR";
+    return null;
+  }
+  if (atk.from === "gunL" || atk.from === "gunR") {
+    if (partAlive(live, "stemL")) return "gunL";
+    if (partAlive(live, "stemR")) return "gunR";
+    return "head";
+  }
+  return atk.from;
+}
+
+function inFront(e: Enemy, s: SortieState, dist: number, minFacing = 0.15) {
+  const live = e.robot;
+  if (!live) return false;
+  const dx = s.x - e.x;
+  const dz = s.z - e.z;
+  const n = Math.hypot(dx, dz) || 1;
+  if (n > dist) return false;
+  const fx = -Math.sin(live.yaw);
+  const fz = -Math.cos(live.yaw);
+  return (dx * fx + dz * fz) / n > minFacing;
+}
+
+function inUnboundHole(s: SortieState, e: Enemy) {
+  const live = e.robot;
+  if (!live || live.id !== "unbound") return false;
+  if (live.state === "clap" && live.strike) return false;
+  const dx = s.x - e.x;
+  const dz = s.z - e.z;
+  const c = Math.cos(-live.yaw);
+  const si = Math.sin(-live.yaw);
+  const lx = dx * c + dz * si;
+  const lz = -dx * si - dz * c;
+  return Math.abs(lx) < 10 && Math.abs(lz) < 12 && s.y > 16 && s.y < 46;
+}
+
+function inGalleyHatch(s: SortieState, e: Enemy) {
+  const live = e.robot;
+  if (!live || live.id !== "galley") return false;
+  if (live.state !== "vacuum" && live.state !== "open" && live.state !== "hatchBeam") return false;
+  const dx = s.x - e.x;
+  const dz = s.z - e.z;
+  const n = Math.hypot(dx, dz);
+  const fx = -Math.sin(live.yaw);
+  const fz = -Math.cos(live.yaw);
+  const along = n < 1 ? 1 : (dx * fx + dz * fz) / n;
+  return along > 0.45 && n < 28 && s.y > 28 && s.y < 58;
+}
+
+function stepRobot(s: SortieState, e: Enemy, dt: number) {
   const live = e.robot;
   if (!live) return;
-  poseScaleWalk(live, s.t + e.t);
-  const ctx = scaleCtx(e, s.x, s.z);
-  const ev = tickBrain(live, SCALE, ctx, dt);
+  const def = robotOf(live.id);
+  if (!def) return;
+  poseLive(live, s.t + e.t);
+  const ctx = robotCtx(e, s.x, s.z);
+  const ev = tickBrain(live, def, ctx, dt);
   if (ev.radio) s.radio = { who: ev.radio.who, text: ev.radio.text, until: s.t + 2.6 };
   const dx = s.x - e.x;
   const dz = s.z - e.z;
+  const dist = Math.hypot(dx, dz) || 1;
   const want = Math.atan2(-dx, -dz);
-  const st = SCALE.states[live.state];
-  if (st?.move === "walk" || st?.move === "stand") {
-    live.yaw = angToward(live.yaw, want, 2.2 * dt);
+  const st = def.states[live.state];
+  const spd = def.walkSpeed;
+  if (st?.move === "walk" || st?.move === "stand" || st?.move === "strafe" || st?.move === "lunge" || st?.move === "hover") {
+    live.yaw = angToward(live.yaw, want, 2.4 * dt);
   }
   if (st?.move === "walk") {
-    const n = Math.hypot(dx, dz) || 1;
-    e.x += (dx / n) * SCALE.walkSpeed * dt;
-    e.z += (dz / n) * SCALE.walkSpeed * dt;
+    e.x += (dx / dist) * spd * dt;
+    e.z += (dz / dist) * spd * dt;
+  } else if (st?.move === "strafe") {
+    const side = dist < 48 ? 1 : -1;
+    e.x += (-dz / dist) * spd * 0.7 * dt * side + (dx / dist) * spd * 0.2 * dt;
+    e.z += (dx / dist) * spd * 0.7 * dt * side + (dz / dist) * spd * 0.2 * dt;
+  } else if (st?.move === "lunge") {
+    e.x += (dx / dist) * spd * 2.2 * dt;
+    e.z += (dz / dist) * spd * 2.2 * dt;
+  } else if (st?.move === "orbit") {
+    const ang = Math.atan2(e.x - s.x, e.z - s.z) + 0.55 * dt;
+    const r = 108;
+    e.x = s.x + Math.sin(ang) * r;
+    e.z = s.z + Math.cos(ang) * r;
+    live.yaw = angToward(live.yaw, want, 3.2 * dt);
+  } else if (st?.move === "hover") {
+    const ideal = 90;
+    const push = (dist - ideal) * 0.35 * dt;
+    e.x += (dx / dist) * push * 12;
+    e.z += (dz / dist) * push * 12;
   }
+  const hover = def.hoverY ?? 28;
   if (st?.move === "fallen" || st?.move === "topple") {
-    e.y = 14;
+    e.y = live.id === "kite" ? 18 : 14;
+  } else if (st?.move === "lunge" && live.id === "kite") {
+    e.y = 22 + Math.abs(Math.sin((s.t + e.t) * 4)) * 4;
+  } else if (live.id === "kite") {
+    e.y = hover + Math.sin((s.t + e.t) * 1.3) * 7 + (live.state === "list" ? -8 : 0);
+  } else if (live.id === "dualis" && live.state === "core") {
+    e.y = 40 + Math.sin((s.t + e.t) * 2.2) * 8;
+  } else if (live.id === "galley" && live.state === "core") {
+    e.y = 46 + Math.sin((s.t + e.t) * 2.4) * 10;
+  } else if (live.id === "galley" && (live.state === "open" || live.state === "hatchBeam" || live.state === "vacuum")) {
+    e.y = hover + 4 + Math.sin((s.t + e.t) * 1.6) * 3;
   } else {
-    e.y = 28 + Math.abs(Math.sin((s.t + e.t) * 2.4)) * 2;
+    e.y = hover + Math.abs(Math.sin((s.t + e.t) * 2.4)) * 2;
   }
-  live.phase = !partAlive(live, "legL") || !partAlive(live, "legR") ? 2 : live.phase;
-  if (live.phase >= 2) s.bossPhase = Math.max(s.bossPhase, 2);
-  else if (!partAlive(live, "legL") || !partAlive(live, "legR")) s.bossPhase = Math.max(s.bossPhase, 1);
 
-  const world = scaleWorld(e);
-  if (live.strike && ev.attack?.kind === "volley") {
-    const from = partAlive(live, "armL") ? "handL" : partAlive(live, "armR") ? "handR" : null;
-    const w = from ? world[from] : null;
-    if (w && e.t % 0.12 < dt + 0.02) {
-      const toP = { x: s.x - w.x, y: s.y - w.y, z: s.z - w.z };
-      fireShot(s, "orb", false, w.x, w.y, w.z, toP, 46);
+  const supports = def.parts.filter((p) => p.support);
+  const lost = supports.filter((p) => !partAlive(live, p.id)).length;
+  if (lost > 0) live.phase = Math.max(live.phase, lost >= supports.length ? 2 : 1);
+  if (live.state === "split" || live.state === "list" || live.state === "unbound" || live.state === "open" || live.state === "topple") {
+    live.phase = Math.max(live.phase, 1);
+  }
+  if (live.state === "core" || live.state === "fallen") live.phase = Math.max(live.phase, 2);
+  s.bossPhase = Math.max(s.bossPhase, live.phase);
+
+  const world = robotWorld(e);
+  live.beam = null;
+  const atk = ev.attack;
+  if (live.strike && atk) {
+    if (atk.kind === "volley") {
+      const from = volleyFrom(live, atk);
+      const w = from ? world[from] : null;
+      if (w && e.t % 0.11 < dt + 0.02) {
+        const spread = atk.spread;
+        for (let i = 0; i < Math.min(2, atk.n); i++) {
+          const a = (i - 0.5) * spread;
+          const toP = { x: s.x - w.x + Math.sin(a) * 12, y: s.y - w.y, z: s.z - w.z };
+          fireShot(s, "orb", false, w.x, w.y, w.z, toP, 48);
+        }
+      }
+    }
+    if (atk.kind === "stomp") {
+      const d = Math.hypot(s.x - e.x, s.z - e.z);
+      if (d < atk.radius && s.y < e.y + 20) hurt(s, 1, false, "kill");
+    }
+    if (atk.kind === "swipe" && inFront(e, s, 42 + atk.arc * 8, 0.05)) hurt(s, 1, false, "kill");
+    if (atk.kind === "clap" && inFront(e, s, 34, 0.0) && Math.hypot(s.x - e.x, s.z - e.z) < 34) hurt(s, 2, false, "kill");
+    if (atk.kind === "grab" && Math.hypot(s.x - e.x, s.z - e.z) < 36) {
+      s.x += (e.x - s.x) * Math.min(1, 2.8 * dt);
+      s.z += (e.z - s.z) * Math.min(1, 2.8 * dt);
+      if (e.t % 0.28 < dt + 0.02) hurt(s, 1, false, "kill");
+    }
+    if (atk.kind === "launchArm") {
+      const arm = partAlive(live, "armL") && atk.arm === "L" ? "L" : partAlive(live, "armR") ? "R" : partAlive(live, "armL") ? "L" : null;
+      if (arm) {
+        live.hide = [`arm${arm}`, `hand${arm}`, `palm${arm}`];
+        const joint = arm === "L" ? "handL" : "handR";
+        const w = world[joint];
+        if (w && e.t % 0.18 < dt + 0.02) {
+          const toP = { x: s.x - w.x, y: s.y - w.y, z: s.z - w.z };
+          fireShot(s, "orb", false, w.x, w.y, w.z, toP, 36, -2);
+        }
+      }
+    }
+    if (atk.kind === "beam") {
+      const w = world[atk.from] ?? world.head ?? { x: e.x, y: e.y + 20, z: e.z };
+      const len = 160;
+      const n = Math.hypot(s.x - w.x, s.y - w.y, s.z - w.z) || 1;
+      live.beam = { x: w.x, y: w.y, z: w.z, tx: w.x + ((s.x - w.x) / n) * len, ty: w.y + ((s.y - w.y) / n) * len, tz: w.z + ((s.z - w.z) / n) * len };
+      const along = distSeg(s.x, s.y, s.z, live.beam.x, live.beam.y, live.beam.z, live.beam.tx, live.beam.ty, live.beam.tz);
+      if (along < 7 && n < len) {
+        if (e.t % 0.22 < dt + 0.02) hurt(s, 1, false, "kill");
+      }
+      if (e.t % 0.16 < dt + 0.02) fireShot(s, "orb", false, w.x, w.y, w.z, { x: s.x - w.x, y: s.y - w.y, z: s.z - w.z }, 70);
+    }
+    if (atk.kind === "dump" && e.t % 0.16 < dt + 0.02) {
+      const w = world.case ?? world.core ?? world.pack ?? { x: e.x, y: e.y + 16, z: e.z };
+      const a = e.t * 3.4;
+      fireShot(s, "orb", false, w.x, w.y, w.z, { x: Math.cos(a) * 18, y: 8, z: Math.sin(a) * 18 }, 28, -3);
+      if (atk.n > 3 && e.t % 0.48 < dt + 0.02) {
+        spawnEnemy(s, "aster", w.x + Math.cos(a) * 10, w.y + 6, w.z + Math.sin(a) * 10, { hp: 1, armed: false });
+      }
+    }
+    if (atk.kind === "punch") {
+      const joint = atk.arm === "L" ? "palmL" : "palmR";
+      const w = world[joint] ?? world.handR ?? { x: e.x, y: e.y + 20, z: e.z };
+      if (Math.hypot(s.x - w.x, s.y - w.y, s.z - w.z) < 16) hurt(s, 1, false, "kill");
+    }
+    if (atk.kind === "shock") {
+      const d = Math.hypot(s.x - e.x, s.z - e.z);
+      if (d < atk.radius && s.y < e.y + 24) hurt(s, 2, false, "kill");
+      if (e.t % 0.14 < dt + 0.02) {
+        const a = e.t * 6;
+        fireShot(s, "orb", false, e.x, e.y + 8, e.z, { x: Math.cos(a) * 20, y: 2, z: Math.sin(a) * 20 }, 36, -3);
+      }
+    }
+    if (atk.kind === "vacuum") {
+      const n = Math.hypot(s.x - e.x, s.y - (e.y + 18), s.z - e.z) || 1;
+      if (n < atk.range) {
+        const k = Math.min(1, 1.8 * dt);
+        s.x += (e.x - s.x) * k * 0.85;
+        s.y += (e.y + 22 - s.y) * k * 0.55;
+        s.z += (e.z - s.z) * k * 0.85;
+      }
+      if (n < 22 && e.t % 0.3 < dt + 0.02) hurt(s, 1, false, "kill");
+      const bomb = s.shots.find((sh) => sh.friendly && sh.kind === "bomb" && sh.life > 0 && Math.hypot(sh.x - e.x, sh.y - (e.y + 18), sh.z - e.z) < 22);
+      if (bomb && def.states.stun) {
+        bomb.life = 0;
+        enterState(live, def, "stun");
+        s.radio = { who: "s", text: "Dash in the hatch. It choked.", until: s.t + 2.4 };
+      }
+    }
+    if (atk.kind === "tailBeam") {
+      const nodes = ["tail1", "tail2", "tail3", "tail4"].filter((id) => world[id]);
+      const idx = Math.floor(e.t * 6) % Math.max(1, nodes.length);
+      const w = world[nodes[idx]] ?? world[atk.from] ?? { x: e.x, y: e.y + 10, z: e.z };
+      const len = 150;
+      const n = Math.hypot(s.x - w.x, s.y - w.y, s.z - w.z) || 1;
+      live.beam = { x: w.x, y: w.y, z: w.z, tx: w.x + ((s.x - w.x) / n) * len, ty: w.y + ((s.y - w.y) / n) * len, tz: w.z + ((s.z - w.z) / n) * len };
+      if (distSeg(s.x, s.y, s.z, live.beam.x, live.beam.y, live.beam.z, live.beam.tx, live.beam.ty, live.beam.tz) < 8 && n < len) {
+        if (e.t % 0.2 < dt + 0.02) hurt(s, 1, false, "kill");
+      }
+    }
+    if (atk.kind === "handsFree") {
+      for (const side of ["L", "R"] as const) {
+        if (!partAlive(live, `palm${side}`)) continue;
+        live.hide = [...live.hide.filter((h) => h !== `palm${side}`), `palm${side}`, `hand${side}`];
+        const a = e.t * 1.8 + (side === "L" ? 0 : Math.PI);
+        const hx = s.x + Math.cos(a) * 36;
+        const hy = s.y + Math.sin(e.t * 2.2) * 8;
+        const hz = s.z + Math.sin(a) * 36;
+        if (Math.hypot(s.x - hx, s.y - hy, s.z - hz) < 14) hurt(s, 1, false, "kill");
+        if (e.t % 0.22 < dt + 0.02) fireShot(s, "orb", false, hx, hy, hz, { x: s.x - hx, y: s.y - hy, z: s.z - hz }, 42);
+      }
+    }
+    if (atk.kind === "bay" && e.t % 0.35 < dt + 0.02) {
+      const side = atk.side === "L" ? -1 : 1;
+      const w = world[atk.side === "L" ? "bayL" : "bayR"] ?? { x: e.x + side * 12, y: e.y - 6, z: e.z };
+      const aces = s.enemies.filter((n) => n.alive && n.kind === "ace").length;
+      if (aces < 4) spawnEnemy(s, "ace", w.x, w.y, w.z, { hp: 4, armed: true });
+      else spawnEnemy(s, "fighter", w.x, w.y, w.z, { hp: 2, armed: true });
     }
   }
-  if (live.strike && ev.attack?.kind === "stomp") {
-    const d = Math.hypot(s.x - e.x, s.z - e.z);
-    if (d < ev.attack.radius && s.y < e.y + 18) hurt(s, 1, false, "kill");
-  }
-  e.hp = Math.max(1, killPartsHp(SCALE, live));
+  e.hp = Math.max(1, killPartsHp(def, live));
 }
 
 function fireIfArmed(s: SortieState, e: Enemy, toP: Vec3, dt: number) {
@@ -1233,8 +1463,8 @@ function steerEnemy(s: SortieState, e: Enemy, dt: number) {
     return;
   }
 
-  if (e.kind === "mech" && e.robot) {
-    stepScale(s, e, dt);
+  if (e.robot) {
+    stepRobot(s, e, dt);
     return;
   }
 
@@ -1570,13 +1800,19 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
       const floor = islandHeight(s, e.x, e.z) + 8;
       if (e.y < floor) e.y = floor;
     }
-    const cr = e.kind === "aster" ? bodyR(e) * 0.8 : 10;
+    const cr = e.kind === "aster" ? bodyR(e) * 0.8 : e.robot ? bodyR(e) * 0.55 : 10;
+    if (e.robot && (inUnboundHole(s, e) || inGalleyHatch(s, e))) continue;
     if (dist2(s, e) < cr * cr) hurt(s, 1);
   }
 
   for (const sh of s.shots) {
     if (sh.life <= 0) continue;
-    if ((sh.kind === "charge" || sh.kind === "bomb") && sh.lockId >= 0) {
+    if ((sh.kind === "charge" || sh.kind === "bomb" || sh.kind === "orb") && sh.lockId === -2 && !sh.friendly) {
+      const n = Math.hypot(s.x - sh.x, s.y - sh.y, s.z - sh.z) || 1;
+      sh.vx += ((s.x - sh.x) / n) * 220 * dt;
+      sh.vy += ((s.y - sh.y) / n) * 220 * dt;
+      sh.vz += ((s.z - sh.z) / n) * 220 * dt;
+    } else if ((sh.kind === "charge" || sh.kind === "bomb") && sh.lockId >= 0) {
       const e = s.enemies.find((n) => n.id === sh.lockId && n.alive);
       if (e) {
         const dx = e.x - sh.x;
@@ -1608,41 +1844,74 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
       } else {
         for (const e of s.enemies) {
           if (!e.alive) continue;
-          if (e.robot && sh.kind === "laser") {
+          if (e.robot && (sh.kind === "laser" || sh.kind === "charge")) {
             const def = robotOf(e.robot.id);
             if (!def) continue;
-            const world = scaleWorld(e);
+            const world = robotWorld(e);
             let hitId: string | null = null;
+            let hitR = 0;
             for (const pid of e.robot.glow) {
               if (!partAlive(e.robot, pid)) continue;
               const part = def.parts.find((p) => p.id === pid);
               if (!part) continue;
               const w = world[part.joint];
               if (!w) continue;
-              if (!markAt(s, w.x, w.y, w.z)) continue;
-              if (distSeg(w.x, w.y, w.z, sh.x - sh.vx * dt, sh.y - sh.vy * dt, sh.z - sh.vz * dt, sh.x, sh.y, sh.z) < part.radius) {
-                hitId = pid;
-                break;
-              }
+              const rad = part.radius + (sh.kind === "charge" ? 6 : 0);
+              const close =
+                sh.kind === "laser"
+                  ? distSeg(w.x, w.y, w.z, sh.x - sh.vx * dt, sh.y - sh.vy * dt, sh.z - sh.vz * dt, sh.x, sh.y, sh.z) < rad
+                  : Math.hypot(sh.x - w.x, sh.y - w.y, sh.z - w.z) < rad + 4;
+              if (sh.kind === "laser" && !markAt(s, w.x, w.y, w.z)) continue;
+              if (!close) continue;
+              hitId = pid;
+              hitR = rad;
+              break;
             }
-            if (!hitId) continue;
-            const dmg = s.stem >= 2 ? 2 : 1;
-            e.robot.parts[hitId] = Math.max(0, (e.robot.parts[hitId] ?? 0) - dmg);
-            sh.life = 0;
-            s.score += 20;
-            const w = world[def.parts.find((p) => p.id === hitId)?.joint ?? "pelvis"];
-            if (w) bumpFx(s, w.x, w.y, w.z, false, 20);
-            if (!s.bossAt) s.bossAt = s.t;
-            if (hitId === "legL" || hitId === "legR") {
-              s.bossPhase = Math.max(s.bossPhase, 1);
-              if (e.robot.state !== "topple" && e.robot.state !== "fallen") {
-                enterState(e.robot, def, "topple");
-                s.radio = { who: "s", text: "A stem went. The pack is the stamp.", until: s.t + 2.6 };
+            if (!hitId) {
+              if (sh.kind === "laser") continue;
+            } else {
+              const dmg = sh.kind === "charge" ? 6 : s.stem >= 2 ? 2 : 1;
+              e.robot.parts[hitId] = Math.max(0, (e.robot.parts[hitId] ?? 0) - dmg);
+              sh.life = 0;
+              const pts = sh.kind === "charge" ? 80 : 20;
+              s.score += pts;
+              const part = def.parts.find((p) => p.id === hitId);
+              const w = world[part?.joint ?? "pelvis"];
+              if (w) bumpFx(s, w.x, w.y, w.z, false, pts);
+              if (!s.bossAt) s.bossAt = s.t;
+              if (hitId === "visor" && e.robot.tele > 0 && def.states.stun && e.robot.state !== "stun" && e.robot.state !== "core") {
+                enterState(e.robot, def, "stun");
+                s.radio = { who: "s", text: "The visor flinched. Write now.", until: s.t + 2.4 };
               }
+              if (part && !partAlive(e.robot, hitId)) {
+                if (part.breakRadio) s.radio = { who: part.breakRadio.who, text: part.breakRadio.text, until: s.t + 2.6 };
+                if (part.support && e.robot.state !== "topple" && e.robot.state !== "fallen" && e.robot.state !== "list") {
+                  const down = def.states.topple ? "topple" : def.states.list ? "list" : null;
+                  if (down) enterState(e.robot, def, down);
+                  s.bossPhase = Math.max(s.bossPhase, 1);
+                }
+                if (hitId === "bar" && def.states.split && e.robot.state !== "split" && e.robot.state !== "core") {
+                  enterState(e.robot, def, "split");
+                  s.split = true;
+                  s.bossPhase = Math.max(s.bossPhase, 1);
+                }
+                if (hitId === "hatch" && def.states.core && e.robot.state !== "core" && e.robot.state !== "fallen") {
+                  enterState(e.robot, def, "core");
+                  s.bossPhase = Math.max(s.bossPhase, 2);
+                }
+                if ((hitId === "palmL" || hitId === "palmR") && def.id === "galley") {
+                  const both = !partAlive(e.robot, "palmL") && !partAlive(e.robot, "palmR");
+                  if (both && def.states.open && e.robot.state !== "open" && e.robot.state !== "core") {
+                    enterState(e.robot, def, "open");
+                    s.bossPhase = Math.max(s.bossPhase, 1);
+                  }
+                }
+              }
+              e.hp = Math.max(0, killPartsHp(def, e.robot));
+              if (e.hp <= 0) killEnemy(s, e, sh.kind === "charge");
+              void hitR;
+              continue;
             }
-            e.hp = Math.max(0, killPartsHp(def, e.robot));
-            if (e.hp <= 0) killEnemy(s, e, false);
-            continue;
           }
           if (sh.kind === "laser" && !markInSquares(s, e)) continue;
           const rad = sh.kind === "laser" ? bodyR(e) : sh.kind === "charge" ? shotR(e) + 4 : shotR(e);
@@ -1657,7 +1926,7 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
             s.score += pts;
             if (e.hp > 0) bumpFx(s, e.x, e.y, e.z, false, pts);
             if (sh.kind === "charge") chargeSplash(s, sh.x, sh.y, sh.z, e.id);
-            if (e.kind === "mech") {
+            if (e.kind === "mech" && !e.robot) {
               if (!s.bossAt) s.bossAt = s.t;
               if (e.hp <= 16 && s.bossPhase < 1) {
                 s.bossPhase = 1;
@@ -1668,7 +1937,7 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
                 s.radio = { who: "s", text: "Frill off. Core!", until: s.t + 2.4 };
               }
             }
-            if (e.kind === "mothership") {
+            if (e.kind === "mothership" && !e.robot) {
               if (!s.bossAt) s.bossAt = s.t;
               if (e.hp <= 16 && s.bossPhase < 1) {
                 s.bossPhase = 1;
@@ -1679,7 +1948,7 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
                 s.radio = { who: "s", text: "It lied. Ring fire — stay off the plane.", until: s.t + 2.8 };
               }
             }
-            if (e.kind === "dualis" && e.hp <= 9 && e.hp > 0 && !s.split) {
+            if (e.kind === "dualis" && !e.robot && e.hp <= 9 && e.hp > 0 && !s.split) {
               s.split = true;
               spawnEnemy(s, "dualis", e.x + 28, e.y, e.z);
               spawnEnemy(s, "dualis", e.x - 28, e.y, e.z);

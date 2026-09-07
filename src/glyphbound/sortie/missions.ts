@@ -2,6 +2,7 @@ import { BEATS, far, progressOf } from "./beats";
 import { COAST_PATH, GUTTER_PATH, PRESS_PATH, SLUG_PATH, SORTS_PATH } from "./landmarks";
 import type { PathPoint } from "./path";
 import type { EnemyKind, FormName, PickupKind, SortieState } from "./sim";
+import { bootGalley, bootKite, bootScale, bootUnbound } from "./robots";
 import type { BiomeId } from "./terrain";
 
 export interface MissionDef {
@@ -39,10 +40,10 @@ export const MISSIONS: MissionDef[] = [
     id: "sorts",
     roman: "II",
     name: "The Sorts",
-    blurb: "Shoot the type-metal. Brake the crushers. Seven rings warp.",
+    blurb: "Shoot the type-metal. Brake the crushers. Unbound if you stay.",
     brief:
-      "Well: this is where Dualis sorts type. Small metal dies to a tap. Crushers do not. Three holes pay. Seven rings warp you off the page. Miss a ring and the quoin — his binding press — stays to lie to you.",
-    debrief: "The Sorts are a remainder. Warp or quoin, the slug field still opens. Dualis has fewer drawers.",
+      "Well: this is where Dualis sorts type. Small metal dies to a tap. Crushers do not. Three holes pay. Seven rings warp you off the page. Miss a ring and Unbound stays — a chase that walked off the stone. Fly the hole. Cut a stick. The wedge is the lock.",
+    debrief: "The Sorts are a remainder. Warp or Unbound, the slug field still opens. Dualis has fewer drawers.",
     biome: "sorts",
     corridor: true,
     path: SORTS_PATH,
@@ -84,25 +85,25 @@ export const MISSIONS: MissionDef[] = [
     id: "ice",
     roman: "V",
     name: "Em-Quad Ice",
-    blurb: "Hold the pad. The Serifs come in threes.",
+    blurb: "Hold the pad. Kite kites. Serifs in the bays.",
     brief:
-      "Brace: Dualis froze the unused stock. Hold the green pad — that ground is still a letter. The Serifs are his proofreaders. They come in threes. Do not let them file you.",
-    debrief: "The Serifs are remainder. Unused letters thaw. The gutter still inks.",
+      "Brace: Dualis froze the unused stock. Hold the green pad — that ground is still a letter. Kite is his frozen sail. Clip a wing, then the keel. The Serifs are his proofreaders. They drop from the bays.",
+    debrief: "Kite is remainder. Unused letters thaw. The gutter still inks.",
     biome: "ice",
     corridor: false,
     path: [],
     medal: 50,
-    win: "aces",
+    win: "mech",
     next: [],
   },
   {
     id: "press",
     roman: "VI",
     name: "The Press",
-    blurb: "Crater road. Dualis splits when the bar breaks.",
+    blurb: "Crater road. Dualis stands in the Galley. Palms, then the hatch.",
     brief:
-      "Gale: crater road, then Dualis. He is a bar that thinks it is a period. Hit it until it splits. The Dominion ends when the last digit falls. c — write the last sentence.",
-    debrief: "The Press is clear. Dualis is a remainder. The sky is letters again. Willingness, not fate, turned the page.",
+      "Gale: crater road, then Dualis in the Galley — a tray that grew stems, sticks, and a rail. Palms first, or ankles after the stamp. The visor flinches if you write it in the windup. Then the hatch. Then the Fool. c — write the last sentence.",
+    debrief: "The Galley is remainder. Dualis is a blank. The sky is letters again. Willingness, not fate, turned the page.",
     biome: "press",
     corridor: true,
     path: PRESS_PATH,
@@ -140,14 +141,23 @@ export function lockCopy(id: string) {
 
 export function objectiveLine(s: SortieState) {
   if (s.missionId === "coast") {
-    if (s.flight === "allrange") return "Scale is on the plaza.";
+    if (s.flight === "allrange") {
+      const sc = s.enemies.find((e) => e.robot?.id === "scale" && e.alive);
+      if (sc?.robot?.state === "fallen" || sc?.robot?.state === "topple") return "Scale is down. The pack is the stamp.";
+      return "Scale is on the plaza. Don’t kiss the stamp.";
+    }
     if (s.z > 2500) return "Canyon teeth. Then n-street.";
     if (s.z > 1700) return "Type-city. Drawers and letters.";
     return "Seven n, then Scale on the plaza.";
   }
   if (s.missionId === "sorts") {
     if (s.warpT > 0) return "Warp corridor.";
-    return `Rings ${s.archHits}/7 — warp, or stay for the quoin.`;
+    if (s.flight === "allrange") {
+      const u = s.enemies.find((e) => e.robot?.id === "unbound" && e.alive);
+      if (u?.robot?.state === "unbound") return "The wedge is the lock. Fly the hole.";
+      if (u) return "Unbound. Cut a stick, then the wedge. The hole is a letter.";
+    }
+    return `Rings ${s.archHits}/7 — warp, or stay for Unbound.`;
   }
   if (s.missionId === "slug") {
     const n = s.takenLandmarks.filter((id) => id.startsWith("ring-")).length;
@@ -157,13 +167,25 @@ export function objectiveLine(s: SortieState) {
     return s.flight === "allrange" ? "Belly, then the core." : "Through the tanker. The press waits.";
   }
   if (s.missionId === "ice") {
+    const kite = s.enemies.find((e) => e.robot?.id === "kite" && e.alive);
+    if (kite) {
+      if (kite.robot?.state === "list") return "Kite lists. Keel is the letter. Serifs in the bays.";
+      return "Kite over the pad. Clip a wing. Serifs in the bays.";
+    }
     const live = s.enemies.filter((e) => e.kind === "ace" && e.alive).length;
     const dead = s.enemies.filter((e) => e.kind === "ace" && !e.alive).length;
     if (live + dead === 0) return "Three Serifs incoming.";
     return `Serifs ${dead}/3.`;
   }
   if (s.missionId === "press") {
-    return s.flight === "allrange" ? "Dualis. Hit the bar." : "Crater road. Dualis at the end.";
+    const d = s.enemies.find((e) => e.robot?.id === "galley" && e.alive);
+    if (d?.robot?.state === "core") return "The Fool. Hit the blank.";
+    if (d?.robot?.state === "open" || d?.robot?.state === "vacuum" || d?.robot?.state === "shock" || d?.robot?.state === "hatchBeam") {
+      return "Hatch open. The Fool is in the platen.";
+    }
+    if (d?.robot?.state === "stomp") return "Ankles after the stamp.";
+    if (d) return "The Galley. Palms, or ankles after the stamp.";
+    return s.flight === "allrange" ? "Dualis in the Galley. Hit the quads." : "Crater road. Dualis at the end.";
   }
   return "";
 }
@@ -276,5 +298,16 @@ function spawn(
     lead: extra?.lead,
     life: extra?.life,
     setPiece: extra?.setPiece,
+    robot: extra?.setPiece
+      ? kind === "mech"
+        ? s.missionId === "ice"
+          ? bootKite()
+          : bootScale()
+        : kind === "mothership" && s.missionId === "sorts"
+          ? bootUnbound()
+          : kind === "dualis" && s.missionId === "press"
+            ? bootGalley()
+            : undefined
+      : undefined,
   });
 }

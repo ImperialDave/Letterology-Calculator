@@ -2,7 +2,7 @@
 
 import { emptyPose, type JointDef, type PartDef, type RigPose } from "./rig";
 
-export type RobotId = "scale" | "unbound" | "kite" | "dualis";
+export type RobotId = "scale" | "unbound" | "kite" | "dualis" | "galley";
 
 export type MoveKind = "stand" | "walk" | "strafe" | "hover" | "orbit" | "fallen" | "lunge" | "topple";
 
@@ -15,7 +15,12 @@ export type AttackKind =
   | { kind: "grab"; arm: "L" | "R" }
   | { kind: "clap" }
   | { kind: "dump"; n: number }
-  | { kind: "bay"; side: "L" | "R" };
+  | { kind: "bay"; side: "L" | "R" }
+  | { kind: "punch"; arm: "L" | "R" }
+  | { kind: "shock"; radius: number }
+  | { kind: "vacuum"; range: number }
+  | { kind: "tailBeam"; from: string }
+  | { kind: "handsFree" };
 
 export interface BrainCtx {
   t: number;
@@ -38,12 +43,23 @@ export interface RobotState {
 
 export interface RobotDef {
   id: RobotId;
+  name: string;
   joints: JointDef[];
   parts: PartDef[];
   states: Record<string, RobotState>;
   start: string;
   walkSpeed: number;
   height: number;
+  hoverY?: number;
+}
+
+export interface RobotBeam {
+  x: number;
+  y: number;
+  z: number;
+  tx: number;
+  ty: number;
+  tz: number;
 }
 
 export interface RobotLive {
@@ -57,6 +73,8 @@ export interface RobotLive {
   phase: number;
   glow: string[];
   strike: boolean;
+  hide: string[];
+  beam: RobotBeam | null;
 }
 
 export function bootRobot(def: RobotDef): RobotLive {
@@ -72,8 +90,10 @@ export function bootRobot(def: RobotDef): RobotLive {
     pose: emptyPose(def.joints),
     yaw: 0,
     phase: 0,
-    glow: st.telegraph > 0 ? st.vulnerable.slice() : st.vulnerable.slice(),
+    glow: st.vulnerable.slice(),
     strike: st.telegraph <= 0,
+    hide: [],
+    beam: null,
   };
 }
 
@@ -84,6 +104,8 @@ export function enterState(live: RobotLive, def: RobotDef, id: string) {
   live.hold = st.hold;
   live.glow = st.vulnerable.slice();
   live.strike = st.telegraph <= 0;
+  live.hide = [];
+  live.beam = null;
 }
 
 export function tickBrain(live: RobotLive, def: RobotDef, ctx: BrainCtx, dt: number): { radio?: { who: string; text: string }; attack?: AttackKind } {

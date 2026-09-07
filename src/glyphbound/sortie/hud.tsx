@@ -2,8 +2,8 @@ import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { aimScreen } from "./cam";
 import type { SortieState } from "./sim";
 import { CHARGE_LOCK, HULL_MAX, INNER_R, OUTER_R, TGT_FAR, WARN_FAR, markPx } from "./sim";
-import { robotOf, scaleWorld } from "./robots";
-import { partAlive } from "./brain";
+import { robotOf, robotWorld } from "./robots";
+import { killPartsHp, partAlive } from "./brain";
 import { analogFromDelta, isTap, TAP_PX, TAP_S } from "./stick";
 import { kitOf, romanRank } from "./kits";
 import { missionById, objectiveLine } from "./missions";
@@ -109,6 +109,7 @@ export function SortieHud({
         </div>
       </div>
       {s.radio && <RadioCall who={s.radio.who} text={s.radio.text} />}
+      <BossPlate s={s} />
       <Reticle s={s} />
       {s.flight === "allrange" && <Radar s={s} />}
       {(s.mode === "win" || s.mode === "dead" || s.mode === "pause") && (
@@ -293,7 +294,7 @@ function TargetBoxes({ s }: { s: SortieState }) {
     if (!e.alive) continue;
     if (e.robot) {
       const def = robotOf(e.robot.id);
-      const world = scaleWorld(e);
+      const world = robotWorld(e);
       if (def) {
         for (const pid of e.robot.glow) {
           if (!partAlive(e.robot, pid)) continue;
@@ -399,6 +400,37 @@ function TargetBoxes({ s }: { s: SortieState }) {
       );
     });
   return <>{marks}</>;
+}
+
+function BossPlate({ s }: { s: SortieState }) {
+  const e = s.enemies.find((n) => n.alive && n.robot && n.setPiece);
+  if (!e?.robot) return null;
+  const def = robotOf(e.robot.id);
+  if (!def) return null;
+  const hp = killPartsHp(def, e.robot);
+  const max = def.parts.filter((p) => p.kill).reduce((n, p) => n + p.hp, 0) || 1;
+  const phase =
+    e.robot.state === "fallen" || e.robot.state === "core"
+      ? "core"
+      : e.robot.state === "split" ||
+          e.robot.state === "list" ||
+          e.robot.state === "unbound" ||
+          e.robot.state === "topple" ||
+          e.robot.state === "open" ||
+          e.robot.state === "vacuum" ||
+          e.robot.state === "shock" ||
+          e.robot.state === "hatchBeam"
+        ? "open"
+        : "live";
+  return (
+    <div className="absolute left-1/2 top-5 w-56 -translate-x-1/2 text-center drop-shadow-[0_2px_8px_#000]">
+      <p className="text-[11px] uppercase tracking-[0.32em] text-[#e8d48a]">{def.name}</p>
+      <div className="mx-auto mt-1 h-1.5 overflow-hidden rounded-sm border border-[#d45a4a]/50">
+        <div className="h-full" style={{ width: `${Math.max(4, (100 * hp) / max)}%`, background: phase === "core" ? "#d45a4a" : "#5ee0c0" }} />
+      </div>
+      <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-[#c9b896]">{phase}</p>
+    </div>
+  );
 }
 
 function Radar({ s }: { s: SortieState }) {

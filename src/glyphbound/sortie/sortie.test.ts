@@ -2197,6 +2197,7 @@ test("Ice Serifs spawn before the bowl goes empty", () => {
   const s = createSortie({ missionId: "ice", biome: "ice" });
   s.invuln = 99;
   for (let i = 0; i < 10 * 60; i++) stepSortie(s, emptyInput(), 1 / 60);
+  assert.ok(s.enemies.some((e) => e.robot?.id === "kite" && e.alive), "no Kite on the pad");
   assert.ok(s.enemies.some((e) => e.kind === "ace" && e.alive), "no Serifs by t=10");
   assert.match(objectiveLine(s), /Serifs/);
 });

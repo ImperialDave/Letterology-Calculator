@@ -93,6 +93,7 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
     return out;
   }, []);
   const extra = useRef<THREE.Group[]>([]);
+  const beams = useRef<THREE.Mesh[]>([]);
   const pool = useRef<THREE.Group[]>([]);
   const shots = useRef<THREE.Mesh[]>([]);
   const rings = useRef<THREE.Mesh[]>([]);
@@ -243,7 +244,15 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
         node.userData.kind = e.kind;
         node.userData.robot = Boolean(e.robot);
       }
-      node.position.set(e.x, e.robot ? 0 : e.y, e.z);
+      const lift =
+        e.robot?.id === "kite"
+          ? e.y - 26
+          : e.robot?.id === "dualis" && e.robot.state === "core"
+            ? e.y - 24
+            : e.robot?.id === "galley" && e.robot.state === "core"
+              ? e.y - 32
+              : 0;
+      node.position.set(e.x, e.robot ? lift : e.y, e.z);
       if (e.robot) {
         node.rotation.order = "YXZ";
         node.rotation.set(0, e.robot.yaw, 0);
@@ -260,6 +269,30 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
       }
       const body = node.children[0];
       if (body && !e.robot) poseLizard(body, s.t + e.t, e.kind, e.hp);
+    }
+
+    const robotBeams = s.enemies.filter((en) => en.alive && en.robot?.beam);
+    while (beams.current.length < robotBeams.length) {
+      const m = new THREE.Mesh(
+        new THREE.BoxGeometry(1, 1, 1),
+        new THREE.MeshBasicMaterial({ color: 0x5ee0c0, transparent: true, opacity: 0.72, depthWrite: false }),
+      );
+      g.add(m);
+      beams.current.push(m);
+    }
+    for (let i = 0; i < beams.current.length; i++) {
+      const m = beams.current[i];
+      const en = robotBeams[i];
+      const beam = en?.robot?.beam;
+      m.visible = Boolean(beam);
+      if (!beam) continue;
+      const dx = beam.tx - beam.x;
+      const dy = beam.ty - beam.y;
+      const dz = beam.tz - beam.z;
+      const len = Math.hypot(dx, dy, dz) || 1;
+      m.position.set(beam.x + dx * 0.5, beam.y + dy * 0.5, beam.z + dz * 0.5);
+      m.scale.set(2.4, 2.4, len);
+      m.lookAt(beam.tx, beam.ty, beam.tz);
     }
 
     while (shots.current.length < s.shots.length) {
