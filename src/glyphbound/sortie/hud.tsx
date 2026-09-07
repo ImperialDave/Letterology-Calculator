@@ -11,14 +11,14 @@ import { crewOf, endCopy } from "./story";
 
 const SORTIE_CONTROLS: { keys: string; does: string }[] = [
   { keys: "A D  ← →", does: "Stick left / right. Bank. On a rail, sit in the window." },
-  { keys: "W S  ↑ ↓", does: "The stick is the tip. W climbs. S dives. The nose holds." },
+  { keys: "W S  ↑ ↓", does: "Flight stick. W / ↑ dives. S / ↓ pulls up." },
   { keys: "Space / click", does: "Tap laser. Hold charge. Release bolt." },
   { keys: "Shift", does: "Boost." },
   { keys: "Ctrl", does: "Brake." },
   { keys: "B", does: "Em-dash. Tap again to pop." },
   { keys: "Q / E", does: "Barrel (eats orbs). One tap." },
-  { keys: "Boost + W", does: "Climb faster. Full-stick pull + boost loops." },
-  { keys: "Brake + W", does: "U-turn (all-range)." },
+  { keys: "Boost + S", does: "Climb faster. Full-stick pull + boost loops." },
+  { keys: "Brake + S", does: "U-turn (all-range)." },
   { keys: "Mouse", does: "Aims the squares. They hold. Click the sky if Escape drops the lock." },
   { keys: "Phone", does: "Left flies. Right drag aims. Tap writes three. Hold still to charge." },
   { keys: "Tab", does: "Break lock." },
@@ -71,13 +71,24 @@ export function SortieHud({
         </p>
       </div>
       <div className="absolute bottom-6 left-6 flex gap-1">
-        {Array.from({ length: HULL_MAX }, (_, i) => (
+        {Array.from({ length: Math.max(HULL_MAX, s.hullMax) }, (_, i) => (
           <span
             key={i}
             className="h-2.5 w-5 rounded-sm border border-[#e8d48a]/50"
             style={{ background: i < s.hull ? "#5ee0c0" : "transparent" }}
           />
         ))}
+        {s.mods.shieldMax > 0 && (
+          <span className="ml-2 flex gap-0.5">
+            {Array.from({ length: s.mods.shieldMax }, (_, i) => (
+              <span
+                key={i}
+                className="h-2.5 w-2.5 rounded-full border border-[#5ee0c0]/70"
+                style={{ background: i < s.shield ? "#5ee0c0" : "transparent" }}
+              />
+            ))}
+          </span>
+        )}
         <span className="ml-2 flex gap-0.5">
           {[0, 1].map((i) => (
             <span

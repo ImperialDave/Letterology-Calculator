@@ -1,4 +1,4 @@
-/** Virtual stick → sim roll/pitch. Screen: +x right, +y down. Sim: +roll left, +pitch pull-up. */
+/** Virtual stick → sim roll/pitch. Screen: +x right, +y down. Sim: +roll left, +pitch pull-up (stick down). */
 
 export const TAP_PX = 14;
 export const TAP_S = 0.22;
@@ -18,5 +18,5 @@ export function analogFromDelta(dx: number, dy: number, radius: number) {
   const s = Math.min(1, (m - 0.14) / 0.86) / m;
   const x = nx * s;
   const y = ny * s;
-  return { roll: -x, pitch: -y, kx: x, ky: y, mag: Math.hypot(x, y) };
+  return { roll: -x, pitch: y, kx: x, ky: y, mag: Math.hypot(x, y) };
 }

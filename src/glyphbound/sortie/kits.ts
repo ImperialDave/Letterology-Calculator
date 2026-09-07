@@ -11,7 +11,11 @@ export type KitId =
   | "proof"
   | "serif"
   | "hairline"
-  | "swash";
+  | "swash"
+  | "caret"
+  | "rule"
+  | "dropcap"
+  | "nib";
 
 export type KitRanks = Partial<Record<KitId, number>>;
 
@@ -107,6 +111,42 @@ export const KITS: KitDef[] = [
     how: "find",
     ranks: ["Somersault writes a fuller loop.", "The loop costs less meter."],
   },
+  {
+    id: "caret",
+    name: "Caret",
+    item: "the mark that says insert here",
+    who: "s",
+    mission: "sorts",
+    how: "find",
+    ranks: ["The stick seats sooner.", "The bank writes a tighter turn."],
+  },
+  {
+    id: "rule",
+    name: "Rule",
+    item: "a line of ink that holds the form",
+    who: "e",
+    mission: "gutter",
+    how: "find",
+    ranks: ["One shield pip. It writes itself back.", "Two pips. The line comes back faster."],
+  },
+  {
+    id: "dropcap",
+    name: "Drop Cap",
+    item: "a letter too large for the drawer",
+    who: "e",
+    mission: "slug",
+    how: "find",
+    ranks: ["One extra hull pip.", "Two extra hull pips."],
+  },
+  {
+    id: "nib",
+    name: "Nib",
+    item: "the point that still writes",
+    who: "c",
+    mission: "press",
+    how: "find",
+    ranks: ["Charge seats sooner.", "A third laser down the director. The beam keeps a little more page."],
+  },
 ];
 
 export const KIT_BY_CLEAR: Record<string, KitId> = {
@@ -134,6 +174,11 @@ export interface KitMods {
   bombR: number;
   startStem: 0 | 1 | 2;
   incomingT: number;
+  turnMul: number;
+  cmdMul: number;
+  shieldMax: number;
+  shieldRegen: number;
+  extraLaser: boolean;
 }
 
 export function isKitId(id: string): id is KitId {
@@ -172,6 +217,11 @@ export function emptyMods(): KitMods {
     bombR: 36,
     startStem: 1,
     incomingT: 0.35,
+    turnMul: 1,
+    cmdMul: 1,
+    shieldMax: 0,
+    shieldRegen: 4.2,
+    extraLaser: false,
   };
 }
 
@@ -218,9 +268,63 @@ export function kitMods(ranks: KitRanks = {}): KitMods {
     m.somersaultT = 0.78;
     m.somersaultCost = 0.12;
   }
-  m.hullAdd = Math.min(3, m.hullAdd);
+  if (r("caret") >= 1) m.cmdMul = 1.45;
+  if (r("caret") >= 2) m.turnMul = 1.4;
+  if (r("rule") >= 1) m.shieldMax = 1;
+  if (r("rule") >= 2) {
+    m.shieldMax = 2;
+    m.shieldRegen = 2.6;
+  }
+  if (r("dropcap") >= 1) m.hullAdd += 1;
+  if (r("dropcap") >= 2) m.hullAdd += 1;
+  if (r("nib") >= 1) m.chargeLock = Math.min(m.chargeLock, 0.52);
+  if (r("nib") >= 2) {
+    m.extraLaser = true;
+    m.laserLifeMul = Math.max(m.laserLifeMul, 1.18);
+  }
+  m.hullAdd = Math.min(5, m.hullAdd);
   m.bombsAdd = Math.min(3, m.bombsAdd);
   return m;
+}
+
+export const KONAMI = [
+  "ArrowUp",
+  "ArrowUp",
+  "ArrowDown",
+  "ArrowDown",
+  "ArrowLeft",
+  "ArrowRight",
+  "ArrowLeft",
+  "ArrowRight",
+  "KeyB",
+  "KeyA",
+] as const;
+
+export function isKonami(codes: string[]) {
+  if (codes.length < KONAMI.length) return false;
+  const tail = codes.slice(-KONAMI.length);
+  return KONAMI.every((c, i) => tail[i] === c);
+}
+
+export function maxedKits(): KitRanks {
+  const out: KitRanks = {};
+  for (const k of KITS) out[k.id] = KIT_MAX;
+  return out;
+}
+
+export const CHEAT_MISSIONS = ["coast", "sorts", "slug", "gutter", "ice", "press"] as const;
+
+export function applySortieCheat<T extends { sortieCleared: string[]; sortieProofs: string[]; sortieForks: string[]; sortieKits: KitRanks }>(
+  data: T,
+): T & { sortieCheat: true } {
+  return {
+    ...data,
+    sortieCheat: true,
+    sortieCleared: [...CHEAT_MISSIONS],
+    sortieProofs: [...CHEAT_MISSIONS],
+    sortieForks: ["coast", "sorts"],
+    sortieKits: maxedKits(),
+  };
 }
 
 export function sanitizeKits(raw: unknown): KitRanks {

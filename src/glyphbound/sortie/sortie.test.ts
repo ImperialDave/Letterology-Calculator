@@ -26,7 +26,7 @@ import { CAMPAIGN, crewOf, endCopy } from "./story";
 import { ENVELOPE_X, ENVELOPE_Y, pathLength } from "./path";
 import { analogFromDelta, BURST_N, isTap } from "./stick";
 import { bindNoSelect } from "./hud";
-import { grantClear } from "./kits";
+import { applySortieCheat, grantClear, isKonami, kitMods, maxedKits } from "./kits";
 import { SortieKeys } from "./input";
 import { aimOff, aimScreen, inBox, unproject } from "./cam";
 import { BARREL_T, CHARGE_LOCK, CHARGE_SEEK, GALLERY_LEAD, INNER_R, KEEP_R, LASER_LIFE, MARK_PX_MAX, MARK_PX_MIN, MARK_REF_H, OUTER_R, SOMERSAULT_T, TGT_FAR, TGT_NEAR, WARN_FAR, createSortie, emptyInput, markHalf, markInSquares, markPx, sightParallax, stepSortie } from "./sim";
@@ -139,15 +139,15 @@ test("scene Euler pitches the tip the way the hull flies", () => {
   assert.ok(down.y < -0.4, `dive should drop the tip, y ${down.y}`);
 });
 
-test("stick left is roll left (screen left), stick up is pull-up", () => {
+test("stick left is roll left (screen left), stick down is pull-up", () => {
   const left = analogFromDelta(-40, 0, 64);
   const right = analogFromDelta(40, 0, 64);
   const up = analogFromDelta(0, -40, 64);
   const down = analogFromDelta(0, 40, 64);
   assert.ok(left.roll > 0.4, `left roll ${left.roll}`);
   assert.ok(right.roll < -0.4, `right roll ${right.roll}`);
-  assert.ok(up.pitch > 0.4, `up pitch ${up.pitch}`);
-  assert.ok(down.pitch < -0.4, `down pitch ${down.pitch}`);
+  assert.ok(up.pitch < -0.4, `up should dive ${up.pitch}`);
+  assert.ok(down.pitch > 0.4, `down should pull up ${down.pitch}`);
 });
 
 test("pad long-press binds a canceling touchstart", () => {
@@ -2279,4 +2279,80 @@ test("new landmark kinds have a through-hole and a blocked wall", () => {
   assert.ok(!inHole(0, 8, 0, wreck, 0));
   const ice = sample("iceberg", { pay: "tunnel", h: 24 });
   assert.ok(inHole(0, 12, 0, ice, 0), "iceberg cave");
+});
+
+test("Konami seats every ledger and kit", () => {
+  assert.equal(isKonami(["ArrowUp"]), false);
+  assert.equal(
+    isKonami(["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "KeyB", "KeyA"]),
+    true,
+  );
+  const next = applySortieCheat({
+    sortieCleared: [],
+    sortieProofs: [],
+    sortieForks: [],
+    sortieKits: {},
+  });
+  assert.equal(next.sortieCheat, true);
+  assert.ok(next.sortieCleared.includes("press"));
+  assert.ok(next.sortieCleared.includes("ice"));
+  assert.ok(unlockedIds(next.sortieCleared, next.sortieProofs, next.sortieForks).has("ice"));
+  const kits = maxedKits();
+  assert.equal(kits.nib, 2);
+  assert.equal(kits.caret, 2);
+  assert.equal(kits.rule, 2);
+  assert.equal(kits.dropcap, 2);
+  const mods = kitMods(kits);
+  assert.ok(mods.hullAdd >= 2);
+  assert.equal(mods.shieldMax, 2);
+  assert.equal(mods.extraLaser, true);
+  assert.ok(mods.turnMul > 1);
+});
+
+test("Rule shield spends before hull", () => {
+  const s = createSortie({ kits: { rule: 2 } });
+  s.invuln = 0;
+  assert.equal(s.shield, 2);
+  const hull = s.hull;
+  stepSortie(s, emptyInput(), 1 / 60);
+  s.invuln = 0;
+  const { hurt: _h } = { hurt: null };
+  void _h;
+  s.invuln = 0;
+  s.barrel = 0;
+  s.somersault = 0;
+  s.mode = "play";
+  s.t = 2;
+  const before = s.shield;
+  s.shots.push({
+    id: 900,
+    kind: "orb",
+    friendly: false,
+    x: s.x,
+    y: s.y,
+    z: s.z,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    life: 1,
+    lockId: -1,
+  });
+  stepSortie(s, emptyInput(), 1 / 60);
+  assert.ok(s.shield < before || s.hull === hull, `shield ${s.shield} hull ${s.hull} was ${hull}`);
+});
+
+test("keyboard W dives, S pulls up", () => {
+  const k = new SortieKeys();
+  let w = emptyInput();
+  for (let i = 0; i < 12; i++) {
+    k.setKeys(["KeyW"]);
+    w = k.poll(0.016);
+  }
+  assert.ok(w.pitch < -0.4, `W pitch ${w.pitch}`);
+  let s = emptyInput();
+  for (let i = 0; i < 12; i++) {
+    k.setKeys(["KeyS"]);
+    s = k.poll(0.016);
+  }
+  assert.ok(s.pitch > 0.4, `S pitch ${s.pitch}`);
 });

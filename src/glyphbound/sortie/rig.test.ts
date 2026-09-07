@@ -8,10 +8,21 @@ import { partAlive } from "./brain";
 test("Scale FK puts the pack behind the pelvis and feet below", () => {
   const live = bootScale();
   const world = fk(SCALE.joints, live.pose, { x: 0, y: 0, z: 0, yaw: 0 });
-  assert.ok(world.pelvis.y > 20, `pelvis ${world.pelvis.y}`);
+  assert.ok(Math.abs(world.pelvis.y) < 2, `pelvis ${world.pelvis.y}`);
   assert.ok(world.footL.y < world.pelvis.y - 10, `foot ${world.footL.y}`);
   assert.ok(world.pack.z > 0, `pack behind at yaw 0, z ${world.pack.z}`);
   assert.ok(world.head.z < 0, `head forward ${world.head.z}`);
+  assert.ok(Math.abs(world.handL.x) < 14, `hand x ${world.handL.x}`);
+});
+
+test("Scale walk pose keeps the foot mark near the stem", () => {
+  const live = bootScale();
+  const rest = robotWorld({ x: 0, z: 0, robot: live });
+  poseScaleWalk(live, 1);
+  const walk = robotWorld({ x: 0, z: 0, robot: live });
+  const d = Math.hypot((walk.footL?.x ?? 0) - (rest.footL?.x ?? 0), (walk.footL?.y ?? 0) - (rest.footL?.y ?? 0), (walk.footL?.z ?? 0) - (rest.footL?.z ?? 0));
+  assert.ok(d > 0.2, `foot should step ${d}`);
+  assert.ok(d < 18, `foot flew off the mesh ${d}`);
 });
 
 test("Scale walks toward the C-wing", () => {

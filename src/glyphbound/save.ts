@@ -51,6 +51,7 @@ export const defaultSave = (): SaveData => ({
   sortieProofs: [],
   sortieForks: [],
   sortieKits: {},
+  sortieCheat: false,
   arcadeBest: 0,
 });
 
@@ -178,6 +179,7 @@ function parseSave(raw: string | null): SaveData {
             )
           : {},
       arcadeBest: Math.max(0, parsed.arcadeBest ?? 0),
+      sortieCheat: Boolean(parsed.sortieCheat),
       maxShield: Math.max(3, parsed.maxShield ?? 3),
       talked: parsed.talked ?? [],
       visited: parsed.visited ?? [],

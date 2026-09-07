@@ -161,6 +161,8 @@ export interface SortieState {
   speed: number;
   hull: number;
   hullMax: number;
+  shield: number;
+  shieldT: number;
   invuln: number;
   barrel: number;
   barrelDir: number;
@@ -296,7 +298,7 @@ function follow(cur: number, want: number, k: number, dt: number) {
 
 function flyCraft(s: SortieState, input: SortieInput, dt: number) {
   const onRail = s.flight === "corridor" && s.shift <= 0 && s.path.length >= 2;
-  const cmdK = onRail ? CMD_K : CMD_K_RANGE;
+  const cmdK = (onRail ? CMD_K : CMD_K_RANGE) * s.mods.cmdMul;
   s.cmdRoll = follow(s.cmdRoll, input.roll, cmdK, dt);
   s.cmdPitch = follow(s.cmdPitch, input.pitch, cmdK, dt);
 
@@ -382,7 +384,7 @@ function flyCraft(s: SortieState, input: SortieInput, dt: number) {
     return;
   }
 
-  const turnMul = s.speed > CRUISE ? 0.85 : s.speed < CRUISE ? 1.25 : 1;
+  const turnMul = (s.speed > CRUISE ? 0.85 : s.speed < CRUISE ? 1.25 : 1) * s.mods.turnMul;
   s.roll = follow(s.roll, s.cmdRoll * BANK, BANK_K, dt);
   s.yaw += s.roll * YAW_FROM_BANK * turnMul * dt;
   s.yaw += input.rudder * 1.35 * dt;
@@ -467,6 +469,8 @@ export function createSortie(opts?: {
     speed: CRUISE,
     hull: HULL_MAX + mods.hullAdd,
     hullMax: HULL_MAX + mods.hullAdd,
+    shield: mods.shieldMax,
+    shieldT: 0,
     invuln: 1.2,
     barrel: 0,
     barrelDir: 1,
@@ -683,6 +687,7 @@ function seatKit(s: SortieState, id: KitId) {
   const name = def?.name ?? id;
   s.hullMax += after.hullAdd - before.hullAdd;
   s.hull += after.hullAdd - before.hullAdd;
+  if (after.shieldMax > s.shield) s.shield = after.shieldMax;
   s.bombs += after.bombsAdd - before.bombsAdd;
   if (after.startStem > s.stem) s.stem = after.startStem;
   s.mods = after;
@@ -710,6 +715,15 @@ function bumpFx(s: SortieState, x: number, y: number, z: number, kill: boolean, 
 
 function hurt(s: SortieState, n: number, snap = false, why: EndWhy = "kill") {
   if (s.invuln > 0 || s.barrel > 0 || s.somersault > 0 || s.mode !== "play") return;
+  if (s.shield > 0) {
+    s.shield -= 1;
+    s.invuln = s.mods.invuln;
+    s.hitStop = 0.04;
+    s.trauma = Math.min(1, s.trauma + 0.28);
+    s.shieldT = 0;
+    s.radio = { who: "e", text: "The rule took that.", until: s.t + 1.8 };
+    return;
+  }
   s.hull -= n;
   s.invuln = s.mods.invuln;
   s.hitStop = 0.05;
@@ -1568,6 +1582,16 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
 
   s.t += dt;
   s.invuln = Math.max(0, s.invuln - dt);
+  if (s.mods.shieldMax > 0) {
+    if (s.invuln > 0) s.shieldT = 0;
+    else {
+      s.shieldT += dt;
+      if (s.shieldT >= s.mods.shieldRegen && s.shield < s.mods.shieldMax) {
+        s.shield += 1;
+        s.shieldT = 0;
+      }
+    }
+  }
   s.cooldown = Math.max(0, s.cooldown - dt);
   s.splash = Math.max(0, s.splash - dt);
   s.warned = Math.max(0, s.warned - dt);
@@ -1770,6 +1794,7 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
       const rz = mz - r.z * 2.2;
       fireShot(s, "laser", true, lx, my, lz, dirTo({ x: lx, y: my, z: lz }, aim), LASER_SPD);
       fireShot(s, "laser", true, rx, my, rz, dirTo({ x: rx, y: my, z: rz }, aim), LASER_SPD);
+      if (s.mods.extraLaser) fireShot(s, "laser", true, mx, my, mz, dirTo({ x: mx, y: my, z: mz }, aim), LASER_SPD);
     }
     s.shots.filter((q) => q.kind === "laser" && q.life > LASER_LIFE * 0.9).forEach((q) => {
       q.life = dmgLife;

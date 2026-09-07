@@ -244,14 +244,7 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
         node.userData.kind = e.kind;
         node.userData.robot = Boolean(e.robot);
       }
-      const lift =
-        e.robot?.id === "kite"
-          ? e.y - 26
-          : e.robot?.id === "dualis" && e.robot.state === "core"
-            ? e.y - 24
-            : e.robot?.id === "galley" && e.robot.state === "core"
-              ? e.y - 32
-              : 0;
+      const lift = e.robot?.id === "kite" || e.robot?.state === "core" ? e.y : 0;
       node.position.set(e.x, e.robot ? lift : e.y, e.z);
       if (e.robot) {
         node.rotation.order = "YXZ";

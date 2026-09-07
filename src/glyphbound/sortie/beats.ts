@@ -156,6 +156,7 @@ export const BEATS: Record<string, Beat[]> = {
     { id: 24, when: "arena", t: 0.9, kind: "spawn", ships: [{ kind: "fighter", dx: -50, dy: 8, dz: 40, armed: true }, { kind: "fighter", dx: 50, dy: 8, dz: 40, armed: true }, { kind: "cork", dx: 0, dy: 16, dz: -90 }] },
     { id: 10, when: "arena", t: 0.7, kind: "radio", who: "s", text: "Bowl nest. That’s how he ships the rest. Cut the bomber." },
     { id: 101, when: "rail", t: 0.3, kind: "pickup", loot: { kind: "kit", kit: "case", dx: -16, dy: 8, dz: -28 } },
+    { id: 103, when: "rail", t: 0.48, kind: "pickup", loot: { kind: "kit", kit: "dropcap", dx: 14, dy: 4, dz: -32 } },
   ],
   gutter: [
     { id: 1, when: "rail", t: 0.08, kind: "radio", who: "e", text: "Stay in the ink. The lights above bite. I can hear the Press." },
@@ -173,6 +174,7 @@ export const BEATS: Record<string, Beat[]> = {
     { id: 24, when: "arena", t: 1.1, kind: "spawn", ships: [{ kind: "bomber", dx: 40, dy: 18, dz: -80 }, { kind: "fighter", dx: -40, dy: 8, dz: 50, armed: true }] },
     { id: 9, when: "arena", t: 0.7, kind: "radio", who: "e", text: "Belly first. Then the core. Dualis is listening." },
     { id: 101, when: "rail", t: 0.4, kind: "pickup", loot: { kind: "kit", kit: "inkwell", dx: 16, dy: -6, dz: -24 } },
+    { id: 103, when: "rail", t: 0.55, kind: "pickup", loot: { kind: "kit", kit: "rule", dx: -16, dy: 8, dz: -28 } },
   ],
   ice: [
     { id: 1, when: "arena", t: 1.2, kind: "radio", who: "b", text: "Hold the green pad. That ground is still a letter." },
@@ -203,6 +205,7 @@ export const BEATS: Record<string, Beat[]> = {
     { id: 7, when: "arena", t: 0.8, kind: "radio", who: "s", text: "The Galley. Dualis grew a tray. Palms first — or ankles after the stamp." },
     { id: 8, when: "arena", t: 1.2, kind: "radio", who: "!", text: "Submit the remainder. I will round you down." },
     { id: 101, when: "rail", t: 0.4, kind: "pickup", loot: { kind: "kit", kit: "proof", dx: 0, dy: 12, dz: -36 } },
+    { id: 103, when: "rail", t: 0.62, kind: "pickup", loot: { kind: "kit", kit: "nib", dx: -12, dy: 8, dz: -40 } },
   ],
   sorts: [
     { id: 1, when: "rail", t: 0.03, kind: "radio", who: "s", text: "His drawers. Small sorts die to a tap." },
@@ -223,6 +226,7 @@ export const BEATS: Record<string, Beat[]> = {
     { id: 18, when: "arena", t: 0.7, kind: "radio", who: "s", text: "Unbound. The chase walked off the stone. Fly the hole. Cut a stick." },
     { id: 101, when: "rail", t: 0.21, kind: "pickup", loot: { kind: "kit", kit: "quoin", dx: 14, dy: 8, dz: -30 } },
     { id: 102, when: "rail", t: 0.63, kind: "pickup", loot: { kind: "kit", kit: "hairline", dx: 18, dy: 10, dz: -80 } },
+    { id: 103, when: "rail", t: 0.42, kind: "pickup", loot: { kind: "kit", kit: "caret", dx: -14, dy: 6, dz: -36 } },
   ],
 };
 

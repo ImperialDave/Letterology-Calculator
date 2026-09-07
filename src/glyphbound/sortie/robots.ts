@@ -47,22 +47,22 @@ function limb(name: string) {
 }
 
 const SCALE_JOINTS: JointDef[] = [
-  { id: "pelvis", parent: null, bind: { x: 0, y: 28, z: 0 } },
+  { id: "pelvis", parent: null, bind: { x: 0, y: 0, z: 0 } },
   { id: "spine", parent: "pelvis", bind: { x: 0, y: 12, z: 0 } },
   { id: "head", parent: "spine", bind: { x: 0, y: 10, z: 4 } },
   { id: "pack", parent: "spine", bind: { x: 0, y: 2, z: -6 } },
   { id: "hipL", parent: "pelvis", bind: { x: -6, y: -2, z: 0 } },
-  { id: "kneeL", parent: "hipL", bind: { x: 0, y: -12, z: 0 } },
-  { id: "footL", parent: "kneeL", bind: { x: 0, y: -12, z: 2 } },
+  { id: "kneeL", parent: "hipL", bind: { x: 0, y: -2, z: 0 } },
+  { id: "footL", parent: "kneeL", bind: { x: 0, y: -12, z: 0 } },
   { id: "hipR", parent: "pelvis", bind: { x: 6, y: -2, z: 0 } },
-  { id: "kneeR", parent: "hipR", bind: { x: 0, y: -12, z: 0 } },
-  { id: "footR", parent: "kneeR", bind: { x: 0, y: -12, z: 2 } },
+  { id: "kneeR", parent: "hipR", bind: { x: 0, y: -2, z: 0 } },
+  { id: "footR", parent: "kneeR", bind: { x: 0, y: -12, z: 0 } },
   { id: "shL", parent: "spine", bind: { x: -10, y: 6, z: 0 } },
-  { id: "elL", parent: "shL", bind: { x: -8, y: -4, z: 0 } },
-  { id: "handL", parent: "elL", bind: { x: -8, y: 0, z: 4 } },
+  { id: "elL", parent: "shL", bind: { x: 0, y: -4, z: 0 } },
+  { id: "handL", parent: "elL", bind: { x: 0, y: 0, z: 8 } },
   { id: "shR", parent: "spine", bind: { x: 10, y: 6, z: 0 } },
-  { id: "elR", parent: "shR", bind: { x: 8, y: -4, z: 0 } },
-  { id: "handR", parent: "elR", bind: { x: 8, y: 0, z: 4 } },
+  { id: "elR", parent: "shR", bind: { x: 0, y: -4, z: 0 } },
+  { id: "handR", parent: "elR", bind: { x: 0, y: 0, z: 8 } },
 ];
 
 const SCALE_PARTS: PartDef[] = [
@@ -160,7 +160,7 @@ export const SCALE: RobotDef = {
 };
 
 const UNBOUND_JOINTS: JointDef[] = [
-  { id: "pelvis", parent: null, bind: { x: 0, y: 22, z: 0 } },
+  { id: "pelvis", parent: null, bind: { x: 0, y: 0, z: 0 } },
   { id: "spine", parent: "pelvis", bind: { x: 0, y: 16, z: 0 } },
   { id: "head", parent: "spine", bind: { x: 0, y: 8, z: 5 } },
   { id: "case", parent: "spine", bind: { x: 0, y: 0, z: -7 } },
@@ -270,7 +270,7 @@ export const UNBOUND: RobotDef = {
 };
 
 const KITE_JOINTS: JointDef[] = [
-  { id: "keel", parent: null, bind: { x: 0, y: 26, z: 0 } },
+  { id: "keel", parent: null, bind: { x: 0, y: 0, z: 0 } },
   { id: "spine", parent: "keel", bind: { x: 0, y: 8, z: 0 } },
   { id: "head", parent: "spine", bind: { x: 0, y: 4, z: 8 } },
   { id: "rule", parent: "spine", bind: { x: 0, y: 2, z: 12 } },
@@ -538,14 +538,7 @@ export function robotWorld(e: { x: number; y?: number; z: number; robot?: RobotL
   const def = robotOf(e.robot.id);
   if (!def) return {};
   const y = e.y ?? 0;
-  const lift =
-    e.robot.id === "kite"
-      ? y - 26
-      : e.robot.id === "dualis" && e.robot.state === "core"
-        ? y - 24
-        : e.robot.id === "galley" && e.robot.state === "core"
-          ? y - 32
-          : 0;
+  const lift = e.robot.id === "kite" || e.robot.state === "core" ? y : 0;
   return fk(def.joints, e.robot.pose, { x: e.x, y: lift, z: e.z, yaw: e.robot.yaw });
 }
 

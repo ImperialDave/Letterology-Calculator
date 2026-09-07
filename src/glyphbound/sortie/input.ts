@@ -125,8 +125,8 @@ export class SortieKeys {
     let keyWantP = 0;
     if (has("KeyA") || has("ArrowLeft") || pad.left) keyWantR += keyScale;
     if (has("KeyD") || has("ArrowRight") || pad.right) keyWantR -= keyScale;
-    if (has("KeyW") || has("ArrowUp") || pad.up) keyWantP += keyScale;
-    if (has("KeyS") || has("ArrowDown") || pad.down) keyWantP -= keyScale;
+    if (has("KeyW") || has("ArrowUp") || pad.up) keyWantP -= keyScale;
+    if (has("KeyS") || has("ArrowDown") || pad.down) keyWantP += keyScale;
     const ease = (cur: number, want: number) => {
       const toward = Math.abs(want) > Math.abs(cur) + 0.02;
       const k = toward ? 8 : 7;
@@ -141,7 +141,7 @@ export class SortieKeys {
       return Math.sign(v) * Math.pow(u, 1.4) * (keyScale > 0.01 ? keyScale : 1);
     };
     let roll = this.stick.x + shape(this.keyRoll) + pad.ax;
-    let pitch = this.stick.y + shape(this.keyPitch) - pad.ay;
+    let pitch = this.stick.y + shape(this.keyPitch) + pad.ay;
     roll = Math.max(-1, Math.min(1, roll));
     pitch = Math.max(-1, Math.min(1, pitch));
 

@@ -8,7 +8,7 @@ import { MISSIONS, missionById, type MissionDef } from "@/glyphbound/sortie/miss
 import { RegisterMap } from "@/glyphbound/sortie/map";
 import { createSortie, stepSortie, type SortieState } from "@/glyphbound/sortie/sim";
 import { BURST_CAP, BURST_N } from "@/glyphbound/sortie/stick";
-import { grantClear, sanitizeKits, type KitRanks } from "@/glyphbound/sortie/kits";
+import { applySortieCheat, grantClear, isKonami, sanitizeKits, type KitRanks } from "@/glyphbound/sortie/kits";
 import { loadSave, writeSave } from "@/glyphbound/save";
 import { SKY_CORRIDOR } from "@/glyphbound/sortie/path";
 import { CREW_LINE, crewOf } from "@/glyphbound/sortie/story";
@@ -54,9 +54,12 @@ export function StarWords({
   const [proofs, setProofs] = useState<string[]>([]);
   const [forks, setForks] = useState<string[]>([]);
   const [kits, setKits] = useState<KitRanks>({});
+  const [cheatLine, setCheatLine] = useState("");
   const lastMode = useRef(sim.current.mode);
   const lastHard = useRef(false);
   const lastIncoming = useRef(0);
+  const registerOpen = useRef(true);
+  const konami = useRef<string[]>([]);
 
   const bootMission = (m: MissionDef) => {
     const data = loadSave();
@@ -73,6 +76,7 @@ export function StarWords({
     next.medal = m.medal;
     sim.current = next;
     missionRef.current = m;
+    registerOpen.current = false;
     lastMode.current = "play";
     setSnap(next);
     setPicked(m);
@@ -86,6 +90,22 @@ export function StarWords({
     setForks(data.sortieForks ?? []);
     setKits(sanitizeKits(data.sortieKits));
     const off = keys.current.attach();
+    const onKey = (e: KeyboardEvent) => {
+      if (!registerOpen.current && sim.current.mode !== "pause") return;
+      konami.current = [...konami.current, e.code].slice(-10);
+      if (!isKonami(konami.current)) return;
+      konami.current = [];
+      const data = loadSave();
+      if (data.sortieCheat) return;
+      const next = applySortieCheat(data);
+      writeSave(next);
+      setCleared(next.sortieCleared);
+      setProofs(next.sortieProofs);
+      setForks(next.sortieForks);
+      setKits(sanitizeKits(next.sortieKits));
+      setCheatLine("Gale: the Register was already written.");
+    };
+    window.addEventListener("keydown", onKey);
     window.__controlsTest = {
       getYaw: () => sim.current.yaw,
       getRoll: () => sim.current.roll,
@@ -97,6 +117,7 @@ export function StarWords({
       setKeys: (codes) => keys.current.setKeys(codes),
     };
     return () => {
+      window.removeEventListener("keydown", onKey);
       off();
       delete window.__controlsTest;
     };
@@ -187,6 +208,7 @@ export function StarWords({
   const toRegister = () => {
     if (typeof document !== "undefined" && document.pointerLockElement) document.exitPointerLock();
     missionRef.current = null;
+    registerOpen.current = true;
     setReady(false);
     setPicked(null);
   };
@@ -207,15 +229,22 @@ export function StarWords({
       }}
     >
       {!picked ? (
-        <RegisterMap
-          cleared={cleared}
-          proofs={proofs}
-          forks={forks}
-          kits={kits}
-          onPick={bootMission}
-          onLeave={leave}
-          leaveLabel={leaveLabel}
-        />
+        <>
+          <RegisterMap
+            cleared={cleared}
+            proofs={proofs}
+            forks={forks}
+            kits={kits}
+            onPick={bootMission}
+            onLeave={leave}
+            leaveLabel={leaveLabel}
+          />
+          {cheatLine ? (
+            <p className="pointer-events-none absolute bottom-8 left-0 right-0 z-40 text-center text-sm text-[#7fd0ff]">
+              {cheatLine}
+            </p>
+          ) : null}
+        </>
       ) : !ready ? (
         <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-[#07080c] text-[#f4f0e4]">
           <button
@@ -258,10 +287,11 @@ export function StarWords({
           </div>
           <p className="mt-6 text-sm text-[#5ee0c0]">Tap to take off</p>
           <p className="mt-8 max-w-md px-6 text-center text-[12px] leading-relaxed text-[#c8c4b8] [@media(hover:none)]:hidden">
-            <span className="text-[#f4f0e4]">A D</span> bank · <span className="text-[#f4f0e4]">W</span> pull-up ·{" "}
+            <span className="text-[#f4f0e4]">A D</span> bank · <span className="text-[#f4f0e4]">S</span> pull-up ·{" "}
+            <span className="text-[#f4f0e4]">W</span> dive ·{" "}
             <span className="text-[#f4f0e4]">Space</span> tap laser, hold charge · <span className="text-[#f4f0e4]">Q E</span>{" "}
-            barrel · <span className="text-[#f4f0e4]">Shift</span>+<span className="text-[#f4f0e4]">W</span> loop ·{" "}
-            <span className="text-[#f4f0e4]">Ctrl</span>+<span className="text-[#f4f0e4]">W</span> U-turn · click locks
+            barrel · <span className="text-[#f4f0e4]">Shift</span>+<span className="text-[#f4f0e4]">S</span> loop ·{" "}
+            <span className="text-[#f4f0e4]">Ctrl</span>+<span className="text-[#f4f0e4]">S</span> U-turn · click locks
             the mouse as the stick
           </p>
           <p className="mt-8 hidden max-w-md px-6 text-center text-[12px] leading-relaxed text-[#c8c4b8] [@media(hover:none)]:block">

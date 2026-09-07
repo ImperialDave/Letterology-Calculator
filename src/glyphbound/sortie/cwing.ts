@@ -127,6 +127,30 @@ export function makeCWing() {
   );
   chargeBall.visible = false;
 
+  const gunC = add(body, new THREE.BoxGeometry(1.15, 0.1, 0.1), gunMat, 1.28, -0.18, 0, { name: "gunC" });
+  gunC.userData.home = { x: 1.28, y: -0.18, z: 0 };
+  gunC.visible = false;
+  const muzzleC = add(body, muzzleGeo.clone(), muzzleMat.clone(), 1.9, -0.18, 0, { rz: -Math.PI / 2, name: "muzzleC", cast: false });
+  muzzleC.visible = false;
+
+  const canards = new THREE.Group();
+  canards.name = "canards";
+  canards.visible = false;
+  body.add(canards);
+  add(canards, new THREE.BoxGeometry(0.55, 0.06, 0.9), brass, 0.55, 0.22, 0.55);
+  add(canards, new THREE.BoxGeometry(0.55, 0.06, 0.9), brass, 0.55, 0.22, -0.55);
+
+  const shield = add(
+    body,
+    new THREE.TorusGeometry(1.85, 0.06, 6, 16),
+    new THREE.MeshBasicMaterial({ color: 0x5ee0c0, transparent: true, opacity: 0.45 }),
+    0.15,
+    0.02,
+    0,
+    { ry: Math.PI / 2, name: "shield", cast: false },
+  );
+  shield.visible = false;
+
   const engines = new THREE.Group();
   engines.name = "engine";
   engines.position.set(-1.62, 0, 0);
@@ -177,6 +201,10 @@ export function makeCWing() {
   g.userData.canopy = canopy;
   g.userData.chargeBall = chargeBall;
   g.userData.sparkle = sparkle;
+  g.userData.gunC = gunC;
+  g.userData.muzzleC = muzzleC;
+  g.userData.canards = canards;
+  g.userData.shield = shield;
   return g;
 }
 
@@ -236,6 +264,37 @@ export function poseCWing(g: THREE.Group, s: SortieState) {
     const mat = gun.material as THREE.MeshLambertMaterial;
     mat.emissiveIntensity = glow;
     gun.scale.set(1 + s.flash * 0.45, 1 + s.flash * 1.5, 1 + s.flash * 0.7);
+  }
+  const gunC = g.userData.gunC as THREE.Mesh | undefined;
+  const muzzleC = g.userData.muzzleC as THREE.Mesh | undefined;
+  if (gunC) {
+    gunC.visible = s.mods.extraLaser;
+    if (gunC.visible) {
+      const home = gunC.userData.home as { x: number; y: number; z: number } | undefined;
+      if (home) gunC.position.set(home.x - kick, home.y, home.z);
+      gunC.scale.set(1 + s.flash * 0.45, 1 + s.flash * 1.5, 1 + s.flash * 0.7);
+    }
+  }
+  if (muzzleC) {
+    muzzleC.visible = s.mods.extraLaser && s.flash > 0.08;
+    if (muzzleC.visible) {
+      (muzzleC.material as THREE.MeshBasicMaterial).opacity = Math.min(1, s.flash * 1.4);
+      muzzleC.scale.setScalar(0.75 + s.flash * 1.7);
+    }
+  }
+  const canards = g.userData.canards as THREE.Group | undefined;
+  if (canards) {
+    canards.visible = (s.kitRanks.caret ?? 0) >= 1;
+    canards.rotation.z = s.pitch * 0.55;
+  }
+  const shield = g.userData.shield as THREE.Mesh | undefined;
+  if (shield) {
+    shield.visible = s.shield > 0;
+    if (shield.visible) {
+      const pulse = 0.92 + Math.sin(s.t * 6) * 0.08;
+      shield.scale.setScalar(pulse);
+      (shield.material as THREE.MeshBasicMaterial).opacity = 0.28 + s.shield * 0.18;
+    }
   }
   for (const muzzle of [muzzleL, muzzleR]) {
     if (!muzzle) continue;
