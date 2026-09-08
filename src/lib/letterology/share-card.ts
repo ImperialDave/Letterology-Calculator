@@ -280,19 +280,17 @@ export function bondSvg(input: {
 export function brainSvg(input: {
   name: string;
   title: string;
-  walk: string;
-  seats: { name: string; lean: number }[];
+  grade: string;
+  pattern?: string;
+  seats: { name: string; mark: string }[];
 }): string {
   const title = wrap(input.title, 28, 2);
   const name = fit(input.name, 28);
   const seats = input.seats
     .map((seat, i) => {
       const y = 430 + i * 28;
-      const width = Math.max(8, Math.round((seat.lean / 100) * 220));
       return `<text x="80" y="${y}" font-family="${FACE}" font-size="16" fill="${MUTED}">${esc(seat.name)}</text>
-  <rect x="220" y="${y - 14}" width="220" height="8" rx="4" fill="${INK}" fill-opacity="0.08"/>
-  <rect x="220" y="${y - 14}" width="${width}" height="8" rx="4" fill="${WINE}"/>
-  <text x="456" y="${y}" font-family="${FACE}" font-size="16" fill="${INK}">${seat.lean}</text>`;
+  <text x="360" y="${y}" font-family="${FACE}" font-size="18" fill="${INK}">${esc(seat.mark)}</text>`;
     })
     .join("\n  ");
 
@@ -308,7 +306,8 @@ export function brainSvg(input: {
         `<text x="80" y="${286 + i * 48}" font-family="${FACE}" font-size="40" fill="${INK}">${esc(line)}</text>`,
     )
     .join("\n  ")}
-  <text x="80" y="392" font-family="${FACE}" font-size="20" fill="${MUTED}">Letter-lean ${esc(input.walk)} · a piece, not a fate</text>
+  <text x="1040" y="300" text-anchor="middle" font-family="${FACE}" font-size="92" fill="${WINE}">${esc(input.grade)}</text>
+  <text x="80" y="392" font-family="${FACE}" font-size="20" fill="${MUTED}">A+ is a Letter brain · F is led by numbers</text>
   ${seats}
   ${sealMark("C")}
 </svg>`;

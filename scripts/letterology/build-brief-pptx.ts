@@ -6,7 +6,7 @@ import { mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import pptxgen from "pptxgenjs";
-import { BRIEF_FOOTER, briefSlides } from "../../src/lib/letterology/brief.ts";
+import { BRIEF_FOOTER, briefSlides, toRoman } from "../../src/lib/letterology/brief.ts";
 
 const PAPER = "EFE6D6";
 const INK = "1C1712";
@@ -59,10 +59,18 @@ async function main() {
       margin: 0,
       valign: "top",
     });
+    const blocks: string[] = [];
+    if (slide.lede) blocks.push(slide.lede);
+    if (slide.left) blocks.push(`${slide.left.title}. ${slide.left.body}`);
+    if (slide.right) blocks.push(`${slide.right.title}. ${slide.right.body}`);
+    if (slide.path) {
+      for (const mark of slide.path) blocks.push(`${mark.letter}. ${mark.label}. ${mark.line}`);
+    }
+    blocks.push(...slide.paragraphs);
     page.addText(
-      slide.paragraphs.map((text, i) => ({
+      blocks.map((text, i) => ({
         text,
-        options: { breakLine: i < slide.paragraphs.length - 1, paraSpaceAfter: 10 },
+        options: { breakLine: i < blocks.length - 1, paraSpaceAfter: 10 },
       })),
       {
         x: 0.7,
@@ -70,13 +78,13 @@ async function main() {
         w: 11.8,
         h: 4.5,
         fontFace: "Georgia",
-        fontSize: 18,
+        fontSize: slide.layout === "hero" ? 20 : 16,
         color: INK,
         margin: 0,
         valign: "top",
       },
     );
-    page.addText(`${BRIEF_FOOTER}  ·  ${index + 1} / ${slides.length}`, {
+    page.addText(`${BRIEF_FOOTER}  ·  ${toRoman(index + 1)} · ${toRoman(slides.length)}`, {
       x: 0.7,
       y: 6.95,
       w: 11.8,

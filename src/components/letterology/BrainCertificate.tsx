@@ -16,11 +16,10 @@ export function BrainCertificate({ reading }: { reading: BrainReading }) {
       </p>
       <h2 className="mt-5 text-center font-display text-3xl leading-tight text-ink">{reading.name}</h2>
       <p className="mt-2 text-center font-display text-xl text-primary">{reading.title}</p>
+      <p className="mt-2 text-center font-display text-sm text-ink/80">{reading.pattern}</p>
       <p className="mx-auto mt-4 max-w-md text-center text-sm leading-relaxed text-ink/85">{reading.headline}</p>
-      <p className="mt-4 text-center font-display text-sm text-ink">
-        Letter-lean {reading.walk}
-        <span className="text-muted"> · a piece of the portrait, not the person</span>
-      </p>
+      <p className="mt-4 text-center font-display text-3xl text-primary">{reading.grade}</p>
+      <p className="mx-auto mt-2 max-w-md text-center text-sm leading-relaxed text-muted">{reading.gradeCaption}</p>
       <ul className="mt-6 space-y-2">
         {reading.domains.map((row) => (
           <li key={row.id} className="flex items-baseline justify-between gap-3 border-t border-ink/10 pt-2 text-sm">
@@ -28,7 +27,15 @@ export function BrainCertificate({ reading }: { reading: BrainReading }) {
               {row.name}
               <span className="ml-2 text-muted">{row.louderName}</span>
             </span>
-            <span className="font-display text-primary">{row.lean}</span>
+            <span className="font-display text-primary">{row.markName}</span>
+          </li>
+        ))}
+      </ul>
+      <ul className="mt-4 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted">
+        {reading.aspects.map((row) => (
+          <li key={row.id} className="flex justify-between gap-2">
+            <span>{row.name}</span>
+            <span className="font-display text-ink">{row.markName}</span>
           </li>
         ))}
       </ul>

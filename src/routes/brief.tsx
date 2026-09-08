@@ -30,7 +30,7 @@ function BriefPage() {
   const search = Route.useSearch();
   const tongue = useTongue(search.tongue);
   return (
-    <AppShell current="brief">
+    <AppShell current="brief" wide>
       <BriefDeck index={search.s ?? 0} tongue={tongue} />
     </AppShell>
   );

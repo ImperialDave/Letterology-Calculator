@@ -30,8 +30,8 @@ test("door copy follows the voice law", () => {
   assert.match(VOICE.homeHero, /letter/i);
   assert.match(VOICE.footerLine, /luck is willingness|decision is yours/i);
   assert.match(VOICE.countConfessLabel, /regular number/i);
-  scan("brain items", ITEMS.flatMap((item) => [item.prompt, item.letter, item.number]).join("\n"));
-  const portrait = readBrain(Array.from({ length: 25 }, () => 2 as const));
+  scan("brain items", ITEMS.flatMap((item) => [item.prompt, item.plus, item.minus]).join("\n"));
+  const portrait = readBrain(Array.from({ length: 50 }, () => 2 as const));
   if (portrait) scan("brain result", `${portrait.headline} ${portrait.invitation} ${tweetBrain(portrait)}`);
 });
 

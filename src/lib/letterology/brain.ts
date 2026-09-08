@@ -1,7 +1,7 @@
-import { formatWalk, walkOf } from "./count";
-
-export const BRAIN_ITEM_COUNT = 25;
+export const BRAIN_ITEM_COUNT = 50;
 export const BRAIN_SCALE = 4;
+export const TRAIT_PER_ASPECT = 4;
+export const LOOKING_PER_DOMAIN = 2;
 
 export type BrainDomainId = "sight" | "keeping" | "entrance" | "court" | "weather";
 export type BrainAspectId =
@@ -17,15 +17,49 @@ export type BrainAspectId =
   | "storm";
 export type BrainVerdict = "letter" | "circuit" | "number";
 export type BrainChoice = 0 | 1 | 2 | 3 | 4;
+export type BrainItemKind = "trait" | "looking";
+export type BrainMark = "strong" | "clear" | "mixed" | "light" | "quiet";
+export type BrainCombo = "HH" | "HL" | "LH" | "LL";
+
+export const BRAIN_GRADES = [
+  "A+",
+  "A",
+  "A-",
+  "B+",
+  "B",
+  "B-",
+  "C+",
+  "C",
+  "C-",
+  "D+",
+  "D",
+  "D-",
+  "F",
+] as const;
+export type BrainGrade = (typeof BRAIN_GRADES)[number];
 
 export type BrainItem = {
   id: string;
   domain: BrainDomainId;
   aspect: BrainAspectId;
+  kind: BrainItemKind;
   prompt: string;
-  letter: string;
-  number: string;
-  reverse: boolean;
+  plus: string;
+  minus: string;
+};
+
+export type PresentedItem = {
+  item: BrainItem;
+  flip: boolean;
+};
+
+export type BrainAspectScore = {
+  id: BrainAspectId;
+  name: string;
+  job: string;
+  lean: number;
+  mark: BrainMark;
+  markName: string;
 };
 
 export type BrainDomainScore = {
@@ -33,8 +67,12 @@ export type BrainDomainScore = {
   name: string;
   job: string;
   lean: number;
+  mark: BrainMark;
+  markName: string;
   louder: BrainAspectId;
   louderName: string;
+  combo: BrainCombo;
+  aspects: [BrainAspectScore, BrainAspectScore];
   gold: string;
   shadow: string;
 };
@@ -44,13 +82,16 @@ export type BrainReading = {
   name: string;
   guest: boolean;
   lean: number;
-  walk: string;
+  grade: BrainGrade;
+  gradeCaption: string;
   verdict: BrainVerdict;
   verdictName: string;
   title: string;
   headline: string;
+  pattern: string;
   invitation: string;
   domains: BrainDomainScore[];
+  aspects: BrainAspectScore[];
   token: string;
 };
 
@@ -103,236 +144,491 @@ export const ASPECT_NAME: Record<BrainAspectId, string> = {
   storm: "The Storm",
 };
 
-export const ITEMS: BrainItem[] = [
-  {
-    id: "s1",
-    domain: "sight",
-    aspect: "wonder",
-    prompt:
-      "You meet someone new at a table. Before you know their job or their age, what do you actually pay attention to?",
-    letter: "The way they enter, the name they give you, and whatever is strange or alive in their face.",
-    number: "The facts you can file: age, title, where they sit in a ranking you already understand.",
-    reverse: false,
-  },
-  {
-    id: "s2",
-    domain: "sight",
-    aspect: "wonder",
-    prompt: "A painting, a street, or a person stops you. What do you do first?",
-    letter: "I stay with it long enough to see what it is, even if I cannot name it yet.",
-    number: "I look for the type, the period, the score, or the comparison that would let me put it away.",
-    reverse: false,
-  },
-  {
-    id: "s3",
-    domain: "sight",
-    aspect: "wonder",
-    prompt: "Someone you love asks you to describe them to a stranger. You start with:",
-    letter: "The name they actually use, and how they come into a room.",
-    number: "A handful of facts that would help a clerk find them in a list.",
-    reverse: true,
-  },
-  {
-    id: "s4",
-    domain: "sight",
-    aspect: "inquiry",
-    prompt: "You are trying to understand a problem that still has a person in it. Your first move is:",
-    letter: "I keep the person in view while I take the problem apart, and I put the pieces back when I am done.",
-    number: "I reduce it to variables I can add, rank, or optimize, and I treat that total as the answer.",
-    reverse: false,
-  },
-  {
-    id: "s5",
-    domain: "sight",
-    aspect: "inquiry",
-    prompt: "You finish a sharp analysis of someone’s life. What do you do with it?",
-    letter: "I look back at the actual person and ask whether the analysis still fits the face.",
-    number: "I keep the model. If the person disagrees with it, the person is probably wrong.",
-    reverse: false,
-  },
-  {
-    id: "k1",
-    domain: "keeping",
-    aspect: "crossing",
-    prompt: "You have started something that would change your life if you finished it. What usually happens?",
-    letter: "I keep the promise I made to the path, even when the first excitement is gone.",
-    number: "I restart, re-rank, or fold the work into a neater plan that never has to leave the page.",
-    reverse: false,
-  },
-  {
-    id: "k2",
-    domain: "keeping",
-    aspect: "crossing",
-    prompt: "A project is almost done, but it is messy. You:",
-    letter: "Finish the crossing that is actually in front of me, mess and all.",
-    number: "Stop to reorganize, relabel, and get the system perfect before I will call it done.",
-    reverse: true,
-  },
-  {
-    id: "k3",
-    domain: "keeping",
-    aspect: "crossing",
-    prompt: "You tell a friend you are leaving a life that is too small. A month later:",
-    letter: "I have taken at least one irreversible step that matches what I said.",
-    number: "I have a better spreadsheet of options, and I am still in the same room.",
-    reverse: false,
-  },
-  {
-    id: "k4",
-    domain: "keeping",
-    aspect: "file",
-    prompt: "Your desk, your calendar, or your notes are a mess. What bothers you more?",
-    letter: "That I have not done the one living piece of work that actually needed me.",
-    number: "That nothing is in its right folder, labeled, and easy to add up.",
-    reverse: false,
-  },
-  {
-    id: "k5",
-    domain: "keeping",
-    aspect: "file",
-    prompt: "You are asked to explain a year of your work in one minute. You reach for:",
-    letter: "The story of what you kept, what you finished, and what you refused to abandon.",
-    number: "A total, a rank, a metric, or a tidy list that could sit in someone else’s file.",
-    reverse: false,
-  },
-  {
-    id: "e1",
-    domain: "entrance",
-    aspect: "warmth",
-    prompt: "You walk into a room of people you only half know. What do you bring in with you?",
-    letter: "The name I actually use, and enough warmth that someone could meet me as a person.",
-    number: "A title, a credential, or a performance of being impressive before anyone has met me.",
-    reverse: false,
-  },
-  {
-    id: "e2",
-    domain: "entrance",
-    aspect: "warmth",
-    prompt: "After an evening with new people, what do you hope they remember?",
-    letter: "How it felt to be in the room with me.",
-    number: "Where I stood in the ranking of the night: funniest, smartest, most successful.",
-    reverse: true,
-  },
-  {
-    id: "e3",
-    domain: "entrance",
-    aspect: "warmth",
-    prompt: "You introduce yourself. The sentence you trust is:",
-    letter: "The username or nickname I actually live in, said plainly.",
-    number: "The version of my name that looks best on a form, followed by what I am worth on paper.",
-    reverse: false,
-  },
-  {
-    id: "e4",
-    domain: "entrance",
-    aspect: "role",
-    prompt: "A group needs someone to go first. You:",
-    letter: "Step in as a person who can start the work, without needing the room to crown me.",
-    number: "Take the seat that proves I am first, highest, or in charge, and treat that rank as the point.",
-    reverse: false,
-  },
-  {
-    id: "e5",
-    domain: "entrance",
-    aspect: "role",
-    prompt: "You have to put a public face on your work. What matters more?",
-    letter: "That the face matches the work I will actually stand behind.",
-    number: "That the face wins: the title, the follower count, the number that makes me look ahead.",
-    reverse: false,
-  },
-  {
-    id: "c1",
-    domain: "court",
-    aspect: "neighbor",
-    prompt: "Someone you care about is in trouble. You first see:",
-    letter: "A whole life that needs company, help, and time.",
-    number: "A case: what category they fall into, what they score, what the efficient move is.",
-    reverse: false,
-  },
-  {
-    id: "c2",
-    domain: "court",
-    aspect: "neighbor",
-    prompt: "A friend is good at something you are not. You treat that as:",
-    letter: "Help already in the room, which I can ask for without becoming smaller.",
-    number: "A ranking. One of us is ahead, and that fact sits between us.",
-    reverse: false,
-  },
-  {
-    id: "c3",
-    domain: "court",
-    aspect: "neighbor",
-    prompt: "You disagree with someone you love. The useful move is:",
-    letter: "Stay with them long enough to see the blind spot, including mine.",
-    number: "Win the argument, assign the fault, and put them in the right bin.",
-    reverse: true,
-  },
-  {
-    id: "c4",
-    domain: "court",
-    aspect: "rule",
-    prompt: "A room has an unspoken ranking. You:",
-    letter: "Notice it, then keep treating people as people anyway.",
-    number: "Use it. Knowing who is above whom is how you stay safe and polite.",
-    reverse: false,
-  },
-  {
-    id: "c5",
-    domain: "court",
-    aspect: "rule",
-    prompt: "You are asked to keep the peace at a table. You keep it by:",
-    letter: "Making sure no one is reduced to a type while we talk.",
-    number: "Enforcing the categories, the manners, and the order that make the table easy to run.",
-    reverse: false,
-  },
-  {
-    id: "w1",
-    domain: "weather",
-    aspect: "contrary",
-    prompt: "The day is against you. Work that usually works will not move. You:",
-    letter: "Treat it as weather. I do the small necessary thing and wait for a better current.",
-    number: "Treat it as a score. A low day means I am losing, unlucky, or finished.",
-    reverse: false,
-  },
-  {
-    id: "w2",
-    domain: "weather",
-    aspect: "contrary",
-    prompt: "You have to postpone something you wanted. The story you tell yourself is:",
-    letter: "The house is withdrawn today. I can keep the act written and try it when the day will have it.",
-    number: "I missed my number. If I were the kind of person who wins, this would not have happened.",
-    reverse: false,
-  },
-  {
-    id: "w3",
-    domain: "weather",
-    aspect: "storm",
-    prompt: "A plan collapses in public. What happens in you first?",
-    letter: "I feel the weather, then I look for one honest next step that is still mine.",
-    number: "I spike. The collapse becomes a verdict on my worth, and I either crown myself with a new total or excuse myself with a low one.",
-    reverse: false,
-  },
-  {
-    id: "w4",
-    domain: "weather",
-    aspect: "storm",
-    prompt: "Someone gives you a ranking of your day, your work, or your luck. You:",
-    letter: "Take it as a weather report I can use or ignore. I still walk out the door.",
-    number: "Swallow it as fate. If the number is high I am safe; if it is low I am condemned.",
-    reverse: true,
-  },
-  {
-    id: "w5",
-    domain: "weather",
-    aspect: "storm",
-    prompt: "You share a result about yourself online. You hope people see:",
-    letter: "A portrait they can meet, with a number sitting quietly beside it.",
-    number: "The score. If the score is not the point, there is no point in posting.",
-    reverse: false,
-  },
-];
+export const ASPECT_JOB: Record<BrainAspectId, string> = {
+  wonder: "How long you stay with what is particular.",
+  inquiry: "How much you want the joints of a thing.",
+  crossing: "Whether you finish after the shine is gone.",
+  file: "How much order you need in order to work.",
+  warmth: "How much heat you bring into a room.",
+  role: "Whether you take the floor when a group stalls.",
+  neighbor: "How much other people's weather arrives in you.",
+  rule: "How carefully you keep a table easy to run.",
+  contrary: "Whether a hard day makes you go small.",
+  storm: "How loudly a setback runs through you.",
+};
 
-const ORDER_SEED = 33;
+export const MARK_NAME: Record<BrainMark, string> = {
+  strong: "Strong",
+  clear: "Clear",
+  mixed: "Mixed",
+  light: "Light",
+  quiet: "Quiet",
+};
+
+function I(
+  id: string,
+  domain: BrainDomainId,
+  aspect: BrainAspectId,
+  kind: BrainItemKind,
+  prompt: string,
+  plus: string,
+  minus: string,
+): BrainItem {
+  return { id, domain, aspect, kind, prompt, plus, minus };
+}
+
+export const ITEMS: BrainItem[] = [
+  I(
+    "w1",
+    "sight",
+    "wonder",
+    "trait",
+    "A weekend opens with no plan.",
+    "I follow whatever looks alive: a street, a shop, a face I have not seen.",
+    "I pick a useful aim first. Loose hours feel wasted if they do not add up to something.",
+  ),
+  I(
+    "w2",
+    "sight",
+    "wonder",
+    "trait",
+    "You walk into a room you have never been in.",
+    "I take in the light, the objects, and the mood before I decide what the room is for.",
+    "I look for the function: where to sit, who is in charge, what we are here to do.",
+  ),
+  I(
+    "w3",
+    "sight",
+    "wonder",
+    "trait",
+    "A song, a painting, or a landscape catches you.",
+    "I stay with it and let it work on me, even if I cannot say why yet.",
+    "I place it: the style, the kind, the comparison that tells me what I am looking at.",
+  ),
+  I(
+    "w4",
+    "sight",
+    "wonder",
+    "trait",
+    "Someone tells a story with odd details that do not seem to matter.",
+    "I want the odd details. They are often the true part.",
+    "I want the point. Details help when they support the summary.",
+  ),
+  I(
+    "q1",
+    "sight",
+    "inquiry",
+    "trait",
+    "A problem is sitting in front of you.",
+    "I take it apart. I want to see how the pieces depend on each other.",
+    "I look for a working answer I can use now, and I leave the inner wiring alone unless I have to.",
+  ),
+  I(
+    "q2",
+    "sight",
+    "inquiry",
+    "trait",
+    "You have an afternoon with a new idea.",
+    "I enjoy taking it apart until I understand the joints.",
+    "I would rather see the idea used than spend the afternoon on its joints.",
+  ),
+  I(
+    "q3",
+    "sight",
+    "inquiry",
+    "trait",
+    "Friends disagree about why something happened.",
+    "I test the stories. I want the one that survives a hard question.",
+    "I am satisfied once I have a version I can live with, even if it is not fully tested.",
+  ),
+  I(
+    "q4",
+    "sight",
+    "inquiry",
+    "trait",
+    "You have to learn a new tool or subject.",
+    "I want the structure: the rules, the map, how it hangs together.",
+    "I want a single path through it that lets me do the next job.",
+  ),
+  I(
+    "x1",
+    "keeping",
+    "crossing",
+    "trait",
+    "You have started something that will only matter if you finish it.",
+    "I keep going after the first excitement is gone.",
+    "I often pause, switch, or wait for a fresher start.",
+  ),
+  I(
+    "x2",
+    "keeping",
+    "crossing",
+    "trait",
+    "The middle of a project is dull.",
+    "I treat the dull stretch as part of the work and I cross it.",
+    "I look for a more interesting angle, even if that means opening a new version.",
+  ),
+  I(
+    "x3",
+    "keeping",
+    "crossing",
+    "trait",
+    "A promise you made to yourself is now inconvenient.",
+    "I still do the next piece of it.",
+    "I renegotiate with myself and put it back on the list for a better week.",
+  ),
+  I(
+    "x4",
+    "keeping",
+    "crossing",
+    "trait",
+    "You are close to done and tired.",
+    "I finish, then I rest.",
+    "I rest, then I see whether I still want the last stretch.",
+  ),
+  I(
+    "f1",
+    "keeping",
+    "file",
+    "trait",
+    "Your desk, bag, or notes.",
+    "I like them sorted so I can find a thing without hunting.",
+    "I can work in a pile. Sorting can wait until the living work is done.",
+  ),
+  I(
+    "f2",
+    "keeping",
+    "file",
+    "trait",
+    "You look at the week ahead.",
+    "I want a clear sequence, so nothing important falls through.",
+    "I keep a rough direction and decide in the day what comes next.",
+  ),
+  I(
+    "f3",
+    "keeping",
+    "file",
+    "trait",
+    "You hand work to someone else.",
+    "I want it labeled, complete, and easy to follow.",
+    "I would rather they have the living sense of the job than a perfect packet.",
+  ),
+  I(
+    "f4",
+    "keeping",
+    "file",
+    "trait",
+    "Clutter gathers at home or on a screen.",
+    "Untidiness pulls at me until I put things back in place.",
+    "Untidiness is background. I notice it when it blocks a task.",
+  ),
+  I(
+    "h1",
+    "entrance",
+    "warmth",
+    "trait",
+    "You walk into a gathering of people you only half know.",
+    "I light up. I make contact easily, and the room feels warmer for it.",
+    "I come in quietly and let the temperature of the room find me first.",
+  ),
+  I(
+    "h2",
+    "entrance",
+    "warmth",
+    "trait",
+    "Good news arrives.",
+    "I want to share it out loud, with people, while it is still hot.",
+    "I turn it over privately before I tell anyone.",
+  ),
+  I(
+    "h3",
+    "entrance",
+    "warmth",
+    "trait",
+    "A conversation is underway at a table.",
+    "I laugh, lean in, and keep the thread alive.",
+    "I listen more than I spark. I speak when I have something I actually want to say.",
+  ),
+  I(
+    "h4",
+    "entrance",
+    "warmth",
+    "trait",
+    "The room is flat and nobody is taking it up.",
+    "I try to raise the energy. A flat room feels like a job I can do.",
+    "I am fine if the room stays low. I do not feel responsible for the weather of it.",
+  ),
+  I(
+    "r1",
+    "entrance",
+    "role",
+    "trait",
+    "A group is stalling.",
+    "I step in and give us a next move.",
+    "I wait. Someone else can take the seat unless I am clearly needed.",
+  ),
+  I(
+    "r2",
+    "entrance",
+    "role",
+    "trait",
+    "You disagree in a meeting.",
+    "I say so, in the room, before the decision hardens.",
+    "I take it up later, or I let it pass if it is not mine to fight.",
+  ),
+  I(
+    "r3",
+    "entrance",
+    "role",
+    "trait",
+    "A piece of work needs a public face.",
+    "I am comfortable being the person people look at.",
+    "I would rather the work speak. Being the face of it is a cost I do not seek.",
+  ),
+  I(
+    "r4",
+    "entrance",
+    "role",
+    "trait",
+    "Someone talks over a plan you care about.",
+    "I take the thread back.",
+    "I wait for an opening. Pushing for the floor feels worse than waiting.",
+  ),
+  I(
+    "n1",
+    "court",
+    "neighbor",
+    "trait",
+    "Someone you care about is having a hard week.",
+    "I feel it with them. I want to sit near it, not only solve it.",
+    "I look for a useful move: what would actually help, then I do that.",
+  ),
+  I(
+    "n2",
+    "court",
+    "neighbor",
+    "trait",
+    "A stranger is upset in public.",
+    "I am pulled toward them. Their feeling arrives in my body.",
+    "I keep a respectful distance unless I can see a concrete way to help.",
+  ),
+  I(
+    "n3",
+    "court",
+    "neighbor",
+    "trait",
+    "You are working with a friend.",
+    "I want to know how they are, not only what they can do.",
+    "I stay on the task we share. Inner weather is theirs unless they bring it.",
+  ),
+  I(
+    "n4",
+    "court",
+    "neighbor",
+    "trait",
+    "You hear that someone was treated badly.",
+    "It stays with me. I want them okay.",
+    "I am sorry, and I move on unless there is a part that is mine to repair.",
+  ),
+  I(
+    "u1",
+    "court",
+    "rule",
+    "trait",
+    "A table has unspoken manners.",
+    "I keep them. Smooth turns matter more than saying the raw thing in the moment.",
+    "I would rather name the real thing, even if the table gets a little rough.",
+  ),
+  I(
+    "u2",
+    "court",
+    "rule",
+    "trait",
+    "Someone is late, messy, or out of line in a small way.",
+    "I still treat them carefully. Correcting them in front of people feels worse than the fault.",
+    "I would rather the standard be clear. A small correction now saves a larger one later.",
+  ),
+  I(
+    "u3",
+    "court",
+    "rule",
+    "trait",
+    "You need something from a person with more rank.",
+    "I go the long way: courtesy, timing, the proper door.",
+    "I ask directly. Rank should not make a simple ask theatrical.",
+  ),
+  I(
+    "u4",
+    "court",
+    "rule",
+    "trait",
+    "A true remark might make the room tense.",
+    "I hold it. Keeping the room easy is part of my job.",
+    "I risk it if it is true. Ease that kills the true thing is too expensive.",
+  ),
+  I(
+    "y1",
+    "weather",
+    "contrary",
+    "trait",
+    "The day turns against you.",
+    "I go quiet and small. I want less contact until the feeling drops.",
+    "I keep my ordinary size. I can still answer a message or finish a small task.",
+  ),
+  I(
+    "y2",
+    "weather",
+    "contrary",
+    "trait",
+    "You made a mistake in front of people.",
+    "I replay it and want to disappear.",
+    "I wince, then I stay in the room.",
+  ),
+  I(
+    "y3",
+    "weather",
+    "contrary",
+    "trait",
+    "An invitation arrives on a low day.",
+    "I decline. Being seen would cost more than it would give.",
+    "I still go, or I leave the decision until I am at the door.",
+  ),
+  I(
+    "y4",
+    "weather",
+    "contrary",
+    "trait",
+    "Work that usually works will not move.",
+    "I take it as a sign I should stop and hide out.",
+    "I change the task or the hour and I stay in motion.",
+  ),
+  I(
+    "v1",
+    "weather",
+    "storm",
+    "trait",
+    "A plan collapses.",
+    "I spike. Heat, voice, a rush to fix it or to get out.",
+    "I go still enough to see the next piece. The feeling is there; it does not run the room.",
+  ),
+  I(
+    "v2",
+    "weather",
+    "storm",
+    "trait",
+    "Someone is careless with your work.",
+    "I feel it immediately, and they can tell.",
+    "I can hold the reaction until I choose what to say.",
+  ),
+  I(
+    "v3",
+    "weather",
+    "storm",
+    "trait",
+    "Good news and bad news arrive in the same afternoon.",
+    "I swing with both. Other people can read the weather on my face.",
+    "I stay closer to the middle. The day can change without taking me with it.",
+  ),
+  I(
+    "v4",
+    "weather",
+    "storm",
+    "trait",
+    "You are stuck in a delay, a slow line, a small insult.",
+    "It gets loud in me. Small grit becomes a mood.",
+    "It stays small. I do not have to make a story out of it.",
+  ),
+  I(
+    "sl1",
+    "sight",
+    "wonder",
+    "looking",
+    "You meet someone new at a table, before you know their job or their age.",
+    "How they arrive, the name they give, and what is still particular about them.",
+    "The details that place them: what they do, how they fit, what I can confirm.",
+  ),
+  I(
+    "sl2",
+    "sight",
+    "inquiry",
+    "looking",
+    "You finish a careful analysis of someone's situation.",
+    "I look back at the person and ask whether the analysis still fits what I can see.",
+    "I keep the working model. I update it when new facts arrive, and I trust it until they do.",
+  ),
+  I(
+    "kl1",
+    "keeping",
+    "crossing",
+    "looking",
+    "You are asked to explain a year of your work in one minute.",
+    "The story of what I kept, what I finished, and what I would not abandon.",
+    "A brief list of results, roles, and outcomes that would sit cleanly in someone else's summary.",
+  ),
+  I(
+    "kl2",
+    "keeping",
+    "file",
+    "looking",
+    "A project is almost done, but it is messy.",
+    "Finish what is actually in front of me, mess and all.",
+    "Pause to reorganize and label, so the last stretch is clean to hand over.",
+  ),
+  I(
+    "el1",
+    "entrance",
+    "warmth",
+    "looking",
+    "You introduce yourself.",
+    "The username or nickname I actually live in, said plainly.",
+    "The name that reads cleanly on a form, followed by the work that explains why I am here.",
+  ),
+  I(
+    "el2",
+    "entrance",
+    "role",
+    "looking",
+    "A group needs someone to go first.",
+    "I step in as a person who can start the work.",
+    "I take the lead so the group has a clear person in charge, and I treat that seat as part of getting the work done.",
+  ),
+  I(
+    "cl1",
+    "court",
+    "neighbor",
+    "looking",
+    "Someone you care about is in trouble.",
+    "A whole life that needs company, help, and time.",
+    "A situation I can diagnose: what kind of trouble it is, what usually works, and the next useful step.",
+  ),
+  I(
+    "cl2",
+    "court",
+    "rule",
+    "looking",
+    "A room has an unspoken order.",
+    "I notice it, then I keep treating people as people.",
+    "I read it carefully. Knowing how the room is arranged helps me move without stepping on anyone.",
+  ),
+  I(
+    "wl1",
+    "weather",
+    "contrary",
+    "looking",
+    "The day is against you. Work that usually works will not move.",
+    "Treat it as weather. I do the small necessary thing and wait for a better current.",
+    "Treat it as information. I change the plan, measure what failed, and correct course.",
+  ),
+  I(
+    "wl2",
+    "weather",
+    "storm",
+    "looking",
+    "Someone gives you a mark for your day, your work, or your luck.",
+    "Take it as a weather report I can use or ignore. I still walk out the door.",
+    "Take it as useful feedback. A high mark means the method is working; a low mark means I should adjust.",
+  ),
+];
 
 function lcg(seed: number) {
   let state = seed >>> 0;
@@ -342,9 +638,8 @@ function lcg(seed: number) {
   };
 }
 
-export function orderedItems(): BrainItem[] {
-  const items = [...ITEMS];
-  const rand = lcg(ORDER_SEED);
+function shuffled<T>(list: T[], rand: () => number): T[] {
+  const items = [...list];
   for (let i = items.length - 1; i > 0; i--) {
     const j = Math.floor(rand() * (i + 1));
     const swap = items[i];
@@ -354,16 +649,39 @@ export function orderedItems(): BrainItem[] {
   return items;
 }
 
-export function polesOf(item: BrainItem): { left: string; right: string; leftIsLetter: boolean } {
-  if (item.reverse) {
-    return { left: item.number, right: item.letter, leftIsLetter: false };
-  }
-  return { left: item.letter, right: item.number, leftIsLetter: true };
+/** Session deck: item order shuffled, exactly half the plus poles on the right. */
+export function presentDeck(seed: number): PresentedItem[] {
+  const rand = lcg(seed);
+  const items = shuffled(ITEMS, rand);
+  const flips = shuffled(
+    items.map((_, index) => index < Math.floor(items.length / 2)),
+    rand,
+  );
+  return items.map((item, index) => ({ item, flip: Boolean(flips[index]) }));
 }
 
-export function itemLean(item: BrainItem, choice: BrainChoice): number {
-  const fromLeft = (choice / BRAIN_SCALE) * 100;
-  return item.reverse ? fromLeft : 100 - fromLeft;
+export function displayPoles(item: BrainItem, flip: boolean): { left: string; right: string } {
+  if (flip) return { left: item.minus, right: item.plus };
+  return { left: item.plus, right: item.minus };
+}
+
+/** Canonical 0 is the plus pole (high trait, or Letter-looking). */
+export function toCanonical(displayed: BrainChoice, flip: boolean): BrainChoice {
+  return (flip ? 4 - displayed : displayed) as BrainChoice;
+}
+
+export function answersFromDeck(deck: PresentedItem[], displayed: BrainChoice[]): BrainChoice[] {
+  const byId = new Map<string, BrainChoice>();
+  deck.forEach((row, index) => {
+    const choice = displayed[index];
+    if (choice == null) return;
+    byId.set(row.item.id, toCanonical(choice, row.flip));
+  });
+  return ITEMS.map((item) => byId.get(item.id) ?? 2);
+}
+
+export function plusLean(choice: BrainChoice): number {
+  return 100 - (choice / BRAIN_SCALE) * 100;
 }
 
 function mean(values: number[]): number {
@@ -387,86 +705,149 @@ function roundLean(value: number): number {
   return Math.max(0, Math.min(100, Math.round(value)));
 }
 
-export function spellLean(lean: number): string {
-  if (lean <= 0) return "the Fool";
-  return formatWalk(walkOf(BigInt(lean))) || "the Fool";
+export function markOf(lean: number): BrainMark {
+  const n = roundLean(lean);
+  if (n >= 75) return "strong";
+  if (n >= 60) return "clear";
+  if (n >= 40) return "mixed";
+  if (n >= 25) return "light";
+  return "quiet";
 }
 
-function louderAspect(domain: BrainDomainId, byAspect: Partial<Record<BrainAspectId, number[]>>): BrainAspectId {
-  const [first, second] = DOMAIN_META[domain].aspects;
-  const a = mean(byAspect[first] ?? [50]);
-  const b = mean(byAspect[second] ?? [50]);
-  return a >= b ? first : second;
+export function gradeOf(lean: number): BrainGrade {
+  const n = roundLean(lean);
+  if (n >= 96) return "A+";
+  if (n >= 88) return "A";
+  if (n >= 80) return "A-";
+  if (n >= 71) return "B+";
+  if (n >= 62) return "B";
+  if (n >= 56) return "B-";
+  if (n >= 50) return "C+";
+  if (n >= 44) return "C";
+  if (n >= 39) return "C-";
+  if (n >= 32) return "D+";
+  if (n >= 24) return "D";
+  if (n >= 16) return "D-";
+  return "F";
 }
 
-const GOLD: Record<BrainDomainId, Record<"letter" | "circuit" | "number", string>> = {
-  sight: {
-    letter:
-      "You tend to stay with a person, a street, or a problem until you have actually seen it. Inquiry is welcome here as long as it reports back to the face in front of you.",
-    circuit:
-      "You can take a life apart to understand it, and you still remember to look back at the person when the analysis is done. Wonder and inquiry are both on duty.",
-    number:
-      "You reach for a type, a score, or a map quickly, which makes you fast. The cost is that a living face can get filed before it has finished arriving.",
-  },
-  keeping: {
-    letter:
-      "You finish crossings. A messy promise that actually leaves the room matters more to you than a perfect plan that never does.",
-    circuit:
-      "You can tidy a file and still keep a path. Order helps you; it does not get to replace the work of finishing.",
-    number:
-      "You are gifted at making things neat, ranked, and easy to hold in one hand. Watch the moment when the file becomes a reason not to cross.",
-  },
-  entrance: {
-    letter:
-      "You arrive as a person. The name you walk around in, and the warmth you bring, are how you enter, not a costume you put on after the ranking is done.",
-    circuit:
-      "You can take a public role without disappearing into it. Warmth and a clear seat can live in the same entrance.",
-    number:
-      "You know how to take a seat and look like first. The work now is to let the room meet you, not only the rank you arrived with.",
-  },
-  court: {
-    letter:
-      "You meet people as neighbors, including the ones who keep you honest. Help already in the room is something you can ask for.",
-    circuit:
-      "You can keep the peace without turning anyone into a bin. Manners serve the table; they do not own the people at it.",
-    number:
-      "You read a room’s ranking quickly, which can be kind in a pinch. The risk is that a type, a score, or a rule starts standing in for the person.",
-  },
-  weather: {
-    letter:
-      "A low day is weather. You do the small necessary thing, keep the act written, and do not let a number tell you who you are.",
-    circuit:
-      "You feel a storm without appointing it as fate. The day can be against you and still not get the last word.",
-    number:
-      "You take scores to heart, including the unofficial ones. A high day crowns you and a low day condemns you, which is a heavy way to live.",
-  },
+export function verdictOfGrade(grade: BrainGrade): BrainVerdict {
+  if (grade === "A+" || grade === "A" || grade === "A-" || grade === "B+" || grade === "B") {
+    return "letter";
+  }
+  if (grade === "B-" || grade === "C+" || grade === "C" || grade === "C-") return "circuit";
+  return "number";
+}
+
+export const GRADE_CAPTION: Record<BrainGrade, string> = {
+  "A+": "A perfect Letter brain. You start with the living thing in front of you and you stay with it.",
+  A: "A Letter brain. The whole person comes first, and the pieces are allowed to help.",
+  "A-": "A Letter brain with a sharp eye for detail. You still come back to the face.",
+  "B+": "Mostly Letter-brained. You look at people first, and you use the file when it serves them.",
+  B: "Letter-brained, with a working file. You can sort pieces without forgetting who they belong to.",
+  "B-": "The circuit is close. You still prefer the living thing, but the pieces pull hard.",
+  "C+": "Circuit-kept, leaning toward the letter. You go out into the pieces and you mostly come home.",
+  C: "Circuit-kept. See the whole, use the pieces, come back. That is the practice.",
+  "C-": "Circuit-kept, leaning toward the file. The pieces are loud, and the return is still possible.",
+  "D+": "A number brain is beginning to lead. The file arrives faster than the face.",
+  D: "Number-brained. You are skilled with pieces, ranks, and totals, and they tend to speak first.",
+  "D-": "A number brain at work. The living thing is easy to file before it has finished arriving.",
+  F: "Led by numbers. A number brain: the pieces have the last word.",
 };
 
-const SHADOW: Record<BrainDomainId, Record<"letter" | "circuit" | "number", string>> = {
+export const GRADE_LEGEND =
+  "A+ is a perfect Letter brain. F is a person led by numbers, a number brain. This mark is how you look. The five seats are how you actually work, and they are allowed to disagree with the mark.";
+
+const COMBO: Record<BrainDomainId, Record<BrainCombo, { gold: string; shadow: string }>> = {
   sight: {
-    letter: "If you never count, you can stay enchanted and never understand the work. Let inquiry help, then come back.",
-    circuit: "The only failure here is forgetting the last step. See, count, and look back.",
-    number: "A sharp map that never returns to the face is how a person gets replaced by a total.",
+    HH: {
+      gold: "You stay with a thing long enough to see it, and you also like taking it apart. Wonder starts. Inquiry reports back.",
+      shadow: "The only failure here is forgetting the last step. See, take apart, and look back.",
+    },
+    HL: {
+      gold: "You trust the particular. Faces, rooms, and odd details land in you before a theory does.",
+      shadow: "If you never take a thing apart, you can stay enchanted and never understand the work. Let inquiry help, then come back.",
+    },
+    LH: {
+      gold: "You reach for structure quickly. A clean question is how you enter; the living surface can wait.",
+      shadow: "A sharp map that never returns to the face is how a person gets replaced by a diagram.",
+    },
+    LL: {
+      gold: "You take the useful reading and move on. Seeing is for doing, not for lingering.",
+      shadow: "Speed is a gift until you have filed a life before it finished arriving. Stay one extra minute.",
+    },
   },
   keeping: {
-    letter: "Finishing is not the same as refusing to plan. A path still needs a next step you can name.",
-    circuit: "Keep the file in service of the crossing, not the other way around.",
-    number: "A life can be perfectly labeled and still unlived. Complete one crossing.",
+    HH: {
+      gold: "You finish, and you keep a file that can travel. Path and order are both on duty.",
+      shadow: "Keep the file in service of the crossing, not the other way around.",
+    },
+    HL: {
+      gold: "You cross. A messy promise that actually leaves the room matters more to you than a perfect plan that never does.",
+      shadow: "Finishing is not the same as refusing to plan. A path still needs a next step you can name.",
+    },
+    LH: {
+      gold: "You are gifted at order: labels, sequences, a packet someone else could run.",
+      shadow: "A life can be perfectly labeled and still unlived. Complete one crossing.",
+    },
+    LL: {
+      gold: "You keep things loose. You can still move when the plan dies.",
+      shadow: "The risk is a life of fresh starts and lost objects. Finish one small thing you already began.",
+    },
   },
   entrance: {
-    letter: "Warmth without a seat can vanish. Say what you are here to do.",
-    circuit: "Do not let the role eat the person who walked in wearing it.",
-    number: "A first-place entrance that nobody could actually meet is a performance, not a greeting.",
+    HH: {
+      gold: "You arrive warm and you can take the seat. People meet you, and they know who is starting the work.",
+      shadow: "Do not let the role eat the person who walked in wearing it.",
+    },
+    HL: {
+      gold: "You bring weather into a room. The name you live in is enough; you do not need the front chair.",
+      shadow: "Warmth without a seat can vanish. Say what you are here to do.",
+    },
+    LH: {
+      gold: "You know how to go first. A stalled group can use you.",
+      shadow: "The work now is to let them meet you, not only the person in charge.",
+    },
+    LL: {
+      gold: "You enter quietly and you do not grab the floor. When you do speak, it tends to be the thing the room actually needed.",
+      shadow: "Quiet is not the same as absent. Once in a while, take the first step so the work can start.",
+    },
   },
   court: {
-    letter: "Compassion that never names a boundary becomes fusion. Neighbors still get to have their own breath.",
-    circuit: "Use the rule to protect the table, not to file the guests.",
-    number: "If everyone is a category, there is no one left to ask.",
+    HH: {
+      gold: "You care, and you keep the forms that let a table run. Compassion with manners.",
+      shadow: "Use the rule to protect the table, not to file the guests.",
+    },
+    HL: {
+      gold: "You meet people as neighbors. Help already in the room is something you can ask for.",
+      shadow: "Compassion that never names a boundary becomes fusion. Neighbors still get to have their own breath.",
+    },
+    LH: {
+      gold: "You keep peace by keeping the rules clear. A table with you at it knows how to proceed.",
+      shadow: "The risk is a well-run table with no one left to ask. Look up from the manners.",
+    },
+    LL: {
+      gold: "You do not fuss over feelings or forms. Directness is your kindness.",
+      shadow: "Directness can land as cold if you never look up. Ask one person how they actually are.",
+    },
   },
   weather: {
-    letter: "Waiting can become hiding. Do the day’s small work even when the house is withdrawn.",
-    circuit: "Feel the weather. Do not build a religion out of it.",
-    number: "A score is a weather report. It cannot tell you whether you are allowed to walk out the door.",
+    HH: {
+      gold: "A hard day pulls you in and also spikes. You feel weather twice.",
+      shadow: "Feel it. Then do one small next step that is still yours, so the day does not get the last word.",
+    },
+    HL: {
+      gold: "You go quiet when the house is withdrawn. That can be wisdom, and it can be a closed door.",
+      shadow: "Waiting can become hiding. Do the day's small work even when you want to disappear.",
+    },
+    LH: {
+      gold: "You stay out in the day, and the swings are loud. Other people can tell.",
+      shadow: "Feel the weather. Do not appoint it as fate, and do not make a small delay into a verdict.",
+    },
+    LL: {
+      gold: "A low day does not get the last word. You stay even, which is a gift.",
+      shadow: "Evenness can look like you do not care. Let one true feeling be visible, then keep walking.",
+    },
   },
 };
 
@@ -475,36 +856,57 @@ const INVITE: Record<BrainDomainId, string> = {
   keeping: "Finish one small crossing you already started. Do not start a neater version of it instead.",
   entrance: "Walk into one room as the name you actually use, and let that be enough for the first minute.",
   court: "Ask one person for help they already have, without turning it into a ranking of who is ahead.",
-  weather: "If today is against you, do one small necessary thing and do not let a number tell you what that means about your life.",
+  weather: "If today is against you, do one small necessary thing and do not let a mark tell you what that means about your life.",
 };
 
-export function domainBand(lean: number): "letter" | "circuit" | "number" {
-  return verdictOf(lean);
+function comboOf(a: number, b: number): BrainCombo {
+  return `${a >= 50 ? "H" : "L"}${b >= 50 ? "H" : "L"}` as BrainCombo;
 }
 
-function typeTitle(verdict: BrainVerdict, domains: BrainDomainScore[]): string {
-  const ranked = [...domains].sort((a, b) => b.lean - a.lean);
+function aspectScore(id: BrainAspectId, lean: number): BrainAspectScore {
+  const mark = markOf(lean);
+  return {
+    id,
+    name: ASPECT_NAME[id],
+    job: ASPECT_JOB[id],
+    lean: roundLean(lean),
+    mark,
+    markName: MARK_NAME[mark],
+  };
+}
+
+function typeTitle(verdict: BrainVerdict, aspects: BrainAspectScore[]): string {
+  const ranked = [...aspects].sort((a, b) => b.lean - a.lean);
   const first = ranked[0];
   const second = ranked[1];
   if (!first || !second) return VERDICT_NAME[verdict];
-  if (verdict === "number") {
-    return `${VERDICT_NAME[verdict]} · ${ASPECT_NAME[first.louder]} and ${ASPECT_NAME[second.louder]}`;
-  }
-  if (verdict === "letter") {
-    return `${VERDICT_NAME[verdict]} · ${first.name} and ${second.name}`;
-  }
+  if (first.lean - second.lean < 8 && Math.abs(first.lean - 50) < 8) return VERDICT_NAME[verdict];
   return `${VERDICT_NAME[verdict]} · ${first.name} and ${second.name}`;
 }
 
+function patternOf(aspects: BrainAspectScore[]): string {
+  const ranked = [...aspects].sort((a, b) => b.lean - a.lean);
+  const top = ranked[0];
+  const bottom = ranked[ranked.length - 1];
+  if (!top || !bottom) return "";
+  if (top.lean - bottom.lean < 8) {
+    return "The ten aspects sit close together. None of them is shouting.";
+  }
+  const tiedLow = ranked.filter((row) => row.lean === bottom.lean).length;
+  if (tiedLow > 2) {
+    return `${top.name} leads. The other seats sit closer to the middle.`;
+  }
+  return `${top.name} leads. ${bottom.name} is the quiet seat.`;
+}
+
 function headlineOf(verdict: BrainVerdict, name: string): string {
-  const who = name;
   if (verdict === "letter") {
-    return `${who} looks first at the whole living thing in front of them, and only then at the pieces. That is Letter-brained looking.`;
+    return `${name} looks first at the whole living thing in front of them, and only then at the pieces. That is Letter-brained looking.`;
   }
   if (verdict === "number") {
-    return `${who} is skilled with pieces, files, and totals. Number-brained looking is useful until it forgets to come back to the person.`;
+    return `${name} is skilled with pieces, files, and totals. Number-brained looking is useful until it forgets to come back to the person.`;
   }
-  return `${who} already goes out into the count and comes home to the person. That is the circuit kept, which is the practice, not a tie.`;
+  return `${name} already goes out into the count and comes home to the person. That is the circuit kept, which is the practice, not a tie.`;
 }
 
 const CHOICE_MARK = "abcde";
@@ -528,56 +930,82 @@ export const GUEST_NAME = "A guest of CC33";
 
 export function readBrain(answers: BrainChoice[], nameRaw?: string): BrainReading | null {
   if (answers.length !== BRAIN_ITEM_COUNT) return null;
-  const items = orderedItems();
-  if (items.length !== BRAIN_ITEM_COUNT) return null;
-  const byDomain: Record<BrainDomainId, number[]> = {
+  if (ITEMS.length !== BRAIN_ITEM_COUNT) return null;
+  const byAspect: Partial<Record<BrainAspectId, number[]>> = {};
+  const lookingByDomain: Record<BrainDomainId, number[]> = {
     sight: [],
     keeping: [],
     entrance: [],
     court: [],
     weather: [],
   };
-  const byAspect: Partial<Record<BrainAspectId, number[]>> = {};
-  items.forEach((item, index) => {
-    const lean = itemLean(item, answers[index] ?? 2);
-    byDomain[item.domain].push(lean);
+  const looking: number[] = [];
+  ITEMS.forEach((item, index) => {
+    const lean = plusLean(answers[index] ?? 2);
+    if (item.kind === "looking") {
+      looking.push(lean);
+      lookingByDomain[item.domain].push(lean);
+      return;
+    }
     const bucket = byAspect[item.aspect] ?? [];
     bucket.push(lean);
     byAspect[item.aspect] = bucket;
   });
+  const aspects: BrainAspectScore[] = (Object.keys(ASPECT_NAME) as BrainAspectId[]).map((id) =>
+    aspectScore(id, mean(byAspect[id] ?? [50])),
+  );
+  const aspectMap = Object.fromEntries(aspects.map((row) => [row.id, row])) as Record<
+    BrainAspectId,
+    BrainAspectScore
+  >;
   const domains: BrainDomainScore[] = (Object.keys(DOMAIN_META) as BrainDomainId[]).map((id) => {
-    const lean = roundLean(mean(byDomain[id]));
-    const band = domainBand(lean);
-    const louder = louderAspect(id, byAspect);
+    const [firstId, secondId] = DOMAIN_META[id].aspects;
+    const first = aspectMap[firstId]!;
+    const second = aspectMap[secondId]!;
+    const trait = roundLean(mean([first.lean, second.lean]));
+    const combo = comboOf(first.lean, second.lean);
+    const louder = first.lean >= second.lean ? firstId : secondId;
+    const mark = markOf(trait);
+    const copy = COMBO[id][combo];
     return {
       id,
       name: DOMAIN_META[id].name,
       job: DOMAIN_META[id].job,
-      lean,
+      lean: trait,
+      mark,
+      markName: MARK_NAME[mark],
       louder,
       louderName: ASPECT_NAME[louder],
-      gold: GOLD[id][band],
-      shadow: SHADOW[id][band],
+      combo,
+      aspects: [first, second],
+      gold: copy.gold,
+      shadow: copy.shadow,
     };
   });
-  const lean = roundLean(mean(domains.map((row) => row.lean)));
+  const lean = roundLean(mean(looking));
+  const grade = gradeOf(lean);
   const verdict = verdictOf(lean);
   const trimmed = nameRaw?.trim() ?? "";
   const guest = trimmed.length === 0;
   const name = guest ? GUEST_NAME : trimmed.replace(/^@+/, "");
-  const weakest = [...domains].sort((a, b) => a.lean - b.lean)[0] ?? domains[0]!;
+  const weakestLooking = (Object.keys(DOMAIN_META) as BrainDomainId[])
+    .map((id) => ({ id, lean: mean(lookingByDomain[id]) }))
+    .sort((a, b) => a.lean - b.lean)[0];
   return {
     answers,
     name,
     guest,
     lean,
-    walk: spellLean(lean),
+    grade,
+    gradeCaption: GRADE_CAPTION[grade],
     verdict,
     verdictName: VERDICT_NAME[verdict],
-    title: typeTitle(verdict, domains),
+    title: typeTitle(verdict, aspects),
     headline: headlineOf(verdict, name),
-    invitation: INVITE[weakest.id],
+    pattern: patternOf(aspects),
+    invitation: INVITE[weakestLooking?.id ?? "sight"],
     domains,
+    aspects,
     token: encodeAnswers(answers),
   };
 }
@@ -594,7 +1022,7 @@ export function brainCardFile(token: string): string {
 }
 
 export function tweetBrain(reading: BrainReading): string {
-  return `${reading.name} is ${reading.title}\nLetter-lean ${reading.walk} · ${reading.verdictName}`;
+  return `${reading.name} is ${reading.title}\n${reading.grade} · ${reading.verdictName}`;
 }
 
 export const SCALE_LABELS = [

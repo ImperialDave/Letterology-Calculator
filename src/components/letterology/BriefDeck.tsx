@@ -1,6 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { BRIEF_FOOTER, briefSlides, type BriefSlide } from "@/lib/letterology/brief";
+import {
+  BRIEF_FOOTER,
+  NEVER_SAY,
+  SAY_THIS,
+  briefSlides,
+  toRoman,
+  type BriefSlide,
+} from "@/lib/letterology/brief";
+import { pigmentOf } from "@/lib/letterology/pigment";
 import { VOICE } from "@/lib/letterology/voice";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -43,13 +51,16 @@ export function BriefDeck({
       if (event.key === "n" || event.key === "N") {
         setNotes((open) => !open);
       }
+      if (event.key === "f" || event.key === "F") {
+        void fullScreen();
+      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [current, last, tongue]);
 
   async function fullScreen() {
-    const node = document.getElementById("brief-stage");
+    const node = document.getElementById("brief-deck");
     if (!node) return;
     if (document.fullscreenElement) {
       await document.exitFullscreen();
@@ -59,14 +70,14 @@ export function BriefDeck({
   }
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div id="brief-deck" className="space-y-6 bg-bg">
+      <header className="flex flex-col gap-3 print:hidden sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="font-display text-xs tracking-[0.22em] text-muted uppercase">CC33</p>
           <h1 className="font-display text-4xl text-ink sm:text-5xl">{VOICE.briefTitle}</h1>
-          <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink/85">{VOICE.briefLede}</p>
+          <p className="mt-2 max-w-2xl text-pretty leading-relaxed text-ink/85">{VOICE.briefLede}</p>
         </div>
-        <div className="flex flex-wrap gap-2 print:hidden">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" type="button" onClick={() => setNotes((open) => !open)}>
             {VOICE.briefNotes}
           </Button>
@@ -82,17 +93,21 @@ export function BriefDeck({
         </div>
       </header>
 
-      <div id="brief-stage" className="rounded-xl bg-raised p-6 shadow-[var(--shadow-border)] sm:p-10">
+      <div
+        id="brief-stage"
+        className="relative overflow-hidden rounded-xl bg-raised px-6 py-10 shadow-[var(--shadow-border)] sm:px-12 sm:py-14"
+      >
+        <span className="pointer-events-none absolute inset-y-0 left-0 w-1.5 bg-primary" />
         <SlideBody slide={slide} />
-        <p className="mt-8 font-display text-xs tracking-[0.16em] text-muted uppercase">{BRIEF_FOOTER}</p>
+        <p className="mt-10 font-display text-xs tracking-[0.16em] text-muted uppercase">{BRIEF_FOOTER}</p>
       </div>
 
       {notes ? (
-        <aside className="rounded-xl bg-surface p-5 shadow-[var(--shadow-border)]">
+        <aside className="rounded-xl bg-surface p-5 shadow-[var(--shadow-border)] print:hidden">
           <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">Speaker notes</p>
-          <div className="mt-3 space-y-2">
+          <div className="mt-3 space-y-3">
             {slide.notes.map((note) => (
-              <p key={note.slice(0, 32)} className="leading-relaxed text-ink/90">
+              <p key={note.slice(0, 32)} className="text-pretty leading-relaxed text-ink/90">
                 {note}
               </p>
             ))}
@@ -100,20 +115,20 @@ export function BriefDeck({
         </aside>
       ) : null}
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="font-display text-xs tracking-[0.14em] text-muted uppercase">
-          {current + 1} of {slides.length}
+      <div className="flex flex-col gap-4 print:hidden sm:flex-row sm:items-center sm:justify-between">
+        <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">
+          {toRoman(current + 1)} · {toRoman(slides.length)}
         </p>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap justify-center gap-2 sm:justify-start">
           {slides.map((item, i) => (
             <button
               key={item.id}
               type="button"
-              aria-label={`Slide ${i + 1}: ${item.title}`}
+              aria-label={item.title}
               aria-current={i === current}
               onClick={() => go(i)}
               className={cn(
-                "size-11 rounded-full sm:size-3",
+                "size-11 rounded-full sm:size-2.5",
                 i === current ? "bg-primary" : "bg-ink/20 hover:bg-ink/40",
               )}
             />
@@ -129,11 +144,18 @@ export function BriefDeck({
         </div>
       </div>
 
-      <p className="text-sm text-muted">
-        Arrow keys move the slides. Press N for notes.
+      <p className="text-sm text-muted print:hidden">
+        Arrow keys move the slides. Press N for notes, F for full screen.
       </p>
 
-      <p className="flex flex-wrap gap-4">
+      <p className="flex flex-wrap gap-4 print:hidden">
+        <Link
+          to="/brain"
+          search={{ tongue, a: undefined, n: undefined }}
+          className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+        >
+          Letter-brained or number-brained
+        </Link>
         <Link
           to="/why"
           search={{ tongue }}
@@ -154,17 +176,142 @@ export function BriefDeck({
 }
 
 function SlideBody({ slide }: { slide: BriefSlide }) {
-  return (
-    <article className="min-h-[18rem]">
-      <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">{slide.kicker}</p>
-      <h2 className="mt-2 font-display text-3xl text-ink sm:text-4xl">{slide.title}</h2>
-      <div className="mt-6 space-y-3">
+  if (slide.layout === "compare" && slide.left && slide.right) {
+    return (
+      <article className="space-y-8">
+        <SlideHead slide={slide} />
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Column card={slide.left} tone="letter" />
+          <Column card={slide.right} tone="number" />
+        </div>
         {slide.paragraphs.map((paragraph) => (
-          <p key={paragraph.slice(0, 40)} className="max-w-2xl text-lg leading-relaxed text-ink/90">
+          <p key={paragraph.slice(0, 40)} className="max-w-3xl text-pretty text-lg leading-relaxed text-ink/90">
             {paragraph}
           </p>
         ))}
-      </div>
+      </article>
+    );
+  }
+
+  if (slide.layout === "path" && slide.path) {
+    return (
+      <article className="space-y-8">
+        <SlideHead slide={slide} />
+        <div className="grid gap-6 sm:grid-cols-3">
+          {slide.path.map((mark) => (
+            <div key={mark.letter} className="rounded-lg bg-surface px-4 py-5 shadow-[var(--shadow-border)]">
+              <p
+                className="font-display text-6xl leading-none sm:text-7xl"
+                style={{ color: pigmentOf(mark.letter).css }}
+              >
+                {mark.letter}
+              </p>
+              <p className="mt-3 font-display text-xs tracking-[0.16em] text-muted uppercase">{mark.label}</p>
+              <p className="mt-2 text-pretty text-sm leading-relaxed text-ink/90">{mark.line}</p>
+            </div>
+          ))}
+        </div>
+        {slide.paragraphs.map((paragraph) => (
+          <p key={paragraph.slice(0, 40)} className="max-w-3xl text-pretty leading-relaxed text-ink/90">
+            {paragraph}
+          </p>
+        ))}
+      </article>
+    );
+  }
+
+  if (slide.layout === "speech") {
+    return (
+      <article className="space-y-8">
+        <SlideHead slide={slide} />
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div>
+            <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">Never say</p>
+            <ul className="mt-3 space-y-3">
+              {NEVER_SAY.map((line) => (
+                <li key={line} className="border-l-2 border-ink/20 pl-3 leading-relaxed text-ink/80">
+                  {line}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <p className="font-display text-xs tracking-[0.16em] text-primary uppercase">Say this</p>
+            <ul className="mt-3 space-y-3">
+              {SAY_THIS.map((line) => (
+                <li key={line} className="border-l-2 border-primary/50 pl-3 leading-relaxed text-ink">
+                  {line}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+        {slide.paragraphs.map((paragraph) => (
+          <p key={paragraph.slice(0, 40)} className="max-w-3xl text-pretty leading-relaxed text-ink/90">
+            {paragraph}
+          </p>
+        ))}
+      </article>
+    );
+  }
+
+  return (
+    <article className={cn(slide.layout === "hero" ? "space-y-8 py-6" : "space-y-6")}>
+      <SlideHead slide={slide} hero={slide.layout === "hero" || slide.layout === "close"} />
+      {slide.paragraphs.map((paragraph) => (
+        <p
+          key={paragraph.slice(0, 40)}
+          className={cn(
+            "max-w-3xl text-pretty leading-relaxed text-ink/90",
+            slide.layout === "hero" || slide.layout === "close" ? "text-xl" : "text-lg",
+          )}
+        >
+          {paragraph}
+        </p>
+      ))}
     </article>
+  );
+}
+
+function SlideHead({ slide, hero = false }: { slide: BriefSlide; hero?: boolean }) {
+  return (
+    <header>
+      <p className="font-display text-xs tracking-[0.18em] text-muted uppercase">{slide.kicker}</p>
+      <h2
+        className={cn(
+          "mt-2 text-balance font-display leading-tight text-ink",
+          hero ? "text-4xl sm:text-6xl" : "text-3xl sm:text-4xl",
+        )}
+      >
+        {slide.title}
+      </h2>
+      {slide.lede ? (
+        <p className="mt-4 max-w-3xl text-pretty text-lg leading-relaxed text-ink/85">{slide.lede}</p>
+      ) : null}
+    </header>
+  );
+}
+
+function Column({ card, tone }: { card: NonNullable<BriefSlide["left"]>; tone: "letter" | "number" }) {
+  return (
+    <div
+      className={cn(
+        "rounded-lg px-5 py-6 shadow-[var(--shadow-border)]",
+        tone === "letter" ? "bg-primary text-primary-fg" : "bg-surface text-ink",
+      )}
+    >
+      <p
+        className={cn(
+          "font-display text-xs tracking-[0.16em] uppercase",
+          tone === "letter" ? "text-primary-fg/70" : "text-muted",
+        )}
+      >
+        {card.kicker}
+      </p>
+      <h3 className="mt-2 font-display text-2xl">{card.title}</h3>
+      <p className={cn("mt-4 text-pretty leading-relaxed", tone === "letter" ? "text-primary-fg/90" : "text-ink/90")}>
+        {card.body}
+      </p>
+    </div>
   );
 }

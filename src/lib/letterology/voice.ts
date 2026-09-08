@@ -50,7 +50,7 @@ export const VOICE = {
     "We read the username you actually use. We do not add those letters into one lucky digit. Luck is the day's willingness. Use the reading. Do not spend it.",
   briefTitle: "The Brief",
   briefLede:
-    "A fifteen-minute crash course. After this you should be able to read a username, time a decision, and hand someone a card without preaching.",
+    "A training for people who will read a name in public. You will learn the difference between a Letter brain and a number brain, how a username becomes a path, and how to leave the room without preaching.",
   briefNotes: "Speaker notes",
   briefDownload: "Download the deck",
   briefFullscreen: "Full screen",
@@ -58,7 +58,7 @@ export const VOICE = {
   briefPrev: "Last slide",
   brainTitle: "Letter-brained or number-brained",
   brainLede:
-    "This is a short portrait of how you look at a life. It asks whether you start with the whole person in front of you, or with the pieces you can count and file. When you finish, you get a leaning, five traits in our language, and a certificate you can share or print.",
+    "This is a portrait of how you look at a life, and of five seats in how you actually work. Fifty situations. The two sides switch places so a kinder-sounding line cannot sit still on the left. When you finish, you get a letter grade from A+ to F for Letter brain versus number brain, plus ten aspects. A+ is a perfect Letter brain. F is a person led by numbers.",
   footerLine:
     "Official instrument. Usernames, not birth names. Luck is willingness. The decision is yours.",
   moreLetters: "More about these letters",

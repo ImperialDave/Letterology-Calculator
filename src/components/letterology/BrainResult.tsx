@@ -4,9 +4,12 @@ import { Check, Copy, ExternalLink } from "lucide-react";
 import { BrainCertificate } from "@/components/letterology/BrainCertificate";
 import { Button } from "@/components/ui/button";
 import {
+  BRAIN_GRADES,
+  GRADE_LEGEND,
   brainCardFile,
   brainPath,
   tweetBrain,
+  type BrainGrade,
   type BrainReading,
 } from "@/lib/letterology/brain";
 import { copyToClipboard, openXIntent } from "@/lib/letterology/clipboard";
@@ -31,37 +34,57 @@ export function BrainResult({ reading, tongue }: { reading: BrainReading; tongue
       <header className="text-center">
         <p className="font-display text-xs tracking-[0.22em] text-muted uppercase">CC33 · How you look</p>
         <h1 className="mt-3 font-display text-4xl leading-tight text-ink sm:text-5xl">{reading.title}</h1>
+        <p className="mx-auto mt-3 max-w-2xl font-display text-lg text-primary">{reading.pattern}</p>
         <p className="mx-auto mt-4 max-w-2xl leading-relaxed text-ink/90">{reading.headline}</p>
-        <p className="mt-6 font-display text-sm tracking-[0.14em] text-muted uppercase">Letter-lean</p>
-        <p className="mt-1 font-display text-4xl text-primary">{reading.walk}</p>
-        <div className="mx-auto mt-4 h-2 max-w-md overflow-hidden rounded-full bg-ink/10">
-          <div className="h-full bg-primary" style={{ width: `${reading.lean}%` }} />
-        </div>
-        <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted">
-          {reading.lean} on a hundred-point bar, written as letters so the digit cannot pretend to be
-          you. This number is a piece of the portrait, not a fate you have to serve.
-        </p>
+        <p className="mt-6 font-display text-sm tracking-[0.14em] text-muted uppercase">Grade</p>
+        <p className="mt-1 font-display text-6xl text-primary">{reading.grade}</p>
+        <GradeScale grade={reading.grade} />
+        <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-ink/90">{reading.gradeCaption}</p>
+        <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">{GRADE_LEGEND}</p>
       </header>
 
       <section className="space-y-6">
         <h2 className="font-display text-2xl text-ink">Five seats</h2>
+        <p className="max-w-2xl leading-relaxed text-muted">
+          These are how you actually work. They are not the Letter-brain grade. Strong and quiet can
+          live in the same person.
+        </p>
         {reading.domains.map((row) => (
           <article key={row.id} className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-6">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
                 <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">{row.job}</p>
                 <h3 className="mt-1 font-display text-2xl text-ink">{row.name}</h3>
-                <p className="text-sm text-muted">Louder aspect: {row.louderName}</p>
+                <p className="text-sm text-muted">
+                  {row.aspects[0].name} {row.aspects[0].markName.toLowerCase()} · {row.aspects[1].name}{" "}
+                  {row.aspects[1].markName.toLowerCase()}
+                </p>
               </div>
-              <p className="font-display text-3xl text-primary">{row.lean}</p>
-            </div>
-            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-ink/10">
-              <div className="h-full bg-primary" style={{ width: `${row.lean}%` }} />
+              <p className="font-display text-3xl text-primary">{row.markName}</p>
             </div>
             <p className="mt-4 leading-relaxed text-ink/90">{row.gold}</p>
             <p className="mt-3 leading-relaxed text-ink/80">{row.shadow}</p>
           </article>
         ))}
+      </section>
+
+      <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
+        <h2 className="font-display text-2xl text-ink">Ten aspects</h2>
+        <p className="mt-2 max-w-2xl leading-relaxed text-muted">
+          Each seat has two aspects. This is the finer map: each aspect reported on its own, instead
+          of one total standing in for a person.
+        </p>
+        <ul className="mt-5 grid gap-3 sm:grid-cols-2">
+          {reading.aspects.map((row) => (
+            <li key={row.id} className="border-t border-ink/10 pt-3">
+              <div className="flex items-baseline justify-between gap-3">
+                <p className="font-display text-lg text-ink">{row.name}</p>
+                <p className="font-display text-sm tracking-[0.12em] text-primary uppercase">{row.markName}</p>
+              </div>
+              <p className="mt-1 text-sm leading-relaxed text-muted">{row.job}</p>
+            </li>
+          ))}
+        </ul>
       </section>
 
       <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
@@ -160,5 +183,23 @@ export function BrainResult({ reading, tongue }: { reading: BrainReading; tongue
         </Link>
       </p>
     </div>
+  );
+}
+
+function GradeScale({ grade }: { grade: BrainGrade }) {
+  return (
+    <p className="mx-auto mt-4 flex max-w-xl flex-wrap justify-center gap-x-2.5 gap-y-1">
+      {BRAIN_GRADES.map((mark) => (
+        <span
+          key={mark}
+          className={cn(
+            "font-display tracking-wide",
+            mark === grade ? "text-lg text-primary" : "text-sm text-muted/45",
+          )}
+        >
+          {mark}
+        </span>
+      ))}
+    </p>
   );
 }

@@ -75,7 +75,7 @@ export function parseCardFile(file: string): CardSpec | null {
   if (xeniaCard) return { kind: "stoicheia-xenia", a: xeniaCard[1].replace(/-/g, " "), b: xeniaCard[2].replace(/-/g, " ") };
   const countWalk = jpg.match(/^count-((?:w-)?[a-z]+)$/);
   if (countWalk) return { kind: "count", slug: countWalk[1] };
-  const brain = jpg.match(/^brain-([a-e]{25})$/);
+  const brain = jpg.match(/^brain-([a-e]{50})$/);
   if (brain) return { kind: "brain", token: brain[1] };
   const bond = jpg.match(/^bond-([^_]+)_([^_]+)$/);
   if (bond) return { kind: "bond", a: bond[1], b: bond[2] };
@@ -140,8 +140,9 @@ export async function renderPortraitJpeg(file: string): Promise<Uint8Array | nul
     svg = brainSvg({
       name: reading.name,
       title: reading.title,
-      walk: reading.walk,
-      seats: reading.domains.map((row) => ({ name: row.name, lean: row.lean })),
+      grade: reading.grade,
+      pattern: reading.pattern,
+      seats: reading.domains.map((row) => ({ name: row.name, mark: row.louderName })),
     });
   } else if (parsed.kind === "bond") {
     const bond = compareNames(slugToName(parsed.a), slugToName(parsed.b));
