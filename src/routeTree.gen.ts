@@ -15,6 +15,8 @@ import { Route as ArchetypesRouteImport } from './routes/archetypes'
 import { Route as AskRouteImport } from './routes/ask'
 import { Route as AtlasRouteImport } from './routes/atlas'
 import { Route as BondRouteImport } from './routes/bond'
+import { Route as BrainRouteImport } from './routes/brain'
+import { Route as BriefRouteImport } from './routes/brief'
 import { Route as CircleRouteImport } from './routes/circle'
 import { Route as ClaimRouteImport } from './routes/claim'
 import { Route as CountRouteImport } from './routes/count'
@@ -75,6 +77,16 @@ const AtlasRoute = AtlasRouteImport.update({
 const BondRoute = BondRouteImport.update({
   id: '/bond',
   path: '/bond',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BrainRoute = BrainRouteImport.update({
+  id: '/brain',
+  path: '/brain',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BriefRoute = BriefRouteImport.update({
+  id: '/brief',
+  path: '/brief',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CircleRoute = CircleRouteImport.update({
@@ -240,6 +252,8 @@ export interface FileRoutesByFullPath {
   '/ask': typeof AskRoute
   '/atlas': typeof AtlasRoute
   '/bond': typeof BondRoute
+  '/brain': typeof BrainRoute
+  '/brief': typeof BriefRoute
   '/circle': typeof CircleRoute
   '/claim': typeof ClaimRoute
   '/count': typeof CountRoute
@@ -279,6 +293,8 @@ export interface FileRoutesByTo {
   '/ask': typeof AskRoute
   '/atlas': typeof AtlasRoute
   '/bond': typeof BondRoute
+  '/brain': typeof BrainRoute
+  '/brief': typeof BriefRoute
   '/circle': typeof CircleRoute
   '/claim': typeof ClaimRoute
   '/count': typeof CountRoute
@@ -318,6 +334,8 @@ export interface FileRoutesById {
   '/ask': typeof AskRoute
   '/atlas': typeof AtlasRoute
   '/bond': typeof BondRoute
+  '/brain': typeof BrainRoute
+  '/brief': typeof BriefRoute
   '/circle': typeof CircleRoute
   '/claim': typeof ClaimRoute
   '/count': typeof CountRoute
@@ -359,6 +377,8 @@ export interface FileRouteTypes {
     | '/ask'
     | '/atlas'
     | '/bond'
+    | '/brain'
+    | '/brief'
     | '/circle'
     | '/claim'
     | '/count'
@@ -398,6 +418,8 @@ export interface FileRouteTypes {
     | '/ask'
     | '/atlas'
     | '/bond'
+    | '/brain'
+    | '/brief'
     | '/circle'
     | '/claim'
     | '/count'
@@ -436,6 +458,8 @@ export interface FileRouteTypes {
     | '/ask'
     | '/atlas'
     | '/bond'
+    | '/brain'
+    | '/brief'
     | '/circle'
     | '/claim'
     | '/count'
@@ -476,6 +500,8 @@ export interface RootRouteChildren {
   AskRoute: typeof AskRoute
   AtlasRoute: typeof AtlasRoute
   BondRoute: typeof BondRoute
+  BrainRoute: typeof BrainRoute
+  BriefRoute: typeof BriefRoute
   CircleRoute: typeof CircleRoute
   ClaimRoute: typeof ClaimRoute
   CountRoute: typeof CountRoute
@@ -540,6 +566,20 @@ declare module '@tanstack/react-router' {
       path: '/bond'
       fullPath: '/bond'
       preLoaderRoute: typeof BondRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/brain': {
+      id: '/brain'
+      path: '/brain'
+      fullPath: '/brain'
+      preLoaderRoute: typeof BrainRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/brief': {
+      id: '/brief'
+      path: '/brief'
+      fullPath: '/brief'
+      preLoaderRoute: typeof BriefRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/circle': {
@@ -811,6 +851,8 @@ const rootRouteChildren: RootRouteChildren = {
   AskRoute: AskRoute,
   AtlasRoute: AtlasRoute,
   BondRoute: BondRoute,
+  BrainRoute: BrainRoute,
+  BriefRoute: BriefRoute,
   CircleRoute: CircleRoute,
   ClaimRoute: ClaimRoute,
   CountRoute: CountRoute,

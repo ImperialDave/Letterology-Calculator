@@ -113,7 +113,7 @@ function nameFromSlug(slug: string): string {
 }
 
 export type FlipTarget = {
-  to: "/" | "/two" | "/letters" | "/letters/$mark" | "/why" | "/count" | "/count/$walk" | "/login" | "/claim" | "/sheet" | "/ask";
+  to: "/" | "/two" | "/letters" | "/letters/$mark" | "/why" | "/count" | "/count/$walk" | "/login" | "/claim" | "/sheet" | "/ask" | "/brief" | "/brain";
   params?: { mark?: string; walk?: string };
   search: Record<string, string | undefined> & { tongue?: "la" | "el" };
   hash?: string;
@@ -168,6 +168,12 @@ export function flipTongue(input: {
   }
   if (path === "/sheet") {
     return { to: "/sheet", search: { tongue } };
+  }
+  if (path === "/brief") {
+    return { to: "/brief", search: { tongue } };
+  }
+  if (path === "/brain") {
+    return { to: "/brain", search: { tongue } };
   }
   if (path === "/ask") {
     return { to: "/ask", search: { n: handle, q, tongue } };

@@ -14,6 +14,8 @@ A letter does not change its nature — only its willingness. That is luck.
 4. Letterize an act (`quit`, `ask them`, `ship the launch`) to see if the day will have it.
 5. Compare two handles. Write an amount as letters. Flip to Greek if you want the second tongue.
 6. Play Glyphbound (`/glyphbound`) — a side-scroller. Letters against numbers. Play StarWords (`/starwords`) — fly the C-wing. Progress stays in this browser.
+7. Teach it. The Brief at `/brief` is a fifteen-minute crash course. Download `/brief.pptx` if you are presenting in a room. The cheat sheet is the pocket script. Why is the argument.
+8. Take the portrait at `/brain`. Letter-brained or number-brained, five seats, a certificate you can share or print.
 
 ## Doctrine, short
 

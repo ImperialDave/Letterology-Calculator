@@ -276,6 +276,22 @@
   .sheet-page section {
     break-inside: avoid;
   }
+
+  body:has(#brain-certificate) * {
+    visibility: hidden;
+  }
+
+  body:has(#brain-certificate) #brain-certificate,
+  body:has(#brain-certificate) #brain-certificate * {
+    visibility: visible;
+  }
+
+  body:has(#brain-certificate) #brain-certificate {
+    position: absolute;
+    inset: 0;
+    box-shadow: none;
+    max-width: none;
+  }
 }
 
 /* Glyphbound — ink room. Tokens only apply inside the scroller. */

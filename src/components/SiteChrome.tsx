@@ -47,13 +47,13 @@ const VERBS: { to: "/" | "/two" | "/count" | "/ask"; label: string; verb: "read"
   { to: "/count", label: "Count", verb: "count" },
 ];
 
-export type HeaderCurrent = Verb | "login" | "key" | "stoicheia" | "bond" | "atlas" | "houses" | "circle" | "almanac" | "sheet";
+export type HeaderCurrent = Verb | "login" | "key" | "stoicheia" | "bond" | "atlas" | "houses" | "circle" | "almanac" | "sheet" | "brief" | "brain";
 
 function verbOf(current?: HeaderCurrent): Verb | "login" {
   if (current === "bond") return "two";
   if (current === "stoicheia") return "read";
   if (current === "atlas" || current === "houses" || current === "circle") return "letters";
-  if (current === "key" || current === "almanac" || current === "sheet") return "why";
+  if (current === "key" || current === "almanac" || current === "sheet" || current === "brief" || current === "brain") return "why";
   if (current === "login") return "login";
   if (
     current === "read" ||
@@ -169,6 +169,24 @@ function goFlip(
   if (flip.to === "/sheet") {
     void navigate({
       to: "/sheet",
+      search: (prev) => ({ ...prev, tongue }),
+      replace: true,
+      resetScroll: false,
+    });
+    return;
+  }
+  if (flip.to === "/brain") {
+    void navigate({
+      to: "/brain",
+      search: (prev) => ({ ...prev, tongue }),
+      replace: true,
+      resetScroll: false,
+    });
+    return;
+  }
+  if (flip.to === "/brief") {
+    void navigate({
+      to: "/brief",
       search: (prev) => ({ ...prev, tongue }),
       replace: true,
       resetScroll: false,
@@ -308,6 +326,20 @@ export function AppShell({
         <div className="mx-auto flex max-w-5xl flex-col items-center gap-2 px-4 py-8 text-center text-sm text-muted sm:px-6">
           <p>{VOICE.footerLine}</p>
           <div className="flex flex-wrap items-center justify-center gap-4">
+          <Link
+            to="/brain"
+            search={{ tongue: tongue === "el" ? "el" : "la", a: undefined, n: undefined }}
+            className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+          >
+            Brain
+          </Link>
+          <Link
+            to="/brief"
+            search={{ tongue: tongue === "el" ? "el" : "la", s: undefined }}
+            className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+          >
+            Brief
+          </Link>
           <Link
             to="/sheet"
             search={{ tongue: tongue === "el" ? "el" : "la" }}

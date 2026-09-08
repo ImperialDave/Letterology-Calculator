@@ -8,6 +8,7 @@ import { countMeeting, countReadingOf } from "./count";
 import { HOW_TO } from "../stoicheia/copy";
 import { sheetPlainText } from "./sheet";
 import { ask } from "./ask";
+import { ITEMS, tweetBrain, readBrain } from "./brain";
 import { readStoicheion } from "../stoicheia/engine";
 
 function scan(label: string, body: string) {
@@ -29,6 +30,9 @@ test("door copy follows the voice law", () => {
   assert.match(VOICE.homeHero, /letter/i);
   assert.match(VOICE.footerLine, /luck is willingness|decision is yours/i);
   assert.match(VOICE.countConfessLabel, /regular number/i);
+  scan("brain items", ITEMS.flatMap((item) => [item.prompt, item.letter, item.number]).join("\n"));
+  const portrait = readBrain(Array.from({ length: 25 }, () => 2 as const));
+  if (portrait) scan("brain result", `${portrait.headline} ${portrait.invitation} ${tweetBrain(portrait)}`);
 });
 
 test("glossary plains do not speak house-verb", () => {

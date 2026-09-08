@@ -1,3 +1,5 @@
+import { CIRCUIT_CLOSE } from "./brief";
+
 export type DoctrineSection = {
   kicker: string;
   title: string;
@@ -6,13 +8,11 @@ export type DoctrineSection = {
 
 /**
  * The argument for the system as it actually runs.
- * Written backward from the mechanics so every rule looks like a consequence.
+ * Teaching voice: complete sentences, one metaphor per section at most.
  */
 export const DOCTRINE_PREFACE = [
-  "There are two ways of looking at a life. One way looks at the whole living thing: this username, this day, this act you will stand behind. The other way looks at pieces — letters, dates, sums, scores. It counts. It is useful.",
-  "The second way was hired to serve the first. It goes out, does the close work, and brings what it found back to the person it came from. When it does not come home — when the pile of pieces is treated as the person — the servant has become a king.",
-  "That is Numerology's last step. It is also what the games call the Dominion. Letterology is the circuit kept. See the whole. Use the pieces. Come back.",
-  "What follows is not a manual. The cheat sheet is the manual. This is why the machine is shaped the way it is. Every rule on the site was chosen. This page says why those choices, and not others, are the ones that can be kept.",
+  "We read the username you actually use. We do not read your legal name or your birthday, and we do not add the letters into one lucky digit. The first letter is how you enter. The next two, by how often they return, are how you work and where you work. Luck is which of those letters have an easy time today.",
+  "This page is the reason the tools are shaped this way. The Brief is the crash course. The cheat sheet is the pocket script. What follows is the argument, written so you can finish it standing up.",
 ];
 
 export const DOCTRINE: DoctrineSection[] = [
@@ -20,131 +20,68 @@ export const DOCTRINE: DoctrineSection[] = [
     kicker: "The circuit",
     title: "The Master and the Emissary",
     paragraphs: [
-      "Iain McGilchrist told a fable of a wise Master and the Emissary he sent to do the close work. The Master sees the living thing. The Emissary grasps, counts, and sorts. He is a good servant. He is a bad king. We take the fable, not the brain maps.",
-      "The Master is a way of seeing that looks at the whole living thing — this username, this day, this act you will stand behind. The Emissary is a way of seeing that looks at isolated facts and measurements. The second was hired to help the first, not to replace it.",
-      "So the rule is simple. The emissary must come home. Count the letters. Name the date. Write the sum. Then look back at the person those pieces came from. A count that does not return is a lie about a life.",
-      "We are not trying to insult anyone who used Numerology. They already suspected a name means something. We keep that suspicion. We finish the circuit they stopped in the middle: the pieces report back, and the whole remains the person.",
+      "There are two ways of looking at a life. One way looks at the whole living thing: this username, this day, this act you will stand behind. The other way looks at pieces, which means letters, dates, sums, and scores. Counting is useful. Calling the count the person is the mistake.",
+      "Iain McGilchrist told this as the fable of the Master and his Emissary. The Master is the way of seeing that looks at the whole. The Emissary is the way of seeing that looks at isolated facts and measurements. The Emissary was hired to help, then to come home and report. We take the fable, not the brain maps.",
+      "Letterology is that circuit kept. See the whole. Use the pieces. Come back.",
     ],
   },
   {
     kicker: "The refusal",
     title: "What we will not do",
     paragraphs: [
-      "The unread total is the emissary who never came home. A system that reads a birth name as fate has already decided the person is property of a record office. We do not do that. A system that folds twenty-six letters into nine digits has already decided that difference is an inconvenience. We do not do that. Luck is not fate. Luck is willingness: which letters run warm today, and which withdraw.",
-      "Numerology asks a name to become a number so a life can be held in one hand. Astrology asks a birth hour to become a weather report. Both are serious in their own houses. This house is different. We ask only: what letters did you put into the world, and what work do those letters already know how to do?",
-      "The sentence on every portrait is not decoration. This is a portrait you can act on. A portrait can be wrong about a soul and still be true about a face. We claim the face, then we tell you if the day will have the move.",
+      "Numerology takes a name apart, assigns numbers, adds them, and treats the total as the person. That last step is what we refuse. A total is a useful file. It is not a portrait of someone you actually know.",
+      "Astrology asks a birth hour to become a weather report. That work is serious in its own house. This house asks a different question: what letters did you put into the world, and what work do those letters already know how to do?",
+      "Luck is not fate. Luck is willingness, which means which letters run warm today and which withdraw. You use that weather to time a decision. You do not obey it.",
     ],
   },
   {
     kicker: "The material",
     title: "We read the username you chose",
     paragraphs: [
-      "We start with the living whole, not the file. A legal name is an inheritance. It was spoken over you before you could refuse it. A username is a vow. You chose it in public, or you accepted the one the room gave you and then lived inside it long enough that it became a second skin. Either way, it is the name that does work.",
-      "That is why the door does not ask for your legal name. It asks for the username you use. @ is optional because the at-sign is furniture. Only A through Z are read, because those are the twenty-six roles. Accents fold so a mark from another tongue can still name a role without being punished for its origin.",
-      "If you sit the house with X, the screen name arrives as the handle and is not offered back for editing. Destiny you already posted under is not a preference. If you come by Google, you claim. Claiming is not branding. It is taking responsibility for a spelling.",
+      "A legal name is an inheritance. It was spoken over you before you could refuse it. A username is the name you walk around in, either because you chose it or because you lived inside it long enough that it does work.",
+      "That is why the door asks for the username you use. The at-sign is optional. Only A through Z are read. Digits become letters, so 1 is A and 0 is the Fool. Accents fall away so a mark from another tongue can still name a role.",
     ],
   },
   {
-    kicker: "The first mark",
-    title: "Why the first letter is the role",
+    kicker: "The path",
+    title: "Why the first letter is the role, and why the next two are weight",
     paragraphs: [
-      "A role is how the whole enters, not a tally. A house is a role, not a personality. The first letter of the first token is the first mark the handle makes on the world. Before repetition, before weight, before the clever middle, there is the threshold. That threshold is the house.",
-      "We could have let the most common letter sit the house. That would have made the role a popularity contest. We could have let the last letter sit it. That would have made the role an ending. A role is how you enter. So the first letter enters.",
-      "L is the Lover. A is the Seeker. The rest of the name may argue, complete, or betray that entrance. It does not get to pretend the entrance did not happen.",
+      "The first letter of the first word is the role, because a role is how you enter. We do not let the most common letter take that seat, because that would make entrance a popularity contest. We do not let the last letter take it, because that would make the role an ending.",
+      "After the first letter we count weight. A letter that returns, a letter that opens a word, and a letter that closes one all count. The two letters that weigh most after the first become how you tend to work and where that work wants to happen. Those three seats are one Letter Path. We name it so it is not a secret code.",
     ],
   },
   {
-    kicker: "How and where",
-    title: "Why manner and field are weight, not order",
+    kicker: "The wheel",
+    title: "Why the alphabet is the court",
     paragraphs: [
-      "We count the pieces, then name three seats as one path so the count cannot stay a code. Once the house is sat, the question is not who you are. The question is how the work is done, and in what kind of place. Those are the second and third seats of the Letter Path: manner and field.",
-      "Order after the first letter is an accident of spelling. Weight is not. A letter that returns, a letter that opens a word, a letter that closes one — these are decisions the handle keeps making. The engine counts them. Repeats count more because insistence is information. First and last letters of a token count extra because edges are where a name touches the air.",
-      "The two letters that weigh most after the signature become manner and field. Three letters, one path. The path has a title because a nameless triad is a code, and a code is how you hide from the person you are reading. We name it so it can be spoken.",
+      "Speech already divided itself into twenty-six public marks. We did not invent a smaller wheel so we could look more like a calculator. Each letter names a house with an old face, such as Seeker or Fool, as a likeness, not a creed. You can refuse the likeness. A system you cannot refuse is a church.",
+      "Each house keeps three allies and three enemies. Allies complete a job this role cannot finish alone. Enemies are the blind spot that keeps the role honest. They are not villains. If an allied letter is already in the handle, that help is in the name. If it is not, the help comes from other people.",
     ],
   },
   {
-    kicker: "Twenty-six, not twelve",
-    title: "Why the alphabet is the wheel",
-    paragraphs: [
-      "Twelve is a sky count. It is months, signs, hours doubled. It is a good count for bodies that orbit. It is a poor count for speech. Speech already divided itself into twenty-six public marks. Everyone who can read this page already carries the set. We did not invent a zodiac and then rent it letters. We took the set that was already the commons.",
-      "Each letter sits a house with an old face — Seeker, Caregiver, Rebel, Hermit, Fool — because those figures were already doing the work of describing roles before we arrived. Pearson, Campbell, the tarot: these are correspondences, not creeds. A likeness. The house doctrine is written in plain English so it can be refused. A system you cannot refuse is a church.",
-      "A sits amber at dawn and the wheel walks the spectrum to ochre at Z. Color is not garnish. It is the house made visible at the size of a seal. Three seats pour one mix: the house half the pot, manner three-tenths, field two-tenths. The role leads. How you work colors it. Where you work tints it. That is the Letter Path as a single fact you can see.",
-    ],
-  },
-  {
-    kicker: "The court",
-    title: "Allies complete. Enemies keep honest.",
-    paragraphs: [
-      "A role that has no one to finish its work is a pose. A role that has no one to contradict it is a lie. Each house therefore keeps a court: three allies, three enemies. The allies are not friends. They are the figures that complete the job. The enemies are not villains. They are the blind spot — the house that will not let this one sleep.",
-      "The circle is a graph, not a mood board. Distance is walked. An official ally sits one hop. An unrelated house may sit two hops or five. We used to pretend those distances were the same — four buckets, and everything that was not kin was simply “none.” That was a laziness. The live reading uses the actual walks: hops, resonance, the cost of carrying one name’s letters across to another. Unrelated is not a single country.",
-      "If a handle already carries an allied letter, that help is in the name. If it does not, the help comes from outside — which is to say, from other people. That is not a defect. It is a map of who you will have to ask.",
-    ],
-  },
-  {
-    kicker: "Breath and contact",
-    title: "Vowels lean in. Consonants lean out.",
-    paragraphs: [
-      "A vowel is a sound you can hold with the mouth open. A consonant is a sound that requires a collision. The inner life is held. The outer life collides. So vowels describe the private weather, consonants the public work.",
-      "Y is the exception that proves the rule: a vowel only after it has already begun, never as the first step. The signature Y would be a start. We do not let it pretend to be breath until it has already entered as a mark.",
-    ],
-  },
-  {
-    kicker: "One clock",
+    kicker: "The day",
     title: "Why a day uses the same wheel",
     paragraphs: [
-      "If time used another alphabet we would have two religions in one house. So a day is read as a name is read. The date names the role — the thirteenth is M, as a username beginning with M is M. The two-week stretch sets how the season works: fourteen days, one letter, A to Z from the twenty-first of March. The weekday is what today is about, drawn from that stretch’s own helpers and pushbacks: the role, then its three allies, then its three enemies.",
-      "The civil year and the month have roles too. They are background. They color the air. They do not get to rename Tuesday. A system that lets the year rename the day has already decided that the large always owns the small. We do not grant that.",
-      "The leftover day or two before the next twenty-first of March have no numbered role. They belong to the Fool. The year has finished the circle and has not begun again. Travel light. That leftover is the same Fool as the blank when a count has nothing to write.",
-    ],
-  },
-  {
-    kicker: "Two handles",
-    title: "A bond is a fit of materials, not a verdict",
-    paragraphs: [
-      "Two usernames are two piles of letters. We do not ask if they are soulmates. We ask how the piles meet: role, method, place, overlap of spelling, gifts (an ally one is missing that the other already carries), temper, court, spark. Eight measures, because one number is how you hide an argument.",
-      "The affinity is a fit. It is not a forecast. A high fit can be a trap. A hard weather can be a life’s work. The certificate names the pair because an unnamed comparison is a scoreboard, and a scoreboard is numerology in a nicer font.",
-      "The title, the rooms, the debt, the argument — these are composed from the two names. They cannot be reused on another pair. If the sentences could migrate, they were never about these two.",
+      "A day is read the same way a name is read, so time does not get a second religion. The date names a role: the thirteenth is M. The two-week stretch says how the season is working. The weekday says what today is about. Year and month color the background. They do not get to rename Tuesday.",
+      "Your luck today is the meeting of your Letter Path with that court. A number on the screen is a weather report. It is not a king. If your usual method withdraws, do not force it. If today's letter is already in your handle, the day is using something you already carry.",
     ],
   },
   {
     kicker: "The inverse",
-    title: "We write amounts as letters",
+    title: "Why we write amounts as letters, and why a bond is a fit",
     paragraphs: [
-      "A number is the emissary sent out. Writing it as letters is how it comes home. A number arrives claiming neutrality. It is not neutral. It is a compression: of rank, of year, of money, of a phone that can reach a body. Numerology accepted that compression and then compressed further, folding the leftover into a single digit so the hand could close.",
-      "We refuse the fold. An amount is written as letters or it is not read. A is one. Z is twenty-six. AA is twenty-seven. The whole amount also has a role — the same letter a date or a year already uses — so a year and that year’s amount cannot disagree. If the amount walked the twenty-six more than once, those walks are letters too. Nested, not reduced.",
-      "Zero is the Fool as absence: you write nothing. Six is the Fool as the sixth role, only when an old digit arrives. Same figure, two doors. There is no 0th of the month, so zero cannot name a date-role; it is the blank, which the calendar already knew. J is not 1. J is the tenth role. To wrap J back to A is to say the walk never happened.",
-      "The old number may be typed so we can translate it. The reading will not say it back.",
-    ],
-  },
-  {
-    kicker: "Luck",
-    title: "Willingness, not fate",
-    paragraphs: [
-      "Luck is a weather report. It is a piece. It is not a king. The old magi were right about one thing and wrong about another. Right: the letters make findings. Wrong: that a finding is a sentence you serve. A finding is a weather report for a name. You still walk out the door.",
-      "Each day the date names a house, the way the thirteenth is M. That house keeps a court: three allies, three enemies. Allies run warm — favorable currents. Enemies withdraw — contrary currents. The letters do not change their nature. Only their willingness.",
-      "Your luck today is the meeting of your Path with that court. If your house is in the warm seats, doors ajar. If your manner withdraws, do not force the method you usually trust. If the day's letter is already in your handle, the day is using something you already carry — home-field, not destiny.",
-      "A decision is also a name. Letterize the act. Ask two questions only: is this my kind of move, and is this house willing today? That is how you predict your own luck — not by asking a priest, but by reading the materials you already put into the world against the court the calendar already named.",
+      "A number arrives looking neutral. It is still a compression of rank, year, money, or quantity. We write amounts as letters so they can live in the same house as a name. A is one. Z is twenty-six. AA is twenty-seven. We do not wrap J back into A, because J is the tenth role. Zero is a blank, which we call the Fool.",
+      "Two usernames are two piles of letters. We compare roles, methods, places, shared spelling, and help one name already carries that the other is missing. The number is a fit of materials. It is not a forecast, and it is not a reason to stay or leave.",
     ],
   },
   {
     kicker: "The ethic",
     title: "A portrait can be used. It cannot be obeyed.",
     paragraphs: [
-      "You are the Master in the room. The site is the Emissary. A coherent reading is one you can act on before noon. It names the Path, the day's willingness, one move to lean into, one move to wait on, and who to ask. If it cannot do that, it is incense.",
-      "Do not spend the reading. Do not let a Letter Path become an excuse. The Seeker who never crosses is not fulfilling a house. They are hiding in one. The enemy house is not your villain. It is the work you will not look at.",
-      "No sentence here is generated by a model that forgets tomorrow. The copy is composed from tables you can open. If the system cannot show its work, it has become a priest.",
-    ],
-  },
-  {
-    kicker: "The club",
-    title: "CC33",
-    paragraphs: [
-      "CC33 is the house where the circuit is practiced. Letterology is the reading. The club did not rent a personality system. It took the alphabet — the one tool every member already used to appear in public — and asked it to tell the truth about the marks it was already making, without becoming a total.",
-      "Read a username. Compare two. Write an amount as letters. Walk the year. The names stay — Seeker, Fool, Letter Path — because they are the product. The rest is English, because a house that cannot welcome a guest is only a vault.",
-      "You do not have to believe any of this. You only have to admit that you chose some letters, or some letters were chosen for the day, and that those letters can be looked at without being worshipped. That looking is the practice. Looking, then counting, then looking again: that is the circuit.",
+      "A reading you can use names the path, today's willingness, one move to lean into, one move to wait on, and who to ask. If it cannot do that before noon, it is decoration. You are in charge of the room. The site is a tool. Use the portrait. Do not obey it.",
+      "CC33 is the club. Letterology is the reading. You do not have to believe any of this. You only have to admit that you chose some letters, or some letters were chosen for the day, and that those letters can be looked at without being worshipped. Looking, then counting, then looking again is the practice.",
     ],
   },
 ];
 
-export const DOCTRINE_CLOSE =
-  "See the whole. Use the pieces. Come back. The decision is yours.";
+export const DOCTRINE_CLOSE = CIRCUIT_CLOSE;

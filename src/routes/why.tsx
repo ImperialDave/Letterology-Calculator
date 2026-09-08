@@ -38,18 +38,34 @@ function WhyPage() {
         <h1 className="font-display text-4xl text-ink sm:text-5xl">Why</h1>
         <p className="mt-3 max-w-xl leading-relaxed text-ink/85">{VOICE.doctrineAbstract}</p>
         <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted">
-          Latin: first letter is the role; the next two by how often they return are how and where.
-          Greek: first and last are the road (proodos / epistrophe); vowels are a hymn sung in
-          order; consonants are the civic body; the total is isopsephy — an hour of the sum. The
-          Count writes amounts as A–Z. Luck is the day's willingness. Letterize an act to time it.
+          On the Latin side, the first letter is the role, and the next two by weight are how you
+          work and where you work. On the Greek side, first and last letters are the road, vowels
+          are sung in order, and the sum lands on an hour rather than a lucky digit. The Count
+          writes amounts as letters. Luck is the day's willingness.
         </p>
-        <Link
-          to="/sheet"
-          search={{ tongue: tongue === "el" ? "el" : "la" }}
-          className="mt-5 inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
-        >
-          Open the cheat sheet
-        </Link>
+        <div className="mt-5 flex flex-wrap gap-4">
+          <Link
+            to="/brain"
+            search={{ tongue: tongue === "el" ? "el" : "la", a: undefined, n: undefined }}
+            className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+          >
+            Letter-brained or number-brained
+          </Link>
+          <Link
+            to="/brief"
+            search={{ tongue: tongue === "el" ? "el" : "la", s: undefined }}
+            className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+          >
+            Open the Brief
+          </Link>
+          <Link
+            to="/sheet"
+            search={{ tongue: tongue === "el" ? "el" : "la" }}
+            className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+          >
+            Open the cheat sheet
+          </Link>
+        </div>
       </header>
 
       <section id="latin" className="mt-10 space-y-4 scroll-mt-24">

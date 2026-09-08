@@ -14,7 +14,9 @@ import {
   LIKENESS_RULES,
   LUCK_BANDS,
   MOTION_RULES,
+  CIRCUIT_CLOSE,
   NEVER_SAY,
+  SAY_THIS,
   TIGHTNESS_RULES,
   TWO_GREEK,
   TWO_LATIN,
@@ -95,6 +97,7 @@ export function FieldSheet({ tongue }: { tongue: Tongue }) {
           <p className="font-display text-[0.65rem] tracking-[0.22em] text-muted uppercase">CC33 · Field</p>
           <h1 className="font-display text-3xl text-ink">Cheat sheet</h1>
           <p className="mt-1 max-w-xl text-sm text-ink/80">{VOICE.sheetLede}</p>
+          <p className="mt-2 max-w-xl text-sm text-ink/80">{CIRCUIT_CLOSE}</p>
         </div>
         <form onSubmit={onPrompt} className="flex w-full max-w-md gap-2">
           <Input
@@ -262,9 +265,18 @@ export function FieldSheet({ tongue }: { tongue: Tongue }) {
         </>
       )}
 
+      <Block title="Never say / say this">
+        <LineTable
+          rows={NEVER_SAY.map((line, index) => ({
+            k: line,
+            v: SAY_THIS[index] ?? "",
+          }))}
+        />
+      </Block>
+
       <div className="flex flex-wrap items-baseline justify-between gap-3 border-t border-ink/15 pt-4">
         <p className="max-w-3xl text-xs leading-relaxed text-muted">
-          Do not say: {NEVER_SAY.join(" · ")}
+          Never say: {NEVER_SAY.join(" ")} Say this: {SAY_THIS.join(" ")}
         </p>
         <div className="flex gap-4 print:hidden">
           <button
@@ -281,6 +293,13 @@ export function FieldSheet({ tongue }: { tongue: Tongue }) {
           >
             Print
           </button>
+          <Link
+            to="/brief"
+            search={{ tongue: tongue === "el" ? "el" : "la", s: undefined }}
+            className="font-display text-[0.65rem] tracking-[0.14em] text-primary uppercase"
+          >
+            Brief
+          </Link>
           <Link
             to="/"
             search={{ n: raw.trim() || undefined, name: undefined, tongue: tongue === "el" ? "el" : "la" }}

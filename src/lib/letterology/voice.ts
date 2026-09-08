@@ -47,7 +47,18 @@ export const VOICE = {
   stoicheiaEmpty:
     "We could not turn that into Greek letters. Try a Latin username, or type it in Greek.",
   doctrineAbstract:
-    "We read the whole username first, not a birth name and not a lucky digit. We count letters, dates, and sums on purpose. Then we come back. The total is not the person. Luck is the day's willingness. Use the reading. Do not spend it.",
+    "We read the username you actually use. We do not add those letters into one lucky digit. Luck is the day's willingness. Use the reading. Do not spend it.",
+  briefTitle: "The Brief",
+  briefLede:
+    "A fifteen-minute crash course. After this you should be able to read a username, time a decision, and hand someone a card without preaching.",
+  briefNotes: "Speaker notes",
+  briefDownload: "Download the deck",
+  briefFullscreen: "Full screen",
+  briefNext: "Next slide",
+  briefPrev: "Last slide",
+  brainTitle: "Letter-brained or number-brained",
+  brainLede:
+    "This is a short portrait of how you look at a life. It asks whether you start with the whole person in front of you, or with the pieces you can count and file. When you finish, you get a leaning, five traits in our language, and a certificate you can share or print.",
   footerLine:
     "Official instrument. Usernames, not birth names. Luck is willingness. The decision is yours.",
   moreLetters: "More about these letters",
@@ -62,7 +73,7 @@ export const VOICE = {
   pathCaption: "Role, then how you work, then where — from the letters we counted.",
   sheetTitle: "Cheat sheet",
   sheetLede:
-    "Condensed instrument. Read the letters in the room. One role, one charge.",
+    "A pocket script for a live reading. Clean the handle, name the path, then give one charge.",
   askTitle: "Ask the letters",
   askLede:
     "Type the username you use and a question. We letterize both, meet them with today’s court, and answer. Luck is willingness. The decision is yours.",

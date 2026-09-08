@@ -10,7 +10,8 @@ import { horaOf } from "../stoicheia/horae";
 import { letterFromMark } from "../stoicheia/letters";
 import { readXenia } from "../stoicheia/xenia";
 import { dayReadingOf } from "./day-reading";
-import { bondSvg, glyphSvg, portraitSvg } from "./share-card";
+import { decodeAnswers, readBrain } from "./brain";
+import { bondSvg, brainSvg, glyphSvg, portraitSvg } from "./share-card";
 import { portraitOf, slugToName } from "./share";
 import { themeOf } from "./lexicon";
 import { ALPHABET } from "./types";
@@ -50,7 +51,8 @@ export type CardSpec =
   | { kind: "count"; digits?: string; slug?: string }
   | { kind: "stoicheia"; name: string }
   | { kind: "stoicheia-hora"; mark: string }
-  | { kind: "stoicheia-xenia"; a: string; b: string };
+  | { kind: "stoicheia-xenia"; a: string; b: string }
+  | { kind: "brain"; token: string };
 
 export function parseCardFile(file: string): CardSpec | null {
   const trimmed = file.trim().toLowerCase();
@@ -73,6 +75,8 @@ export function parseCardFile(file: string): CardSpec | null {
   if (xeniaCard) return { kind: "stoicheia-xenia", a: xeniaCard[1].replace(/-/g, " "), b: xeniaCard[2].replace(/-/g, " ") };
   const countWalk = jpg.match(/^count-((?:w-)?[a-z]+)$/);
   if (countWalk) return { kind: "count", slug: countWalk[1] };
+  const brain = jpg.match(/^brain-([a-e]{25})$/);
+  if (brain) return { kind: "brain", token: brain[1] };
   const bond = jpg.match(/^bond-([^_]+)_([^_]+)$/);
   if (bond) return { kind: "bond", a: bond[1], b: bond[2] };
   const dated = jpg.match(/^([a-z0-9''’-]+)-(\d{4}-\d{2}-\d{2})$/);
@@ -128,6 +132,16 @@ export async function renderPortraitJpeg(file: string): Promise<Uint8Array | nul
       kicker: "THE COUNT",
       title: house.house,
       line: `${walk}. ${house.myth}`,
+    });
+  } else if (parsed.kind === "brain") {
+    const answers = decodeAnswers(parsed.token);
+    const reading = answers ? readBrain(answers) : null;
+    if (!reading) return null;
+    svg = brainSvg({
+      name: reading.name,
+      title: reading.title,
+      walk: reading.walk,
+      seats: reading.domains.map((row) => ({ name: row.name, lean: row.lean })),
     });
   } else if (parsed.kind === "bond") {
     const bond = compareNames(slugToName(parsed.a), slugToName(parsed.b));

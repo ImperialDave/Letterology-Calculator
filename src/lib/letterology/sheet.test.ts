@@ -27,7 +27,15 @@ test("the field sheet has twenty-six houses and twenty-four hours", () => {
   assert.equal(greekHours().length, 24);
   assert.equal(LATIN_STEPS.length, 5);
   assert.equal(GREEK_STEPS.length, 5);
+  assert.equal(LATIN_STEPS[0]?.title, "Clean");
+  assert.equal(GREEK_STEPS[0]?.title, "Clean");
   assert.equal(LUCK_BANDS[0]?.band, "open");
+});
+
+test("latin and greek steps are complete sentences", () => {
+  for (const step of [...LATIN_STEPS, ...GREEK_STEPS]) {
+    assert.match(step.line, /[.?!]$/, step.title);
+  }
 });
 
 test("sheet copy obeys the voice law", () => {

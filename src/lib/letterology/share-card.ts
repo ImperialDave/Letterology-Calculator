@@ -277,3 +277,40 @@ export function bondSvg(input: {
 </svg>`;
 }
 
+export function brainSvg(input: {
+  name: string;
+  title: string;
+  walk: string;
+  seats: { name: string; lean: number }[];
+}): string {
+  const title = wrap(input.title, 28, 2);
+  const name = fit(input.name, 28);
+  const seats = input.seats
+    .map((seat, i) => {
+      const y = 430 + i * 28;
+      const width = Math.max(8, Math.round((seat.lean / 100) * 220));
+      return `<text x="80" y="${y}" font-family="${FACE}" font-size="16" fill="${MUTED}">${esc(seat.name)}</text>
+  <rect x="220" y="${y - 14}" width="220" height="8" rx="4" fill="${INK}" fill-opacity="0.08"/>
+  <rect x="220" y="${y - 14}" width="${width}" height="8" rx="4" fill="${WINE}"/>
+  <text x="456" y="${y}" font-family="${FACE}" font-size="16" fill="${INK}">${seat.lean}</text>`;
+    })
+    .join("\n  ");
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  ${paperShell()}
+  ${brandKicker()}
+  <text x="80" y="168" font-family="${FACE}" font-size="16" letter-spacing="5" fill="${WINE}">LETTER-BRAINED OR NUMBER-BRAINED</text>
+  <text x="80" y="230" font-family="${FACE}" font-size="28" fill="${INK}">${esc(name)}</text>
+  ${title
+    .map(
+      (line, i) =>
+        `<text x="80" y="${286 + i * 48}" font-family="${FACE}" font-size="40" fill="${INK}">${esc(line)}</text>`,
+    )
+    .join("\n  ")}
+  <text x="80" y="392" font-family="${FACE}" font-size="20" fill="${MUTED}">Letter-lean ${esc(input.walk)} · a piece, not a fate</text>
+  ${seats}
+  ${sealMark("C")}
+</svg>`;
+}
+
