@@ -21,7 +21,7 @@ import {
   COCKPIT_UP,
 } from "./cam";
 import { RING_R, RING_TUBE } from "./landmarks";
-import { BARREL_T, type EnemyKind, type PickupKind, type SortieState } from "./sim";
+import { asterShapeOf, BARREL_T, type EnemyKind, type PickupKind, type SortieState } from "./sim";
 import { makeSky, makeWorld } from "./world";
 
 function fwd(yaw: number, pitch: number) {
@@ -234,15 +234,19 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
       const e = s.enemies[i];
       node.visible = Boolean(e?.alive);
       if (!e?.alive) continue;
-      if (node.userData.kind !== e.kind || node.userData.robot !== Boolean(e.robot)) {
+      const shape = e.kind === "aster" ? asterShapeOf(e) : undefined;
+      if (node.userData.kind !== e.kind || node.userData.robot !== Boolean(e.robot) || node.userData.shape !== shape) {
         node.clear();
         if (e.robot) node.add(makeRobotMesh(e.robot.id));
+        else if (e.kind === "aster") node.add(makeLizard("aster", shape));
         else {
           const mold = molds[e.kind] ?? molds.fighter;
           if (mold) node.add(mold.clone());
         }
         node.userData.kind = e.kind;
         node.userData.robot = Boolean(e.robot);
+        node.userData.shape = shape;
+        node.scale.setScalar(1);
       }
       const lift = e.robot?.id === "kite" || e.robot?.state === "core" ? e.y : 0;
       node.position.set(e.x, e.robot ? lift : e.y, e.z);
@@ -251,8 +255,7 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
         node.rotation.set(0, e.robot.yaw, 0);
         poseRobot(node, e.robot);
       } else if (e.kind === "aster") {
-        const body = e.hp >= 8 ? 22 : 10;
-        node.scale.setScalar((body * 0.9) / 1.15);
+        node.scale.setScalar(1);
       } else if (e.kind === "turret" || e.kind === "mech" || e.kind === "mothership" || e.kind === "dualis") {
         node.lookAt(s.x, e.kind === "turret" ? e.y : s.y, s.z);
       } else {
@@ -261,7 +264,7 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
         else node.lookAt(e.x, e.y, e.z - 10);
       }
       const body = node.children[0];
-      if (body && !e.robot) poseLizard(body, s.t + e.t, e.kind, e.hp);
+      if (body && !e.robot) poseLizard(body, s.t + e.t, e.kind, e.hp, shape);
     }
 
     const robotBeams = s.enemies.filter((en) => en.alive && en.robot?.beam);
