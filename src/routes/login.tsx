@@ -6,12 +6,25 @@ import { X_SIGN_IN_READY } from "@/lib/firebase/auth";
 import { useHouse } from "@/lib/firebase/house-provider";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 
-export const Route = createFileRoute("/login")({ component: Login });
+type Search = { next?: "/brain/roll" };
+
+function safeNext(raw: unknown): "/brain/roll" | undefined {
+  return raw === "/brain/roll" ? "/brain/roll" : undefined;
+}
+
+export const Route = createFileRoute("/login")({
+  validateSearch: (search: Record<string, unknown>): Search => ({
+    next: safeNext(search.next),
+  }),
+  component: Login,
+});
 
 function Login() {
   const house = useHouse();
+  const search = Route.useSearch();
   const { user, isPending } = useCurrentUserState();
 
+  if (!isPending && user && search.next) return <Navigate to={search.next} />;
   if (!isPending && user?.needsClaim) return <Navigate to="/claim" />;
   if (!isPending && user?.handle) return <Navigate to="/" />;
 

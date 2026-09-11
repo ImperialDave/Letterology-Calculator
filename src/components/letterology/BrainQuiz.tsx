@@ -13,12 +13,14 @@ import {
   type BrainChoice,
   type PresentedItem,
 } from "@/lib/letterology/brain";
+import { submitBrainSitting } from "@/lib/letterology/brain-functions";
 import { VOICE } from "@/lib/letterology/voice";
 import { cn } from "@/lib/utils";
 
-const DRAFT_KEY = "cc33.brain.draft.v3";
+const DRAFT_KEY = "cc33.brain.draft.v4";
 
 type Draft = {
+  sittingId: string;
   seed: number;
   step: number;
   answers: Array<BrainChoice | null>;
@@ -29,12 +31,17 @@ function randomSeed(): number {
   return Math.floor(Math.random() * 0xffffffff) >>> 0;
 }
 
+function newSittingId(): string {
+  return crypto.randomUUID();
+}
+
 function loadDraft(): Draft | null {
   try {
     const raw = sessionStorage.getItem(DRAFT_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Draft;
     if (typeof parsed.seed !== "number") return null;
+    if (typeof parsed.sittingId !== "string" || parsed.sittingId.length < 8) return null;
     if (!Array.isArray(parsed.answers) || parsed.answers.length !== BRAIN_ITEM_COUNT) return null;
     return parsed;
   } catch {
@@ -60,11 +67,13 @@ function clearDraft() {
 
 export function BrainQuiz({ tongue }: { tongue: "la" | "el" }) {
   const [seed, setSeed] = useState<number | null>(null);
+  const [sittingId, setSittingId] = useState<string | null>(null);
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Array<BrainChoice | undefined>>(
     Array.from({ length: BRAIN_ITEM_COUNT }, () => undefined),
   );
   const [name, setName] = useState("");
+  const [saving, setSaving] = useState(false);
   const navigate = useNavigate({ from: "/brain" });
   const deck = useMemo<PresentedItem[]>(() => (seed == null ? [] : presentDeck(seed)), [seed]);
 
@@ -72,23 +81,26 @@ export function BrainQuiz({ tongue }: { tongue: "la" | "el" }) {
     const saved = loadDraft();
     if (saved) {
       setSeed(saved.seed);
+      setSittingId(saved.sittingId);
       setStep(Math.min(saved.step, BRAIN_ITEM_COUNT));
       setAnswers(saved.answers.map((value) => (value == null ? undefined : value)));
       setName(saved.name ?? "");
       return;
     }
     setSeed(randomSeed());
+    setSittingId(newSittingId());
   }, []);
 
   useEffect(() => {
-    if (seed == null) return;
+    if (seed == null || sittingId == null) return;
     saveDraft({
+      sittingId,
       seed,
       step,
       answers: answers.map((value) => value ?? null),
       name,
     });
-  }, [seed, step, answers, name]);
+  }, [sittingId, seed, step, answers, name]);
 
   const askingName = step >= BRAIN_ITEM_COUNT;
   const presented = deck[step];
@@ -100,11 +112,25 @@ export function BrainQuiz({ tongue }: { tongue: "la" | "el" }) {
     window.setTimeout(() => setStep((current) => Math.min(BRAIN_ITEM_COUNT, current + 1)), 160);
   }
 
-  function finish() {
+  async function finish() {
     const filled = answers.every((value) => value != null);
-    if (!filled || deck.length !== BRAIN_ITEM_COUNT) return;
+    if (!filled || deck.length !== BRAIN_ITEM_COUNT || seed == null || sittingId == null || saving) return;
     const canonical = answersFromDeck(deck, answers as BrainChoice[]);
+    setSaving(true);
+    try {
+      await submitBrainSitting({
+        data: {
+          id: sittingId,
+          answers: canonical,
+          name: name.trim() || undefined,
+          seed,
+        },
+      });
+    } catch {
+      // The certificate still lives in the link if the roll cannot take the sitting.
+    }
     clearDraft();
+    setSaving(false);
     void navigate({
       search: {
         a: encodeAnswers(canonical),
@@ -145,7 +171,7 @@ export function BrainQuiz({ tongue }: { tongue: "la" | "el" }) {
           />
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button type="button" onClick={finish}>
+          <Button type="button" onClick={() => void finish()} disabled={saving}>
             See the portrait
           </Button>
           <Button type="button" variant="outline" onClick={() => setStep(BRAIN_ITEM_COUNT - 1)}>

@@ -84,6 +84,18 @@ export const VOICE = {
   gamesHome: "The club keeps a game.",
   starWordsLede:
     "Pilot the C-wing. Letters on the wing. Lizards in the count. Dualis waits at the Press.",
+  rollTitle: "The Roll",
+  rollLede:
+    "Every finished portrait sits here. Grades, seats, and the fifty answers, so the court can see how people actually look.",
+  rollRefusal: "This roll is for the court. Sign in with the address that was named.",
+  rollEmpty: "No portraits have been taken yet.",
+  rollSignIn: "Sign in to open the roll",
+  thresholdTitle: "Threshold Reading",
+  thresholdLede:
+    "This is a membership screen. We are looking at how you work, how you stay, and whether the club’s practice fits you. There is no “correct” letter. Incomplete answers are more useful than theatrical ones.",
+  thresholdThanks:
+    "The court has the sitting. This is not a grade and not a portrait. You can close the page.",
+  thresholdEmpty: "No threshold readings have been taken yet.",
 } as const;
 
 /** Phrases that must not appear in product-door or generated UI copy. Why may still argue. */

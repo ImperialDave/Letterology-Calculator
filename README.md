@@ -48,6 +48,8 @@ npm run build
 
 TanStack Start + Vite. Auth is optional; readings are open.
 
+Finished portraits write to Postgres when `DATABASE_URL` is set. The court reads them at `/brain/roll`. The membership screen at `/threshold` is a separate sitting; it never appears on the portrait certificate. Both rolls open only for club Google/Apple emails listed in `BRAIN_ADMIN_EMAILS`.
+
 ## Railway
 
 If Railway says the GitHub repo is not found, grant the [Railway GitHub app](https://github.com/apps/railway) access to **Letterology-Calculator**, then reconnect `main`.

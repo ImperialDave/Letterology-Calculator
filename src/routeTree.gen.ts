@@ -29,9 +29,11 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as SheetRouteImport } from './routes/sheet'
 import { Route as StarwordsRouteImport } from './routes/starwords'
 import { Route as StoicheiaRouteImport } from './routes/stoicheia'
+import { Route as ThresholdRouteImport } from './routes/threshold'
 import { Route as TwoRouteImport } from './routes/two'
 import { Route as WhyRouteImport } from './routes/why'
 import { Route as ApiCardRouteImport } from './routes/api/card'
+import { Route as BrainRollRouteImport } from './routes/brain_.roll'
 import { Route as CountWalkRouteImport } from './routes/count_.$walk'
 import { Route as GlyphboundSortieRouteImport } from './routes/glyphbound.sortie'
 import { Route as LettersMarkRouteImport } from './routes/letters_.$mark'
@@ -47,7 +49,9 @@ import { Route as StoicheiaHymnRouteImport } from './routes/stoicheia.hymn'
 import { Route as StoicheiaIsopsephyRouteImport } from './routes/stoicheia.isopsephy'
 import { Route as StoicheiaXeniaRouteImport } from './routes/stoicheia.xenia'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as BrainRollIdRouteImport } from './routes/brain_.roll_.$id'
 import { Route as StoicheiaHoraeMarkRouteImport } from './routes/stoicheia.horae_.$mark'
+import { Route as BrainRollThresholdIdRouteImport } from './routes/brain_.roll_.threshold_.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -149,6 +153,11 @@ const StoicheiaRoute = StoicheiaRouteImport.update({
   path: '/stoicheia',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ThresholdRoute = ThresholdRouteImport.update({
+  id: '/threshold',
+  path: '/threshold',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TwoRoute = TwoRouteImport.update({
   id: '/two',
   path: '/two',
@@ -162,6 +171,11 @@ const WhyRoute = WhyRouteImport.update({
 const ApiCardRoute = ApiCardRouteImport.update({
   id: '/api/card',
   path: '/api/card',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BrainRollRoute = BrainRollRouteImport.update({
+  id: '/brain_/roll',
+  path: '/brain/roll',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CountWalkRoute = CountWalkRouteImport.update({
@@ -239,10 +253,20 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BrainRollIdRoute = BrainRollIdRouteImport.update({
+  id: '/brain_/roll_/$id',
+  path: '/brain/roll/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StoicheiaHoraeMarkRoute = StoicheiaHoraeMarkRouteImport.update({
   id: '/horae_/$mark',
   path: '/horae/$mark',
   getParentRoute: () => StoicheiaRoute,
+} as any)
+const BrainRollThresholdIdRoute = BrainRollThresholdIdRouteImport.update({
+  id: '/brain_/roll_/threshold_/$id',
+  path: '/brain/roll/threshold/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -266,9 +290,11 @@ export interface FileRoutesByFullPath {
   '/sheet': typeof SheetRoute
   '/starwords': typeof StarwordsRoute
   '/stoicheia': typeof StoicheiaRouteWithChildren
+  '/threshold': typeof ThresholdRoute
   '/two': typeof TwoRoute
   '/why': typeof WhyRoute
   '/api/card': typeof ApiCardRoute
+  '/brain/roll': typeof BrainRollRoute
   '/count/$walk': typeof CountWalkRoute
   '/glyphbound/sortie': typeof GlyphboundSortieRoute
   '/letters/$mark': typeof LettersMarkRoute
@@ -284,7 +310,9 @@ export interface FileRoutesByFullPath {
   '/stoicheia/xenia': typeof StoicheiaXeniaRoute
   '/stoicheia/': typeof StoicheiaIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/brain/roll/$id': typeof BrainRollIdRoute
   '/stoicheia/horae/$mark': typeof StoicheiaHoraeMarkRoute
+  '/brain/roll/threshold/$id': typeof BrainRollThresholdIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -306,9 +334,11 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/sheet': typeof SheetRoute
   '/starwords': typeof StarwordsRoute
+  '/threshold': typeof ThresholdRoute
   '/two': typeof TwoRoute
   '/why': typeof WhyRoute
   '/api/card': typeof ApiCardRoute
+  '/brain/roll': typeof BrainRollRoute
   '/count/$walk': typeof CountWalkRoute
   '/glyphbound/sortie': typeof GlyphboundSortieRoute
   '/letters/$mark': typeof LettersMarkRoute
@@ -324,7 +354,9 @@ export interface FileRoutesByTo {
   '/stoicheia/xenia': typeof StoicheiaXeniaRoute
   '/stoicheia': typeof StoicheiaIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/brain/roll/$id': typeof BrainRollIdRoute
   '/stoicheia/horae/$mark': typeof StoicheiaHoraeMarkRoute
+  '/brain/roll/threshold/$id': typeof BrainRollThresholdIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -348,9 +380,11 @@ export interface FileRoutesById {
   '/sheet': typeof SheetRoute
   '/starwords': typeof StarwordsRoute
   '/stoicheia': typeof StoicheiaRouteWithChildren
+  '/threshold': typeof ThresholdRoute
   '/two': typeof TwoRoute
   '/why': typeof WhyRoute
   '/api/card': typeof ApiCardRoute
+  '/brain_/roll': typeof BrainRollRoute
   '/count_/$walk': typeof CountWalkRoute
   '/glyphbound/sortie': typeof GlyphboundSortieRoute
   '/letters_/$mark': typeof LettersMarkRoute
@@ -366,7 +400,9 @@ export interface FileRoutesById {
   '/stoicheia/xenia': typeof StoicheiaXeniaRoute
   '/stoicheia/': typeof StoicheiaIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/brain_/roll_/$id': typeof BrainRollIdRoute
   '/stoicheia/horae_/$mark': typeof StoicheiaHoraeMarkRoute
+  '/brain_/roll_/threshold_/$id': typeof BrainRollThresholdIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -391,9 +427,11 @@ export interface FileRouteTypes {
     | '/sheet'
     | '/starwords'
     | '/stoicheia'
+    | '/threshold'
     | '/two'
     | '/why'
     | '/api/card'
+    | '/brain/roll'
     | '/count/$walk'
     | '/glyphbound/sortie'
     | '/letters/$mark'
@@ -409,7 +447,9 @@ export interface FileRouteTypes {
     | '/stoicheia/xenia'
     | '/stoicheia/'
     | '/api/auth/$'
+    | '/brain/roll/$id'
     | '/stoicheia/horae/$mark'
+    | '/brain/roll/threshold/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -431,9 +471,11 @@ export interface FileRouteTypes {
     | '/login'
     | '/sheet'
     | '/starwords'
+    | '/threshold'
     | '/two'
     | '/why'
     | '/api/card'
+    | '/brain/roll'
     | '/count/$walk'
     | '/glyphbound/sortie'
     | '/letters/$mark'
@@ -449,7 +491,9 @@ export interface FileRouteTypes {
     | '/stoicheia/xenia'
     | '/stoicheia'
     | '/api/auth/$'
+    | '/brain/roll/$id'
     | '/stoicheia/horae/$mark'
+    | '/brain/roll/threshold/$id'
   id:
     | '__root__'
     | '/'
@@ -472,9 +516,11 @@ export interface FileRouteTypes {
     | '/sheet'
     | '/starwords'
     | '/stoicheia'
+    | '/threshold'
     | '/two'
     | '/why'
     | '/api/card'
+    | '/brain_/roll'
     | '/count_/$walk'
     | '/glyphbound/sortie'
     | '/letters_/$mark'
@@ -490,7 +536,9 @@ export interface FileRouteTypes {
     | '/stoicheia/xenia'
     | '/stoicheia/'
     | '/api/auth/$'
+    | '/brain_/roll_/$id'
     | '/stoicheia/horae_/$mark'
+    | '/brain_/roll_/threshold_/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -514,14 +562,18 @@ export interface RootRouteChildren {
   SheetRoute: typeof SheetRoute
   StarwordsRoute: typeof StarwordsRoute
   StoicheiaRoute: typeof StoicheiaRouteWithChildren
+  ThresholdRoute: typeof ThresholdRoute
   TwoRoute: typeof TwoRoute
   WhyRoute: typeof WhyRoute
   ApiCardRoute: typeof ApiCardRoute
+  BrainRollRoute: typeof BrainRollRoute
   CountWalkRoute: typeof CountWalkRoute
   LettersMarkRoute: typeof LettersMarkRoute
   OgFileRoute: typeof OgFileRoute
   PSlugRoute: typeof PSlugRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  BrainRollIdRoute: typeof BrainRollIdRoute
+  BrainRollThresholdIdRoute: typeof BrainRollThresholdIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -666,6 +718,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoicheiaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/threshold': {
+      id: '/threshold'
+      path: '/threshold'
+      fullPath: '/threshold'
+      preLoaderRoute: typeof ThresholdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/two': {
       id: '/two'
       path: '/two'
@@ -685,6 +744,13 @@ declare module '@tanstack/react-router' {
       path: '/api/card'
       fullPath: '/api/card'
       preLoaderRoute: typeof ApiCardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/brain_/roll': {
+      id: '/brain_/roll'
+      path: '/brain/roll'
+      fullPath: '/brain/roll'
+      preLoaderRoute: typeof BrainRollRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/count_/$walk': {
@@ -792,12 +858,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/brain_/roll_/$id': {
+      id: '/brain_/roll_/$id'
+      path: '/brain/roll/$id'
+      fullPath: '/brain/roll/$id'
+      preLoaderRoute: typeof BrainRollIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/stoicheia/horae_/$mark': {
       id: '/stoicheia/horae_/$mark'
       path: '/horae/$mark'
       fullPath: '/stoicheia/horae/$mark'
       preLoaderRoute: typeof StoicheiaHoraeMarkRouteImport
       parentRoute: typeof StoicheiaRoute
+    }
+    '/brain_/roll_/threshold_/$id': {
+      id: '/brain_/roll_/threshold_/$id'
+      path: '/brain/roll/threshold/$id'
+      fullPath: '/brain/roll/threshold/$id'
+      preLoaderRoute: typeof BrainRollThresholdIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -865,14 +945,18 @@ const rootRouteChildren: RootRouteChildren = {
   SheetRoute: SheetRoute,
   StarwordsRoute: StarwordsRoute,
   StoicheiaRoute: StoicheiaRouteWithChildren,
+  ThresholdRoute: ThresholdRoute,
   TwoRoute: TwoRoute,
   WhyRoute: WhyRoute,
   ApiCardRoute: ApiCardRoute,
+  BrainRollRoute: BrainRollRoute,
   CountWalkRoute: CountWalkRoute,
   LettersMarkRoute: LettersMarkRoute,
   OgFileRoute: OgFileRoute,
   PSlugRoute: PSlugRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  BrainRollIdRoute: BrainRollIdRoute,
+  BrainRollThresholdIdRoute: BrainRollThresholdIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
