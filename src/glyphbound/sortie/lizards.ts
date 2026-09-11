@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { BRASS, INK, OLIVE, RUST, brassTex, n64Mat, rustTex, scaleOliveTex } from "./n64";
-import type { EnemyKind } from "./sim";
+import type { AsterShape, EnemyKind } from "./sim";
 
 function add(
   parent: THREE.Object3D,
@@ -81,7 +81,39 @@ function raptor(scale: number, span: number, fat: number, trim: "rust" | "gold" 
   return g;
 }
 
-export function makeLizard(kind: EnemyKind) {
+function makeAster(shape: AsterShape = "sort") {
+  const g = new THREE.Group();
+  const m = mats();
+  if (shape === "slug") {
+    add(g, new THREE.BoxGeometry(32, 9, 10), m.dark, 0, 0, 0);
+    add(g, new THREE.BoxGeometry(26, 5.5, 7), m.rust, 0.4, 0.8, 0.3);
+    add(g, new THREE.CylinderGeometry(1.4, 1.4, 4, 6), m.ink, 10, 0, 3.2, { rx: Math.PI / 2 });
+    return g;
+  }
+  if (shape === "rule") {
+    add(g, new THREE.BoxGeometry(9, 32, 10), m.dark, 0, 0, 0);
+    add(g, new THREE.BoxGeometry(7, 6, 8), m.brass, 0, 14, 0.4);
+    add(g, new THREE.BoxGeometry(6.2, 22, 7), m.rust, 0.3, -2, 0.2);
+    return g;
+  }
+  if (shape === "quad") {
+    add(g, new THREE.BoxGeometry(16, 16, 16), m.dark, 0, 0, 0);
+    add(g, new THREE.BoxGeometry(13, 13, 3), m.rust, 0, 0, 7);
+    add(g, new THREE.BoxGeometry(4, 4, 2), m.ink, 0, 0, 8.2);
+    return g;
+  }
+  if (shape === "stone") {
+    add(g, new THREE.IcosahedronGeometry(12, 0), m.dark, 0, 0, 0);
+    add(g, new THREE.DodecahedronGeometry(6.5, 0), m.rust, 5, 3, 2);
+    add(g, new THREE.DodecahedronGeometry(5, 0), m.dark, -4, -3, 3);
+    return g;
+  }
+  add(g, new THREE.DodecahedronGeometry(6, 0), m.dark, 0, 0, 0);
+  add(g, new THREE.DodecahedronGeometry(3.4, 0), m.rust, 1.8, 1.1, 0.8);
+  return g;
+}
+
+export function makeLizard(kind: EnemyKind, shape?: AsterShape) {
   if (kind === "cork") {
     const g = raptor(1.22, 1.45, 0.82, "rust");
     const m = mats();
@@ -176,18 +208,11 @@ export function makeLizard(kind: EnemyKind) {
     g.rotation.y = Math.PI;
     return g;
   }
-  if (kind === "aster") {
-    const g = new THREE.Group();
-    const m = mats();
-    add(g, new THREE.DodecahedronGeometry(1.15, 0), m.dark, 0, 0, 0);
-    add(g, new THREE.DodecahedronGeometry(0.7, 0), m.rust, 0.35, 0.2, 0.15);
-    g.rotation.y = Math.PI;
-    return g;
-  }
+  if (kind === "aster") return makeAster(shape ?? "sort");
   return raptor(1.18, 1.95, 1, "rust");
 }
 
-export function poseLizard(g: THREE.Object3D, t: number, kind: EnemyKind, hp = 24) {
+export function poseLizard(g: THREE.Object3D, t: number, kind: EnemyKind, hp = 24, shape?: AsterShape) {
   const flap = Math.sin(t * (kind === "cork" ? 8 : 4.5)) * 0.18;
   const wL = g.getObjectByName("wingL");
   const wR = g.getObjectByName("wingR");
@@ -207,7 +232,13 @@ export function poseLizard(g: THREE.Object3D, t: number, kind: EnemyKind, hp = 2
       drill.visible = hp > 16;
     }
   }
-  if (kind === "aster") g.rotation.set(t * 0.35, t * 0.5, t * 0.2);
+  if (kind === "aster") {
+    if (shape === "slug") g.rotation.set(t * 0.4, 0.15, 0.08);
+    else if (shape === "rule") g.rotation.set(0.06, t * 0.35, 0.04);
+    else if (shape === "quad") g.rotation.set(t * 0.18, t * 0.28, t * 0.1);
+    else if (shape === "stone") g.rotation.set(t * 0.16, t * 0.22, t * 0.09);
+    else g.rotation.set(t * 0.35, t * 0.5, t * 0.2);
+  }
   if (kind === "mech") {
     const step = Math.sin(t * 2.4);
     const legL = g.getObjectByName("legL");
