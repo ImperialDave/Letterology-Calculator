@@ -71,7 +71,7 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
     }
     for (let i = 0; i < 48; i++) {
       const m = new THREE.Mesh(
-        new THREE.PlaneGeometry(6, 6),
+        new THREE.PlaneGeometry(9, 9),
         new THREE.MeshBasicMaterial({ color: 0xff9040, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }),
       );
       m.visible = false;
@@ -123,10 +123,12 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
       lookT.set(s.x, s.y, s.z).addScaledVector(f, COCKPIT_LOOK);
       state.camera.fov = COCKPIT_FOV;
     } else {
+      const lead = 4 + Math.min(10, (s.speed - 40) * 0.12);
       tmp.set(s.x, s.y, s.z).addScaledVector(f, -CHASE_BACK);
       tmp.y += CHASE_UP;
-      lookT.set(s.x, s.y, s.z).addScaledVector(f, CHASE_LOOK);
-      state.camera.fov = s.speed > 70 ? BOOST_FOV : CHASE_FOV;
+      lookT.set(s.x, s.y, s.z).addScaledVector(f, CHASE_LOOK + lead);
+      const wantFov = s.speed > 70 ? BOOST_FOV : CHASE_FOV;
+      state.camera.fov += (wantFov - state.camera.fov) * (1 - Math.exp(-3.2 * d));
     }
     state.camera.position.lerp(tmp, 1 - Math.exp(-CAM_POS_K * d));
     if (look.lengthSq() < 0.01) look.copy(lookT);
@@ -306,11 +308,11 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
       if (!sh) continue;
       m.position.set(sh.x, sh.y, sh.z);
       if (sh.kind === "laser") {
-        m.scale.set(2.4, 2.4, 22);
+        m.scale.set(3.4, 3.4, 38);
         tmp.set(sh.x + sh.vx, sh.y + sh.vy, sh.z + sh.vz);
         m.lookAt(tmp);
       } else if (sh.kind === "charge") {
-        m.scale.set(5.2, 5.2, 7.5);
+        m.scale.set(7.2, 7.2, 11);
         tmp.set(sh.x + sh.vx, sh.y + sh.vy, sh.z + sh.vz);
         m.lookAt(tmp);
       } else if (sh.kind === "bomb") {
@@ -374,12 +376,12 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
       <primitive object={world.root} />
       <primitive object={ship} />
       <primitive object={fx.g} />
-      <hemisphereLight args={[0xfff6dc, 0x88d060, 1.15]} />
-      <ambientLight intensity={0.62} />
+      <hemisphereLight args={[0xfff4d8, 0x6aa878, 1.35]} />
+      <ambientLight intensity={0.72} />
       <directionalLight
         position={[90, 150, 55]}
-        intensity={1.45}
-        color="#fff8e8"
+        intensity={1.85}
+        color="#fff6dc"
         castShadow
         shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}
@@ -392,7 +394,7 @@ function FlightRig({ sim }: { sim: MutableRefObject<SortieState> }) {
         shadow-intensity={0.28}
       />
       <pointLight position={[0, 90, 0]} intensity={0.55} color="#fff0c0" />
-      <fog attach="fog" args={[world.fog, 140, 980]} />
+      <fog attach="fog" args={[world.fog, biome === "sorts" ? 110 : 160, biome === "sorts" ? 900 : 860]} />
     </group>
   );
 }
@@ -403,9 +405,9 @@ export function SortieCanvas({ sim }: { sim: MutableRefObject<SortieState> }) {
   return (
     <Canvas
       key={`${biome}-${missionId}`}
-      dpr={1}
-      gl={{ antialias: false, powerPreference: "high-performance", toneMapping: THREE.NoToneMapping }}
-      camera={{ fov: 52, near: 0.4, far: 1400, position: [0, 54, 140] }}
+      dpr={[1, 1.25]}
+      gl={{ antialias: true, powerPreference: "high-performance", toneMapping: THREE.NoToneMapping }}
+      camera={{ fov: 54, near: 0.4, far: 1400, position: [0, 54, 140] }}
       onCreated={({ gl }) => {
         const world = makeWorld(biome, missionId);
         gl.toneMapping = THREE.NoToneMapping;
@@ -413,7 +415,7 @@ export function SortieCanvas({ sim }: { sim: MutableRefObject<SortieState> }) {
         gl.setClearColor(world.fog, 1);
         gl.shadowMap.enabled = true;
       }}
-      style={{ imageRendering: "pixelated", width: "100%", height: "100%" }}
+      style={{ width: "100%", height: "100%" }}
     >
       <FlightRig sim={sim} />
     </Canvas>

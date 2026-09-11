@@ -28,6 +28,13 @@ export function far(dz: number) {
   return Math.min(dz, -200);
 }
 
+/** Park the nearest sort far enough to read. Relative stagger stays. */
+export const ASTER_LEAD = 160;
+
+export function asterZ(dz: number) {
+  return Math.min(dz, -48) - ASTER_LEAD;
+}
+
 export const ROCK_RING_R = 32;
 export const ROCK_GAP = 36;
 
@@ -169,9 +176,6 @@ export const BEATS: Record<string, Beat[]> = {
     { id: 3, when: "rail", t: 0.09, kind: "spawn", ships: arrows(-48) },
     { id: 4, when: "rail", t: 0.14, kind: "radio", who: "b", text: "Canyon teeth." },
     { id: 5, when: "rail", t: 0.16, kind: "spawn", ships: [{ kind: "turret", dx: 20, dy: -20, dz: -30 }, { kind: "turret", dx: -20, dy: -20, dz: -48 }] },
-    { id: 40, when: "rail", t: 0.18, kind: "spawn", ships: scatter(-44, 6) },
-    { id: 41, when: "rail", t: 0.38, kind: "spawn", ships: teeth(-46) },
-    { id: 42, when: "rail", t: 0.62, kind: "spawn", ships: slalom(-50) },
     { id: 6, when: "rail", t: 0.22, kind: "pickup", loot: { kind: "silver", dx: 0, dy: 2, dz: -24 } },
     { id: 7, when: "rail", t: 0.26, kind: "spawn", ships: V(-50, 11, true) },
     { id: 8, when: "rail", t: 0.3, kind: "radio", who: "s", text: "n-street. Type-city. The street is the hole." },
@@ -203,9 +207,6 @@ export const BEATS: Record<string, Beat[]> = {
   ],
   slug: [
     { id: 1, when: "rail", t: 0.06, kind: "radio", who: "b", text: "Lead slugs. The big ones are already melted. Brake." },
-    { id: 25, when: "rail", t: 0.07, kind: "spawn", ships: scatter(-40, 6) },
-    { id: 40, when: "rail", t: 0.24, kind: "spawn", ships: teeth(-48) },
-    { id: 41, when: "rail", t: 0.58, kind: "spawn", ships: slalom(-46) },
     { id: 2, when: "rail", t: 0.08, kind: "spawn", ships: [{ kind: "fighter", dx: -12, dy: 6, dz: -40 }, { kind: "cork", dx: 14, dy: 10, dz: -55 }] },
     { id: 3, when: "rail", t: 0.18, kind: "spawn", ships: V(-48) },
     { id: 4, when: "rail", t: 0.28, kind: "radio", who: "s", text: "Gold rings. Dualis hasn’t spent those letters. Thread them." },
@@ -226,9 +227,6 @@ export const BEATS: Record<string, Beat[]> = {
   gutter: [
     { id: 1, when: "rail", t: 0.08, kind: "radio", who: "e", text: "Stay in the ink. The lights above bite. I can hear the Press." },
     { id: 2, when: "rail", t: 0.1, kind: "spawn", ships: [{ kind: "turret", dx: 20, dy: -12, dz: -36 }, { kind: "turret", dx: -20, dy: -12, dz: -50 }] },
-    { id: 40, when: "rail", t: 0.14, kind: "spawn", ships: scatter(-44, 5) },
-    { id: 41, when: "rail", t: 0.4, kind: "spawn", ships: teeth(-50) },
-    { id: 42, when: "rail", t: 0.62, kind: "spawn", ships: slalom(-44) },
     { id: 3, when: "rail", t: 0.22, kind: "spawn", ships: V(-44) },
     { id: 4, when: "rail", t: 0.36, kind: "radio", who: "s", text: "Tanker. Through the hold. Don’t admire the hull." },
     { id: 5, when: "rail", t: 0.48, kind: "pickup", loot: { kind: "bomb", dx: 0, dy: 2, dz: -18 } },
@@ -261,8 +259,6 @@ export const BEATS: Record<string, Beat[]> = {
   press: [
     { id: 1, when: "rail", t: 0.08, kind: "radio", who: "b", text: "Crater road. Thread the censers if you want the pay." },
     { id: 2, when: "rail", t: 0.12, kind: "spawn", ships: [{ kind: "turret", dx: 18, dy: -8, dz: -36 }, { kind: "fighter", dx: 0, dy: 8, dz: -48 }] },
-    { id: 40, when: "rail", t: 0.16, kind: "spawn", ships: scatter(-46, 5) },
-    { id: 41, when: "rail", t: 0.44, kind: "spawn", ships: slalom(-48) },
     { id: 3, when: "rail", t: 0.28, kind: "spawn", ships: V(-44) },
     { id: 4, when: "rail", t: 0.48, kind: "spawn", ships: [{ kind: "bomber", dx: 0, dy: 20, dz: -50 }, { kind: "cork", dx: 12, dy: 10, dz: -36 }] },
     { id: 5, when: "rail", t: 0.68, kind: "spawn", ships: V(-40, 11) },

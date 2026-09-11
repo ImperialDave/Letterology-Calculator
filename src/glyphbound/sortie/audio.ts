@@ -28,16 +28,28 @@ function beep(freq: number, dur: number, type: OscillatorType, gain = 0.05) {
 
 export const sortieSfx = {
   laser: () => {
-    beep(840 + Math.random() * 90, 0.055, "square", 0.035);
-    beep(420 + Math.random() * 40, 0.04, "triangle", 0.02);
+    const n = 0.85 + Math.random() * 0.3;
+    beep(920 * n, 0.04, "square", 0.04);
+    beep(480 * n, 0.055, "triangle", 0.028);
+    beep(180, 0.03, "sawtooth", 0.018);
   },
-  charge: () => beep(220, 0.22, "sawtooth", 0.06),
-  lock: () => beep(980, 0.12, "square", 0.045),
-  warn: () => beep(180, 0.16, "sawtooth", 0.05),
-  hit: () => beep(150 + Math.random() * 40, 0.1, "triangle", 0.065),
+  charge: () => {
+    beep(180, 0.28, "sawtooth", 0.055);
+    beep(360, 0.18, "triangle", 0.03);
+  },
+  lock: () => {
+    beep(980, 0.08, "square", 0.04);
+    beep(1320, 0.1, "triangle", 0.03);
+  },
+  warn: () => beep(170, 0.16, "sawtooth", 0.055),
+  hit: () => {
+    beep(210 + Math.random() * 50, 0.07, "square", 0.05);
+    beep(90 + Math.random() * 30, 0.12, "triangle", 0.055);
+  },
   boom: () => {
-    beep(90 + Math.random() * 30, 0.22, "sawtooth", 0.07);
-    beep(180, 0.12, "triangle", 0.04);
+    beep(70 + Math.random() * 24, 0.28, "sawtooth", 0.08);
+    beep(160, 0.16, "triangle", 0.05);
+    beep(40, 0.22, "sine", 0.04);
   },
   roll: () => beep(420, 0.18, "sine", 0.04),
   splash: () => beep(90, 0.2, "triangle", 0.05),

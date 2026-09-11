@@ -1,21 +1,21 @@
 /** Shared chase / cockpit camera. No three.js. */
 
-export const CHASE_BACK = 14;
-export const CHASE_UP = 5.5;
-export const CHASE_LOOK = 40;
+export const CHASE_BACK = 18;
+export const CHASE_UP = 6.4;
+export const CHASE_LOOK = 52;
 export const CHASE_LOOK_LIFT = 0;
 export const SIGHT_DIST = 100;
 export const CONVERGE_DIST = 110;
 export const SIGHT_CLAMP = 0.62;
-export const CHASE_FOV = 50;
-export const BOOST_FOV = 60;
+export const CHASE_FOV = 54;
+export const BOOST_FOV = 64;
 export const COCKPIT_FWD = 1.35;
 export const COCKPIT_UP = 0.55;
 export const COCKPIT_LOOK = 22;
 export const COCKPIT_FOV = 68;
 export const DEFAULT_ASPECT = 16 / 9;
-export const CAM_POS_K = 9;
-export const CAM_LOOK_K = 12;
+export const CAM_POS_K = 7;
+export const CAM_LOOK_K = 9;
 
 export type AimCraft = {
   x: number;

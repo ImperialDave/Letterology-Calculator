@@ -3,7 +3,7 @@ import test from "node:test";
 import * as THREE from "three";
 import { makeCWing } from "./cwing";
 import { groundHeight } from "./height";
-import { BEATS, rockRing, rocks, ROCK_GAP, ROCK_RING_R, scatter, slalom, teeth } from "./beats";
+import { asterZ, ASTER_LEAD, BEATS, rockRing, rocks, ROCK_GAP, ROCK_RING_R, scatter, slalom, teeth } from "./beats";
 import { makeLizard } from "./lizards";
 import {
   COAST_PATH,
@@ -1071,16 +1071,22 @@ test("A still yaws left on a corridor envelope", () => {
   assert.ok(s.roll > 0.05, `bank ${s.roll}`);
 });
 
-test("corridor stick sits in the window then drifts home", () => {
+test("rail stick answers in a few frames", () => {
+  const s = createSortie({ corridor: true });
+  const inp = emptyInput();
+  inp.roll = 1;
+  for (let i = 0; i < 8; i++) stepSortie(s, inp, 1 / 60);
+  assert.ok(s.offsetX > 12, `slow stick ${s.offsetX}`);
+});
+
+test("corridor stick sits in the window then comes home", () => {
   const s = createSortie({ corridor: true });
   const inp = emptyInput();
   inp.roll = 1;
   for (let i = 0; i < 24; i++) stepSortie(s, inp, 1 / 60);
   assert.ok(s.offsetX > ENVELOPE_X * 0.7, `sit ${s.offsetX}`);
-  for (let i = 0; i < 18; i++) stepSortie(s, emptyInput(), 1 / 60);
-  assert.ok(Math.abs(s.offsetX) > 8, `yanked home ${s.offsetX}`);
-  for (let i = 0; i < 150; i++) stepSortie(s, emptyInput(), 1 / 60);
-  assert.ok(Math.abs(s.offsetX) < 6, `trim ${s.offsetX}`);
+  for (let i = 0; i < 40; i++) stepSortie(s, emptyInput(), 1 / 60);
+  assert.ok(Math.abs(s.offsetX) < 5, `home ${s.offsetX}`);
 });
 
 test("W without boost does not somersault", () => {
@@ -2299,6 +2305,21 @@ test("a high slug is a bar you fly under", () => {
   s.enemies.push(rock);
   stepSortie(s, emptyInput(), 1 / 60);
   assert.equal(s.hull, 6);
+});
+
+test("ground rails do not seed sorts", () => {
+  for (const id of ["coast", "slug", "gutter", "press"] as const) {
+    const rocks = (BEATS[id] ?? []).flatMap((b) => b.ships ?? []).filter((sh) => sh.kind === "aster");
+    assert.equal(rocks.length, 0, `${id} still has sorts`);
+  }
+});
+
+test("sorts sit far enough to read", () => {
+  const field = scatter(-50, 7) ?? [];
+  assert.ok(field.length > 0);
+  for (const sh of field) {
+    assert.ok(asterZ(sh.dz) <= -ASTER_LEAD - 40, `lead ${asterZ(sh.dz)}`);
+  }
 });
 
 test("staggered sorts do not share a z or a height", () => {

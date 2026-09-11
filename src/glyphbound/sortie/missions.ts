@@ -1,4 +1,4 @@
-import { BEATS, far, progressOf } from "./beats";
+import { asterZ, BEATS, far, progressOf } from "./beats";
 import { COAST_PATH, GUTTER_PATH, PRESS_PATH, SLUG_PATH, SORTS_PATH } from "./landmarks";
 import type { PathPoint } from "./path";
 import type { AsterShape, EnemyKind, FormName, PickupKind, SortieState } from "./sim";
@@ -211,8 +211,7 @@ export function scriptMissionWaves(s: SortieState) {
         const sh = b.ships[i];
         const flyer = sh.kind === "fighter" || sh.kind === "cork" || sh.kind === "bomber" || sh.kind === "ace";
         const push = flyer || sh.kind === "aster" || sh.kind === "turret";
-        // Asters keep relative dz. far() used to flatten every sort onto one row.
-        const zOff = sh.kind === "aster" ? Math.min(sh.dz, -36) : push ? far(sh.dz) : sh.dz;
+        const zOff = sh.kind === "aster" ? asterZ(sh.dz) : push ? far(sh.dz) : sh.dz;
         spawn(s, sh.kind, s.x + sh.dx, s.y + sh.dy, s.z + zOff, sh.hp, {
           staged: flyer && s.flight === "corridor",
           form: sh.form ?? form,

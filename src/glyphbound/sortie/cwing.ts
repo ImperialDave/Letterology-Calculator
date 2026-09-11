@@ -59,24 +59,18 @@ export function makeCWing() {
   const lead = n64Mat(0xd8e0e8, { map: hullTex() });
   const gunMat = n64Mat(INK, { emissive: INK, glow: 0.5 });
 
-  const letter = add(body, crescentGeo(), hull, 0, 0.02, 0, { name: "letter" });
-  letter.scale.set(1.08, 1.15, 1.08);
+  const letter = add(body, crescentGeo(), hull, 0.05, 0.04, 0, { name: "letter" });
+  letter.scale.set(1.28, 1.05, 1.32);
 
-  add(body, new THREE.BoxGeometry(3.4, 0.42, 0.62), dark, 0.15, 0, 0);
-  add(body, new THREE.BoxGeometry(2.2, 0.18, 0.92), lead, 0.05, 0.22, 0);
-  add(body, new THREE.BoxGeometry(1.6, 0.22, 0.38), brass, -0.2, -0.28, 0);
-  add(body, new THREE.ConeGeometry(0.38, 1.55, 6), hull, 1.72, 0, 0, { rz: -Math.PI / 2 });
-  add(body, new THREE.BoxGeometry(0.7, 0.16, 0.7), dark, 1.15, -0.18, 0);
-  add(body, new THREE.CylinderGeometry(0.16, 0.22, 0.7, 6), lead, 0.85, 0.08, 0.42, { rz: Math.PI / 2 });
-  add(body, new THREE.CylinderGeometry(0.16, 0.22, 0.7, 6), lead, 0.85, 0.08, -0.42, { rz: Math.PI / 2 });
+  add(body, new THREE.CylinderGeometry(0.22, 0.38, 3.6, 7), hull, 0.15, 0, 0, { rz: Math.PI / 2 });
+  add(body, new THREE.ConeGeometry(0.28, 1.85, 7), brass, 1.95, 0, 0, { rz: -Math.PI / 2 });
+  add(body, new THREE.BoxGeometry(1.8, 0.16, 0.72), lead, 0.2, 0.22, 0);
+  add(body, new THREE.BoxGeometry(1.4, 0.14, 0.42), dark, -0.15, -0.22, 0);
 
-  const canopy = add(body, new THREE.SphereGeometry(0.36, 7, 5, 0, Math.PI * 2, 0, Math.PI * 0.58), glass, 0.72, 0.32, 0, { sx: 1.55, sy: 0.72, sz: 0.78 });
+  const canopy = add(body, new THREE.SphereGeometry(0.42, 8, 6, 0, Math.PI * 2, 0, Math.PI * 0.62), glass, 0.62, 0.38, 0, { sx: 1.7, sy: 0.78, sz: 0.86 });
   canopy.name = "canopy";
-  add(body, new THREE.BoxGeometry(0.5, 0.08, 0.42), dark, 0.55, 0.18, 0);
-
-  add(body, new THREE.BoxGeometry(0.18, 0.55, 0.7), brass, -0.15, 0.42, 0);
-  add(body, new THREE.BoxGeometry(0.12, 0.7, 0.22), brass, -0.85, 0.38, 0.18);
-  add(body, new THREE.BoxGeometry(0.12, 0.7, 0.22), brass, -0.85, 0.38, -0.18);
+  add(body, new THREE.BoxGeometry(0.55, 0.07, 0.48), dark, 0.48, 0.22, 0);
+  add(body, new THREE.BoxGeometry(0.16, 0.42, 0.55), brass, -0.05, 0.48, 0);
 
   const wingL = new THREE.Group();
   const wingR = new THREE.Group();
@@ -88,14 +82,14 @@ export function makeCWing() {
   wingR.rotation.x = -0.16;
   body.add(wingL, wingR);
 
-  add(wingL, new THREE.BoxGeometry(1.15, 0.09, 2.55), brass, 0, 0, 0.55);
-  add(wingR, new THREE.BoxGeometry(1.15, 0.09, 2.55), brass, 0, 0, -0.55);
-  add(wingL, new THREE.BoxGeometry(0.55, 0.07, 1.1), hull, 0.35, 0.04, 0.15);
-  add(wingR, new THREE.BoxGeometry(0.55, 0.07, 1.1), hull, 0.35, 0.04, -0.15);
-  add(wingL, new THREE.BoxGeometry(0.7, 0.16, 0.22), ink, 0.15, 0.05, 1.72);
-  add(wingR, new THREE.BoxGeometry(0.7, 0.16, 0.22), ink, 0.15, 0.05, -1.72);
-  add(wingL, new THREE.BoxGeometry(0.35, 0.28, 0.08), dark, -0.2, 0.12, 0.9);
-  add(wingR, new THREE.BoxGeometry(0.35, 0.28, 0.08), dark, -0.2, 0.12, -0.9);
+  add(wingL, new THREE.BoxGeometry(1.35, 0.08, 3.1), brass, 0.05, 0, 0.7);
+  add(wingR, new THREE.BoxGeometry(1.35, 0.08, 3.1), brass, 0.05, 0, -0.7);
+  add(wingL, new THREE.BoxGeometry(0.7, 0.06, 1.35), hull, 0.4, 0.05, 0.2);
+  add(wingR, new THREE.BoxGeometry(0.7, 0.06, 1.35), hull, 0.4, 0.05, -0.2);
+  add(wingL, new THREE.BoxGeometry(0.85, 0.18, 0.18), ink, 0.2, 0.06, 2.05);
+  add(wingR, new THREE.BoxGeometry(0.85, 0.18, 0.18), ink, 0.2, 0.06, -2.05);
+  add(wingL, new THREE.BoxGeometry(0.28, 0.42, 0.08), dark, -0.25, 0.16, 1.05);
+  add(wingR, new THREE.BoxGeometry(0.28, 0.42, 0.08), dark, -0.25, 0.16, -1.05);
 
   const gL = add(body, new THREE.BoxGeometry(1.05, 0.12, 0.12), gunMat, 1.22, -0.12, 0.48, { name: "gunL" });
   const gR = add(body, new THREE.BoxGeometry(1.05, 0.12, 0.12), gunMat, 1.22, -0.12, -0.48, { name: "gunR" });
@@ -187,7 +181,7 @@ export function makeCWing() {
   }
   sparkle.visible = false;
 
-  g.scale.setScalar(1.52);
+  g.scale.setScalar(1.68);
   g.userData.wingL = wingL;
   g.userData.wingR = wingR;
   g.userData.engine = engines;
@@ -237,7 +231,7 @@ export function poseCWing(g: THREE.Group, s: SortieState) {
       const mesh = n as THREE.Mesh;
       const mat = mesh.material as THREE.MeshBasicMaterial | undefined;
       if (!mat || mat.opacity === undefined) return;
-      mat.opacity = boost ? 0.78 : 0.3 + s.speed / 380;
+      mat.opacity = boost ? 0.88 : 0.42 + s.speed / 280;
       mat.color.setHex(s.barrel > 0 ? 0xe8d48a : 0x9af8de);
     });
   }

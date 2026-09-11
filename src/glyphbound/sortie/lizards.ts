@@ -39,44 +39,41 @@ function raptor(scale: number, span: number, fat: number, trim: "rust" | "gold" 
   const m = mats();
   const armor = trim === "gold" ? m.gold : trim === "brass" ? m.brass : m.rust;
 
-  add(g, new THREE.ConeGeometry(0.38 * fat, 2.1, 7), m.skin, 0, 0, 0.1, { rx: Math.PI / 2 });
-  add(g, new THREE.SphereGeometry(0.42 * fat, 7, 6), m.skin, 0, 0.02, 0.55, { sy: 0.72, sz: 1.15 });
-  add(g, new THREE.BoxGeometry(0.7 * fat, 0.18, 1.1), armor, 0, 0.18, 0.15);
+  add(g, new THREE.CylinderGeometry(0.28 * fat, 0.42 * fat, 1.85, 7), m.skin, 0, 0.02, 0.05, { rx: Math.PI / 2 });
+  add(g, new THREE.SphereGeometry(0.48 * fat, 7, 6), m.skin, 0, 0.04, 0.72, { sy: 0.7, sz: 1.2 });
+  add(g, new THREE.BoxGeometry(0.82 * fat, 0.16, 1.15), armor, 0, 0.22, 0.18);
+  add(g, new THREE.ConeGeometry(0.34 * fat, 1.05, 6), m.skin, 0, 0.02, 1.35, { rx: -Math.PI / 2 });
+  add(g, new THREE.ConeGeometry(0.22, 0.55, 5), m.dark, 0, -0.04, 1.72, { rx: -Math.PI / 2 });
+  add(g, new THREE.BoxGeometry(0.62, 0.1, 0.55), armor, 0, 0.18, 1.12, { rx: 0.35 });
+  add(g, new THREE.BoxGeometry(0.55, 0.08, 0.42), m.dark, 0, -0.12, 1.55);
 
-  add(g, new THREE.ConeGeometry(0.3, 0.85, 6), m.skin, 0, 0.04, 1.22, { rx: -Math.PI / 2 });
-  add(g, new THREE.ConeGeometry(0.22, 0.55, 5), m.dark, 0, -0.02, 1.48, { rx: -Math.PI / 2 });
-  add(g, new THREE.BoxGeometry(0.55, 0.08, 0.55), armor, 0, 0.16, 1.05, { rx: 0.4 });
-
-  for (const side of [-1, 1]) {
-    add(g, new THREE.BoxGeometry(0.08, 0.05, 0.22), m.dark, side * 0.12, -0.08, 1.62);
-    add(g, new THREE.BoxGeometry(0.06, 0.04, 0.16), m.dark, side * 0.08, -0.1, 1.72);
-  }
-
-  const eyeL = add(g, new THREE.SphereGeometry(0.09, 6, 5), m.ink, -0.16, 0.14, 1.38, { name: "eye" });
+  const eyeL = add(g, new THREE.SphereGeometry(0.1, 6, 5), m.ink, -0.18, 0.16, 1.48, { name: "eye" });
   const eyeR = eyeL.clone();
-  eyeR.position.x = 0.16;
+  eyeR.position.x = 0.18;
   g.add(eyeR);
 
   const wingL = new THREE.Group();
   const wingR = new THREE.Group();
   wingL.name = "wingL";
   wingR.name = "wingR";
-  wingL.position.set(-span * 0.22, 0.1, 0.05);
-  wingR.position.set(span * 0.22, 0.1, 0.05);
+  wingL.position.set(-span * 0.18, 0.08, 0.08);
+  wingR.position.set(span * 0.18, 0.08, 0.08);
   g.add(wingL, wingR);
-  add(wingL, new THREE.BoxGeometry(span * 0.7, 0.05, 0.95), armor, -span * 0.22, 0, 0, { rz: 0.28 });
-  add(wingR, new THREE.BoxGeometry(span * 0.7, 0.05, 0.95), armor, span * 0.22, 0, 0, { rz: -0.28 });
-  add(wingL, new THREE.BoxGeometry(span * 0.35, 0.04, 0.55), m.skin, -span * 0.18, -0.04, -0.15, { rz: 0.18 });
-  add(wingR, new THREE.BoxGeometry(span * 0.35, 0.04, 0.55), m.skin, span * 0.18, -0.04, -0.15, { rz: -0.18 });
+  add(wingL, new THREE.BoxGeometry(span * 0.85, 0.045, 1.15), armor, -span * 0.28, 0, 0, { rz: 0.22 });
+  add(wingR, new THREE.BoxGeometry(span * 0.85, 0.045, 1.15), armor, span * 0.28, 0, 0, { rz: -0.22 });
+  add(wingL, new THREE.BoxGeometry(span * 0.42, 0.035, 0.7), m.skin, -span * 0.22, -0.03, -0.12, { rz: 0.14 });
+  add(wingR, new THREE.BoxGeometry(span * 0.42, 0.035, 0.7), m.skin, span * 0.22, -0.03, -0.12, { rz: -0.14 });
+  add(wingL, new THREE.BoxGeometry(0.12, 0.28, 0.55), armor, -span * 0.08, 0.12, 0.15);
+  add(wingR, new THREE.BoxGeometry(0.12, 0.28, 0.55), armor, span * 0.08, 0.12, 0.15);
 
-  add(g, new THREE.ConeGeometry(0.14, 1.35, 5), m.rust, 0, -0.02, -1.25, { rx: Math.PI / 2, name: "tail" });
-  add(g, new THREE.BoxGeometry(0.7, 0.06, 0.28), armor, 0, 0.12, -1.55);
-  add(g, new THREE.BoxGeometry(0.08, 0.42, 0.28), armor, 0, 0.28, -1.45);
+  add(g, new THREE.ConeGeometry(0.16, 1.55, 5), m.rust, 0, 0, -1.35, { rx: Math.PI / 2, name: "tail" });
+  add(g, new THREE.BoxGeometry(0.85, 0.06, 0.32), armor, 0, 0.14, -1.72);
+  add(g, new THREE.BoxGeometry(0.08, 0.5, 0.32), armor, 0, 0.34, -1.58);
 
-  add(g, new THREE.CylinderGeometry(0.16, 0.22, 0.4, 6), m.dark, 0, 0, -0.95, { rx: Math.PI / 2 });
-  add(g, new THREE.ConeGeometry(0.18, 0.5, 6), m.ink, 0, 0, -1.22, { rx: Math.PI / 2, name: "engine" });
+  add(g, new THREE.CylinderGeometry(0.18, 0.26, 0.45, 6), m.dark, 0, 0, -0.95, { rx: Math.PI / 2 });
+  add(g, new THREE.ConeGeometry(0.22, 0.62, 6), m.ink, 0, 0, -1.28, { rx: Math.PI / 2, name: "engine" });
 
-  g.scale.setScalar(scale);
+  g.scale.setScalar(scale * 1.08);
   g.rotation.y = Math.PI;
   return g;
 }

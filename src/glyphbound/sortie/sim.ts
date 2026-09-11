@@ -254,11 +254,11 @@ const LOOP_HOLD = 0.2;
 const BANK = 0.92;
 const YAW_FROM_BANK = 2.2;
 const CEIL_Y = 260;
-const CMD_K = 8;
-const CMD_K_RANGE = 8;
-const BANK_K = 9;
-const STICK_POS_K = 8;
-const STICK_HOME_K = 1.5;
+const CMD_K = 16;
+const CMD_K_RANGE = 14;
+const BANK_K = 12;
+const STICK_POS_K = 18;
+const STICK_HOME_K = 10;
 const HEAT_PER_SHOT = 0.012;
 const RAPID_CD = 0.08;
 const HEAT_CD = 0.02;
@@ -312,7 +312,7 @@ function flyCraft(s: SortieState, input: SortieInput, dt: number) {
     const stickY = Math.max(-1, Math.min(1, input.pitch));
     const wantX = Math.max(-ENVELOPE_X, Math.min(ENVELOPE_X, stickX * ENVELOPE_X));
     const wantY = Math.max(-ENVELOPE_Y, Math.min(ENVELOPE_Y, stickY * ENVELOPE_Y));
-    const sitK = (want: number, cur: number) => (Math.abs(want) > Math.abs(cur) + 1 ? STICK_POS_K : STICK_HOME_K);
+    const sitK = (want: number, cur: number) => (Math.abs(want) > Math.abs(cur) + 0.4 ? STICK_POS_K : STICK_HOME_K);
     s.offsetX = follow(s.offsetX, wantX, sitK(wantX, s.offsetX), dt);
     s.offsetY = follow(s.offsetY, wantY, sitK(wantY, s.offsetY), dt);
     const sample = samplePath(s.path, s.pathT);
@@ -1474,7 +1474,7 @@ function steerEnemy(s: SortieState, e: Enemy, dt: number) {
 
   if (e.kind === "aster") {
     if (rail) {
-      const close = e.hp >= 8 ? 14 : 26;
+      const close = e.hp >= 8 ? 10 : 18;
       e.vx = -d.x * close;
       e.vy = 0;
       e.vz = -d.z * close;

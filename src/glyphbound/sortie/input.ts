@@ -129,7 +129,7 @@ export class SortieKeys {
     if (has("KeyS") || has("ArrowDown") || pad.down) keyWantP += keyScale;
     const ease = (cur: number, want: number) => {
       const toward = Math.abs(want) > Math.abs(cur) + 0.02;
-      const k = toward ? 8 : 7;
+      const k = toward ? 10 : 8;
       return cur + (want - cur) * (1 - Math.exp(-k * dt));
     };
     this.keyRoll = ease(this.keyRoll, keyWantR);

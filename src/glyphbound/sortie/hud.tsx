@@ -70,12 +70,12 @@ export function SortieHud({
           Stem {["I", "II", "III"][s.stem] ?? "I"} · dash {s.bombs}
         </p>
       </div>
-      <div className="absolute bottom-6 left-6 flex gap-1">
+      <div className="absolute bottom-6 left-6 flex items-end gap-1.5">
         {Array.from({ length: Math.max(HULL_MAX, s.hullMax) }, (_, i) => (
           <span
             key={i}
-            className="h-2.5 w-5 rounded-sm border border-[#e8d48a]/50"
-            style={{ background: i < s.hull ? "#5ee0c0" : "transparent" }}
+            className="h-3.5 w-6 rounded-sm border border-[#e8d48a]/70"
+            style={{ background: i < s.hull ? "#5ee0c0" : "transparent", boxShadow: i < s.hull ? "0 0 8px #5ee0c088" : undefined }}
           />
         ))}
         {s.mods.shieldMax > 0 && (
@@ -99,8 +99,9 @@ export function SortieHud({
           ))}
         </span>
       </div>
-      <div className="absolute bottom-6 right-6 flex flex-col items-end gap-1">
-        <div className="h-1.5 w-28 overflow-hidden rounded-sm border border-[#e8d48a]/40">
+      <div className="absolute bottom-6 right-6 flex flex-col items-end gap-1.5">
+        <p className="text-[9px] uppercase tracking-[0.22em] text-[#e8d48a]/80">Boost</p>
+        <div className="h-2.5 w-32 overflow-hidden rounded-sm border border-[#e8d48a]/55">
           <div
             className="h-full"
             style={{
@@ -693,9 +694,12 @@ export function TouchPads({
         onPointerUp={end}
         onPointerCancel={end}
       >
+        {!knob.on && (
+          <div className="absolute bottom-8 left-8 h-[7.2rem] w-[7.2rem] rounded-full border-2 border-[#f4f0e4]/45 bg-[#121018]/50" />
+        )}
         <div
-          className="absolute h-[7.2rem] w-[7.2rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#f4f0e4]/35 bg-[#121018]/45"
-          style={{ left: `${knob.ox * 100}%`, top: `${knob.oy * 100}%` }}
+          className="absolute h-[7.2rem] w-[7.2rem] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#f4f0e4]/50 bg-[#121018]/55"
+          style={{ left: `${knob.ox * 100}%`, top: `${knob.oy * 100}%`, display: knob.on ? undefined : "none" }}
         >
           <span
             className="absolute left-1/2 top-1/2 h-11 w-11 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#5ee0c0]/70 bg-[#5ee0c0]/80"
