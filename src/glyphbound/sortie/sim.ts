@@ -6,7 +6,7 @@ import { missionById, scriptMissionWaves } from "./missions";
 import { ENVELOPE_X, ENVELOPE_Y, SHIFT_T, SKY_CORRIDOR, UTURN_T, pathLength, pathFrame, samplePath, type PathPoint } from "./path";
 import { groundHeight } from "./height";
 import { endCopy, type EndWhy } from "./story";
-import { inHole, inLandmarkSolid, landmarksFor, RING_COLLECT } from "./landmarks";
+import { CRAFT_R, inHole, inLandmarkSolid, landmarksFor, RING_COLLECT } from "./landmarks";
 import { enterState, killPartsHp, partAlive, tickBrain } from "./brain";
 import type { AttackKind, RobotDef, RobotLive } from "./brain";
 import { bootGalley, bootDualis, bootKite, bootScale, bootUnbound, poseLive, robotCtx, robotOf, robotWorld } from "./robots";
@@ -41,6 +41,8 @@ const GALLERY_CLOSE = 58;
 
 export type EnemyKind = "fighter" | "cork" | "bomber" | "turret" | "ace" | "mech" | "mothership" | "dualis" | "aster";
 export type FormName = "v" | "line" | "cross" | "guide" | "hold";
+/** Type-metal obstacles. sort=small, slug=bar, rule=pillar, quad=cube, stone=boulder. */
+export type AsterShape = "sort" | "slug" | "rule" | "quad" | "stone";
 export type ShotKind = "laser" | "orb" | "charge" | "bomb";
 export type PickupKind = "silver" | "gold" | "stem" | "bomb" | "repair" | "kit";
 export type SortieMode = "play" | "win" | "dead" | "pause";
@@ -78,6 +80,7 @@ export interface Enemy {
   form?: FormName;
   formId?: number;
   slot?: number;
+  shape?: AsterShape;
   lead?: number;
   life?: number;
   setPiece?: boolean;
@@ -586,7 +589,7 @@ function seedWarpField(s: SortieState) {
       s.x + d.x * ahead + side.x * laneOf(i) * 28,
       s.y + ((i % 4) - 1.5) * 11,
       s.z + d.z * ahead + side.z * laneOf(i) * 28,
-      { hp: i % 5 === 0 ? 12 : 1, staged: false, armed: false },
+      { hp: i % 5 === 0 ? 12 : 1, staged: false, armed: false, shape: i % 5 === 0 ? "stone" : i % 3 === 0 ? "quad" : "sort" },
     );
   }
 }
@@ -597,7 +600,7 @@ export function spawnEnemy(
   x: number,
   y: number,
   z: number,
-  extra?: { hp?: number; staged?: boolean; armed?: boolean; form?: FormName; formId?: number; slot?: number; lead?: number; life?: number; setPiece?: boolean },
+  extra?: { hp?: number; staged?: boolean; armed?: boolean; form?: FormName; formId?: number; slot?: number; lead?: number; life?: number; setPiece?: boolean; shape?: AsterShape },
 ) {
   const hp =
     extra?.hp ??
@@ -637,6 +640,7 @@ export function spawnEnemy(
     slot: extra?.slot ?? 0,
     lead: extra?.lead,
     life: extra?.life,
+    shape: extra?.shape,
     setPiece: extra?.setPiece,
     robot: extra?.setPiece ? bootSetPiece(s, kind) : undefined,
   });
@@ -764,8 +768,31 @@ function killEnemy(s: SortieState, e: Enemy, splash = false) {
   }
 }
 
+export function asterShapeOf(e: { hp: number; shape?: AsterShape }): AsterShape {
+  if (e.shape) return e.shape;
+  return e.hp >= 8 ? "stone" : "sort";
+}
+
+/** Half-extents of a type-metal obstacle. Matches the lizard mesh. */
+export function asterExtent(shape: AsterShape): { x: number; y: number; z: number } {
+  if (shape === "slug") return { x: 16, y: 4.5, z: 5 };
+  if (shape === "rule") return { x: 4.5, y: 16, z: 5 };
+  if (shape === "quad") return { x: 8, y: 8, z: 8 };
+  if (shape === "stone") return { x: 13, y: 11, z: 13 };
+  return { x: 6, y: 6, z: 6 };
+}
+
+export function hitsAster(s: Vec3, e: Enemy) {
+  const ext = asterExtent(asterShapeOf(e));
+  const pad = CRAFT_R;
+  return Math.abs(s.x - e.x) < ext.x + pad && Math.abs(s.y - e.y) < ext.y + pad && Math.abs(s.z - e.z) < ext.z + pad;
+}
+
 function bodyR(e: Enemy) {
-  if (e.kind === "aster") return e.hp >= 8 ? 22 : 10;
+  if (e.kind === "aster") {
+    const ext = asterExtent(asterShapeOf(e));
+    return Math.max(ext.x, ext.y, ext.z);
+  }
   if (e.robot) {
     if (e.robot.id === "unbound") return 10;
     if (e.robot.id === "kite") return 16;
@@ -781,7 +808,10 @@ function bodyR(e: Enemy) {
 
 /** Tight 3D pad for player beams. Hull/orb pain still uses bodyR. */
 export function shotR(e: Enemy) {
-  if (e.kind === "aster") return e.hp >= 8 ? 14 : 6;
+  if (e.kind === "aster") {
+    const ext = asterExtent(asterShapeOf(e));
+    return Math.max(5, Math.min(ext.x, ext.y, ext.z));
+  }
   if (e.robot) return e.robot.id === "unbound" ? 8 : 12;
   if (e.kind === "dualis" || e.kind === "mothership" || e.kind === "mech") return 12;
   if (e.kind === "bomber") return 8;
@@ -1821,12 +1851,23 @@ export function stepSortie(s: SortieState, input: SortieInput, dtRaw: number) {
       e.y += e.vy * dt;
       e.z += e.vz * dt;
     }
-    if (s.biome !== "sorts") {
+    if (s.biome !== "sorts" && e.kind !== "aster") {
       const floor = islandHeight(s, e.x, e.z) + 8;
       if (e.y < floor) e.y = floor;
     }
-    const cr = e.kind === "aster" ? bodyR(e) * 0.8 : e.robot ? bodyR(e) * 0.55 : 10;
     if (e.robot && (inUnboundHole(s, e) || inGalleyHatch(s, e))) continue;
+    if (e.kind === "aster") {
+      if (hitsAster(s, e)) {
+        hurt(s, 1, false, "crash");
+        const dx = s.x - e.x;
+        const dy = s.y - e.y;
+        const n = Math.hypot(dx, dy) || 1;
+        s.x += (dx / n) * 6;
+        s.y += (dy / n) * 4;
+      }
+      continue;
+    }
+    const cr = e.robot ? bodyR(e) * 0.55 : 10;
     if (dist2(s, e) < cr * cr) hurt(s, 1);
   }
 

@@ -1,7 +1,7 @@
 import { BEATS, far, progressOf } from "./beats";
 import { COAST_PATH, GUTTER_PATH, PRESS_PATH, SLUG_PATH, SORTS_PATH } from "./landmarks";
 import type { PathPoint } from "./path";
-import type { EnemyKind, FormName, PickupKind, SortieState } from "./sim";
+import type { AsterShape, EnemyKind, FormName, PickupKind, SortieState } from "./sim";
 import { bootGalley, bootKite, bootScale, bootUnbound } from "./robots";
 import type { BiomeId } from "./terrain";
 
@@ -211,15 +211,18 @@ export function scriptMissionWaves(s: SortieState) {
         const sh = b.ships[i];
         const flyer = sh.kind === "fighter" || sh.kind === "cork" || sh.kind === "bomber" || sh.kind === "ace";
         const push = flyer || sh.kind === "aster" || sh.kind === "turret";
-        spawn(s, sh.kind, s.x + sh.dx, s.y + sh.dy, s.z + (push ? far(sh.dz) : sh.dz), sh.hp, {
+        // Asters keep relative dz. far() used to flatten every sort onto one row.
+        const zOff = sh.kind === "aster" ? Math.min(sh.dz, -36) : push ? far(sh.dz) : sh.dz;
+        spawn(s, sh.kind, s.x + sh.dx, s.y + sh.dy, s.z + zOff, sh.hp, {
           staged: flyer && s.flight === "corridor",
           form: sh.form ?? form,
           formId,
           slot: sh.slot ?? i,
           armed: sh.armed,
-          lead: Math.max(88, -(push ? far(sh.dz) : sh.dz)),
+          lead: Math.max(88, -zOff),
           life: 12,
           setPiece: sh.setPiece,
+          shape: sh.shape,
         });
         if (sh.kind === "mech" && !s.bossAt) s.bossAt = s.t;
       }
@@ -257,7 +260,7 @@ function spawn(
   y: number,
   z: number,
   hp?: number,
-  extra?: { staged?: boolean; armed?: boolean; form?: FormName; formId?: number; slot?: number; lead?: number; life?: number; setPiece?: boolean },
+  extra?: { staged?: boolean; armed?: boolean; form?: FormName; formId?: number; slot?: number; lead?: number; life?: number; setPiece?: boolean; shape?: AsterShape },
 ) {
   const auto =
     kind === "dualis"
@@ -297,6 +300,7 @@ function spawn(
     slot: extra?.slot ?? 0,
     lead: extra?.lead,
     life: extra?.life,
+    shape: extra?.shape,
     setPiece: extra?.setPiece,
     robot: extra?.setPiece
       ? kind === "mech"

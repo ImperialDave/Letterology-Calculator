@@ -3,7 +3,8 @@ import test from "node:test";
 import * as THREE from "three";
 import { makeCWing } from "./cwing";
 import { groundHeight } from "./height";
-import { BEATS, rockRing, rocks, ROCK_GAP, ROCK_RING_R } from "./beats";
+import { BEATS, rockRing, rocks, ROCK_GAP, ROCK_RING_R, scatter, slalom, teeth } from "./beats";
+import { makeLizard } from "./lizards";
 import {
   COAST_PATH,
   GUTTER_PATH,
@@ -29,7 +30,7 @@ import { bindNoSelect } from "./hud";
 import { applySortieCheat, grantClear, isKonami, kitMods, maxedKits } from "./kits";
 import { SortieKeys } from "./input";
 import { aimOff, aimScreen, inBox, unproject } from "./cam";
-import { BARREL_T, CHARGE_LOCK, CHARGE_SEEK, GALLERY_LEAD, INNER_R, KEEP_R, LASER_LIFE, MARK_PX_MAX, MARK_PX_MIN, MARK_REF_H, OUTER_R, SOMERSAULT_T, TGT_FAR, TGT_NEAR, WARN_FAR, createSortie, emptyInput, markHalf, markInSquares, markPx, sightParallax, stepSortie } from "./sim";
+import { asterExtent, asterShapeOf, BARREL_T, CHARGE_LOCK, CHARGE_SEEK, GALLERY_LEAD, hitsAster, INNER_R, KEEP_R, LASER_LIFE, MARK_PX_MAX, MARK_PX_MIN, MARK_REF_H, OUTER_R, SOMERSAULT_T, TGT_FAR, TGT_NEAR, WARN_FAR, createSortie, emptyInput, markHalf, markInSquares, markPx, sightParallax, stepSortie } from "./sim";
 import { DRESSING_FLOOR, dressingCatalogCount, meetsDressingFloor } from "./audit";
 import { fillTex, PAINTS, paintBrass, paintGrass, paintHull, paintInkWater, paintLead, paintScale, type Plot } from "./tex-paint";
 import { makeWorld } from "./world";
@@ -2245,6 +2246,91 @@ test("sorts on the rail close instead of sitting still", () => {
   const z0 = e.z;
   stepSortie(s, emptyInput(), 1 / 60);
   assert.ok(e.z > z0, `aster did not close ${e.z} from ${z0}`);
+});
+
+test("a sort on the nose is a crash, not a kiss", () => {
+  const s = createSortie({ corridor: true, path: SORTS_PATH, missionId: "sorts", biome: "sorts" });
+  s.wave = 99;
+  s.invuln = 0;
+  s.hitStop = 0;
+  s.hull = 6;
+  s.shield = 0;
+  s.enemies.push({
+    id: 88,
+    kind: "aster",
+    x: s.x,
+    y: s.y,
+    z: s.z,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    hp: 1,
+    t: 0,
+    alive: true,
+    armed: false,
+    shape: "sort",
+  });
+  stepSortie(s, emptyInput(), 1 / 60);
+  assert.ok(s.hull < 6, `hull stayed ${s.hull}`);
+  if (s.mode === "dead") assert.equal(s.endWhy, "crash");
+});
+
+test("a high slug is a bar you fly under", () => {
+  const s = createSortie({ corridor: true, path: SORTS_PATH, missionId: "sorts", biome: "sorts" });
+  s.wave = 99;
+  s.invuln = 0;
+  s.hull = 6;
+  const rock = {
+    id: 89,
+    kind: "aster" as const,
+    x: s.x,
+    y: s.y + 20,
+    z: s.z,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    hp: 1,
+    t: 0,
+    alive: true,
+    armed: false,
+    shape: "slug" as const,
+  };
+  assert.equal(hitsAster(s, rock), false);
+  s.enemies.push(rock);
+  stepSortie(s, emptyInput(), 1 / 60);
+  assert.equal(s.hull, 6);
+});
+
+test("staggered sorts do not share a z or a height", () => {
+  const field = scatter(-50, 7) ?? [];
+  const zs = new Set(field.map((sh) => sh.dz));
+  const ys = field.map((sh) => sh.dy);
+  assert.ok(zs.size >= 5, `z rows ${zs.size}`);
+  assert.ok(Math.max(...ys) - Math.min(...ys) >= 16, `height span ${Math.max(...ys) - Math.min(...ys)}`);
+  const shapes = new Set(field.map((sh) => sh.shape));
+  assert.ok(shapes.size >= 4, `shapes ${[...shapes].join(",")}`);
+  const mix = [...(teeth(-40) ?? []), ...(slalom(-40) ?? [])];
+  const mixed = new Set(mix.map((sh) => sh.shape));
+  assert.ok(mixed.has("slug") && mixed.has("rule") && mixed.has("stone"));
+});
+
+test("obstacle molds are not one rock", () => {
+  const sort = makeLizard("aster", "sort");
+  const slug = makeLizard("aster", "slug");
+  const rule = makeLizard("aster", "rule");
+  const size = (g: THREE.Group) => new THREE.Box3().setFromObject(g).getSize(new THREE.Vector3());
+  const a = size(sort);
+  const b = size(slug);
+  const c = size(rule);
+  assert.ok(b.x > b.y, `slug ${b.x}x${b.y}`);
+  assert.ok(c.y > c.x, `rule ${c.x}x${c.y}`);
+  assert.ok(a.x < b.x && a.y < c.y);
+  assert.equal(asterShapeOf({ hp: 1 }), "sort");
+  assert.equal(asterShapeOf({ hp: 12 }), "stone");
+  const slugExt = asterExtent("slug");
+  const ruleExt = asterExtent("rule");
+  assert.ok(slugExt.x > slugExt.y);
+  assert.ok(ruleExt.y > ruleExt.x);
 });
 
 function sample(kind: LandmarkKind, extra: Partial<Landmark> = {}): Landmark {

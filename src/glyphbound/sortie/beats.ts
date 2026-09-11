@@ -1,5 +1,5 @@
 import type { KitId } from "./kits";
-import type { EnemyKind, FormName, PickupKind, SortieState } from "./sim";
+import type { AsterShape, EnemyKind, FormName, PickupKind, SortieState } from "./sim";
 
 export interface Beat {
   id: number;
@@ -18,6 +18,7 @@ export interface Beat {
     armed?: boolean;
     setPiece?: boolean;
     slot?: number;
+    shape?: AsterShape;
   }[];
   loot?: { kind: PickupKind; kit?: KitId; dx: number; dy: number; dz: number };
   rings?: { dx: number; dy: number; dz: number }[];
@@ -30,15 +31,69 @@ export function far(dz: number) {
 export const ROCK_RING_R = 32;
 export const ROCK_GAP = 36;
 
+const SHAPES: AsterShape[] = ["sort", "slug", "rule", "quad", "stone"];
+
+function shapeOf(i: number): AsterShape {
+  return SHAPES[i % SHAPES.length];
+}
+
+function hpOf(shape: AsterShape) {
+  return shape === "stone" ? 12 : 1;
+}
+
 export function rocks(dz: number, n = 8): Beat["ships"] {
   const z0 = far(dz);
-  return Array.from({ length: n }, (_, i) => ({
-    kind: "aster" as const,
-    dx: ((i % 4) - 1.5) * ROCK_GAP + (i % 3) * 4,
-    dy: (i % 5) * 9 - 14,
-    dz: z0 - Math.floor(i / 4) * 36,
-    hp: i % 6 === 0 ? 12 : 1,
-  }));
+  return Array.from({ length: n }, (_, i) => {
+    const shape = shapeOf(i);
+    return {
+      kind: "aster" as const,
+      dx: ((i % 4) - 1.5) * ROCK_GAP + (i % 3) * 4,
+      dy: (i % 5) * 9 - 14 + (i % 2 === 0 ? 6 : -5),
+      dz: z0 - Math.floor(i / 4) * 36 - (i % 4) * 16,
+      hp: i % 6 === 0 ? 12 : hpOf(shape),
+      shape,
+    };
+  });
+}
+
+/** Irregular field inside the craft envelope. Heights and z do not share a row. */
+export function scatter(dz: number, n = 7): Beat["ships"] {
+  const z0 = Math.min(dz, -48);
+  const xs = [6, -14, 2, 16, -8, 11, -18];
+  const ys = [12, -8, 2, -14, 16, 5, -4];
+  const zs = [0, -22, -40, -14, -58, -30, -74];
+  return Array.from({ length: n }, (_, i) => {
+    const shape = shapeOf(i + 1);
+    return {
+      kind: "aster" as const,
+      dx: xs[i % xs.length],
+      dy: ys[i % ys.length],
+      dz: z0 + zs[i % zs.length],
+      hp: hpOf(shape),
+      shape,
+    };
+  });
+}
+
+/** High bar, low bar, then a pillar — pitch and weave. */
+export function teeth(dz: number): Beat["ships"] {
+  const z = Math.min(dz, -48);
+  return [
+    { kind: "aster", dx: -3, dy: 14, dz: z, hp: 1, shape: "slug" },
+    { kind: "aster", dx: 5, dy: -12, dz: z - 26, hp: 1, shape: "slug" },
+    { kind: "aster", dx: 0, dy: 2, dz: z - 50, hp: 1, shape: "rule" },
+  ];
+}
+
+/** Left-right weave at mixed heights. */
+export function slalom(dz: number): Beat["ships"] {
+  const z = Math.min(dz, -48);
+  return [
+    { kind: "aster", dx: -12, dy: 4, dz: z, hp: 1, shape: "quad" },
+    { kind: "aster", dx: 13, dy: -7, dz: z - 24, hp: 1, shape: "sort" },
+    { kind: "aster", dx: -8, dy: 13, dz: z - 48, hp: 12, shape: "stone" },
+    { kind: "aster", dx: 10, dy: 0, dz: z - 72, hp: 1, shape: "rule" },
+  ];
 }
 
 function V(dz: number, spread = 11, armed = false): Beat["ships"] {
@@ -59,14 +114,18 @@ function arrows(dz: number): Beat["ships"] {
 }
 
 function clump(dz: number, n = 5): Beat["ships"] {
-  const z0 = far(dz);
-  return Array.from({ length: n }, (_, i) => ({
-    kind: "aster" as const,
-    dx: ((i % 3) - 1) * 10,
-    dy: (i % 2) * 8 - 4,
-    dz: z0 - Math.floor(i / 3) * 12,
-    hp: 1,
-  }));
+  const z0 = Math.min(dz, -48);
+  return Array.from({ length: n }, (_, i) => {
+    const shape = shapeOf(i);
+    return {
+      kind: "aster" as const,
+      dx: ((i % 3) - 1) * 10 + (i % 2) * 6,
+      dy: (i % 3) * 10 - 10,
+      dz: z0 - i * 18,
+      hp: hpOf(shape),
+      shape,
+    };
+  });
 }
 
 function Cross(dz: number): Beat["ships"] {
@@ -96,8 +155,9 @@ export function rockRing(dz: number, r = ROCK_RING_R, n = 8): Beat["ships"] {
       kind: "aster" as const,
       dx: Math.cos(a) * r,
       dy: Math.sin(a) * r * 0.65,
-      dz: z,
+      dz: z + ((i % 3) - 1) * 8,
       hp: 1,
+      shape: "sort" as const,
     };
   });
 }
@@ -109,6 +169,9 @@ export const BEATS: Record<string, Beat[]> = {
     { id: 3, when: "rail", t: 0.09, kind: "spawn", ships: arrows(-48) },
     { id: 4, when: "rail", t: 0.14, kind: "radio", who: "b", text: "Canyon teeth." },
     { id: 5, when: "rail", t: 0.16, kind: "spawn", ships: [{ kind: "turret", dx: 20, dy: -20, dz: -30 }, { kind: "turret", dx: -20, dy: -20, dz: -48 }] },
+    { id: 40, when: "rail", t: 0.18, kind: "spawn", ships: scatter(-44, 6) },
+    { id: 41, when: "rail", t: 0.38, kind: "spawn", ships: teeth(-46) },
+    { id: 42, when: "rail", t: 0.62, kind: "spawn", ships: slalom(-50) },
     { id: 6, when: "rail", t: 0.22, kind: "pickup", loot: { kind: "silver", dx: 0, dy: 2, dz: -24 } },
     { id: 7, when: "rail", t: 0.26, kind: "spawn", ships: V(-50, 11, true) },
     { id: 8, when: "rail", t: 0.3, kind: "radio", who: "s", text: "n-street. Type-city. The street is the hole." },
@@ -140,7 +203,9 @@ export const BEATS: Record<string, Beat[]> = {
   ],
   slug: [
     { id: 1, when: "rail", t: 0.06, kind: "radio", who: "b", text: "Lead slugs. The big ones are already melted. Brake." },
-    { id: 25, when: "rail", t: 0.07, kind: "spawn", ships: [{ kind: "aster", dx: -10, dy: 2, dz: -40, hp: 1 }, { kind: "aster", dx: 12, dy: -4, dz: -55, hp: 1 }, { kind: "aster", dx: 0, dy: 8, dz: -70, hp: 8 }, { kind: "aster", dx: -16, dy: 6, dz: -90, hp: 1 }] },
+    { id: 25, when: "rail", t: 0.07, kind: "spawn", ships: scatter(-40, 6) },
+    { id: 40, when: "rail", t: 0.24, kind: "spawn", ships: teeth(-48) },
+    { id: 41, when: "rail", t: 0.58, kind: "spawn", ships: slalom(-46) },
     { id: 2, when: "rail", t: 0.08, kind: "spawn", ships: [{ kind: "fighter", dx: -12, dy: 6, dz: -40 }, { kind: "cork", dx: 14, dy: 10, dz: -55 }] },
     { id: 3, when: "rail", t: 0.18, kind: "spawn", ships: V(-48) },
     { id: 4, when: "rail", t: 0.28, kind: "radio", who: "s", text: "Gold rings. Dualis hasn’t spent those letters. Thread them." },
@@ -161,6 +226,9 @@ export const BEATS: Record<string, Beat[]> = {
   gutter: [
     { id: 1, when: "rail", t: 0.08, kind: "radio", who: "e", text: "Stay in the ink. The lights above bite. I can hear the Press." },
     { id: 2, when: "rail", t: 0.1, kind: "spawn", ships: [{ kind: "turret", dx: 20, dy: -12, dz: -36 }, { kind: "turret", dx: -20, dy: -12, dz: -50 }] },
+    { id: 40, when: "rail", t: 0.14, kind: "spawn", ships: scatter(-44, 5) },
+    { id: 41, when: "rail", t: 0.4, kind: "spawn", ships: teeth(-50) },
+    { id: 42, when: "rail", t: 0.62, kind: "spawn", ships: slalom(-44) },
     { id: 3, when: "rail", t: 0.22, kind: "spawn", ships: V(-44) },
     { id: 4, when: "rail", t: 0.36, kind: "radio", who: "s", text: "Tanker. Through the hold. Don’t admire the hull." },
     { id: 5, when: "rail", t: 0.48, kind: "pickup", loot: { kind: "bomb", dx: 0, dy: 2, dz: -18 } },
@@ -193,6 +261,8 @@ export const BEATS: Record<string, Beat[]> = {
   press: [
     { id: 1, when: "rail", t: 0.08, kind: "radio", who: "b", text: "Crater road. Thread the censers if you want the pay." },
     { id: 2, when: "rail", t: 0.12, kind: "spawn", ships: [{ kind: "turret", dx: 18, dy: -8, dz: -36 }, { kind: "fighter", dx: 0, dy: 8, dz: -48 }] },
+    { id: 40, when: "rail", t: 0.16, kind: "spawn", ships: scatter(-46, 5) },
+    { id: 41, when: "rail", t: 0.44, kind: "spawn", ships: slalom(-48) },
     { id: 3, when: "rail", t: 0.28, kind: "spawn", ships: V(-44) },
     { id: 4, when: "rail", t: 0.48, kind: "spawn", ships: [{ kind: "bomber", dx: 0, dy: 20, dz: -50 }, { kind: "cork", dx: 12, dy: 10, dz: -36 }] },
     { id: 5, when: "rail", t: 0.68, kind: "spawn", ships: V(-40, 11) },
@@ -215,7 +285,9 @@ export const BEATS: Record<string, Beat[]> = {
     { id: 7, when: "rail", t: 0.16, kind: "pickup", loot: { kind: "stem", dx: 0, dy: 0, dz: -44 } },
     { id: 8, when: "rail", t: 0.2, kind: "spawn", ships: V(-48, 11) },
     { id: 9, when: "rail", t: 0.28, kind: "radio", who: "b", text: "Crushers. Wait, then the hole. I would brake." },
-    { id: 10, when: "rail", t: 0.3, kind: "spawn", ships: [{ kind: "aster", dx: -22, dy: 0, dz: -36, hp: 12, form: "cross", slot: 0 }, { kind: "aster", dx: 22, dy: 0, dz: -36, hp: 12, form: "cross", slot: 1 }] },
+    { id: 10, when: "rail", t: 0.3, kind: "spawn", ships: [{ kind: "aster", dx: -22, dy: 0, dz: -36, hp: 12, form: "cross", slot: 0, shape: "stone" }, { kind: "aster", dx: 22, dy: 0, dz: -36, hp: 12, form: "cross", slot: 1, shape: "stone" }] },
+    { id: 40, when: "rail", t: 0.34, kind: "spawn", ships: teeth(-42) },
+    { id: 41, when: "rail", t: 0.64, kind: "spawn", ships: slalom(-50) },
     { id: 26, when: "rail", t: 0.38, kind: "spawn", ships: clump(-48, 5) },
     { id: 11, when: "rail", t: 0.46, kind: "spawn", ships: rocks(-52, 8) },
     { id: 12, when: "rail", t: 0.5, kind: "check", who: "e", text: "Still here. Seven rings if you want the frozen stock." },
