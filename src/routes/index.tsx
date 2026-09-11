@@ -217,13 +217,6 @@ function ClubGames() {
           image="/glyphbound.jpg"
           alt="Glyphbound — the letter c facing a mechanical number wyrm in the rain"
         />
-        <GameCard
-          to="/starwords"
-          title="StarWords"
-          lede={VOICE.starWordsLede}
-          image="/starwords.jpg"
-          alt="StarWords — the C-wing banking through an asteroid field"
-        />
       </div>
     </section>
   );
@@ -236,7 +229,7 @@ function GameCard({
   image,
   alt,
 }: {
-  to: "/glyphbound" | "/starwords";
+  to: "/glyphbound";
   title: string;
   lede: string;
   image: string;
