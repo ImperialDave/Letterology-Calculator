@@ -3,7 +3,7 @@ import { brainAdminMiddleware, optionalFirebaseMiddleware } from "@/lib/firebase
 import { isBrainAdminEmail } from "./brain-admin";
 import { answersCsv, sittingsCsv, sittingIdOk, summarizeSittings, validateSittingAnswers } from "./brain-sittings";
 
-export const probeBrainAdmin = createServerFn({ method: "GET" })
+export const probeBrainAdmin = createServerFn({ method: "POST" })
   .middleware([optionalFirebaseMiddleware])
   .handler(async ({ context }) => {
     const token = context.idToken;
@@ -11,7 +11,7 @@ export const probeBrainAdmin = createServerFn({ method: "GET" })
     try {
       const { verifyFirebaseIdToken } = await import("@/lib/firebase/id-token.server");
       const claims = await verifyFirebaseIdToken(token);
-      if (!claims.email || !claims.emailVerified) return { admin: false };
+      if (!claims.email) return { admin: false };
       return { admin: isBrainAdminEmail(claims.email) };
     } catch {
       return { admin: false };
@@ -42,7 +42,7 @@ export const submitBrainSitting = createServerFn({ method: "POST" })
     });
   });
 
-export const loadBrainRoll = createServerFn({ method: "GET" })
+export const loadBrainRoll = createServerFn({ method: "POST" })
   .middleware([brainAdminMiddleware])
   .handler(async () => {
     const { listBrainSittingRecords } = await import("./brain-sittings.server");
@@ -64,7 +64,7 @@ export const loadBrainRoll = createServerFn({ method: "GET" })
     };
   });
 
-export const loadBrainSitting = createServerFn({ method: "GET" })
+export const loadBrainSitting = createServerFn({ method: "POST" })
   .middleware([brainAdminMiddleware])
   .validator((id: string) => {
     if (typeof id !== "string" || !sittingIdOk(id)) throw new Error("Sitting is broken.");
@@ -78,14 +78,14 @@ export const loadBrainSitting = createServerFn({ method: "GET" })
     return { record, reading: readingFromStored(record) };
   });
 
-export const downloadBrainSittingsCsv = createServerFn({ method: "GET" })
+export const downloadBrainSittingsCsv = createServerFn({ method: "POST" })
   .middleware([brainAdminMiddleware])
   .handler(async () => {
     const { listBrainSittings } = await import("./brain-sittings.server");
     return { csv: sittingsCsv(await listBrainSittings()), filename: "portrait-roll.csv" };
   });
 
-export const downloadBrainAnswersCsv = createServerFn({ method: "GET" })
+export const downloadBrainAnswersCsv = createServerFn({ method: "POST" })
   .middleware([brainAdminMiddleware])
   .handler(async () => {
     const { listBrainSittingRecords } = await import("./brain-sittings.server");

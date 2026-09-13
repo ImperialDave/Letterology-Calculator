@@ -14,7 +14,7 @@ export const submitThresholdSitting = createServerFn({ method: "POST" })
     return insertThresholdSitting({ ...data, userId: context.userId ?? null });
   });
 
-export const loadThresholdRoll = createServerFn({ method: "GET" })
+export const loadThresholdRoll = createServerFn({ method: "POST" })
   .middleware([brainAdminMiddleware])
   .handler(async () => {
     const { listThresholdSittings } = await import("./threshold.server");
@@ -36,7 +36,7 @@ export const loadThresholdRoll = createServerFn({ method: "GET" })
     };
   });
 
-export const loadThresholdSitting = createServerFn({ method: "GET" })
+export const loadThresholdSitting = createServerFn({ method: "POST" })
   .middleware([brainAdminMiddleware])
   .validator((id: string) => {
     if (typeof id !== "string" || !sittingIdOk(id)) throw new Error("Sitting is broken.");
@@ -47,14 +47,14 @@ export const loadThresholdSitting = createServerFn({ method: "GET" })
     return getThresholdSitting(id);
   });
 
-export const downloadThresholdCsv = createServerFn({ method: "GET" })
+export const downloadThresholdCsv = createServerFn({ method: "POST" })
   .middleware([brainAdminMiddleware])
   .handler(async () => {
     const { listThresholdSittings } = await import("./threshold.server");
     return { csv: thresholdCsv(await listThresholdSittings()), filename: "threshold-roll.csv" };
   });
 
-export const downloadThresholdAnswersCsv = createServerFn({ method: "GET" })
+export const downloadThresholdAnswersCsv = createServerFn({ method: "POST" })
   .middleware([brainAdminMiddleware])
   .handler(async () => {
     const { listThresholdSittings } = await import("./threshold.server");

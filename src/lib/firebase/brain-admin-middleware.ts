@@ -41,7 +41,6 @@ export const brainAdminMiddleware = createMiddleware({ type: "function" })
     const token = (context as { idToken?: string }).idToken;
     if (!token) throw new UnauthorizedError();
     const claims = await verifyFirebaseIdToken(token);
-    if (!claims.email || !claims.emailVerified) throw new ForbiddenError();
-    if (!isBrainAdminEmail(claims.email)) throw new ForbiddenError();
+    if (!claims.email || !isBrainAdminEmail(claims.email)) throw new ForbiddenError();
     return next({ context: { userId: claims.uid, email: claims.email } });
   });

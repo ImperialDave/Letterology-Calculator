@@ -20,6 +20,7 @@ import { Route as BriefRouteImport } from './routes/brief'
 import { Route as CircleRouteImport } from './routes/circle'
 import { Route as ClaimRouteImport } from './routes/claim'
 import { Route as CountRouteImport } from './routes/count'
+import { Route as CourtRouteImport } from './routes/court'
 import { Route as DoctrineRouteImport } from './routes/doctrine'
 import { Route as GlyphboundRouteImport } from './routes/glyphbound'
 import { Route as HouseRouteImport } from './routes/house'
@@ -106,6 +107,11 @@ const ClaimRoute = ClaimRouteImport.update({
 const CountRoute = CountRouteImport.update({
   id: '/count',
   path: '/count',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CourtRoute = CourtRouteImport.update({
+  id: '/court',
+  path: '/court',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DoctrineRoute = DoctrineRouteImport.update({
@@ -281,6 +287,7 @@ export interface FileRoutesByFullPath {
   '/circle': typeof CircleRoute
   '/claim': typeof ClaimRoute
   '/count': typeof CountRoute
+  '/court': typeof CourtRoute
   '/doctrine': typeof DoctrineRoute
   '/glyphbound': typeof GlyphboundRouteWithChildren
   '/house': typeof HouseRoute
@@ -326,6 +333,7 @@ export interface FileRoutesByTo {
   '/circle': typeof CircleRoute
   '/claim': typeof ClaimRoute
   '/count': typeof CountRoute
+  '/court': typeof CourtRoute
   '/doctrine': typeof DoctrineRoute
   '/glyphbound': typeof GlyphboundRouteWithChildren
   '/house': typeof HouseRoute
@@ -371,6 +379,7 @@ export interface FileRoutesById {
   '/circle': typeof CircleRoute
   '/claim': typeof ClaimRoute
   '/count': typeof CountRoute
+  '/court': typeof CourtRoute
   '/doctrine': typeof DoctrineRoute
   '/glyphbound': typeof GlyphboundRouteWithChildren
   '/house': typeof HouseRoute
@@ -418,6 +427,7 @@ export interface FileRouteTypes {
     | '/circle'
     | '/claim'
     | '/count'
+    | '/court'
     | '/doctrine'
     | '/glyphbound'
     | '/house'
@@ -463,6 +473,7 @@ export interface FileRouteTypes {
     | '/circle'
     | '/claim'
     | '/count'
+    | '/court'
     | '/doctrine'
     | '/glyphbound'
     | '/house'
@@ -507,6 +518,7 @@ export interface FileRouteTypes {
     | '/circle'
     | '/claim'
     | '/count'
+    | '/court'
     | '/doctrine'
     | '/glyphbound'
     | '/house'
@@ -553,6 +565,7 @@ export interface RootRouteChildren {
   CircleRoute: typeof CircleRoute
   ClaimRoute: typeof ClaimRoute
   CountRoute: typeof CountRoute
+  CourtRoute: typeof CourtRoute
   DoctrineRoute: typeof DoctrineRoute
   GlyphboundRoute: typeof GlyphboundRouteWithChildren
   HouseRoute: typeof HouseRoute
@@ -653,6 +666,13 @@ declare module '@tanstack/react-router' {
       path: '/count'
       fullPath: '/count'
       preLoaderRoute: typeof CountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/court': {
+      id: '/court'
+      path: '/court'
+      fullPath: '/court'
+      preLoaderRoute: typeof CourtRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/doctrine': {
@@ -936,6 +956,7 @@ const rootRouteChildren: RootRouteChildren = {
   CircleRoute: CircleRoute,
   ClaimRoute: ClaimRoute,
   CountRoute: CountRoute,
+  CourtRoute: CourtRoute,
   DoctrineRoute: DoctrineRoute,
   GlyphboundRoute: GlyphboundRouteWithChildren,
   HouseRoute: HouseRoute,

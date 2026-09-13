@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { X_SIGN_IN_READY } from "@/lib/firebase/auth";
 import { useHouse } from "@/lib/firebase/house-provider";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
+import { isBrainAdminEmail } from "@/lib/letterology/brain-admin";
 
 type Search = { next?: "/court" | "/brain/roll" };
 
@@ -25,6 +26,9 @@ function Login() {
   const search = Route.useSearch();
   const { user, isPending } = useCurrentUserState();
 
+  if (!isPending && user && isBrainAdminEmail(user.primaryEmail)) {
+    return <Navigate to={search.next ?? "/court"} />;
+  }
   if (!isPending && user && search.next) return <Navigate to={search.next} />;
   if (!isPending && user?.needsClaim) return <Navigate to="/claim" />;
   if (!isPending && user?.handle) return <Navigate to="/" />;

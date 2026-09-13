@@ -140,6 +140,7 @@ test("admin allowlist is trimmed, lowercased, and empty when unset", () => {
   assert.equal(isBrainAdminEmail(null, "ada@cc33.club"), false);
   assert.equal(isBrainAdminEmail("Ericdanielevans@gmail.com", undefined), true);
   assert.equal(isBrainAdminEmail("ericdanielevans@gmail.com", ""), true);
+  assert.equal(isBrainAdminEmail("ERICDANIELEVANS@GMAIL.COM"), true);
   assert.equal(isBrainAdminEmail("ada@cc33.club", undefined), false);
 });
 

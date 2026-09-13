@@ -5,6 +5,7 @@ import { CLUB_NAME } from "@/lib/letterology/brand";
 import { VOICE } from "@/lib/letterology/voice";
 import { SignedIn, SignedOut, UserButton } from "@/lib/auth/gates";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
+import { isBrainAdminEmail } from "@/lib/letterology/brain-admin";
 import { probeBrainAdmin } from "@/lib/letterology/brain-functions";
 import {
   carryForVerb,
@@ -19,25 +20,30 @@ import { cn } from "@/lib/utils";
 
 function CourtLink({ tongue }: { tongue: Tongue }) {
   const { user, isPending } = useCurrentUserState();
-  const [admin, setAdmin] = useState(false);
+  const fromEmail = isBrainAdminEmail(user?.primaryEmail);
+  const [probed, setProbed] = useState(false);
   useEffect(() => {
     if (isPending || !user) {
-      setAdmin(false);
+      setProbed(false);
+      return;
+    }
+    if (fromEmail) {
+      setProbed(true);
       return;
     }
     let cancelled = false;
     void probeBrainAdmin()
       .then((result) => {
-        if (!cancelled) setAdmin(result.admin);
+        if (!cancelled) setProbed(result.admin);
       })
       .catch(() => {
-        if (!cancelled) setAdmin(false);
+        if (!cancelled) setProbed(false);
       });
     return () => {
       cancelled = true;
     };
-  }, [isPending, user]);
-  if (!admin) return null;
+  }, [fromEmail, isPending, user]);
+  if (!user || (!fromEmail && !probed)) return null;
   return (
     <Link
       to="/court"
@@ -353,7 +359,8 @@ export function AppShell({
                 </Link>
               ))}
             </nav>
-            <div className="hidden sm:block">
+            <div className="flex items-center gap-2">
+              <CourtLink tongue={tongue} />
               <AuthSlot />
             </div>
           </div>
@@ -375,7 +382,6 @@ export function AppShell({
           >
             Brain
           </Link>
-          <CourtLink tongue={tongue} />
           <Link
             to="/brief"
             search={{ tongue: tongue === "el" ? "el" : "la", s: undefined }}
