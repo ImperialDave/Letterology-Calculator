@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { brainAdminMiddleware, optionalFirebaseMiddleware } from "@/lib/firebase/brain-admin-middleware";
-import { sittingIdOk, thresholdAnswersCsv, thresholdCsv, validateThresholdPayload } from "./threshold";
+import { gradeMembership, sittingIdOk, thresholdAnswersCsv, thresholdCsv, validateThresholdPayload } from "./threshold";
 
 export const submitThresholdSitting = createServerFn({ method: "POST" })
   .middleware([optionalFirebaseMiddleware])
@@ -20,14 +20,19 @@ export const loadThresholdRoll = createServerFn({ method: "GET" })
     const { listThresholdSittings } = await import("./threshold.server");
     const records = await listThresholdSittings();
     return {
-      sittings: records.map((row) => ({
-        id: row.id,
-        createdAt: row.createdAt,
-        handle: row.handle,
-        house: row.house,
-        hours: row.hours,
-        axes: row.axes,
-      })),
+      sittings: records.map((row) => {
+        const grade = gradeMembership(row);
+        return {
+          id: row.id,
+          createdAt: row.createdAt,
+          handle: row.handle,
+          house: row.house,
+          hours: row.hours,
+          axes: row.axes,
+          mark: grade.mark,
+          markName: grade.markName,
+        };
+      }),
     };
   });
 

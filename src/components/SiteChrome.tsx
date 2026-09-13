@@ -1,10 +1,11 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useLayoutEffect, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useState, type ReactNode } from "react";
 import { TongueProvider } from "@/components/letterology/TongueProvider";
 import { CLUB_NAME } from "@/lib/letterology/brand";
 import { VOICE } from "@/lib/letterology/voice";
 import { SignedIn, SignedOut, UserButton } from "@/lib/auth/gates";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
+import { probeBrainAdmin } from "@/lib/letterology/brain-functions";
 import {
   carryForVerb,
   flipTongue,
@@ -15,6 +16,38 @@ import {
   type Verb,
 } from "@/lib/letterology/tongue";
 import { cn } from "@/lib/utils";
+
+function CourtLink({ tongue }: { tongue: Tongue }) {
+  const { user, isPending } = useCurrentUserState();
+  const [admin, setAdmin] = useState(false);
+  useEffect(() => {
+    if (isPending || !user) {
+      setAdmin(false);
+      return;
+    }
+    let cancelled = false;
+    void probeBrainAdmin()
+      .then((result) => {
+        if (!cancelled) setAdmin(result.admin);
+      })
+      .catch(() => {
+        if (!cancelled) setAdmin(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isPending, user]);
+  if (!admin) return null;
+  return (
+    <Link
+      to="/court"
+      search={{ tongue: tongue === "el" ? "el" : "la", desk: undefined }}
+      className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+    >
+      Court
+    </Link>
+  );
+}
 
 function AuthSlot() {
   const { user, isPending } = useCurrentUserState();
@@ -47,13 +80,13 @@ const VERBS: { to: "/" | "/two" | "/count" | "/ask"; label: string; verb: "read"
   { to: "/count", label: "Count", verb: "count" },
 ];
 
-export type HeaderCurrent = Verb | "login" | "key" | "stoicheia" | "bond" | "atlas" | "houses" | "circle" | "almanac" | "sheet" | "brief" | "brain";
+export type HeaderCurrent = Verb | "login" | "key" | "stoicheia" | "bond" | "atlas" | "houses" | "circle" | "almanac" | "sheet" | "brief" | "brain" | "court";
 
 function verbOf(current?: HeaderCurrent): Verb | "login" {
   if (current === "bond") return "two";
   if (current === "stoicheia") return "read";
   if (current === "atlas" || current === "houses" || current === "circle") return "letters";
-  if (current === "key" || current === "almanac" || current === "sheet" || current === "brief" || current === "brain") return "why";
+  if (current === "key" || current === "almanac" || current === "sheet" || current === "brief" || current === "brain" || current === "court") return "why";
   if (current === "login") return "login";
   if (
     current === "read" ||
@@ -178,6 +211,15 @@ function goFlip(
   if (flip.to === "/brain") {
     void navigate({
       to: "/brain",
+      search: (prev) => ({ ...prev, tongue }),
+      replace: true,
+      resetScroll: false,
+    });
+    return;
+  }
+  if (flip.to === "/court") {
+    void navigate({
+      to: "/court",
       search: (prev) => ({ ...prev, tongue }),
       replace: true,
       resetScroll: false,
@@ -333,6 +375,7 @@ export function AppShell({
           >
             Brain
           </Link>
+          <CourtLink tongue={tongue} />
           <Link
             to="/brief"
             search={{ tongue: tongue === "el" ? "el" : "la", s: undefined }}

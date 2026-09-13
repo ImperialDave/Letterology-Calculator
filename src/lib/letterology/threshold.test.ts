@@ -2,10 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { FORBIDDEN_UI, VOICE } from "./voice";
 import {
+  CONSEQUENTIAL_ITEMS,
+  MEMBERSHIP_MARK_CAPTION,
   SCALE_ITEMS,
   SECTION_LISTEN,
   THRESHOLD_ITEMS,
   THRESHOLD_SECTIONS,
+  gradeMembership,
   presentScaleDeck,
   scoreThresholdAxes,
   thresholdAnswersCsv,
@@ -73,6 +76,49 @@ test("scale axes follow the membership cut, not a portrait grade", () => {
   assert.equal(scoreThresholdAxes(ornament).ornamental, true);
 });
 
+test("membership grade is court-only and highlights consequential answers", () => {
+  const empty = {
+    written: {},
+    scales: {},
+    scenes: {},
+    axes: scoreThresholdAxes({}),
+  };
+  assert.equal(gradeMembership(empty).mark, "thin");
+
+  const high = Object.fromEntries(SCALE_ITEMS.map((item) => [item.id, 5]));
+  const keep = gradeMembership({
+    written: { q5: "I letterize a smaller act." },
+    scales: high,
+    scenes: { q36: "Wait. The day will not have it." },
+    axes: scoreThresholdAxes(high),
+  });
+  assert.equal(keep.mark, "keep");
+  assert.ok(keep.hits.some((hit) => hit.id === "q36"));
+  assert.equal(keep.hits.find((hit) => hit.id === "q24")?.pull, "good");
+
+  const leakScales = { ...high, q27: 1, q31: 1 };
+  const unseat = gradeMembership({
+    written: {},
+    scales: leakScales,
+    scenes: {},
+    axes: scoreThresholdAxes(leakScales),
+  });
+  assert.equal(unseat.mark, "unseat");
+  assert.equal(unseat.hits.find((hit) => hit.id === "q27")?.pull, "poor");
+
+  const costumeScales = { ...high, q24: 1, q32: 1, q33: 1 };
+  assert.equal(
+    gradeMembership({
+      written: {},
+      scales: costumeScales,
+      scenes: {},
+      axes: scoreThresholdAxes(costumeScales),
+    }).mark,
+    "costume",
+  );
+  assert.equal(CONSEQUENTIAL_ITEMS.length, 13);
+});
+
 test("scale order shuffles by seed and stays the same seed", () => {
   const a = presentScaleDeck(7).map((item) => item.id).join(",");
   const b = presentScaleDeck(99).map((item) => item.id).join(",");
@@ -89,11 +135,13 @@ test("threshold copy stays off the portrait and in club English", () => {
     VOICE.thresholdThanks,
     VOICE.thresholdEmpty,
     ...Object.values(SECTION_LISTEN),
+    ...Object.values(MEMBERSHIP_MARK_CAPTION),
+    ...CONSEQUENTIAL_ITEMS.map((row) => row.why),
   ].join("\n");
   for (const banned of FORBIDDEN_UI) {
     assert.doesNotMatch(body, banned);
   }
-  assert.doesNotMatch(body, /left-brain|dashboard|loyalty score|interrogation/i);
+  assert.doesNotMatch(body, /left-brain|dashboard|loyalty score|interrogation|\bcult\b/i);
   assert.match(VOICE.thresholdLede, /membership screen/i);
   assert.match(VOICE.thresholdThanks, /not a grade and not a portrait/i);
   assert.equal(Object.keys(SECTION_LISTEN).length, THRESHOLD_SECTIONS.length);

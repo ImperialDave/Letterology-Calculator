@@ -6,10 +6,11 @@ import { X_SIGN_IN_READY } from "@/lib/firebase/auth";
 import { useHouse } from "@/lib/firebase/house-provider";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 
-type Search = { next?: "/brain/roll" };
+type Search = { next?: "/court" | "/brain/roll" };
 
-function safeNext(raw: unknown): "/brain/roll" | undefined {
-  return raw === "/brain/roll" ? "/brain/roll" : undefined;
+function safeNext(raw: unknown): "/court" | "/brain/roll" | undefined {
+  if (raw === "/court" || raw === "/brain/roll") return raw;
+  return undefined;
 }
 
 export const Route = createFileRoute("/login")({

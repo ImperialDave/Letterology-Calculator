@@ -11,11 +11,15 @@ import {
   THRESHOLD_ITEMS,
   THRESHOLD_SECTIONS,
   WRITTEN_ITEMS,
+  gradeMembership,
+  isConsequential,
+  type MembershipMark,
   type ThresholdAxisId,
   type ThresholdRecord,
 } from "@/lib/letterology/threshold";
 import { VOICE } from "@/lib/letterology/voice";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
+import { cn } from "@/lib/utils";
 
 export type ThresholdRollRow = {
   id: string;
@@ -24,6 +28,8 @@ export type ThresholdRollRow = {
   house: string;
   hours: string;
   axes: ThresholdRecord["axes"];
+  mark: MembershipMark;
+  markName: string;
 };
 
 function when(iso: string): string {
@@ -85,7 +91,8 @@ export function ThresholdRollList({ sittings }: { sittings: ThresholdRollRow[] }
                   </p>
                 </div>
                 <p className="font-display text-sm tracking-[0.12em] text-primary uppercase">
-                  Stay {row.axes.stay} · Hand {row.axes.hand} · Room {row.axes.room} · Method {row.axes.method}
+                  {row.markName} · Stay {row.axes.stay} · Hand {row.axes.hand} · Room {row.axes.room} · Method{" "}
+                  {row.axes.method}
                 </p>
               </div>
               {row.axes.poorDiscretion || row.axes.ornamental ? (
@@ -151,7 +158,7 @@ export function ThresholdRollDetail({ id }: { id: string }) {
   if (isPending || state.status === "loading") {
     return <p className="font-display text-sm tracking-[0.16em] text-muted uppercase">Opening the sitting</p>;
   }
-  if (state.status === "auth") return <Navigate to="/login" search={{ next: "/brain/roll" }} />;
+  if (state.status === "auth") return <Navigate to="/login" search={{ next: "/court" }} />;
   if (state.status === "forbidden") {
     return <p className="leading-relaxed text-ink/90">{VOICE.rollRefusal}</p>;
   }
@@ -160,16 +167,18 @@ export function ThresholdRollDetail({ id }: { id: string }) {
       <section className="space-y-4">
         <h1 className="font-display text-4xl text-ink">Sitting gone</h1>
         <Link
-          to="/brain/roll"
+          to="/court"
+          search={{ desk: "threshold" }}
           className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
         >
-          Back to the roll
+          Back to the court
         </Link>
       </section>
     );
   }
 
   const { record } = state;
+  const grade = gradeMembership(record);
   const axes = (Object.keys(AXIS_NAME) as ThresholdAxisId[]).map((id) => ({
     id,
     name: AXIS_NAME[id],
@@ -180,19 +189,59 @@ export function ThresholdRollDetail({ id }: { id: string }) {
   return (
     <div className="space-y-10">
       <header className="space-y-3">
-        <p className="font-display text-xs tracking-[0.22em] text-muted uppercase">CC33 · Threshold</p>
+        <p className="font-display text-xs tracking-[0.22em] text-muted uppercase">CC33 · Threshold · Court only</p>
         <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">{when(record.createdAt)}</p>
         <h1 className="font-display text-4xl text-ink sm:text-5xl">{record.handle}</h1>
+        <p className="font-display text-3xl text-primary">{grade.markName}</p>
+        <p className="max-w-2xl leading-relaxed text-ink/90">{grade.caption}</p>
         <p className="text-muted">
           {record.house || "House unnamed"} · {record.hours || "Hours unnamed"}
         </p>
         <Link
-          to="/brain/roll"
+          to="/court"
+          search={{ desk: "threshold" }}
           className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
         >
-          Back to the roll
+          Back to the court
         </Link>
       </header>
+
+      <section className="space-y-4">
+        <h2 className="font-display text-2xl text-ink">Consequential answers</h2>
+        <p className="max-w-2xl leading-relaxed text-muted">
+          These are the answers that most decide whether they can keep the room. The person who sat does not see this
+          mark or these highlights.
+        </p>
+        <ul className="space-y-3">
+          {grade.hits.map((hit) => (
+            <li
+              key={hit.id}
+              className={cn(
+                "rounded-xl p-4 shadow-[var(--shadow-border)] sm:p-5",
+                hit.pull === "poor" ? "bg-primary text-primary-fg" : "bg-raised",
+              )}
+            >
+              <p
+                className={cn(
+                  "font-display text-xs tracking-[0.14em] uppercase",
+                  hit.pull === "poor" ? "text-primary-fg/70" : "text-muted",
+                )}
+              >
+                {hit.n} · {hit.pull === "poor" ? "Poor" : hit.pull === "good" ? "Good" : "Read"}
+              </p>
+              <p className={cn("mt-1 font-display text-lg", hit.pull === "poor" ? "text-primary-fg" : "text-ink")}>
+                {hit.prompt}
+              </p>
+              <p className={cn("mt-3 whitespace-pre-wrap leading-relaxed", hit.pull === "poor" ? "text-primary-fg" : "text-ink/90")}>
+                {hit.answer || "—"}
+              </p>
+              <p className={cn("mt-3 text-sm leading-relaxed", hit.pull === "poor" ? "text-primary-fg/85" : "text-muted")}>
+                {hit.why}
+              </p>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-6">
         <h2 className="font-display text-2xl text-ink">What to listen for</h2>
@@ -258,13 +307,25 @@ function AnswerList({
     <section className="space-y-3">
       <h2 className="font-display text-2xl text-ink">{title}</h2>
       <ul className="space-y-3">
-        {items.map((item) => (
-          <li key={item.id} className="rounded-xl bg-raised p-4 shadow-[var(--shadow-border)] sm:p-5">
-            <p className="font-display text-xs tracking-[0.14em] text-muted uppercase">{item.n}</p>
-            <p className="mt-1 font-display text-lg text-ink">{item.prompt}</p>
-            <p className="mt-3 whitespace-pre-wrap leading-relaxed text-ink/90">{values[item.id] || "—"}</p>
-          </li>
-        ))}
+        {items.map((item) => {
+          const hot = isConsequential(item.id);
+          return (
+            <li
+              key={item.id}
+              className={cn(
+                "rounded-xl p-4 shadow-[var(--shadow-border)] sm:p-5",
+                hot ? "bg-raised outline outline-2 outline-primary" : "bg-raised",
+              )}
+            >
+              <p className="font-display text-xs tracking-[0.14em] text-muted uppercase">
+                {item.n}
+                {hot ? " · Consequential" : ""}
+              </p>
+              <p className="mt-1 font-display text-lg text-ink">{item.prompt}</p>
+              <p className="mt-3 whitespace-pre-wrap leading-relaxed text-ink/90">{values[item.id] || "—"}</p>
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

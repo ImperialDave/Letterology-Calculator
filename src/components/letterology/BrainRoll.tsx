@@ -316,7 +316,7 @@ export function BrainRollSitting({ id, tongue }: { id: string; tongue: Tongue })
   }, [id, isPending, user]);
 
   if (isPending || state.status === "loading") return <RollSkeleton />;
-  if (state.status === "auth") return <Navigate to="/login" search={{ next: "/brain/roll" }} />;
+  if (state.status === "auth") return <Navigate to="/login" search={{ next: "/court" }} />;
   if (state.status === "forbidden") return <RollRefusal />;
   if (state.status === "missing" || state.status === "error") {
     return (
@@ -325,10 +325,11 @@ export function BrainRollSitting({ id, tongue }: { id: string; tongue: Tongue })
         <h1 className="font-display text-4xl text-ink">Sitting gone</h1>
         <p className="leading-relaxed text-ink/90">That sitting is not on the roll.</p>
         <Link
-          to="/brain/roll"
+          to="/court"
+          search={{ desk: "portraits" }}
           className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
         >
-          Back to the roll
+          Back to the court
         </Link>
       </section>
     );
@@ -349,10 +350,11 @@ export function BrainRollSitting({ id, tongue }: { id: string; tongue: Tongue })
         {reading ? <p className="max-w-2xl leading-relaxed text-ink/90">{reading.headline}</p> : null}
         <p className="flex flex-wrap gap-4">
           <Link
-            to="/brain/roll"
+            to="/court"
+            search={{ desk: "portraits" }}
             className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
           >
-            Back to the roll
+            Back to the court
           </Link>
           <Link
             to="/brain"

@@ -24,7 +24,7 @@ export const optionalFirebaseMiddleware = createMiddleware({ type: "function" })
         userId = null;
       }
     }
-    return next({ context: { userId } });
+    return next({ context: { userId, idToken: token ?? null } });
   });
 
 /** Requires a verified Firebase email on BRAIN_ADMIN_EMAILS. Fail closed if unset. */

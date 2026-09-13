@@ -1,6 +1,22 @@
 import { createServerFn } from "@tanstack/react-start";
 import { brainAdminMiddleware, optionalFirebaseMiddleware } from "@/lib/firebase/brain-admin-middleware";
+import { isBrainAdminEmail } from "./brain-admin";
 import { answersCsv, sittingsCsv, sittingIdOk, summarizeSittings, validateSittingAnswers } from "./brain-sittings";
+
+export const probeBrainAdmin = createServerFn({ method: "GET" })
+  .middleware([optionalFirebaseMiddleware])
+  .handler(async ({ context }) => {
+    const token = context.idToken;
+    if (!token) return { admin: false };
+    try {
+      const { verifyFirebaseIdToken } = await import("@/lib/firebase/id-token.server");
+      const claims = await verifyFirebaseIdToken(token);
+      if (!claims.email || !claims.emailVerified) return { admin: false };
+      return { admin: isBrainAdminEmail(claims.email) };
+    } catch {
+      return { admin: false };
+    }
+  });
 
 export const submitBrainSitting = createServerFn({ method: "POST" })
   .middleware([optionalFirebaseMiddleware])

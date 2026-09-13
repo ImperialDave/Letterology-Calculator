@@ -168,6 +168,112 @@ function meanOf(scales: Record<string, number>, ids: readonly string[]): number 
   return Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10;
 }
 
+export type MembershipMark = "keep" | "hold" | "costume" | "unseat" | "thin";
+
+export const MEMBERSHIP_MARK_NAME: Record<MembershipMark, string> = {
+  keep: "Keep",
+  hold: "Hold",
+  costume: "Costume",
+  unseat: "Do not seat",
+  thin: "Too little to read",
+};
+
+export const MEMBERSHIP_MARK_CAPTION: Record<MembershipMark, string> = {
+  keep: "Craft, discretion, and a method that is willingness. Seat them.",
+  hold: "Mixed. Read the highlighted answers before you offer an office.",
+  costume: "Intensity without the unglamorous third. They want the identity more than the ledger.",
+  unseat: "Poor discretion. Handles and unasked readings leak. Do not seat them in the room.",
+  thin: "Not enough of the scale to grade. Read the written answers yourself.",
+};
+
+export type ConsequentialPull = "good" | "poor" | "watch";
+
+export type ConsequentialHit = {
+  id: string;
+  n: number;
+  prompt: string;
+  answer: string;
+  pull: ConsequentialPull;
+  why: string;
+};
+
+export type MembershipGrade = {
+  mark: MembershipMark;
+  markName: string;
+  caption: string;
+  hits: ConsequentialHit[];
+};
+
+/** Answers the court should read first. Never shown to the person who sat. */
+export const CONSEQUENTIAL_ITEMS: { id: string; why: string }[] = [
+  { id: "q5", why: "Whether they can revise an act when the current is contrary." },
+  { id: "q6", why: "How they leave. Vanish, punish, or name the reason." },
+  { id: "q9", why: "Discretion as timing, not a vow of silence." },
+  { id: "q11", why: "What would make them leave in a month, and stay through a dull season." },
+  { id: "q15", why: "Correct without shrinking the club." },
+  { id: "q16", why: "What they refuse to invent in a reading." },
+  { id: "q24", why: "The unglamorous third. Low here is ornamental." },
+  { id: "q27", why: "Handles and private readings stay in the room." },
+  { id: "q31", why: "Ask before turning a name into a reading." },
+  { id: "q32", why: "Bored and still keep the ledger." },
+  { id: "q33", why: "Name a broken promise early." },
+  { id: "q36", why: "The contrary-day blessing. Precision, not piety." },
+  { id: "q37", why: "The borrowed face. Two sentences they would actually give." },
+];
+
+function answerOf(record: Pick<ThresholdRecord, "written" | "scales" | "scenes">, id: string): string {
+  const item = THRESHOLD_ITEMS.find((row) => row.id === id);
+  if (!item) return "";
+  if (item.kind === "scale") return record.scales[id] == null ? "" : String(record.scales[id]);
+  if (item.kind === "scene") return record.scenes[id] ?? "";
+  return record.written[id] ?? "";
+}
+
+function pullOf(item: ThresholdItem, answer: string): ConsequentialPull {
+  if (!answer.trim()) return "watch";
+  if (item.kind !== "scale") return "watch";
+  const value = Number(answer);
+  if (value <= 2) return "poor";
+  if (value >= 4) return "good";
+  return "watch";
+}
+
+export function gradeMembership(
+  record: Pick<ThresholdRecord, "written" | "scales" | "scenes" | "axes">,
+): MembershipGrade {
+  const axes = record.axes;
+  const scaleCount = Object.keys(record.scales).length;
+  let mark: MembershipMark = "hold";
+  if (scaleCount < 6) mark = "thin";
+  else if (axes.poorDiscretion) mark = "unseat";
+  else if (axes.ornamental) mark = "costume";
+  else if (axes.stay >= 4 && axes.hand >= 4 && axes.room >= 4 && axes.method >= 4) mark = "keep";
+
+  const hits: ConsequentialHit[] = CONSEQUENTIAL_ITEMS.map((row) => {
+    const item = THRESHOLD_ITEMS.find((entry) => entry.id === row.id);
+    const answer = answerOf(record, row.id);
+    return {
+      id: row.id,
+      n: item?.n ?? 0,
+      prompt: item?.prompt ?? row.id,
+      answer,
+      pull: item ? pullOf(item, answer) : "watch",
+      why: row.why,
+    };
+  });
+
+  return {
+    mark,
+    markName: MEMBERSHIP_MARK_NAME[mark],
+    caption: MEMBERSHIP_MARK_CAPTION[mark],
+    hits,
+  };
+}
+
+export function isConsequential(id: string): boolean {
+  return CONSEQUENTIAL_ITEMS.some((row) => row.id === id);
+}
+
 export function scoreThresholdAxes(scales: Record<string, number>): ThresholdAxes {
   const stay = meanOf(scales, STAY_IDS);
   const hand = meanOf(scales, HAND_IDS);
@@ -250,7 +356,7 @@ function csvField(value: string | number | boolean): string {
 }
 
 export function thresholdCsv(rows: ThresholdRecord[]): string {
-  const header = ["id", "created", "handle", "house", "hours", "stay", "hand", "room", "method", "poorDiscretion", "ornamental"];
+  const header = ["id", "created", "handle", "house", "hours", "mark", "stay", "hand", "room", "method", "poorDiscretion", "ornamental"];
   const lines = [header.join(",")];
   for (const row of rows) {
     lines.push(
@@ -260,6 +366,7 @@ export function thresholdCsv(rows: ThresholdRecord[]): string {
         csvField(row.handle),
         csvField(row.house),
         csvField(row.hours),
+        csvField(gradeMembership(row).mark),
         csvField(row.axes.stay),
         csvField(row.axes.hand),
         csvField(row.axes.room),

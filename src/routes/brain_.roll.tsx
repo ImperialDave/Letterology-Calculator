@@ -1,7 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { AppShell } from "@/components/SiteChrome";
-import { BrainRoll } from "@/components/letterology/BrainRoll";
-import { useTongue } from "@/components/letterology/TongueProvider";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { pageCardMeta } from "@/lib/letterology/share";
 import { VOICE } from "@/lib/letterology/voice";
 
@@ -13,20 +10,13 @@ export const Route = createFileRoute("/brain_/roll")({
   }),
   head: () =>
     pageCardMeta({
-      title: VOICE.rollTitle,
-      description: VOICE.rollLede,
-      path: "/brain/roll",
+      title: VOICE.courtTitle,
+      description: VOICE.courtLede,
+      path: "/court",
       imagePath: "/og.jpg",
     }),
-  component: BrainRollPage,
+  component: function BrainRollRedirect() {
+    const search = Route.useSearch();
+    return <Navigate to="/court" search={{ tongue: search.tongue, desk: undefined }} />;
+  },
 });
-
-function BrainRollPage() {
-  const search = Route.useSearch();
-  const tongue = useTongue(search.tongue);
-  return (
-    <AppShell current="brain" wide>
-      <BrainRoll tongue={tongue} />
-    </AppShell>
-  );
-}
