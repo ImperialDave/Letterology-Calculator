@@ -403,6 +403,12 @@ export function AppShell({
             Glyphbound
           </Link>
           <Link
+            to="/wild"
+            className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+          >
+            Wild
+          </Link>
+          <Link
             to="/why"
             search={{ tongue: tongue === "el" ? "el" : "la" }}
             hash={tongue === "el" ? "greek" : "latin"}
@@ -437,6 +443,12 @@ export function AppShell({
               {item.label}
             </Link>
           ))}
+          <Link
+            to="/wild"
+            className="inline-flex h-11 min-w-14 items-center justify-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+          >
+            Wild
+          </Link>
           <AuthSlot />
         </div>
       </nav>

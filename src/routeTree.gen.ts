@@ -33,6 +33,7 @@ import { Route as StoicheiaRouteImport } from './routes/stoicheia'
 import { Route as ThresholdRouteImport } from './routes/threshold'
 import { Route as TwoRouteImport } from './routes/two'
 import { Route as WhyRouteImport } from './routes/why'
+import { Route as WildRouteImport } from './routes/wild'
 import { Route as ApiCardRouteImport } from './routes/api/card'
 import { Route as BrainRollRouteImport } from './routes/brain_.roll'
 import { Route as CountWalkRouteImport } from './routes/count_.$walk'
@@ -174,6 +175,11 @@ const WhyRoute = WhyRouteImport.update({
   path: '/why',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WildRoute = WildRouteImport.update({
+  id: '/wild',
+  path: '/wild',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiCardRoute = ApiCardRouteImport.update({
   id: '/api/card',
   path: '/api/card',
@@ -300,6 +306,7 @@ export interface FileRoutesByFullPath {
   '/threshold': typeof ThresholdRoute
   '/two': typeof TwoRoute
   '/why': typeof WhyRoute
+  '/wild': typeof WildRoute
   '/api/card': typeof ApiCardRoute
   '/brain/roll': typeof BrainRollRoute
   '/count/$walk': typeof CountWalkRoute
@@ -345,6 +352,7 @@ export interface FileRoutesByTo {
   '/threshold': typeof ThresholdRoute
   '/two': typeof TwoRoute
   '/why': typeof WhyRoute
+  '/wild': typeof WildRoute
   '/api/card': typeof ApiCardRoute
   '/brain/roll': typeof BrainRollRoute
   '/count/$walk': typeof CountWalkRoute
@@ -392,6 +400,7 @@ export interface FileRoutesById {
   '/threshold': typeof ThresholdRoute
   '/two': typeof TwoRoute
   '/why': typeof WhyRoute
+  '/wild': typeof WildRoute
   '/api/card': typeof ApiCardRoute
   '/brain_/roll': typeof BrainRollRoute
   '/count_/$walk': typeof CountWalkRoute
@@ -440,6 +449,7 @@ export interface FileRouteTypes {
     | '/threshold'
     | '/two'
     | '/why'
+    | '/wild'
     | '/api/card'
     | '/brain/roll'
     | '/count/$walk'
@@ -485,6 +495,7 @@ export interface FileRouteTypes {
     | '/threshold'
     | '/two'
     | '/why'
+    | '/wild'
     | '/api/card'
     | '/brain/roll'
     | '/count/$walk'
@@ -531,6 +542,7 @@ export interface FileRouteTypes {
     | '/threshold'
     | '/two'
     | '/why'
+    | '/wild'
     | '/api/card'
     | '/brain_/roll'
     | '/count_/$walk'
@@ -578,6 +590,7 @@ export interface RootRouteChildren {
   ThresholdRoute: typeof ThresholdRoute
   TwoRoute: typeof TwoRoute
   WhyRoute: typeof WhyRoute
+  WildRoute: typeof WildRoute
   ApiCardRoute: typeof ApiCardRoute
   BrainRollRoute: typeof BrainRollRoute
   CountWalkRoute: typeof CountWalkRoute
@@ -757,6 +770,13 @@ declare module '@tanstack/react-router' {
       path: '/why'
       fullPath: '/why'
       preLoaderRoute: typeof WhyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/wild': {
+      id: '/wild'
+      path: '/wild'
+      fullPath: '/wild'
+      preLoaderRoute: typeof WildRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/card': {
@@ -969,6 +989,7 @@ const rootRouteChildren: RootRouteChildren = {
   ThresholdRoute: ThresholdRoute,
   TwoRoute: TwoRoute,
   WhyRoute: WhyRoute,
+  WildRoute: WildRoute,
   ApiCardRoute: ApiCardRoute,
   BrainRollRoute: BrainRollRoute,
   CountWalkRoute: CountWalkRoute,
