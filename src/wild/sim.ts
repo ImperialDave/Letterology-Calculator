@@ -1,5 +1,7 @@
 /** On-foot third person. A/D strafe. They do not steer. */
 
+import { terrainHeight } from "./terrain";
+
 export type V2 = { x: number; z: number };
 
 export const SPIRE = { x: 112, z: 0 };
@@ -68,7 +70,7 @@ export function freshWild(): WildState {
   return {
     x: 0,
     z: 6,
-    y: 0,
+    y: terrainHeight(0, 6),
     yaw: -Math.PI / 2,
     camYaw: -Math.PI / 2,
     stamina: 100,
@@ -180,6 +182,21 @@ function talk(s: WildState) {
   }
 }
 
+export function contextPrompt(s: WildState): string | null {
+  const dStag = dist(s.x, s.z, s.stagX, s.stagZ);
+  const dSerif = dist(s.x, s.z, SERIF.x, SERIF.z);
+  const dScript = dist(s.x, s.z, SCRIPT.x, SCRIPT.z);
+  const dHerder = dist(s.x, s.z, HERDER.x, HERDER.z);
+  const dSpire = dist(s.x, s.z, SPIRE.x, SPIRE.z);
+  const top = terrainHeight(SPIRE.x, SPIRE.z) + 18;
+  if (!s.stagFreed && dStag < 4) return "Cut the brand";
+  if (dSpire < 2.7 && s.y < top - 0.4) return "Climb";
+  if (dSpire < 3.5 && s.y > top - 3 && s.serif === 1) return "Give the serif";
+  if (s.serif === 0 && dSerif < 2.4) return "Speak";
+  if (dScript < 2.4 || dHerder < 2.4) return "Speak";
+  return null;
+}
+
 export function objectiveLine(s: WildState) {
   if (!s.stagFreed) return "Cut the brand on the stag. Leave the animal alive.";
   if (s.serif === 0) return "The stag is free. A serif hides south of the trail.";
@@ -207,44 +224,70 @@ export function stepWild(s: WildState, input: WildInput, dt: number) {
   const moving = wish > 0.05;
   const speed = SPEED;
   s.speed = moving ? speed * Math.min(wish, 1) : 0;
+  const spireBase = terrainHeight(SPIRE.x, SPIRE.z);
+  const spireTop = spireBase + 18;
   const spireD = dist(s.x, s.z, SPIRE.x, SPIRE.z);
   s.fluttering = false;
   s.climbing = false;
-  if (spireD > 1.05 && spireD < 2.7 && s.y < 22 && input.forward > 0.2 && s.stamina > 0) {
+  if (spireD > 1.05 && spireD < 2.7 && s.y < spireTop - 0.3 && input.forward > 0.2 && s.stamina > 0) {
     s.climbing = true;
     s.grounded = false;
     s.vy = 0;
-    s.y = Math.min(23, s.y + 3.15 * dt);
+    s.y = Math.min(spireTop, s.y + 3.15 * dt);
     const ang = Math.atan2(s.z - SPIRE.z, s.x - SPIRE.x);
     s.x = SPIRE.x + Math.cos(ang) * 1.6;
     s.z = SPIRE.z + Math.sin(ang) * 1.6;
     s.stamina -= 15 * dt;
   } else {
-    s.x += wx * speed * dt;
-    s.z += wz * speed * dt;
-    if (s.grounded && input.hop && s.vy === 0) {
-      s.vy = 6.2;
-      s.grounded = false;
-      s.y = 0.2;
-    }
-    if (!s.grounded) {
-      s.vy -= 17 * dt;
-      if (input.jumpHeld && s.vy < 0 && s.stamina > 0) {
-        s.fluttering = true;
-        s.vy = Math.max(s.vy, -1.55);
-        s.stamina -= 18 * dt;
+    const x1 = s.x + wx * speed * dt;
+    const z1 = s.z + wz * speed * dt;
+    const h0 = terrainHeight(s.x, s.z);
+    const h1 = terrainHeight(x1, z1);
+    const run = Math.hypot(x1 - s.x, z1 - s.z);
+    const slope = run > 0.0001 ? (h1 - h0) / run : 0;
+    const steep = slope > 0.8 && h1 > h0 + 0.02;
+    if (s.grounded && steep && input.forward > 0.1 && s.stamina > 0 && moving) {
+      s.climbing = true;
+      s.x = x1;
+      s.z = z1;
+      s.y = h1;
+      s.vy = 0;
+      s.stamina -= 12 * dt;
+    } else if (s.grounded && steep && moving) {
+      // Too steep to walk. Climb, or go around.
+    } else {
+      s.x = x1;
+      s.z = z1;
+      const ground = terrainHeight(s.x, s.z);
+      if (s.grounded && input.hop) {
+        s.vy = 6.2;
+        s.grounded = false;
+        s.y = ground + 0.15;
       }
-      s.y += s.vy * dt;
-      if (s.y <= 0) {
-        s.y = 0;
-        s.vy = 0;
-        s.grounded = true;
-        s.fluttering = false;
+      if (!s.grounded) {
+        s.vy -= 17 * dt;
+        if (input.jumpHeld && s.vy < 0 && s.stamina > 0) {
+          s.fluttering = true;
+          s.vy = Math.max(s.vy, -1.55);
+          s.stamina -= 18 * dt;
+        }
+        s.y += s.vy * dt;
+        if (s.y <= ground) {
+          s.y = ground;
+          s.vy = 0;
+          s.grounded = true;
+          s.fluttering = false;
+        }
+      } else {
+        s.y = ground;
       }
     }
     if (moving) s.yaw = Math.atan2(-wx, -wz);
   }
-  if (s.y > 20 && spireD < 3.4) s.spireReached = true;
+  if (s.y > spireBase + 15 && dist(s.x, s.z, SPIRE.x, SPIRE.z) < 3.4) {
+    if (!s.spireReached) say(s, "The bell has no clapper. The steppe is on the sheet now.");
+    s.spireReached = true;
+  }
   if (s.grounded && !s.climbing) s.stamina = Math.min(100, s.stamina + 18 * dt);
   s.stamina = Math.max(0, Math.min(100, s.stamina));
 
@@ -254,7 +297,7 @@ export function stepWild(s: WildState, input: WildInput, dt: number) {
     const nz = (s.z - CALDERA.z) / Math.max(cd, 0.001);
     s.x = CALDERA.x + nx * 52;
     s.z = CALDERA.z + nz * 52;
-    s.y = 0;
+    s.y = terrainHeight(s.x, s.z);
     s.grounded = true;
     say(s, "The rim shreds the paperwing. The names are not all spoken.");
   }

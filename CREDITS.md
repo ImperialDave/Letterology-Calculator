@@ -4,7 +4,7 @@ Models in the Wild steppe are used under Creative Commons Zero. Attribution is n
 
 | Piece | Author | Source | License | What we changed |
 |---|---|---|---|---|
-| Grass, trees, rocks, flower | Kenney | https://kenney.nl/assets/nature-kit | CC0-1.0 | Copied the glTF files out of the 2020 zip. Tinted at runtime. Grass pivots sway in the shared wind. |
+| Grass, trees, rocks, flower, bushes, cliff blocks | Kenney | https://kenney.nl/assets/nature-kit | CC0-1.0 | Copied the glTF files out of the 2020 zip. Each mesh is scaled to a height in meters relative to a 1.8 m traveler. Grass and banners sway in the shared wind. |
 | Walls, door, roof, banner, lantern, chimney | Kenney | https://kenney.nl/assets/fantasy-town-kit | CC0-1.0 | Fantasy Town Kit 2.0, file `kenney_fantasy-town-kit_2.0.zip`. Kitbashed into the two herder houses. Banners recolored indigo and swung by the wind. |
 | Traveler body | Kenney | https://kenney.nl/assets/blocky-characters | CC0-1.0 | `character-a.glb` from the 2.0 zip, used as Sable's body and graded warm. |
 

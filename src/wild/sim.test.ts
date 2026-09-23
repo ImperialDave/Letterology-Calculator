@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { scaleProblems } from "./scale";
 import { forwardFromYaw, freshWild, rightFromForward, stepWild, type WildInput } from "./sim";
+import { sheetVisible, terrainHeight } from "./terrain";
 
 const still: WildInput = { forward: 0, strafe: 0, look: 0, jumpHeld: false, hop: false, cut: false, talk: false };
 
@@ -33,6 +35,19 @@ test("W moves along the camera, and the body faces that way", () => {
   assert.ok(s.x > x0 + 1);
   const face = forwardFromYaw(s.yaw);
   assert.ok(face.x > 0.9);
+});
+
+test("heights stay in proportion to Sable", () => {
+  assert.deepEqual(scaleProblems(), []);
+});
+
+test("the mesa rises above the camp, and the sheet hides the far wild", () => {
+  const camp = terrainHeight(0, 6);
+  const mesa = terrainHeight(52, -36);
+  assert.ok(mesa > camp + 4);
+  assert.equal(sheetVisible(0, 6, 0, 6, false), true);
+  assert.equal(sheetVisible(112, 0, 0, 6, false), false);
+  assert.equal(sheetVisible(112, 0, 0, 6, true), true);
 });
 
 test("three cuts free the stag and it flees", () => {
