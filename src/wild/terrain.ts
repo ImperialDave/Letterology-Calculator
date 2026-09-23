@@ -1,6 +1,6 @@
+import { CALDERA, SPIRE } from "./layout";
+
 export const MESA = { x: 52, z: -36 };
-const SPIRE_XZ = { x: 112, z: 0 };
-const CALDERA_XZ = { x: 230, z: -18 };
 export const FEN = { x: 78, z: 62 };
 export const FOREST = { x: 175, z: 8 };
 export const SHEET = { x0: -40, x1: 170, z0: -60, z1: 55 };
@@ -45,8 +45,8 @@ function smooth(e0: number, e1: number, x: number) {
 export function trailDistance(x: number, z: number) {
   const ax = 2;
   const az = 6;
-  const abx = SPIRE_XZ.x - ax;
-  const abz = SPIRE_XZ.z - az;
+  const abx = SPIRE.x - ax;
+  const abz = SPIRE.z - az;
   const denom = abx * abx + abz * abz || 1;
   const t = Math.min(1, Math.max(0, ((x - ax) * abx + (z - az) * abz) / denom));
   return Math.hypot(x - (ax + abx * t), z - (az + abz * t));
@@ -56,7 +56,7 @@ export function terrainHeight(x: number, z: number) {
   let h = 1.5 + (fbm(x * 0.018, z * 0.018) - 0.35) * 4.5;
   const mesa = Math.hypot(x - MESA.x, z - MESA.z);
   h += smooth(30, 16, mesa) * 12;
-  const spire = Math.hypot(x - SPIRE_XZ.x, z - SPIRE_XZ.z);
+  const spire = Math.hypot(x - SPIRE.x, z - SPIRE.z);
   h += smooth(34, 8, spire) * 4.5;
   if (z > 40) h -= smooth(40, 68, z) * 2.4;
   if (x > 145) h += smooth(145, 185, x) * (1.5 + fbm(x * 0.03, z * 0.03) * 2.5);
@@ -99,7 +99,7 @@ export function terrainRgb(x: number, z: number): [number, number, number] {
     g = g * (1 - k) + 0.84 * k;
     b = b * (1 - k) + 0.76 * k;
   }
-  const caldera = Math.hypot(x - CALDERA_XZ.x, z - CALDERA_XZ.z);
+  const caldera = Math.hypot(x - CALDERA.x, z - CALDERA.z);
   if (caldera < 28) {
     const k = 1 - caldera / 28;
     r = r * (1 - k) + 0.75 * k;

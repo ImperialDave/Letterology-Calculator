@@ -18,8 +18,20 @@ import {
   stepWild,
   type WildState,
 } from "@/wild/sim";
+import {
+  cliffSpots,
+  fitScale,
+  HOUSE_FIT,
+  OAK_SPOTS,
+  PINE_SPOTS,
+  ROCK_SPOTS,
+  SHRINE_FIT,
+  SOLID_R,
+  SPIRE_FIT,
+  type AssemblyTarget,
+} from "@/wild/bodies";
 import { HEIGHT_M } from "@/wild/scale";
-import { FEN, FOREST, MESA, SHEET, sheetVisible, terrainHeight, terrainRgb } from "@/wild/terrain";
+import { FEN, SHEET, sheetVisible, terrainHeight, terrainRgb } from "@/wild/terrain";
 
 const PALETTE: Record<string, number> = {
   leaf: 0x7d9a3c,
@@ -129,8 +141,7 @@ export function UnwrittenWild() {
         loader.load(url, (gltf) => resolve(gltf.scene), undefined, reject);
       });
 
-    function prep(source: THREE.Object3D, height: number, palette: string) {
-      const object = source.clone(true);
+    function recolor(object: THREE.Object3D, palette: string) {
       object.traverse((child) => {
         const mesh = child as THREE.Mesh;
         if (!mesh.isMesh) return;
@@ -143,16 +154,74 @@ export function UnwrittenWild() {
         mesh.castShadow = false;
         mesh.receiveShadow = false;
       });
-      object.scale.setScalar(1);
-      object.updateMatrixWorld(true);
-      const box = new THREE.Box3().setFromObject(object);
-      const size = box.getSize(new THREE.Vector3());
-      const scale = height / Math.max(size.y, 0.001);
-      object.scale.multiplyScalar(scale);
-      object.updateMatrixWorld(true);
-      const grounded = new THREE.Box3().setFromObject(object);
-      object.position.y -= grounded.min.y;
-      return object;
+    }
+
+    /** Scale a mesh to a meter height, stand a flat one up, and keep the offset on a child so later placement cannot wipe it. */
+    function prep(source: THREE.Object3D, meters: number, palette: string, mode: "height" | "stand" = "height") {
+      const inner = source.clone(true);
+      recolor(inner, palette);
+      inner.position.set(0, 0, 0);
+      inner.rotation.set(0, 0, 0);
+      inner.scale.setScalar(1);
+      inner.updateMatrixWorld(true);
+      if (mode === "stand") {
+        const lying = new THREE.Box3().setFromObject(inner).getSize(new THREE.Vector3());
+        if (lying.z >= lying.y && lying.z >= lying.x) inner.rotation.x = -Math.PI / 2;
+        else if (lying.x > lying.y && lying.x >= lying.z) inner.rotation.z = Math.PI / 2;
+        inner.updateMatrixWorld(true);
+      }
+      const sized = new THREE.Box3().setFromObject(inner).getSize(new THREE.Vector3());
+      inner.scale.setScalar(meters / Math.max(sized.y, 0.001));
+      inner.updateMatrixWorld(true);
+      const box = new THREE.Box3().setFromObject(inner);
+      const center = box.getCenter(new THREE.Vector3());
+      inner.position.set(-center.x, -box.min.y, -center.z);
+      const holder = new THREE.Group();
+      holder.add(inner);
+      return holder;
+    }
+
+    function piece(
+      source: THREE.Object3D,
+      palette: string,
+      fit: { span?: number; height?: number; width?: number; depth?: number; pitch?: number },
+    ) {
+      const inner = source.clone(true);
+      recolor(inner, palette);
+      inner.position.set(0, 0, 0);
+      inner.rotation.set(0, 0, 0);
+      inner.scale.setScalar(1);
+      inner.updateMatrixWorld(true);
+      const size = new THREE.Box3().setFromObject(inner).getSize(new THREE.Vector3());
+      if (fit.width && fit.depth && fit.pitch) {
+        inner.scale.set(fit.width / Math.max(size.x, 0.001), fit.pitch / Math.max(size.y, 0.001), fit.depth / Math.max(size.z, 0.001));
+      } else if (fit.span) {
+        inner.scale.setScalar(fit.span / Math.max(size.x, size.z, 0.001));
+      } else {
+        inner.scale.setScalar((fit.height ?? 1) / Math.max(size.y, 0.001));
+      }
+      inner.updateMatrixWorld(true);
+      const box = new THREE.Box3().setFromObject(inner);
+      const center = box.getCenter(new THREE.Vector3());
+      inner.position.set(-center.x, -box.min.y, -center.z);
+      const holder = new THREE.Group();
+      holder.add(inner);
+      return holder;
+    }
+
+    function fitAssembly(group: THREE.Group, target: AssemblyTarget, x: number, z: number, yaw: number) {
+      group.position.set(0, 0, 0);
+      group.rotation.set(0, 0, 0);
+      group.scale.set(1, 1, 1);
+      group.updateMatrixWorld(true);
+      const size = new THREE.Box3().setFromObject(group).getSize(new THREE.Vector3());
+      group.scale.setScalar(fitScale({ y: size.y, xz: Math.max(size.x, size.z) }, target));
+      group.rotation.y = yaw;
+      group.updateMatrixWorld(true);
+      const seated = new THREE.Box3().setFromObject(group);
+      group.position.set(x, terrainHeight(x, z) - seated.min.y, z);
+      scene.add(group);
+      return group;
     }
 
     function card(name: ArtName, height: number) {
@@ -201,14 +270,20 @@ export function UnwrittenWild() {
       ) as Record<keyof typeof files, THREE.Group>;
       if (!alive) return;
 
-      const scatter = (kind: THREE.Object3D, height: number, palette: string, spots: [number, number][]) => {
+      const scatter = (
+        kind: THREE.Object3D,
+        height: number,
+        palette: string,
+        spots: [number, number][],
+        wind = false,
+        mode: "height" | "stand" = "height",
+      ) => {
         for (const [x, z] of spots) {
-          const piece = prep(kind, height, palette);
-          const lift = piece.position.y;
-          piece.position.set(x, terrainHeight(x, z) + lift, z);
-          piece.rotation.y = (x * 13 + z * 7) % 6;
-          scene.add(piece);
-          if (height < 2) sway.push(piece);
+          const prop = prep(kind, height, palette, mode);
+          prop.position.set(x, terrainHeight(x, z), z);
+          prop.rotation.y = (x * 13 + z * 7) % 6;
+          scene.add(prop);
+          if (wind) sway.push(prop);
         }
       };
 
@@ -216,37 +291,23 @@ export function UnwrittenWild() {
       for (let i = 0; i < 90; i++) {
         const x = ((i * 17) % 46) - 8;
         const z = ((i * 11) % 34) - 10;
-        if (Math.hypot(x - 11, z - 16) < 3) continue;
+        if (HOUSES.some((house) => Math.hypot(x - house.x, z - house.z) < SOLID_R.house + 0.6)) continue;
         grassSpots.push([x, z]);
       }
-      scatter(loaded.grass, HEIGHT_M.grass, "leaf", grassSpots.slice(0, 70));
-      scatter(loaded.grassLarge, HEIGHT_M.grassLarge, "leaf", grassSpots.slice(70));
-      scatter(loaded.oak, HEIGHT_M.oak, "leaf", [
-        [18, -6],
-        [28, 12],
-        [-6, -4],
-        [40, 2],
-        [FOREST.x, FOREST.z],
-        [FOREST.x + 8, FOREST.z - 6],
-      ]);
-      scatter(loaded.tree, HEIGHT_M.tree, "leaf", [
-        [8, -8],
-        [33, -5],
-        [70, 8],
-      ]);
+      scatter(loaded.grass, HEIGHT_M.grass, "leaf", grassSpots.slice(0, 70), true);
+      scatter(loaded.grassLarge, HEIGHT_M.grassLarge, "leaf", grassSpots.slice(70), true);
+      scatter(loaded.oak, HEIGHT_M.oak, "leaf", OAK_SPOTS);
+      scatter(loaded.tree, HEIGHT_M.tree, "leaf", PINE_SPOTS);
       scatter(loaded.bush, HEIGHT_M.bush, "leaf", [
         [14, 8],
         [20, 1],
         [-4, 10],
-      ]);
+      ], true);
       scatter(loaded.bushLarge, HEIGHT_M.bushLarge, "leaf", [
         [36, 6],
         [48, -8],
-      ]);
-      scatter(loaded.rock, HEIGHT_M.rock, "stone", [
-        [6, -2],
-        [22, 14],
-      ]);
+      ], true);
+      scatter(loaded.rock, HEIGHT_M.rock, "stone", ROCK_SPOTS, false, "stand");
       scatter(loaded.pebble, HEIGHT_M.rockSmall, "stone", [
         [4, 8],
         [15, 4],
@@ -256,43 +317,99 @@ export function UnwrittenWild() {
         [12, 13],
         [10, 19],
         [-6, 13],
-      ]);
-      const rim: [number, number][] = [];
-      for (let i = 0; i < 10; i++) {
-        const a = (i / 10) * Math.PI * 2;
-        rim.push([MESA.x + Math.cos(a) * 18, MESA.z + Math.sin(a) * 18]);
+      ], true);
+      for (const cliff of cliffSpots()) {
+        const prop = prep(cliff.large ? loaded.cliffLarge : loaded.cliff, cliff.large ? HEIGHT_M.cliffLarge : HEIGHT_M.cliff, "stone");
+        prop.position.set(cliff.x, terrainHeight(cliff.x, cliff.z), cliff.z);
+        prop.rotation.y = cliff.yaw;
+        scene.add(prop);
       }
-      scatter(loaded.cliffLarge, HEIGHT_M.cliffLarge, "stone", rim.filter((_, i) => i % 2 === 0));
-      scatter(loaded.cliff, HEIGHT_M.cliff, "stone", rim.filter((_, i) => i % 2 === 1));
 
-      for (const house of HOUSES) {
+      const cottage = () => {
         const group = new THREE.Group();
-        const door = prep(loaded.door, HEIGHT_M.door, "wall");
-        const back = prep(loaded.wall, HEIGHT_M.wall, "wall");
-        back.position.z = -2.2;
-        back.rotation.y = Math.PI;
-        const left = prep(loaded.wall, HEIGHT_M.wall, "wall");
-        left.position.x = -1.6;
-        left.rotation.y = Math.PI / 2;
-        const right = prep(loaded.wall, HEIGHT_M.wall, "wall");
-        right.position.x = 1.6;
-        right.rotation.y = -Math.PI / 2;
-        const roof = prep(loaded.roof, HEIGHT_M.roof, "roof");
-        roof.position.y = HEIGHT_M.wall * 0.92;
-        const cap = prep(loaded.roofTop, HEIGHT_M.roofTop, "roof");
-        cap.position.y = HEIGHT_M.wall * 0.92 + HEIGHT_M.roof;
-        const banner = prep(loaded.banner, HEIGHT_M.banner, "indigo");
-        banner.position.set(0.9, HEIGHT_M.banner, 0.4);
+        const span = 2.7;
+        const front = span / 2;
+        const door = piece(loaded.door, "wall", { span });
+        door.rotation.y = Math.PI / 2;
+        door.position.set(-span / 2, 0, front);
+        const frontWall = piece(loaded.wall, "wall", { span });
+        frontWall.rotation.y = Math.PI / 2;
+        frontWall.position.set(span / 2, 0, front);
+        const backL = piece(loaded.wall, "wall", { span });
+        backL.rotation.y = Math.PI / 2;
+        backL.position.set(-span / 2, 0, -front);
+        const backR = piece(loaded.wall, "wall", { span });
+        backR.rotation.y = Math.PI / 2;
+        backR.position.set(span / 2, 0, -front);
+        const left = piece(loaded.wall, "wall", { span });
+        left.position.set(-span, 0, 0);
+        const right = piece(loaded.wall, "wall", { span });
+        right.position.set(span, 0, 0);
+        const roof = piece(loaded.roof, "roof", { width: 6, depth: 3.4, pitch: 1.5 });
+        roof.position.y = span;
+        const cap = piece(loaded.roofTop, "roof", { width: 2.2, depth: 1.2, pitch: 0.55 });
+        cap.position.y = span + 1.5;
+        const banner = piece(loaded.banner, "indigo", { height: HEIGHT_M.banner });
+        banner.position.set(1.35, 1.15, front + 0.15);
         sway.push(banner);
-        const lantern = prep(loaded.lantern, HEIGHT_M.lantern, "bronze");
-        lantern.position.set(-0.8, HEIGHT_M.lantern + 0.4, 0.5);
-        const chimney = prep(loaded.chimney, HEIGHT_M.chimney, "stone");
-        chimney.position.set(-0.6, HEIGHT_M.wall + 0.2, -0.4);
-        group.add(door, back, left, right, roof, cap, banner, lantern, chimney);
-        group.position.set(house.x, terrainHeight(house.x, house.z), house.z);
-        group.rotation.y = Math.atan2(-house.x, 6 - house.z);
-        scene.add(group);
+        const lantern = piece(loaded.lantern, "bronze", { height: HEIGHT_M.lantern });
+        lantern.position.set(-0.35, 0, front + 0.3);
+        const chimney = piece(loaded.chimney, "stone", { height: HEIGHT_M.chimney });
+        chimney.position.set(-1.5, span + 0.45, -0.25);
+        group.add(door, frontWall, backL, backR, left, right, roof, cap, banner, lantern, chimney);
+        return group;
+      };
+      for (const house of HOUSES) {
+        fitAssembly(cottage(), HOUSE_FIT, house.x, house.z, Math.atan2(-house.x, 6 - house.z));
       }
+
+      const scriptorium = new THREE.Group();
+      {
+        const span = 3.6;
+        const back = piece(loaded.wall, "wall", { span: 4.2 });
+        back.rotation.y = Math.PI / 2;
+        back.position.set(0, 0, -span / 2);
+        const left = piece(loaded.wall, "wall", { span });
+        left.position.set(-2.1, 0, 0);
+        const right = piece(loaded.wall, "wall", { span });
+        right.position.set(2.1, 0, 0);
+        const roof = piece(loaded.roof, "roof", { width: 4.8, depth: 4.0, pitch: 1.1 });
+        roof.position.y = 3.5;
+        const banner = piece(loaded.banner, "indigo", { height: HEIGHT_M.banner });
+        banner.position.set(1.5, 1.3, span / 2);
+        sway.push(banner);
+        const lantern = piece(loaded.lantern, "bronze", { height: HEIGHT_M.lantern });
+        lantern.position.set(-1.5, 0, span / 2);
+        scriptorium.add(back, left, right, roof, banner, lantern);
+      }
+      fitAssembly(scriptorium, SHRINE_FIT, SCRIPT.x, SCRIPT.z, -Math.PI / 2);
+
+      const tower = new THREE.Group();
+      {
+        const stone = new THREE.MeshStandardMaterial({ color: PALETTE.stone, roughness: 0.9 });
+        const bronze = new THREE.MeshStandardMaterial({ color: PALETTE.bronze, roughness: 0.45 });
+        const gold = new THREE.MeshStandardMaterial({ color: PALETTE.gold, roughness: 0.4 });
+        const base = new THREE.Mesh(new THREE.CylinderGeometry(2.15, 2.35, 2.6, 8), stone);
+        base.position.y = 1.3;
+        const shaft = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.55, 14.2, 8), stone);
+        shaft.position.y = 2.6 + 7.1;
+        const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.72, 1.15, 3.4, 8), stone);
+        neck.position.y = 16.8 + 1.7;
+        const bell = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 0.78, 1.35, 8), bronze);
+        bell.position.y = 20.2 + 0.675;
+        const cap = new THREE.Mesh(new THREE.ConeGeometry(0.85, 1.35, 8), gold);
+        cap.position.y = 21.55 + 0.675;
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(1.35, 0.07, 8, 18), bronze);
+        ring.rotation.x = Math.PI / 2;
+        ring.position.y = 16.2;
+        const lantern = piece(loaded.lantern, "bronze", { height: 0.7 });
+        lantern.position.set(1.35, 12.4, 0);
+        const banner = piece(loaded.banner, "indigo", { height: 1.6 });
+        banner.position.set(-1.25, 14.2, 0.15);
+        sway.push(banner);
+        tower.add(base, shaft, neck, bell, cap, ring, lantern, banner);
+      }
+      fitAssembly(tower, SPIRE_FIT, SPIRE.x, SPIRE.z, 0);
 
       traveler = prep(loaded.traveler, HEIGHT_M.traveler, "vellum");
       scene.add(traveler);
@@ -307,11 +424,7 @@ export function UnwrittenWild() {
       scene.add(stagBill);
 
       const serif = card("serif", HEIGHT_M.serif);
-      serif.position.set(SERIF.x, terrainHeight(SERIF.x, SERIF.z), SERIF.z);
-      const shrine = card("shrine", HEIGHT_M.shrine);
-      shrine.position.set(SCRIPT.x, terrainHeight(SCRIPT.x, SCRIPT.z), SCRIPT.z);
-      const spire = card("spire", HEIGHT_M.spire);
-      spire.position.set(SPIRE.x, terrainHeight(SPIRE.x, SPIRE.z), SPIRE.z);
+      serif.position.set(SERIF.x, terrainHeight(SERIF.x, SERIF.z) + HEIGHT_M.serif / 2, SERIF.z);
       const lens = new THREE.Mesh(
         new THREE.CircleGeometry(12, 28),
         new THREE.MeshBasicMaterial({ color: 0x1d3c66, transparent: true, opacity: 0.85 }),
@@ -324,9 +437,8 @@ export function UnwrittenWild() {
       );
       caldera.rotation.x = -Math.PI / 2;
       caldera.position.set(CALDERA.x, terrainHeight(CALDERA.x, CALDERA.z) + 0.4, CALDERA.z);
-      scene.add(lens, caldera);
-      scene.add(serif, shrine, spire);
-      cards.push(serif, shrine, spire, stagBill);
+      scene.add(lens, caldera, serif);
+      cards.push(serif, stagBill);
     })().catch((error) => {
       console.error("wild assets", error);
     });

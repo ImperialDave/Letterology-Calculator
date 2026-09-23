@@ -1,20 +1,12 @@
 /** On-foot third person. A/D strafe. They do not steer. */
 
+import { playerSolids, REACH, slideMove, SOLID_R, stagSolids } from "./bodies";
+import { CALDERA, HERDER, SCRIPT, SERIF, SPIRE, STAG_A, STAG_B } from "./layout";
 import { terrainHeight } from "./terrain";
 
 export type V2 = { x: number; z: number };
 
-export const SPIRE = { x: 112, z: 0 };
-export const SERIF = { x: 14, z: 20 };
-export const SCRIPT = { x: 102, z: 9 };
-export const HERDER = { x: 8.6, z: 13.2 };
-export const CALDERA = { x: 230, z: -18 };
-export const STAG_A = { x: 18, z: 5 };
-export const STAG_B = { x: 34, z: 3.5 };
-export const HOUSES = [
-  { x: 11.5, z: 16, h: 5.6 },
-  { x: -8.5, z: 15, h: 4.7 },
-];
+export { CALDERA, HERDER, HOUSES, SCRIPT, SERIF, SPIRE, STAG_A, STAG_B } from "./layout";
 
 export type WildInput = {
   forward: number;
@@ -123,7 +115,7 @@ function channelK(s: WildState) {
   const dx = s.stagX - s.x;
   const dz = s.stagZ - s.z;
   const d = Math.hypot(dx, dz);
-  if (d < 0.001 || d > 3.7) return;
+  if (d < 0.001 || d > REACH.stag) return;
   const face = forwardFromYaw(s.yaw);
   if ((face.x * dx + face.z * dz) / d < 0.35) return;
   s.stagHits += 1;
@@ -141,7 +133,7 @@ function talk(s: WildState) {
   const dScript = dist(s.x, s.z, SCRIPT.x, SCRIPT.z);
   const dHerder = dist(s.x, s.z, HERDER.x, HERDER.z);
   const dSpire = dist(s.x, s.z, SPIRE.x, SPIRE.z);
-  const atBell = dSpire < 3.5 && s.y > 18;
+  const atBell = dSpire < REACH.bell && s.y > 18;
   if (atBell) {
     s.spireReached = true;
     if (s.serif === 1) {
@@ -154,17 +146,17 @@ function talk(s: WildState) {
     }
     return;
   }
-  let best = 2.4;
+  let best = Infinity;
   let id = 0;
-  if (s.serif === 0 && dSerif < best) {
+  if (s.serif === 0 && dSerif < REACH.serif && dSerif < best) {
     best = dSerif;
     id = 1;
   }
-  if (dScript < best) {
+  if (dScript < REACH.script && dScript < best) {
     best = dScript;
     id = 2;
   }
-  if (dHerder < best) {
+  if (dHerder < REACH.herder && dHerder < best) {
     best = dHerder;
     id = 3;
   }
@@ -189,11 +181,11 @@ export function contextPrompt(s: WildState): string | null {
   const dHerder = dist(s.x, s.z, HERDER.x, HERDER.z);
   const dSpire = dist(s.x, s.z, SPIRE.x, SPIRE.z);
   const top = terrainHeight(SPIRE.x, SPIRE.z) + 18;
-  if (!s.stagFreed && dStag < 4) return "Cut the brand";
-  if (dSpire < 2.7 && s.y < top - 0.4) return "Climb";
-  if (dSpire < 3.5 && s.y > top - 3 && s.serif === 1) return "Give the serif";
-  if (s.serif === 0 && dSerif < 2.4) return "Speak";
-  if (dScript < 2.4 || dHerder < 2.4) return "Speak";
+  if (!s.stagFreed && dStag < REACH.stag) return "Cut the brand";
+  if (dSpire > REACH.climbInner && dSpire < REACH.climbOuter && s.y < top - 0.4) return "Climb";
+  if (dSpire < REACH.bell && s.y > top - 3 && s.serif === 1) return "Give the serif";
+  if (s.serif === 0 && dSerif < REACH.serif) return "Speak";
+  if (dScript < REACH.script || dHerder < REACH.herder) return "Speak";
   return null;
 }
 
@@ -229,18 +221,19 @@ export function stepWild(s: WildState, input: WildInput, dt: number) {
   const spireD = dist(s.x, s.z, SPIRE.x, SPIRE.z);
   s.fluttering = false;
   s.climbing = false;
-  if (spireD > 1.05 && spireD < 2.7 && s.y < spireTop - 0.3 && input.forward > 0.2 && s.stamina > 0) {
+  if (spireD > REACH.climbInner && spireD < REACH.climbOuter && s.y < spireTop - 0.3 && input.forward > 0.2 && s.stamina > 0) {
     s.climbing = true;
     s.grounded = false;
     s.vy = 0;
     s.y = Math.min(spireTop, s.y + 3.15 * dt);
     const ang = Math.atan2(s.z - SPIRE.z, s.x - SPIRE.x);
-    s.x = SPIRE.x + Math.cos(ang) * 1.6;
-    s.z = SPIRE.z + Math.sin(ang) * 1.6;
+    s.x = SPIRE.x + Math.cos(ang) * REACH.climbPin;
+    s.z = SPIRE.z + Math.sin(ang) * REACH.climbPin;
     s.stamina -= 15 * dt;
   } else {
-    const x1 = s.x + wx * speed * dt;
-    const z1 = s.z + wz * speed * dt;
+    const wish = slideMove(s.x, s.z, s.x + wx * speed * dt, s.z + wz * speed * dt, playerSolids(s));
+    const x1 = wish.x;
+    const z1 = wish.z;
     const h0 = terrainHeight(s.x, s.z);
     const h1 = terrainHeight(x1, z1);
     const run = Math.hypot(x1 - s.x, z1 - s.z);
@@ -284,7 +277,7 @@ export function stepWild(s: WildState, input: WildInput, dt: number) {
     }
     if (moving) s.yaw = Math.atan2(-wx, -wz);
   }
-  if (s.y > spireBase + 15 && dist(s.x, s.z, SPIRE.x, SPIRE.z) < 3.4) {
+  if (s.y > spireBase + 15 && dist(s.x, s.z, SPIRE.x, SPIRE.z) < REACH.bell) {
     if (!s.spireReached) say(s, "The bell has no clapper. The steppe is on the sheet now.");
     s.spireReached = true;
   }
@@ -329,8 +322,9 @@ export function stepWild(s: WildState, input: WildInput, dt: number) {
     const L = Math.hypot(dx, dz);
     if (L > 0.04 && spd > 0) {
       const step = Math.min(L, spd * dt);
-      s.stagX += (dx / L) * step;
-      s.stagZ += (dz / L) * step;
+      const next = slideMove(s.stagX, s.stagZ, s.stagX + (dx / L) * step, s.stagZ + (dz / L) * step, stagSolids(s), SOLID_R.stag);
+      s.stagX = next.x;
+      s.stagZ = next.z;
       s.stagYaw = Math.atan2(-dx, -dz);
     }
   } else if (s.stagFlee > 0) {
@@ -338,8 +332,9 @@ export function stepWild(s: WildState, input: WildInput, dt: number) {
     const dx = s.stagX - s.x;
     const dz = s.stagZ - s.z;
     const L = Math.hypot(dx, dz) || 1;
-    s.stagX += (dx / L) * 8.2 * dt;
-    s.stagZ += (dz / L) * 8.2 * dt;
+    const next = slideMove(s.stagX, s.stagZ, s.stagX + (dx / L) * 8.2 * dt, s.stagZ + (dz / L) * 8.2 * dt, stagSolids(s), SOLID_R.stag);
+    s.stagX = next.x;
+    s.stagZ = next.z;
   }
 }
 
