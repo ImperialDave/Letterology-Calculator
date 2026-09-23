@@ -1,0 +1,143 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "grass",
+      "file": "/wild/vendor/kenney-nature/grass.glb",
+      "author": "Kenney",
+      "source": "https://kenney.nl/assets/nature-kit",
+      "license": "CC0-1.0",
+      "tags": ["leaf", "wind"],
+      "palette": "leaf"
+    },
+    {
+      "id": "grass-large",
+      "file": "/wild/vendor/kenney-nature/grass_large.glb",
+      "author": "Kenney",
+      "source": "https://kenney.nl/assets/nature-kit",
+      "license": "CC0-1.0",
+      "tags": ["leaf", "wind"],
+      "palette": "leaf"
+    },
+    {
+      "id": "tree-oak",
+      "file": "/wild/vendor/kenney-nature/tree_oak.glb",
+      "author": "Kenney",
+      "source": "https://kenney.nl/assets/nature-kit",
+      "license": "CC0-1.0",
+      "tags": ["leaf"],
+      "palette": "leaf"
+    },
+    {
+      "id": "tree",
+      "file": "/wild/vendor/kenney-nature/tree_default.glb",
+      "author": "Kenney",
+      "source": "https://kenney.nl/assets/nature-kit",
+      "license": "CC0-1.0",
+      "tags": ["leaf"],
+      "palette": "leaf"
+    },
+    {
+      "id": "rock",
+      "file": "/wild/vendor/kenney-nature/rock_largeA.glb",
+      "author": "Kenney",
+      "source": "https://kenney.nl/assets/nature-kit",
+      "license": "CC0-1.0",
+      "tags": ["stone"],
+      "palette": "stone"
+    },
+    {
+      "id": "rock-small",
+      "file": "/wild/vendor/kenney-nature/rock_smallA.glb",
+      "author": "Kenney",
+      "source": "https://kenney.nl/assets/nature-kit",
+      "license": "CC0-1.0",
+      "tags": ["stone"],
+      "palette": "stone"
+    },
+    {
+      "id": "flower",
+      "file": "/wild/vendor/kenney-nature/flower_yellowA.glb",
+      "author": "Kenney",
+      "source": "https://kenney.nl/assets/nature-kit",
+      "license": "CC0-1.0",
+      "tags": ["leaf"],
+      "palette": "gold"
+    },
+    {
+      "id": "wall",
+      "file": "/wild/vendor/kenney-town/wall.glb",
+      "author": "Kenney",
+      "source": "https://kenney.nl/assets/fantasy-town-kit",
+      "license": "CC0-1.0",
+      "tags": ["wall"],
+      "palette": "wall",
+      "sockets": ["banner"]
+    },
+    {
+      "id": "wall-door",
+      "file": "/wild/vendor/kenney-town/wall-door.glb",
+      "author": "Kenney",
+      "source": "https://kenney.nl/assets/fantasy-town-kit",
+      "license": "CC0-1.0",
+      "tags": ["wall", "door"],
+      "palette": "wall",
+      "sockets": ["door", "lantern"]
+    },
+    {
+      "id": "roof",
+      "file": "/wild/vendor/kenney-town/roof-gable.glb",
+      "author": "Kenney",
+      "source": "https://kenney.nl/assets/fantasy-town-kit",
+      "license": "CC0-1.0",
+      "tags": ["roof"],
+      "palette": "roof"
+    },
+    {
+      "id": "roof-top",
+      "file": "/wild/vendor/kenney-town/roof-gable-top.glb",
+      "author": "Kenney",
+      "source": "https://kenney.nl/assets/fantasy-town-kit",
+      "license": "CC0-1.0",
+      "tags": ["roof"],
+      "palette": "roof"
+    },
+    {
+      "id": "banner",
+      "file": "/wild/vendor/kenney-town/banner-green.glb",
+      "author": "Kenney",
+      "source": "https://kenney.nl/assets/fantasy-town-kit",
+      "license": "CC0-1.0",
+      "tags": ["cloth", "wind"],
+      "palette": "indigo"
+    },
+    {
+      "id": "lantern",
+      "file": "/wild/vendor/kenney-town/lantern.glb",
+      "author": "Kenney",
+      "source": "https://kenney.nl/assets/fantasy-town-kit",
+      "license": "CC0-1.0",
+      "tags": ["metal"],
+      "palette": "bronze"
+    },
+    {
+      "id": "chimney",
+      "file": "/wild/vendor/kenney-town/chimney.glb",
+      "author": "Kenney",
+      "source": "https://kenney.nl/assets/fantasy-town-kit",
+      "license": "CC0-1.0",
+      "tags": ["stone"],
+      "palette": "stone"
+    },
+    {
+      "id": "traveler",
+      "file": "/wild/vendor/kenney-characters/character-a.glb",
+      "author": "Kenney",
+      "source": "https://kenney.nl/assets/blocky-characters",
+      "license": "CC0-1.0",
+      "tags": ["body"],
+      "palette": "vellum",
+      "sockets": ["cloak"]
+    }
+  ]
+}
