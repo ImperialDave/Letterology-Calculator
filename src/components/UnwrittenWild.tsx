@@ -409,7 +409,8 @@ export function UnwrittenWild() {
         const spots: [number, number][] = [];
         for (let x = -50; x <= 280; x += step) {
           for (let z = -80; z <= 90; z += step) {
-            const jitter = flat ? 0 : ((Math.imul(Math.round(x * 10), 13) ^ Math.imul(Math.round(z * 10), 7)) % 9) * 0.04;
+            const n = (Math.imul(Math.round(x * 10), 13) ^ Math.imul(Math.round(z * 10), 7)) >>> 0;
+            const jitter = flat ? 0 : (n % 9) * 0.04;
             const px = x + jitter;
             const pz = z + (flat ? 0 : jitter * 0.6);
             if (!openMeadow(px, pz)) continue;
@@ -450,17 +451,13 @@ export function UnwrittenWild() {
           dummy.scale.setScalar(scale);
           dummy.updateMatrix();
           field.setMatrixAt(index, dummy.matrix);
-          field.setColorAt(index, meadowGreens[(index + Math.round(px)) % meadowGreens.length]);
+          field.setColorAt(index, meadowGreens[index % meadowGreens.length]);
         });
         field.instanceMatrix.needsUpdate = true;
         if (field.instanceColor) field.instanceColor.needsUpdate = true;
+        field.computeBoundingSphere();
         scene.add(field);
       };
-      plantMeadow(loaded.groundGrass, 0.8, 1.15, true, false);
-      plantMeadow(loaded.grass, 1.25, HEIGHT_M.grass, false, true);
-      plantMeadow(loaded.grassLeafs, 1.6, 0.34, false, true);
-      plantMeadow(loaded.grassLeafsLarge, 2.8, 0.72, false, true);
-      plantMeadow(loaded.grassLarge, 4.2, HEIGHT_M.grassLarge, false, true);
       scatter(loaded.oak, HEIGHT_M.oak, "leaf", OAK_SPOTS);
       scatter(loaded.tree, HEIGHT_M.tree, "leaf", PINE_SPOTS);
       scatter(loaded.bush, HEIGHT_M.bush, "leaf", [
@@ -695,6 +692,15 @@ export function UnwrittenWild() {
       caldera.position.set(CALDERA.x, terrainHeight(CALDERA.x, CALDERA.z) + 0.4, CALDERA.z);
       scene.add(lens, caldera, serif);
       cards.push(serif);
+      try {
+        plantMeadow(loaded.groundGrass, 0.8, 1.15, true, false);
+        plantMeadow(loaded.grass, 1.25, HEIGHT_M.grass, false, true);
+        plantMeadow(loaded.grassLeafs, 1.6, 0.34, false, true);
+        plantMeadow(loaded.grassLeafsLarge, 2.8, 0.72, false, true);
+        plantMeadow(loaded.grassLarge, 4.2, HEIGHT_M.grassLarge, false, true);
+      } catch (error) {
+        console.error("wild meadow", error);
+      }
     })().catch((error) => {
       console.error("wild assets", error);
     });
