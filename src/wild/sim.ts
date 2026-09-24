@@ -3,6 +3,7 @@
 import { playerSolids, REACH, slideMove, SOLID_R, stagSolids } from "./bodies";
 import { nearestExamine } from "./props";
 import { CALDERA, HERDER, SCRIPT, SERIF, SPIRE, STAG_A, STAG_B } from "./layout";
+import { STEPPE } from "./level";
 import { terrainHeight } from "./terrain";
 
 export type V2 = { x: number; z: number };
@@ -67,20 +68,22 @@ export function rightFromForward(forward: V2): V2 {
 }
 
 export function freshWild(): WildState {
+  const spawn = STEPPE.spawn;
+  const stag = STEPPE.actors.stag;
   return {
-    x: 0,
-    z: 6,
-    y: terrainHeight(0, 6),
-    yaw: -Math.PI / 2,
-    camYaw: -Math.PI / 2,
+    x: spawn.x,
+    z: spawn.z,
+    y: terrainHeight(spawn.x, spawn.z),
+    yaw: spawn.yaw,
+    camYaw: spawn.yaw,
     stamina: 100,
     grounded: true,
     climbing: false,
     fluttering: false,
     vy: 0,
-    stagX: 26,
-    stagZ: 4.2,
-    stagYaw: -Math.PI / 2,
+    stagX: stag.x,
+    stagZ: stag.z,
+    stagYaw: stag.yaw,
     stagHits: 0,
     stagFreed: false,
     stagFlee: 0,

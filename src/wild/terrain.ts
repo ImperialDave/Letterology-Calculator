@@ -1,6 +1,7 @@
 import { CALDERA, SPIRE } from "./layout";
+import { STEPPE } from "./level";
 
-export const MESA = { x: 52, z: -36 };
+export const MESA = STEPPE.terrain.mesa;
 export const FEN = { x: 78, z: 62 };
 export const FOREST = { x: 175, z: 8 };
 export const SHEET = { x0: -40, x1: 170, z0: -60, z1: 55 };
@@ -43,8 +44,8 @@ function smooth(e0: number, e1: number, x: number) {
 }
 
 export function trailDistance(x: number, z: number) {
-  const ax = 2;
-  const az = 6;
+  const ax = STEPPE.terrain.road.x;
+  const az = STEPPE.terrain.road.z;
   const abx = SPIRE.x - ax;
   const abz = SPIRE.z - az;
   const denom = abx * abx + abz * abz || 1;
@@ -54,11 +55,12 @@ export function trailDistance(x: number, z: number) {
 
 /** The dry river's center line. The sheet draws the same curve the ground uses. */
 export function riverCenter(x: number) {
-  return -22 + Math.sin(x * 0.045) * 4;
+  const river = STEPPE.terrain.river;
+  return river.base + Math.sin(x * river.freq) * river.amp;
 }
 
 /** A wooden deck crosses the groove here, so the walk stays level. */
-export const FORD = { x: 8, halfX: 2.4, halfZ: 7 };
+export const FORD = STEPPE.terrain.ford;
 
 export function onFord(x: number, z: number) {
   return Math.abs(x - FORD.x) < FORD.halfX && Math.abs(z - riverCenter(FORD.x)) < FORD.halfZ;

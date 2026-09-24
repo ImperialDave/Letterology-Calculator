@@ -29,8 +29,10 @@ import {
   SHRINE_FIT,
   SOLID_R,
   SPIRE_FIT,
+  fixedSolids,
   type AssemblyTarget,
 } from "@/wild/bodies";
+import { applyLevel, DRAFT_KEY, parseLevel, STEPPE } from "@/wild/level";
 import { PROPS } from "@/wild/props";
 import { HEIGHT_M } from "@/wild/scale";
 import { drawSheet, sheetFrame, sheetUnproject } from "@/wild/sheet";
@@ -74,6 +76,11 @@ export function UnwrittenWild() {
   const pinsRef = useRef<{ x: number; z: number }[]>([]);
   const [mapOpen, setMapOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [debugOpen, setDebugOpen] = useState(false);
+  const debugOpenRef = useRef(false);
+  const debugPauseRef = useRef(false);
+  const debugStepRef = useRef(false);
+  const debugReadoutRef = useRef<HTMLParagraphElement>(null);
   const menuOpenRef = useRef(false);
   const verbButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -94,6 +101,13 @@ export function UnwrittenWild() {
       if (event.code === "Tab") {
         event.preventDefault();
         lockRef.current = !lockRef.current;
+      }
+      if (event.code === "Backquote") {
+        event.preventDefault();
+        setDebugOpen((open) => {
+          debugOpenRef.current = !open;
+          return !open;
+        });
       }
       if (event.code === "Escape" && document.pointerLockElement == null) {
         menuOpenRef.current = !menuOpenRef.current;
@@ -126,6 +140,22 @@ export function UnwrittenWild() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    if (new URLSearchParams(window.location.search).get("debug") === "1") {
+      debugOpenRef.current = true;
+      setDebugOpen(true);
+    }
+    if (new URLSearchParams(window.location.search).get("draft") === "1") {
+      const raw = sessionStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        try {
+          const level = parseLevel(JSON.parse(raw));
+          if (level) applyLevel(level);
+        } catch {
+          /* The checked-in steppe stays. */
+        }
+      }
+      stateRef.current = freshWild();
+    }
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
     renderer.setClearColor(0x7ec8f2);
@@ -153,6 +183,22 @@ export function UnwrittenWild() {
     scene.add(clouds);
     const ground = buildGround();
     scene.add(ground);
+    const debugGroup = new THREE.Group();
+    debugGroup.visible = false;
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0x1c243f, side: THREE.DoubleSide });
+    for (const solid of fixedSolids()) {
+      const ring = new THREE.Mesh(new THREE.RingGeometry(Math.max(0.05, solid.r - 0.08), solid.r, 28), ringMat);
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.set(solid.x, terrainHeight(solid.x, solid.z) + 0.18, solid.z);
+      debugGroup.add(ring);
+    }
+    const playerRing = new THREE.Mesh(new THREE.RingGeometry(0.28, 0.42, 20), new THREE.MeshBasicMaterial({ color: 0xc46a3a, side: THREE.DoubleSide }));
+    playerRing.rotation.x = -Math.PI / 2;
+    const stagRing = new THREE.Mesh(new THREE.RingGeometry(SOLID_R.stag - 0.08, SOLID_R.stag, 24), new THREE.MeshBasicMaterial({ color: 0x9a3a22, side: THREE.DoubleSide }));
+    stagRing.rotation.x = -Math.PI / 2;
+    const facing = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.02, 1.4), new THREE.MeshBasicMaterial({ color: 0x1c243f }));
+    debugGroup.add(playerRing, stagRing, facing);
+    scene.add(debugGroup);
     const cameraRay = new THREE.Raycaster();
     scene.fog = new THREE.Fog(0xb7e4fb, 70, 210);
 
@@ -732,7 +778,9 @@ export function UnwrittenWild() {
         state.camYaw = Math.atan2(-(state.stagX - state.x), -(state.stagZ - state.z));
         lookAmt = 0;
       }
-      if (!mapOpenRef.current && !menuOpenRef.current) {
+      const stepping = !debugPauseRef.current || debugStepRef.current;
+      debugStepRef.current = false;
+      if (!mapOpenRef.current && !menuOpenRef.current && stepping) {
         stepWild(
           state,
           {
@@ -851,6 +899,14 @@ export function UnwrittenWild() {
         const near = !state.stagFreed && Math.hypot(state.x - state.stagX, state.z - state.stagZ) < 16;
         pipsRef.current.textContent = near ? "●".repeat(3 - state.stagHits) + "○".repeat(state.stagHits) : "";
       }
+      debugGroup.visible = debugOpenRef.current;
+      playerRing.position.set(state.x, state.y + 0.2, state.z);
+      stagRing.position.set(state.stagX, terrainHeight(state.stagX, state.stagZ) + 0.2, state.stagZ);
+      facing.position.set(state.x, state.y + 0.25, state.z);
+      facing.rotation.y = state.yaw;
+      if (debugReadoutRef.current) {
+        debugReadoutRef.current.textContent = `${state.x.toFixed(1)}, ${state.z.toFixed(1)} · ${state.gait} ${state.speed.toFixed(2)} · verb ${contextPrompt(state) ?? "—"}`;
+      }
       if (titleRef.current) titleRef.current.style.opacity = state.time < 6 ? "1" : "0";
       if (hintRef.current) hintRef.current.style.display = state.time < 8 ? "block" : "none";
       if (lockButtonRef.current) lockButtonRef.current.setAttribute("aria-pressed", lockRef.current ? "true" : "false");
@@ -934,6 +990,39 @@ export function UnwrittenWild() {
       >
         Club
       </Link>
+      {debugOpen ? (
+        <div className="absolute right-3 top-3 z-20 w-64 rounded-lg bg-[#f4e7c8]/95 p-3 text-sm text-[#24180f] shadow-lg">
+          <p className="font-display text-lg">Debug</p>
+          <p ref={debugReadoutRef} className="mt-1 leading-5" />
+          <div className="mt-2 flex flex-wrap gap-1 text-xs tracking-[0.12em] uppercase">
+            <button type="button" className="rounded-full bg-[#efe6d4] px-2 py-1" onClick={() => { debugPauseRef.current = !debugPauseRef.current; }}>Pause</button>
+            <button type="button" className="rounded-full bg-[#efe6d4] px-2 py-1" onClick={() => { debugPauseRef.current = true; debugStepRef.current = true; }}>Step</button>
+            <button type="button" className="rounded-full bg-[#efe6d4] px-2 py-1" onClick={() => { stateRef.current.stagHits = Math.min(3, stateRef.current.stagHits + 1); }}>Cut</button>
+            <button type="button" className="rounded-full bg-[#efe6d4] px-2 py-1" onClick={() => { stateRef.current.serif = stateRef.current.serif === 0 ? 1 : 0; }}>Serif</button>
+            <button type="button" className="rounded-full bg-[#efe6d4] px-2 py-1" onClick={() => { stateRef.current.spireReached = !stateRef.current.spireReached; }}>Spire</button>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-1 text-xs tracking-[0.12em] uppercase">
+            {STEPPE.markers.map((marker) => (
+              <button
+                key={marker.id}
+                type="button"
+                className="rounded-full bg-[#efe6d4] px-2 py-1"
+                onClick={() => {
+                  const state = stateRef.current;
+                  state.x = marker.x;
+                  state.z = marker.z;
+                  state.y = terrainHeight(marker.x, marker.z);
+                  state.vy = 0;
+                  state.grounded = true;
+                }}
+              >
+                {marker.id}
+              </button>
+            ))}
+          </div>
+          <Link to="/wild/edit" className="mt-2 inline-block text-xs tracking-[0.14em] uppercase">Edit the steppe</Link>
+        </div>
+      ) : null}
       <p ref={toastRef} className="pointer-events-none absolute inset-x-8 top-[58%] z-10 text-center text-sm leading-5 text-[#24180f]" />
       <p ref={hintRef} className="pointer-events-none absolute inset-x-4 bottom-36 z-10 text-center text-sm leading-5 text-[#3a2a18]">
         WASD moves. A is left, D is right. Shift runs. Click to look, Esc releases the mouse.
@@ -1050,6 +1139,7 @@ export function UnwrittenWild() {
               <li>The round button does whatever is in front of you. E and K do the same from a keyboard.</li>
               <li>Click the picture to look. Esc releases the mouse, then opens this page.</li>
               <li>M opens the sheet.</li>
+              <li>Backtick opens debug.</li>
             </ul>
             <button
               type="button"
