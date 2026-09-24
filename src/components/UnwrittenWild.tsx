@@ -35,12 +35,13 @@ import { PROPS } from "@/wild/props";
 import { HEIGHT_M } from "@/wild/scale";
 import { drawSheet } from "@/wild/sheet";
 import { FEN, FORD, riverCenter, SHEET, sheetVisible, terrainHeight, terrainRgb } from "@/wild/terrain";
+import { toonGradient, toonify, toonMaterial } from "@/wild/toon";
 
 const PALETTE: Record<string, number> = {
-  leaf: 0x7d9a3c,
-  stone: 0xd9d0c0,
-  wall: 0xefe6d4,
-  roof: 0x8d5a32,
+  leaf: 0x7cba4a,
+  stone: 0xe4d8c4,
+  wall: 0xf4ead4,
+  roof: 0xc46a3a,
   indigo: 0x2a3a72,
   bronze: 0xb5813a,
   gold: 0xe2c36a,
@@ -117,20 +118,30 @@ export function UnwrittenWild() {
     if (!canvas) return;
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-    renderer.setClearColor(0xc6a15a);
+    renderer.setClearColor(0x8ec8e8);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     const scene = new THREE.Scene();
-    scene.fog = new THREE.Fog(0xe7c48a, 22, 95);
-    const camera = new THREE.PerspectiveCamera(52, 1, 0.1, 220);
-    scene.add(new THREE.HemisphereLight(0xfff2d2, 0x6d8a3e, 0.95));
-    const sun = new THREE.DirectionalLight(0xffe0a8, 1.15);
+    const camera = new THREE.PerspectiveCamera(48, 1, 0.1, 280);
+    scene.add(new THREE.HemisphereLight(0x8ec8e8, 0x7cba4a, 0.55));
+    const sun = new THREE.DirectionalLight(0xfff1d0, 1.45);
     sun.position.set(18, 36, 12);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.camera.near = 2;
+    sun.shadow.camera.far = 70;
+    sun.shadow.camera.left = -22;
+    sun.shadow.camera.right = 22;
+    sun.shadow.camera.top = 22;
+    sun.shadow.camera.bottom = -22;
+    sun.shadow.bias = -0.0008;
     scene.add(sun);
+    scene.add(sun.target);
+    scene.add(buildSky());
     const ground = buildGround();
     scene.add(ground);
     const cameraRay = new THREE.Raycaster();
-    scene.fog = new THREE.Fog(0xe7c48a, 28, 140);
-    camera.far = 280;
-    camera.updateProjectionMatrix();
+    scene.fog = new THREE.Fog(0x8ec8e8, 55, 190);
 
     const loader = new GLTFLoader();
     const tex = new THREE.TextureLoader();
@@ -184,6 +195,13 @@ export function UnwrittenWild() {
       inner.position.set(-center.x, -box.min.y, -center.z);
       const holder = new THREE.Group();
       holder.add(inner);
+      toonify(holder, meters >= 0.8, meters > 4 ? 0.05 : 0.028);
+      if (meters < 0.8) {
+        holder.traverse((child) => {
+          const mesh = child as THREE.Mesh;
+          if (mesh.isMesh) mesh.castShadow = false;
+        });
+      }
       return holder;
     }
 
@@ -212,6 +230,7 @@ export function UnwrittenWild() {
       inner.position.set(-center.x, -box.min.y, -center.z);
       const holder = new THREE.Group();
       holder.add(inner);
+      toonify(holder, true, 0.04);
       return holder;
     }
 
@@ -437,9 +456,9 @@ export function UnwrittenWild() {
 
       const tower = new THREE.Group();
       {
-        const stone = new THREE.MeshStandardMaterial({ color: PALETTE.stone, roughness: 0.9 });
-        const bronze = new THREE.MeshStandardMaterial({ color: PALETTE.bronze, roughness: 0.45 });
-        const gold = new THREE.MeshStandardMaterial({ color: PALETTE.gold, roughness: 0.4 });
+        const stone = toonMaterial(PALETTE.stone);
+        const bronze = toonMaterial(PALETTE.bronze);
+        const gold = toonMaterial(PALETTE.gold);
         const base = new THREE.Mesh(new THREE.CylinderGeometry(2.15, 2.35, 2.6, 8), stone);
         base.position.y = 1.3;
         const shaft = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.55, 14.2, 8), stone);
@@ -460,6 +479,7 @@ export function UnwrittenWild() {
         sway.push(banner);
         tower.add(base, shaft, neck, bell, cap, ring, lantern, banner);
       }
+      toonify(tower, true, 0.06);
       fitAssembly(tower, SPIRE_FIT, SPIRE.x, SPIRE.z, 0);
 
       traveler = prep(loaded.traveler, HEIGHT_M.traveler, "vellum");
@@ -547,7 +567,10 @@ export function UnwrittenWild() {
       }
       const face = forwardFromYaw(state.camYaw);
       const head = new THREE.Vector3(state.x, state.y + 1.5, state.z);
-      const desired = new THREE.Vector3(state.x - face.x * 9, state.y + 5.2, state.z - face.z * 9);
+      const desired = new THREE.Vector3(state.x - face.x * 6, state.y + 2.4, state.z - face.z * 6);
+      sun.position.set(state.x + 16, 32, state.z + 10);
+      sun.target.position.set(state.x, state.y, state.z);
+      sun.shadow.camera.updateProjectionMatrix();
       const back = desired.clone().sub(head);
       const reach = back.length();
       cameraRay.set(head, back.normalize());
@@ -768,7 +791,31 @@ function buildGround() {
   geo.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
   geo.setIndex(indices);
   geo.computeVertexNormals();
-  return new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true }));
+  const mesh = new THREE.Mesh(geo, new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: toonGradient() }));
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
+function buildSky() {
+  const geo = new THREE.SphereGeometry(220, 28, 16);
+  const position = geo.attributes.position;
+  const colors = new Float32Array(position.count * 3);
+  const zenith = new THREE.Color(0x8ec8e8);
+  const horizon = new THREE.Color(0xf3ddb0);
+  const color = new THREE.Color();
+  for (let i = 0; i < position.count; i++) {
+    const y = position.getY(i);
+    const t = THREE.MathUtils.clamp((y + 30) / 160, 0, 1);
+    color.copy(horizon).lerp(zenith, t * t);
+    colors[i * 3] = color.r;
+    colors[i * 3 + 1] = color.g;
+    colors[i * 3 + 2] = color.b;
+  }
+  geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+  return new THREE.Mesh(
+    geo,
+    new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false, depthWrite: false }),
+  );
 }
 
 function paintCompass(host: HTMLDivElement, state: WildState) {

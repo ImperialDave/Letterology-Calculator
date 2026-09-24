@@ -83,9 +83,9 @@ export function terrainHeight(x: number, z: number) {
 
 export function terrainRgb(x: number, z: number): [number, number, number] {
   const h = terrainHeight(x, z);
-  let r = 0.8;
-  let g = 0.64;
-  let b = 0.3;
+  let r = 0.89;
+  let g = 0.7;
+  let b = 0.36;
   const mesa = Math.hypot(x - MESA.x, z - MESA.z);
   if (mesa < 18 || h > 10) {
     r = 0.9;
@@ -120,9 +120,9 @@ export function terrainRgb(x: number, z: number): [number, number, number] {
   const trail = trailDistance(x, z);
   if (trail < 4 && z < 40 && x < 140) {
     const k = 1 - trail / 4;
-    r = r * (1 - k) + 0.93 * k;
-    g = g * (1 - k) + 0.84 * k;
-    b = b * (1 - k) + 0.62 * k;
+    r = r * (1 - k) + 0.95 * k;
+    g = g * (1 - k) + 0.89 * k;
+    b = b * (1 - k) + 0.69 * k;
   }
   const river = Math.abs(z - riverCenter(x));
   if (x > -20 && x < 100 && river < 5) {
