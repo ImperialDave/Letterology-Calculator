@@ -147,6 +147,7 @@ test("a sign can be read, and the river ford stays level", () => {
   const s = freshWild();
   s.x = 9.6;
   s.z = 8.8;
+  s.yaw = 0;
   stepWild(s, { ...still, talk: true }, 1 / 60);
   assert.match(s.toast, /spire/i);
   const door = freshWild();

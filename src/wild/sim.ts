@@ -173,21 +173,33 @@ function talk(s: WildState) {
     }
     return;
   }
+  const face = forwardFromYaw(s.yaw);
+  const looking = (x: number, z: number, reach: number) => {
+    const dx = x - s.x;
+    const dz = z - s.z;
+    const d = Math.hypot(dx, dz);
+    if (d > reach) return Infinity;
+    if (d < 0.25) return d;
+    return (face.x * dx + face.z * dz) / d >= 0.35 ? d : Infinity;
+  };
   let best = Infinity;
   let id = 0;
-  if (s.serif === 0 && dSerif < REACH.serif && dSerif < best) {
-    best = dSerif;
+  const seenSerif = s.serif === 0 ? looking(SERIF.x, SERIF.z, REACH.serif) : Infinity;
+  const seenScript = looking(SCRIPT.x, SCRIPT.z, REACH.script);
+  const seenHerder = looking(HERDER.x, HERDER.z, REACH.herder);
+  if (seenSerif < best) {
+    best = seenSerif;
     id = 1;
   }
-  if (dScript < REACH.script && dScript < best) {
-    best = dScript;
+  if (seenScript < best) {
+    best = seenScript;
     id = 2;
   }
-  if (dHerder < REACH.herder && dHerder < best) {
-    best = dHerder;
+  if (seenHerder < best) {
+    best = seenHerder;
     id = 3;
   }
-  const examined = nearestExamine(s.x, s.z);
+  const examined = nearestExamine(s.x, s.z, s.yaw);
   if (examined && examined.d < best) {
     say(s, examined.say);
     return;
@@ -216,9 +228,20 @@ export function contextPrompt(s: WildState): string | null {
   if (!s.stagFreed && dStag < REACH.stag) return "Cut the brand";
   if (dSpire > REACH.climbInner && dSpire < REACH.climbOuter && s.y < top - 0.4) return "Climb";
   if (dSpire < REACH.bell && s.y > top - 3 && s.serif === 1) return "Give the serif";
-  if (s.serif === 0 && dSerif < REACH.serif) return "Speak";
-  if (dScript < REACH.script || dHerder < REACH.herder) return "Speak";
-  if (nearestExamine(s.x, s.z)) return "Speak";
+  const face = forwardFromYaw(s.yaw);
+  const looking = (x: number, z: number, reach: number) => {
+    const dx = x - s.x;
+    const dz = z - s.z;
+    const d = Math.hypot(dx, dz);
+    if (d > reach) return false;
+    if (d < 0.25) return true;
+    return (face.x * dx + face.z * dz) / d >= 0.35;
+  };
+  if (s.serif === 0 && looking(SERIF.x, SERIF.z, REACH.serif)) return "Speak";
+  if (looking(SCRIPT.x, SCRIPT.z, REACH.script)) return "Read";
+  if (looking(HERDER.x, HERDER.z, REACH.herder)) return "Listen";
+  const examined = nearestExamine(s.x, s.z, s.yaw);
+  if (examined) return examined.verb;
   return null;
 }
 

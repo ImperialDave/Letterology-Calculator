@@ -73,6 +73,9 @@ export function UnwrittenWild() {
   const audioRef = useRef<AudioContext | null>(null);
   const pinsRef = useRef<{ x: number; z: number }[]>([]);
   const [mapOpen, setMapOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuOpenRef = useRef(false);
+  const verbButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const held = keys.current;
@@ -91,6 +94,10 @@ export function UnwrittenWild() {
       if (event.code === "Tab") {
         event.preventDefault();
         lockRef.current = !lockRef.current;
+      }
+      if (event.code === "Escape" && document.pointerLockElement == null) {
+        menuOpenRef.current = !menuOpenRef.current;
+        setMenuOpen(menuOpenRef.current);
       }
     };
     const onUp = (event: KeyboardEvent) => held.delete(event.code);
@@ -332,6 +339,20 @@ export function UnwrittenWild() {
         banner: "/wild/vendor/kenney-town/banner-green.glb",
         lantern: "/wild/vendor/kenney-town/lantern.glb",
         chimney: "/wild/vendor/kenney-town/chimney.glb",
+        candle: "/wild/vendor/kaykit-dungeon/candle_lit.glb",
+        torch: "/wild/vendor/kaykit-dungeon/torch_lit.glb",
+        bannerBlue: "/wild/vendor/kaykit-dungeon/banner_patternA_blue.glb",
+        table: "/wild/vendor/kaykit-dungeon/table_small_decorated_A.glb",
+        chair: "/wild/vendor/kaykit-dungeon/chair.glb",
+        shelf: "/wild/vendor/kaykit-dungeon/shelf_small_candles.glb",
+        tableCloth: "/wild/vendor/kaykit-dungeon/table_medium_tablecloth.glb",
+        bottle: "/wild/vendor/kaykit-dungeon/bottle_A_green.glb",
+        jug: "/wild/vendor/kaykit-dungeon/bottle_C_brown.glb",
+        coins: "/wild/vendor/kaykit-dungeon/coin_stack_small.glb",
+        crates: "/wild/vendor/kaykit-dungeon/crates_stacked.glb",
+        barrelStack: "/wild/vendor/kaykit-dungeon/barrel_small_stack.glb",
+        pillarDecor: "/wild/vendor/kaykit-dungeon/pillar_decorated.glb",
+        chestGold: "/wild/vendor/kaykit-dungeon/chest_gold.glb",
       } as const;
       const loaded = Object.fromEntries(
         await Promise.all(Object.entries(files).map(async ([id, url]) => [id, await loadModel(url)])),
@@ -668,7 +689,7 @@ export function UnwrittenWild() {
         state.camYaw = Math.atan2(-(state.stagX - state.x), -(state.stagZ - state.z));
         lookAmt = 0;
       }
-      if (!mapOpenRef.current) {
+      if (!mapOpenRef.current && !menuOpenRef.current) {
         stepWild(
           state,
           {
@@ -775,7 +796,12 @@ export function UnwrittenWild() {
         const deg = Math.round((state.stamina / 100) * 360);
         ringRef.current.style.background = `conic-gradient(#e2c36a ${deg}deg, rgba(36,24,15,0.25) ${deg}deg)`;
       }
-      if (promptRef.current) promptRef.current.textContent = contextPrompt(state) ?? "";
+      const verb = contextPrompt(state);
+      if (promptRef.current) promptRef.current.textContent = verb ?? "";
+      if (verbButtonRef.current) {
+        verbButtonRef.current.dataset.verb = verb && verb !== "Climb" ? verb : "";
+        verbButtonRef.current.textContent = verb ?? "";
+      }
       if (pipsRef.current) {
         const near = !state.stagFreed && Math.hypot(state.x - state.stagX, state.z - state.stagZ) < 16;
         pipsRef.current.textContent = near ? "●".repeat(3 - state.stagHits) + "○".repeat(state.stagHits) : "";
@@ -884,13 +910,13 @@ export function UnwrittenWild() {
         <div className="pointer-events-auto flex items-end gap-2">
           <button
             type="button"
-            className="h-12 min-w-12 rounded-full bg-[#2c2418] px-3 text-sm text-[#f3e6c8]"
-            aria-label="Speak"
-            onPointerDown={() => {
-              edges.current.talk = true;
+            className="mb-1 h-14 rounded-full bg-[#efe6d4] px-4 text-xs tracking-[0.12em] uppercase"
+            onClick={() => {
+              menuOpenRef.current = !menuOpenRef.current;
+              setMenuOpen(menuOpenRef.current);
             }}
           >
-            E
+            Menu
           </button>
           <button
             type="button"
@@ -907,14 +933,16 @@ export function UnwrittenWild() {
             <div ref={ringRef} className="absolute inset-0 rounded-full bg-[#efe6d4]/70" />
             <button
               type="button"
-              className="absolute inset-2 rounded-full bg-[#f3e6c8] text-2xl text-[#24305a]"
-              aria-label="Cut"
+              ref={verbButtonRef}
+              className="absolute inset-1 flex items-center justify-center rounded-full bg-[#f3e6c8] px-1 text-center text-xs tracking-[0.08em] uppercase text-[#24305a]"
+              aria-label="Do the thing in front of you"
               onPointerDown={() => {
-                edges.current.cut = true;
+                const verb = verbButtonRef.current?.dataset.verb;
+                if (!verb) return;
+                if (verb === "Cut") edges.current.cut = true;
+                else edges.current.talk = true;
               }}
-            >
-              K
-            </button>
+            />
           </div>
         </div>
         </div>
@@ -957,6 +985,37 @@ export function UnwrittenWild() {
               <p>Ink marks only the ground you know. Climb the spire to stamp the steppe.</p>
               <p className="tracking-[0.08em] uppercase">You · Spire · Stag · Pin</p>
             </div>
+          </div>
+        </div>
+      ) : null}
+      {menuOpen ? (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-[#24180f]/50 p-4">
+          <div className="w-full max-w-md bg-[#f4e7c8] p-6 text-[#24180f] shadow-[0_24px_60px_rgba(36,24,15,0.28)]" style={{ borderRadius: 28 }}>
+            <p className="text-xs tracking-[0.18em] uppercase text-[#3a2a18]">Sable Quill</p>
+            <h2 className="mt-1 text-2xl leading-7">The Unwritten Wild</h2>
+            <div className="mt-4 flex gap-4">
+              <div className="relative h-28 w-20 shrink-0 rounded-xl bg-[#24305a]" aria-hidden="true">
+                <div className="absolute left-1/2 top-3 h-8 w-8 -translate-x-1/2 rounded-full bg-[#f0e2c4]" />
+                <div className="absolute inset-x-2 bottom-2 top-12 rounded-t-full bg-[#2a3a72]" />
+              </div>
+              <p className="text-sm leading-6">{objectiveLine(stateRef.current)}</p>
+            </div>
+            <ul className="mt-5 space-y-1 text-sm leading-6 text-[#3a2a18]">
+              <li>WASD moves. A is left, D is right. Shift runs.</li>
+              <li>The round button does whatever is in front of you. E and K do the same from a keyboard.</li>
+              <li>Click the picture to look. Esc releases the mouse, then opens this page.</li>
+              <li>M opens the sheet.</li>
+            </ul>
+            <button
+              type="button"
+              className="mt-5 inline-flex h-11 items-center rounded-full bg-[#24305a] px-5 text-xs tracking-[0.14em] uppercase text-[#f4e7c8]"
+              onClick={() => {
+                menuOpenRef.current = false;
+                setMenuOpen(false);
+              }}
+            >
+              Return
+            </button>
           </div>
         </div>
       ) : null}
