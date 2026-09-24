@@ -34,7 +34,7 @@ import {
 import { PROPS } from "@/wild/props";
 import { HEIGHT_M } from "@/wild/scale";
 import { drawSheet } from "@/wild/sheet";
-import { FEN, FORD, riverCenter, SHEET, sheetVisible, terrainHeight, terrainRgb } from "@/wild/terrain";
+import { FEN, FORD, onFord, riverCenter, SHEET, sheetVisible, terrainHeight, terrainRgb, trailDistance } from "@/wild/terrain";
 import { toonGradient, toonify, toonMaterial } from "@/wild/toon";
 
 const PALETTE: Record<string, number> = {
@@ -153,6 +153,7 @@ export function UnwrittenWild() {
     let mageMixer: { update: (d: number) => void; show: (name: string, once: boolean) => void } | null = null;
     let stepClock = 0;
     let landPlayed = false;
+    let stagHitPlayed = false;
     const tone = (freq: number, dur: number, gain: number) => {
       const audio = audioRef.current;
       if (!audio) return;
@@ -167,6 +168,8 @@ export function UnwrittenWild() {
       osc.stop(audio.currentTime + dur);
     };
     let stagBill: THREE.Object3D | null = null;
+    let stagClips: { update: (d: number) => void; show: (name: string, once: boolean) => void } | null = null;
+    const grassWind: { value: number }[] = [];
     let brand: THREE.Object3D | null = null;
     const cards: THREE.Object3D[] = [];
     let alive = true;
@@ -352,15 +355,66 @@ export function UnwrittenWild() {
         }
       };
 
-      const grassSpots: [number, number][] = [];
-      for (let i = 0; i < 90; i++) {
-        const x = ((i * 17) % 46) - 8;
-        const z = ((i * 11) % 34) - 10;
-        if (HOUSES.some((house) => Math.hypot(x - house.x, z - house.z) < SOLID_R.house + 0.6)) continue;
-        grassSpots.push([x, z]);
+      const tuft = prep(loaded.grass, HEIGHT_M.grass, "leaf");
+      tuft.updateMatrixWorld(true);
+      let grassGeo: THREE.BufferGeometry | null = null;
+      tuft.traverse((child) => {
+        const mesh = child as THREE.Mesh;
+        if (!mesh.isMesh || mesh.name === "outline" || grassGeo) return;
+        grassGeo = mesh.geometry.clone();
+        grassGeo.applyMatrix4(mesh.matrixWorld);
+      });
+      if (grassGeo) {
+        const spots: [number, number][] = [];
+        for (let x = -36; x <= 168; x += 2.15) {
+          for (let z = -50; z <= 48; z += 2.15) {
+            const px = x + ((Math.imul(x * 10, 13) ^ Math.imul(z * 10, 7)) % 9) * 0.06;
+            const pz = z + ((Math.imul(x * 10, 3) ^ Math.imul(z * 10, 11)) % 9) * 0.06;
+            if (trailDistance(px, pz) < 1.35 && pz < 40 && px < 150) continue;
+            if (onFord(px, pz)) continue;
+            if (HOUSES.some((house) => Math.hypot(px - house.x, pz - house.z) < SOLID_R.house)) continue;
+            spots.push([px, pz]);
+          }
+        }
+        const grassMat = toonMaterial(PALETTE.leaf);
+        grassMat.onBeforeCompile = (shader) => {
+          shader.uniforms.uTime = { value: 0 };
+          grassWind.push(shader.uniforms.uTime);
+          shader.vertexShader = shader.vertexShader.replace(
+            "#include <begin_vertex>",
+            `#include <begin_vertex>
+             float blade = max(transformed.y, 0.0);
+             #ifdef USE_INSTANCING
+               vec4 planted = instanceMatrix * vec4(position, 1.0);
+               float gust = sin(uTime * 1.7 + planted.x * 0.45);
+             #else
+               float gust = sin(uTime * 1.7);
+             #endif
+             transformed.x += gust * blade * 0.55;`,
+          );
+        };
+        const field = new THREE.InstancedMesh(grassGeo, grassMat, spots.length);
+        field.castShadow = false;
+        field.receiveShadow = true;
+        const dummy = new THREE.Object3D();
+        spots.forEach(([px, pz], index) => {
+          dummy.position.set(px, terrainHeight(px, pz), pz);
+          dummy.rotation.y = (px * 13 + pz * 7) % 6;
+          dummy.scale.setScalar(0.85 + ((index * 17) % 10) * 0.03);
+          dummy.updateMatrix();
+          field.setMatrixAt(index, dummy.matrix);
+        });
+        field.instanceMatrix.needsUpdate = true;
+        scene.add(field);
       }
-      scatter(loaded.grass, HEIGHT_M.grass, "leaf", grassSpots.slice(0, 70), true);
-      scatter(loaded.grassLarge, HEIGHT_M.grassLarge, "leaf", grassSpots.slice(70), true);
+      scatter(loaded.grassLarge, HEIGHT_M.grassLarge, "leaf", [
+        [12, 4],
+        [24, 8],
+        [-10, 8],
+        [40, -6],
+        [70, 4],
+        [96, 2],
+      ], true);
       scatter(loaded.oak, HEIGHT_M.oak, "leaf", OAK_SPOTS);
       scatter(loaded.tree, HEIGHT_M.tree, "leaf", PINE_SPOTS);
       scatter(loaded.bush, HEIGHT_M.bush, "leaf", [
@@ -528,14 +582,44 @@ export function UnwrittenWild() {
       };
       mageMixer = { update: (d) => mixer.update(d), show: showClip };
 
-      stagBill = card("stag", HEIGHT_M.stag);
+      const stagGltf = await new Promise<{ scene: THREE.Group; animations: THREE.AnimationClip[] }>((resolve, reject) => {
+        loader.load("/wild/vendor/quaternius/stag.glb", (gltf) => resolve(gltf), undefined, reject);
+      });
+      const stag = stagGltf.scene;
+      toonify(stag, true, 0.03);
+      stag.updateMatrixWorld(true);
+      const stagBox = new THREE.Box3().setFromObject(stag);
+      const stagH = Math.max(stagBox.max.y - stagBox.min.y, 0.001);
+      const stagScale = 1.7 / stagH;
+      stag.scale.setScalar(stagScale);
+      stag.position.y = -stagBox.min.y * stagScale;
+      stagBill = new THREE.Group();
+      stagBill.add(stag);
       brand = new THREE.Mesh(
-        new THREE.SphereGeometry(0.16, 12, 10),
+        new THREE.SphereGeometry(0.09, 12, 10),
         new THREE.MeshBasicMaterial({ color: 0xffd27a }),
       );
-      brand.position.set(0.42, 0.72, 0.05);
+      brand.position.set(0, 1.35, 0.42);
       stagBill.add(brand);
       scene.add(stagBill);
+      const stagMixer = new THREE.AnimationMixer(stag);
+      const stagActions: Record<string, THREE.AnimationAction> = {};
+      for (const clip of stagGltf.animations) {
+        if (!stagActions[clip.name]) stagActions[clip.name] = stagMixer.clipAction(clip);
+      }
+      let stagShowing = "";
+      stagClips = {
+        update: (d) => stagMixer.update(d),
+        show: (name, once) => {
+          const next = stagActions[name];
+          if (!next || stagShowing === name) return;
+          next.reset().fadeIn(0.12).play();
+          next.setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat, once ? 1 : Infinity);
+          next.clampWhenFinished = once;
+          if (stagShowing && stagActions[stagShowing]) stagActions[stagShowing].fadeOut(0.12);
+          stagShowing = name;
+        },
+      };
 
       const serif = card("serif", HEIGHT_M.serif);
       serif.position.set(SERIF.x, terrainHeight(SERIF.x, SERIF.z) + HEIGHT_M.serif / 2, SERIF.z);
@@ -552,7 +636,7 @@ export function UnwrittenWild() {
       caldera.rotation.x = -Math.PI / 2;
       caldera.position.set(CALDERA.x, terrainHeight(CALDERA.x, CALDERA.z) + 0.4, CALDERA.z);
       scene.add(lens, caldera, serif);
-      cards.push(serif, stagBill);
+      cards.push(serif);
     })().catch((error) => {
       console.error("wild assets", error);
     });
@@ -657,10 +741,24 @@ export function UnwrittenWild() {
         traveler.position.set(state.x, state.y, state.z);
         traveler.rotation.y = state.yaw + Math.PI;
       }
+      for (const gust of grassWind) gust.value = state.time;
+      if (stagClips) {
+        stagClips.update(dt);
+        const dStag = Math.hypot(state.stagX - state.x, state.stagZ - state.z);
+        const fleeing = state.stagFreed && state.stagFlee > 0;
+        const chasing = !state.stagFreed && dStag < 13 && dStag > 2.6;
+        const patrol = !state.stagFreed && dStag >= 13;
+        const name = state.stagReact > 0 ? "Idle_HitReact_Left" : fleeing || (chasing && dStag < 6) ? "Gallop" : chasing || patrol ? "Walk" : "Idle";
+        stagClips.show(name, name === "Idle_HitReact_Left");
+      }
+      if (state.stagReact > 0.3) {
+        if (!stagHitPlayed) tone(130, 0.09, 0.1);
+        stagHitPlayed = true;
+      } else stagHitPlayed = false;
       if (stagBill) {
         const gy = terrainHeight(state.stagX, state.stagZ);
-        stagBill.position.set(state.stagX, gy + HEIGHT_M.stag / 2, state.stagZ);
-        stagBill.lookAt(camera.position.x, stagBill.position.y, camera.position.z);
+        stagBill.position.set(state.stagX, gy, state.stagZ);
+        stagBill.rotation.y = state.stagYaw + Math.PI;
       }
       if (brand) brand.visible = !state.stagFreed;
       for (const piece of sway) {

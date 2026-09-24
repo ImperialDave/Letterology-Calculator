@@ -52,6 +52,8 @@ export type WildState = {
   speed: number;
   gait: Gait;
   landed: number;
+  hitstop: number;
+  stagReact: number;
 };
 
 const SPEED = 5.15;
@@ -95,6 +97,8 @@ export function freshWild(): WildState {
     speed: 0,
     gait: "idle",
     landed: 0,
+    hitstop: 0,
+    stagReact: 0,
   };
 }
 
@@ -140,6 +144,8 @@ function channelK(s: WildState) {
   const face = forwardFromYaw(s.yaw);
   if ((face.x * dx + face.z * dz) / d < 0.35) return;
   s.stagHits += 1;
+  s.hitstop = 0.07;
+  s.stagReact = 0.38;
   if (s.stagHits >= 3) {
     s.stagFreed = true;
     s.stagFlee = 6.5;
@@ -230,6 +236,15 @@ export function stepWild(s: WildState, input: WildInput, dt: number) {
   if (dt > 0.05) dt = 0.05;
   s.time += dt;
   if (s.toastLeft > 0) s.toastLeft -= dt;
+  if (s.stagReact > 0) s.stagReact -= dt;
+  const frozen = s.hitstop > 0;
+  if (s.hitstop > 0) s.hitstop -= dt;
+  if (frozen) {
+    if (s.slash > 0) s.slash -= dt;
+    if (s.slashCd > 0) s.slashCd -= dt;
+    if (input.cut) channelK(s);
+    return;
+  }
   s.camYaw -= input.look * dt;
   const forward = forwardFromYaw(s.camYaw);
   const right = rightFromForward(forward);
