@@ -17,7 +17,10 @@ export type WildInput = {
   hop: boolean;
   cut: boolean;
   talk: boolean;
+  sprint: boolean;
 };
+
+export type Gait = "idle" | "walk" | "run" | "rise" | "fall" | "land";
 
 export type WildState = {
   x: number;
@@ -47,6 +50,8 @@ export type WildState = {
   toast: string;
   toastLeft: number;
   speed: number;
+  gait: Gait;
+  landed: number;
 };
 
 const SPEED = 5.15;
@@ -88,7 +93,22 @@ export function freshWild(): WildState {
     toast: "A numeral walks the trail. Cut it, not the deer.",
     toastLeft: 6,
     speed: 0,
+    gait: "idle",
+    landed: 0,
   };
+}
+
+function approach(current: number, target: number, rate: number) {
+  const delta = target - current;
+  if (Math.abs(delta) <= rate) return target;
+  return current + Math.sign(delta) * rate;
+}
+
+function turnToward(from: number, to: number, maxStep: number) {
+  let delta = to - from;
+  while (delta > Math.PI) delta -= Math.PI * 2;
+  while (delta < -Math.PI) delta += Math.PI * 2;
+  return from + Math.max(-maxStep, Math.min(maxStep, delta));
 }
 
 function dist(ax: number, az: number, bx: number, bz: number) {
@@ -221,8 +241,9 @@ export function stepWild(s: WildState, input: WildInput, dt: number) {
     wz /= wish;
   }
   const moving = wish > 0.05;
-  const speed = SPEED;
-  s.speed = moving ? speed * Math.min(wish, 1) : 0;
+  const cap = (input.sprint ? SPEED : SPEED * 0.48) * (moving ? Math.min(wish, 1) : 0);
+  s.speed = approach(s.speed, cap, (cap >= s.speed ? 12 : 16) * dt);
+  const speed = s.speed;
   const spireBase = terrainHeight(SPIRE.x, SPIRE.z);
   const spireTop = spireBase + 18;
   const spireD = dist(s.x, s.z, SPIRE.x, SPIRE.z);
@@ -273,6 +294,7 @@ export function stepWild(s: WildState, input: WildInput, dt: number) {
         }
         s.y += s.vy * dt;
         if (s.y <= ground) {
+          if (s.vy < -1) s.landed = 0.28;
           s.y = ground;
           s.vy = 0;
           s.grounded = true;
@@ -282,8 +304,16 @@ export function stepWild(s: WildState, input: WildInput, dt: number) {
         s.y = ground;
       }
     }
-    if (moving) s.yaw = Math.atan2(-wx, -wz);
+    if (moving && speed > 0.2) s.yaw = turnToward(s.yaw, Math.atan2(-wx, -wz), 9 * dt);
   }
+  if (s.landed > 0) {
+    s.gait = "land";
+    s.landed -= dt;
+  } else if (!s.grounded && s.vy > 0.35) s.gait = "rise";
+  else if (!s.grounded) s.gait = "fall";
+  else if (s.speed > SPEED * 0.62) s.gait = "run";
+  else if (s.speed > 0.35) s.gait = "walk";
+  else s.gait = "idle";
   if (s.y > spireBase + 15 && dist(s.x, s.z, SPIRE.x, SPIRE.z) < REACH.bell) {
     if (!s.spireReached) say(s, "The bell has no clapper. The steppe is on the sheet now.");
     s.spireReached = true;

@@ -43,7 +43,16 @@ export function outlineMaterial(thickness = 0.028) {
 }
 
 export function addOutline(mesh: THREE.Mesh, thickness = 0.028) {
-  const shell = new THREE.Mesh(mesh.geometry, outlineMaterial(thickness));
+  const skinned = (mesh as THREE.SkinnedMesh).isSkinnedMesh;
+  const shell = skinned
+    ? new THREE.SkinnedMesh(mesh.geometry, outlineMaterial(thickness))
+    : new THREE.Mesh(mesh.geometry, outlineMaterial(thickness));
+  if (skinned) {
+    const skin = mesh as THREE.SkinnedMesh;
+    const rig = shell as THREE.SkinnedMesh;
+    rig.bind(skin.skeleton, skin.bindMatrix);
+    rig.bindMode = skin.bindMode;
+  }
   shell.name = "outline";
   shell.castShadow = false;
   shell.receiveShadow = false;

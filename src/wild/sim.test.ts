@@ -5,7 +5,7 @@ import { scaleProblems, PLAYER_M } from "./scale";
 import { HERDER, HOUSES, SCRIPT, SERIF, SPIRE, forwardFromYaw, freshWild, rightFromForward, stepWild, type WildInput } from "./sim";
 import { FORD, onFord, riverCenter, sheetVisible, terrainHeight } from "./terrain";
 
-const still: WildInput = { forward: 0, strafe: 0, look: 0, jumpHeld: false, hop: false, cut: false, talk: false };
+const still: WildInput = { forward: 0, strafe: 0, look: 0, jumpHeld: false, hop: false, cut: false, talk: false, sprint: true };
 
 test("yaw 0 faces -Z and D strafes to screen right", () => {
   const forward = forwardFromYaw(0);
@@ -36,6 +36,19 @@ test("W moves along the camera, and the body faces that way", () => {
   assert.ok(s.x > x0 + 1);
   const face = forwardFromYaw(s.yaw);
   assert.ok(face.x > 0.9);
+});
+
+test("a run takes a few steps to start and does not stop in one frame", () => {
+  const s = freshWild();
+  s.camYaw = 0;
+  stepWild(s, { ...still, strafe: 1 }, 1 / 60);
+  assert.ok(s.speed < 2);
+  for (let i = 0; i < 90; i++) stepWild(s, { ...still, strafe: 1 }, 1 / 60);
+  assert.ok(s.speed > 4.5);
+  const moving = s.speed;
+  stepWild(s, { ...still, strafe: 0, sprint: false }, 1 / 60);
+  assert.ok(s.speed < moving);
+  assert.ok(s.speed > 1);
 });
 
 test("heights stay in proportion to Sable", () => {

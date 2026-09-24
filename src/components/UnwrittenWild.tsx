@@ -68,6 +68,9 @@ export function UnwrittenWild() {
   const lockButtonRef = useRef<HTMLButtonElement>(null);
   const mapOpenRef = useRef(false);
   const lockRef = useRef(false);
+  const stick = useRef({ on: false, id: -1, ox: 0, oy: 0, x: 0, y: 0 });
+  const stickEl = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<AudioContext | null>(null);
   const pinsRef = useRef<{ x: number; z: number }[]>([]);
   const [mapOpen, setMapOpen] = useState(false);
 
@@ -147,6 +150,22 @@ export function UnwrittenWild() {
     const tex = new THREE.TextureLoader();
     const sway: THREE.Object3D[] = [];
     let traveler: THREE.Object3D | null = null;
+    let mageMixer: { update: (d: number) => void; show: (name: string, once: boolean) => void } | null = null;
+    let stepClock = 0;
+    let landPlayed = false;
+    const tone = (freq: number, dur: number, gain: number) => {
+      const audio = audioRef.current;
+      if (!audio) return;
+      const osc = audio.createOscillator();
+      const amp = audio.createGain();
+      osc.frequency.value = freq;
+      amp.gain.setValueAtTime(gain, audio.currentTime);
+      amp.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + dur);
+      osc.connect(amp);
+      amp.connect(audio.destination);
+      osc.start();
+      osc.stop(audio.currentTime + dur);
+    };
     let stagBill: THREE.Object3D | null = null;
     let brand: THREE.Object3D | null = null;
     const cards: THREE.Object3D[] = [];
@@ -310,7 +329,6 @@ export function UnwrittenWild() {
         banner: "/wild/vendor/kenney-town/banner-green.glb",
         lantern: "/wild/vendor/kenney-town/lantern.glb",
         chimney: "/wild/vendor/kenney-town/chimney.glb",
-        traveler: "/wild/vendor/kenney-characters/character-a.glb",
       } as const;
       const loaded = Object.fromEntries(
         await Promise.all(Object.entries(files).map(async ([id, url]) => [id, await loadModel(url)])),
@@ -482,8 +500,33 @@ export function UnwrittenWild() {
       toonify(tower, true, 0.06);
       fitAssembly(tower, SPIRE_FIT, SPIRE.x, SPIRE.z, 0);
 
-      traveler = prep(loaded.traveler, HEIGHT_M.traveler, "vellum");
+      const mageGltf = await new Promise<{ scene: THREE.Group; animations: THREE.AnimationClip[] }>((resolve, reject) => {
+        loader.load("/wild/vendor/kaykit/Mage.glb", (gltf) => resolve(gltf), undefined, reject);
+      });
+      const mage = mageGltf.scene;
+      toonify(mage, true, 0.035);
+      mage.updateMatrixWorld(true);
+      const fitted = new THREE.Box3().setFromObject(mage);
+      const mageScale = HEIGHT_M.traveler / Math.max(fitted.max.y - fitted.min.y, 0.001);
+      mage.scale.setScalar(mageScale);
+      mage.position.y = -fitted.min.y * mageScale;
+      traveler = new THREE.Group();
+      traveler.add(mage);
       scene.add(traveler);
+      const mixer = new THREE.AnimationMixer(mage);
+      const actions: Record<string, THREE.AnimationAction> = {};
+      for (const clip of mageGltf.animations) actions[clip.name] = mixer.clipAction(clip);
+      let showing = "";
+      const showClip = (name: string, once: boolean) => {
+        const next = actions[name];
+        if (!next || showing === name) return;
+        next.reset().fadeIn(0.16).play();
+        next.setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat, once ? 1 : Infinity);
+        next.clampWhenFinished = once;
+        if (showing && actions[showing]) actions[showing].fadeOut(0.16);
+        showing = name;
+      };
+      mageMixer = { update: (d) => mixer.update(d), show: showClip };
 
       stagBill = card("stag", HEIGHT_M.stag);
       brand = new THREE.Mesh(
@@ -527,6 +570,11 @@ export function UnwrittenWild() {
       if (held.has("KeyS")) forward -= 1;
       if (held.has("KeyD")) strafe += 1;
       if (held.has("KeyA")) strafe -= 1;
+      if (stick.current.on) {
+        strafe += stick.current.x;
+        forward += -stick.current.y;
+      }
+      const stickMag = Math.hypot(stick.current.x, stick.current.y);
       let lookAmt = look.current;
       look.current = 0;
       if (held.has("ArrowLeft")) lookAmt -= 1.6;
@@ -547,6 +595,7 @@ export function UnwrittenWild() {
             hop: edges.current.hop,
             cut: edges.current.cut,
             talk: edges.current.talk,
+            sprint: held.has("ShiftLeft") || held.has("ShiftRight") || stickMag > 0.85,
           },
           dt,
         );
@@ -582,11 +631,29 @@ export function UnwrittenWild() {
         camera.position.copy(desired);
       }
       camera.lookAt(state.x, state.y + 1.3, state.z);
+      if (mageMixer) {
+        mageMixer.update(dt);
+        const clip =
+          state.gait === "run" ? "Running_A" :
+          state.gait === "walk" ? "Walking_A" :
+          state.gait === "rise" ? "Jump_Start" :
+          state.gait === "fall" ? "Jump_Idle" :
+          state.gait === "land" ? "Jump_Land" :
+          "Idle";
+        mageMixer.show(clip, clip === "Jump_Start" || clip === "Jump_Land");
+      }
+      if (state.grounded && (state.gait === "walk" || state.gait === "run")) {
+        stepClock -= dt;
+        if (stepClock <= 0) {
+          tone(state.gait === "run" ? 240 : 170, 0.06, 0.04);
+          stepClock = state.gait === "run" ? 0.28 : 0.46;
+        }
+      } else stepClock = 0;
+      if (state.gait === "land") {
+        if (!landPlayed) tone(90, 0.14, 0.08);
+        landPlayed = true;
+      } else landPlayed = false;
       if (traveler) {
-        if (traveler.userData.baseScale === undefined) traveler.userData.baseScale = traveler.scale.x;
-        const base = traveler.userData.baseScale as number;
-        const cloak = state.fluttering ? 1.06 : 1;
-        traveler.scale.setScalar(base * cloak);
         traveler.position.set(state.x, state.y, state.z);
         traveler.rotation.y = state.yaw + Math.PI;
       }
@@ -636,15 +703,55 @@ export function UnwrittenWild() {
         ref={canvasRef}
         className="h-full w-full touch-none"
         onPointerDown={(event) => {
+          if (!audioRef.current) {
+            const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+            if (Ctx) audioRef.current = new Ctx();
+          }
+          void audioRef.current?.resume();
+          const rect = event.currentTarget.getBoundingClientRect();
+          const localX = event.clientX - rect.left;
+          if (localX < rect.width * 0.46) {
+            stick.current = { on: true, id: event.pointerId, ox: event.clientX, oy: event.clientY, x: 0, y: 0 };
+            event.currentTarget.setPointerCapture(event.pointerId);
+            return;
+          }
           event.currentTarget.setPointerCapture(event.pointerId);
           event.currentTarget.dataset.px = String(event.clientX);
+          if (document.pointerLockElement !== event.currentTarget) void event.currentTarget.requestPointerLock();
         }}
         onPointerMove={(event) => {
+          if (stick.current.on && event.pointerId === stick.current.id) {
+            const dx = event.clientX - stick.current.ox;
+            const dy = event.clientY - stick.current.oy;
+            stick.current.x = Math.max(-1, Math.min(1, dx / 64));
+            stick.current.y = Math.max(-1, Math.min(1, dy / 64));
+            if (stickEl.current) {
+              stickEl.current.hidden = false;
+              stickEl.current.style.transform = `translate(${stick.current.x * 28}px, ${stick.current.y * 28}px)`;
+            }
+            return;
+          }
+          if (document.pointerLockElement === event.currentTarget) {
+            look.current += event.movementX * 0.003;
+            return;
+          }
           if (event.buttons !== 1) return;
           const prev = Number(event.currentTarget.dataset.px ?? event.clientX);
           look.current += (event.clientX - prev) * 0.005;
           event.currentTarget.dataset.px = String(event.clientX);
         }}
+        onPointerUp={(event) => {
+          if (event.pointerId !== stick.current.id) return;
+          stick.current.on = false;
+          stick.current.x = 0;
+          stick.current.y = 0;
+          if (stickEl.current) stickEl.current.hidden = true;
+        }}
+      />
+      <div
+        ref={stickEl}
+        hidden
+        className="pointer-events-none absolute bottom-28 left-10 z-10 h-14 w-14 rounded-full border border-[#1c243f]/40 bg-[#efe6d4]/50 sm:hidden"
       />
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 px-4 pt-14 text-center sm:pt-4">
         <p ref={titleRef} className="text-2xl text-[#1c243f] transition-opacity duration-300">The Unwritten Wild</p>
@@ -660,7 +767,7 @@ export function UnwrittenWild() {
       </Link>
       <p ref={toastRef} className="pointer-events-none absolute inset-x-8 top-[58%] z-10 text-center text-sm leading-5 text-[#24180f]" />
       <p ref={hintRef} className="pointer-events-none absolute inset-x-4 bottom-36 z-10 text-center text-sm leading-5 text-[#3a2a18]">
-        WASD moves. A is left, D is right. Drag to look. M opens the sheet.
+        WASD moves. A is left, D is right. Shift runs. Click to look, Esc releases the mouse.
       </p>
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2 px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <p ref={promptRef} className="text-center text-sm leading-5 text-[#1c243f]" />
