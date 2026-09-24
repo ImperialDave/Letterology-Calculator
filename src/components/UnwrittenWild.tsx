@@ -35,7 +35,7 @@ import { PROPS } from "@/wild/props";
 import { HEIGHT_M } from "@/wild/scale";
 import { drawSheet, sheetFrame, sheetUnproject } from "@/wild/sheet";
 import { FEN, FORD, onFord, riverCenter, sheetVisible, terrainHeight, terrainRgb, trailDistance } from "@/wild/terrain";
-import { toonGradient, toonify, toonMaterial } from "@/wild/toon";
+import { stagCoat, toonGradient, toonify, toonMaterial } from "@/wild/toon";
 
 const PALETTE: Record<string, number> = {
   leaf: 0x7cba4a,
@@ -186,14 +186,15 @@ export function UnwrittenWild() {
         loader.load(url, (gltf) => resolve(gltf.scene), undefined, reject);
       });
 
-    function recolor(object: THREE.Object3D, palette: string) {
+    /** Clone materials so a placed copy cannot repaint the source. A texture is left white so its painting shows. */
+    function releasePaint(object: THREE.Object3D) {
       object.traverse((child) => {
         const mesh = child as THREE.Mesh;
         if (!mesh.isMesh) return;
         const list = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
         mesh.material = list.map((material) => {
           const next = material.clone() as THREE.MeshStandardMaterial;
-          if ("color" in next) next.color = new THREE.Color(PALETTE[palette] ?? 0xffffff);
+          if (next.map) next.color.setHex(0xffffff);
           return next;
         });
         mesh.castShadow = false;
@@ -202,9 +203,9 @@ export function UnwrittenWild() {
     }
 
     /** Scale a mesh to a meter height, stand a flat one up, and keep the offset on a child so later placement cannot wipe it. */
-    function prep(source: THREE.Object3D, meters: number, palette: string, mode: "height" | "stand" | "longest" = "height") {
+    function prep(source: THREE.Object3D, meters: number, _palette: string, mode: "height" | "stand" | "longest" = "height") {
       const inner = source.clone(true);
-      recolor(inner, palette);
+      releasePaint(inner);
       inner.position.set(0, 0, 0);
       inner.rotation.set(0, 0, 0);
       inner.scale.setScalar(1);
@@ -236,11 +237,11 @@ export function UnwrittenWild() {
 
     function piece(
       source: THREE.Object3D,
-      palette: string,
+      _palette: string,
       fit: { span?: number; height?: number; width?: number; depth?: number; pitch?: number },
     ) {
       const inner = source.clone(true);
-      recolor(inner, palette);
+      releasePaint(inner);
       inner.position.set(0, 0, 0);
       inner.rotation.set(0, 0, 0);
       inner.scale.setScalar(1);
@@ -379,11 +380,16 @@ export function UnwrittenWild() {
       const tuft = prep(loaded.grass, HEIGHT_M.grass, "leaf");
       tuft.updateMatrixWorld(true);
       let grassGeo: THREE.BufferGeometry | null = null;
+      const grassColor = new THREE.Color(PALETTE.leaf);
       tuft.traverse((child) => {
         const mesh = child as THREE.Mesh;
-        if (!mesh.isMesh || mesh.name === "outline" || grassGeo) return;
-        grassGeo = mesh.geometry.clone();
-        grassGeo.applyMatrix4(mesh.matrixWorld);
+        if (!mesh.isMesh || mesh.name === "outline") return;
+        const painted = mesh.material as THREE.MeshToonMaterial;
+        if (!grassGeo) {
+          grassGeo = mesh.geometry.clone();
+          grassGeo.applyMatrix4(mesh.matrixWorld);
+        }
+        if (painted.color && !painted.map) grassColor.copy(painted.color);
       });
       if (grassGeo) {
         const spots: [number, number][] = [];
@@ -397,7 +403,8 @@ export function UnwrittenWild() {
             spots.push([px, pz]);
           }
         }
-        const grassMat = toonMaterial(PALETTE.leaf);
+        const grassMat = toonMaterial(0xffffff);
+        grassMat.color.copy(grassColor);
         grassMat.onBeforeCompile = (shader) => {
           shader.uniforms.uTime = { value: 0 };
           grassWind.push(shader.uniforms.uTime);
@@ -608,6 +615,18 @@ export function UnwrittenWild() {
       });
       const stag = stagGltf.scene;
       toonify(stag, true, 0.03);
+      const stagMats: THREE.MeshToonMaterial[] = [];
+      stag.traverse((child) => {
+        const mesh = child as THREE.Mesh;
+        if (!mesh.isMesh || mesh.name === "outline") return;
+        const list = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+        for (const material of list) {
+          const painted = material as THREE.MeshToonMaterial;
+          if (painted.color && !painted.map && !stagMats.includes(painted)) stagMats.push(painted);
+        }
+      });
+      const coats = stagCoat(stagMats.map((material) => material.color.r * 0.2126 + material.color.g * 0.7152 + material.color.b * 0.0722));
+      stagMats.forEach((material, index) => material.color.setHex(coats[index]));
       stag.updateMatrixWorld(true);
       const stagBox = new THREE.Box3().setFromObject(stag);
       const stagH = Math.max(stagBox.max.y - stagBox.min.y, 0.001);

@@ -51,14 +51,22 @@ for (const pack of packs) {
   await pipeline(Readable.fromWeb(res.body), createWriteStream(zip));
   const dest = path.join(out, pack.id);
   mkdirSync(dest, { recursive: true });
+  const { writeFile } = await import("node:fs/promises");
   for (const file of pack.files) {
     await exec("unzip", ["-p", zip, `${pack.glbDir}/${file}`], {
       encoding: "buffer",
       maxBuffer: 20_000_000,
     }).then(async ({ stdout }) => {
-      const { writeFile } = await import("node:fs/promises");
       await writeFile(path.join(dest, file), stdout);
     });
   }
-  console.log(pack.id, pack.files.length);
+  const painted = await exec("unzip", ["-p", zip, `${pack.glbDir}/Textures/colormap.png`], {
+    encoding: "buffer",
+    maxBuffer: 20_000_000,
+  }).then(({ stdout }) => stdout).catch(() => null);
+  if (painted?.length) {
+    mkdirSync(path.join(dest, "Textures"), { recursive: true });
+    await writeFile(path.join(dest, "Textures", "colormap.png"), painted);
+  }
+  console.log(pack.id, pack.files.length, painted?.length ? "colormap" : "flat colors");
 }
