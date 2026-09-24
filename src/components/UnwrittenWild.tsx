@@ -33,8 +33,8 @@ import {
 } from "@/wild/bodies";
 import { PROPS } from "@/wild/props";
 import { HEIGHT_M } from "@/wild/scale";
-import { drawSheet } from "@/wild/sheet";
-import { FEN, FORD, onFord, riverCenter, SHEET, sheetVisible, terrainHeight, terrainRgb, trailDistance } from "@/wild/terrain";
+import { drawSheet, sheetFrame, sheetUnproject } from "@/wild/sheet";
+import { FEN, FORD, onFord, riverCenter, sheetVisible, terrainHeight, terrainRgb, trailDistance } from "@/wild/terrain";
 import { toonGradient, toonify, toonMaterial } from "@/wild/toon";
 
 const PALETTE: Record<string, number> = {
@@ -898,7 +898,7 @@ export function UnwrittenWild() {
         <div className="flex items-end justify-between gap-3">
         <button
           type="button"
-          className="pointer-events-auto inline-flex h-12 items-center gap-2 rounded-full bg-[#efe6d4]/95 px-4 text-xs tracking-[0.16em] uppercase"
+          className="pointer-events-auto inline-flex h-14 min-w-14 items-center gap-2 rounded-full bg-[#efe6d4]/95 px-4 text-xs tracking-[0.16em] uppercase"
           onClick={() => {
             mapOpenRef.current = !mapOpenRef.current;
             setMapOpen(mapOpenRef.current);
@@ -974,16 +974,16 @@ export function UnwrittenWild() {
                 const rect = event.currentTarget.getBoundingClientRect();
                 const u = (event.clientX - rect.left) / rect.width;
                 const v = (event.clientY - rect.top) / rect.height;
-                const x = SHEET.x0 + u * (SHEET.x1 - SHEET.x0);
-                const z = SHEET.z1 - v * (SHEET.z1 - SHEET.z0);
                 const state = stateRef.current;
+                const frame = sheetFrame(state, rect.width / Math.max(1, rect.height));
+                const { x, z } = sheetUnproject(u, v, frame);
                 if (!sheetVisible(x, z, state.x, state.z, state.spireReached)) return;
                 pinsRef.current = [...pinsRef.current, { x, z }].slice(-8);
               }}
             />
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs leading-5 text-[#3a2a18]">
-              <p>Ink marks only the ground you know. Climb the spire to stamp the steppe.</p>
-              <p className="tracking-[0.08em] uppercase">You · Spire · Stag · Pin</p>
+              <p>A drawing of the ground you know. Climb the spire to stamp the steppe.</p>
+              <p className="tracking-[0.08em] uppercase">You · Camp · Fountain · Stag · Spire</p>
             </div>
           </div>
         </div>
