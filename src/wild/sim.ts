@@ -1,6 +1,7 @@
 /** On-foot third person. A/D strafe. They do not steer. */
 
 import { playerSolids, REACH, slideMove, SOLID_R, stagSolids } from "./bodies";
+import { nearestExamine } from "./props";
 import { CALDERA, HERDER, SCRIPT, SERIF, SPIRE, STAG_A, STAG_B } from "./layout";
 import { terrainHeight } from "./terrain";
 
@@ -160,6 +161,11 @@ function talk(s: WildState) {
     best = dHerder;
     id = 3;
   }
+  const examined = nearestExamine(s.x, s.z);
+  if (examined && examined.d < best) {
+    say(s, examined.say);
+    return;
+  }
   if (id === 1) {
     s.serif = 1;
     say(s, "The serif climbs your staff.");
@@ -186,6 +192,7 @@ export function contextPrompt(s: WildState): string | null {
   if (dSpire < REACH.bell && s.y > top - 3 && s.serif === 1) return "Give the serif";
   if (s.serif === 0 && dSerif < REACH.serif) return "Speak";
   if (dScript < REACH.script || dHerder < REACH.herder) return "Speak";
+  if (nearestExamine(s.x, s.z)) return "Speak";
   return null;
 }
 

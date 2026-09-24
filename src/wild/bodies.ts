@@ -1,3 +1,4 @@
+import { propSolids } from "./props";
 import { FOREST, MESA } from "./terrain";
 import { HERDER, HOUSES, SCRIPT, SERIF, SPIRE } from "./layout";
 import { HEIGHT_M, PLAYER_M } from "./scale";
@@ -118,6 +119,7 @@ export function fixedSolids(): Solid[] {
     ...PINE_SPOTS.map(([x, z]) => ({ x, z, r: SOLID_R.tree })),
     ...ROCK_SPOTS.map(([x, z]) => ({ x, z, r: SOLID_R.rock })),
     ...cliffSpots().map((cliff) => ({ x: cliff.x, z: cliff.z, r: cliff.large ? SOLID_R.cliffLarge : SOLID_R.cliff })),
+    ...propSolids(),
   ];
 }
 

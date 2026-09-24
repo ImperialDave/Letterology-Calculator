@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { Map as MapIcon, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
@@ -30,8 +31,10 @@ import {
   SPIRE_FIT,
   type AssemblyTarget,
 } from "@/wild/bodies";
+import { PROPS } from "@/wild/props";
 import { HEIGHT_M } from "@/wild/scale";
-import { FEN, SHEET, sheetVisible, terrainHeight, terrainRgb } from "@/wild/terrain";
+import { drawSheet } from "@/wild/sheet";
+import { FEN, FORD, riverCenter, SHEET, sheetVisible, terrainHeight, terrainRgb } from "@/wild/terrain";
 
 const PALETTE: Record<string, number> = {
   leaf: 0x7d9a3c,
@@ -61,6 +64,7 @@ export function UnwrittenWild() {
   const titleRef = useRef<HTMLParagraphElement>(null);
   const hintRef = useRef<HTMLParagraphElement>(null);
   const mapCanvasRef = useRef<HTMLCanvasElement>(null);
+  const lockButtonRef = useRef<HTMLButtonElement>(null);
   const mapOpenRef = useRef(false);
   const lockRef = useRef(false);
   const pinsRef = useRef<{ x: number; z: number }[]>([]);
@@ -123,6 +127,7 @@ export function UnwrittenWild() {
     scene.add(sun);
     const ground = buildGround();
     scene.add(ground);
+    const cameraRay = new THREE.Raycaster();
     scene.fog = new THREE.Fog(0xe7c48a, 28, 140);
     camera.far = 280;
     camera.updateProjectionMatrix();
@@ -157,7 +162,7 @@ export function UnwrittenWild() {
     }
 
     /** Scale a mesh to a meter height, stand a flat one up, and keep the offset on a child so later placement cannot wipe it. */
-    function prep(source: THREE.Object3D, meters: number, palette: string, mode: "height" | "stand" = "height") {
+    function prep(source: THREE.Object3D, meters: number, palette: string, mode: "height" | "stand" | "longest" = "height") {
       const inner = source.clone(true);
       recolor(inner, palette);
       inner.position.set(0, 0, 0);
@@ -171,7 +176,8 @@ export function UnwrittenWild() {
         inner.updateMatrixWorld(true);
       }
       const sized = new THREE.Box3().setFromObject(inner).getSize(new THREE.Vector3());
-      inner.scale.setScalar(meters / Math.max(sized.y, 0.001));
+      const basis = mode === "longest" ? Math.max(sized.x, sized.y, sized.z) : sized.y;
+      inner.scale.setScalar(meters / Math.max(basis, 0.001));
       inner.updateMatrixWorld(true);
       const box = new THREE.Box3().setFromObject(inner);
       const center = box.getCenter(new THREE.Vector3());
@@ -256,6 +262,28 @@ export function UnwrittenWild() {
         bushLarge: "/wild/vendor/kenney-nature/plant_bushLarge.glb",
         cliff: "/wild/vendor/kenney-nature/cliff_rock.glb",
         cliffLarge: "/wild/vendor/kenney-nature/cliff_large_rock.glb",
+        bridge: "/wild/vendor/kenney-nature/bridge_wood.glb",
+        path: "/wild/vendor/kenney-nature/path_stone.glb",
+        log: "/wild/vendor/kenney-nature/log.glb",
+        stump: "/wild/vendor/kenney-nature/stump_round.glb",
+        mushroom: "/wild/vendor/kenney-nature/mushroom_tanGroup.glb",
+        flowerRed: "/wild/vendor/kenney-nature/flower_redA.glb",
+        flowerPurple: "/wild/vendor/kenney-nature/flower_purpleA.glb",
+        tent: "/wild/vendor/kenney-nature/tent_smallOpen.glb",
+        column: "/wild/vendor/kenney-nature/statue_column.glb",
+        pit: "/wild/vendor/kenney-survival/campfire-pit.glb",
+        fence: "/wild/vendor/kenney-town/fence.glb",
+        gate: "/wild/vendor/kenney-town/fence-gate.glb",
+        cart: "/wild/vendor/kenney-town/cart.glb",
+        stall: "/wild/vendor/kenney-town/stall.glb",
+        bench: "/wild/vendor/kenney-town/stall-bench.glb",
+        fountain: "/wild/vendor/kenney-town/fountain-round.glb",
+        hedge: "/wild/vendor/kenney-town/hedge.glb",
+        barrel: "/wild/vendor/kenney-survival/barrel.glb",
+        chest: "/wild/vendor/kenney-survival/chest.glb",
+        box: "/wild/vendor/kenney-survival/box.glb",
+        signpost: "/wild/vendor/kenney-survival/signpost.glb",
+        workbench: "/wild/vendor/kenney-survival/workbench.glb",
         wall: "/wild/vendor/kenney-town/wall.glb",
         door: "/wild/vendor/kenney-town/wall-door.glb",
         roof: "/wild/vendor/kenney-town/roof-gable.glb",
@@ -276,7 +304,7 @@ export function UnwrittenWild() {
         palette: string,
         spots: [number, number][],
         wind = false,
-        mode: "height" | "stand" = "height",
+        mode: "height" | "stand" | "longest" = "height",
       ) => {
         for (const [x, z] of spots) {
           const prop = prep(kind, height, palette, mode);
@@ -323,6 +351,29 @@ export function UnwrittenWild() {
         prop.position.set(cliff.x, terrainHeight(cliff.x, cliff.z), cliff.z);
         prop.rotation.y = cliff.yaw;
         scene.add(prop);
+      }
+
+      for (const item of PROPS) {
+        if (!item.file) continue;
+        const source = loaded[item.file as keyof typeof loaded];
+        const prop = prep(source, item.meters, item.palette, item.mode);
+        prop.position.set(item.x, terrainHeight(item.x, item.z), item.z);
+        prop.rotation.y = item.yaw ?? 0;
+        scene.add(prop);
+        if (item.wind) sway.push(prop);
+      }
+      const fordZ = riverCenter(FORD.x);
+      const deck = piece(loaded.bridge, "roof", { width: FORD.halfX * 2, depth: FORD.halfZ * 2, pitch: 0.42 });
+      deck.position.set(FORD.x, terrainHeight(FORD.x, fordZ), fordZ);
+      scene.add(deck);
+      for (let i = 1; i <= 7; i++) {
+        const t = i / 9;
+        const x = 2 + (112 - 2) * t + 1.4;
+        const z = 6 + (0 - 6) * t;
+        const stone = prep(loaded.path, 1.15, "stone", "longest");
+        stone.position.set(x, terrainHeight(x, z), z);
+        stone.rotation.y = t * 3;
+        scene.add(stone);
       }
 
       const cottage = () => {
@@ -495,7 +546,18 @@ export function UnwrittenWild() {
         camera.updateProjectionMatrix();
       }
       const face = forwardFromYaw(state.camYaw);
-      camera.position.set(state.x - face.x * 9, state.y + 5.2, state.z - face.z * 9);
+      const head = new THREE.Vector3(state.x, state.y + 1.5, state.z);
+      const desired = new THREE.Vector3(state.x - face.x * 9, state.y + 5.2, state.z - face.z * 9);
+      const back = desired.clone().sub(head);
+      const reach = back.length();
+      cameraRay.set(head, back.normalize());
+      cameraRay.far = reach;
+      const blocked = cameraRay.intersectObject(ground, false);
+      if (blocked.length > 0 && blocked[0].distance < reach - 0.35) {
+        camera.position.copy(head).addScaledVector(back, Math.max(1.4, blocked[0].distance - 0.4));
+      } else {
+        camera.position.copy(desired);
+      }
       camera.lookAt(state.x, state.y + 1.3, state.z);
       if (traveler) {
         if (traveler.userData.baseScale === undefined) traveler.userData.baseScale = traveler.scale.x;
@@ -532,6 +594,7 @@ export function UnwrittenWild() {
       }
       if (titleRef.current) titleRef.current.style.opacity = state.time < 6 ? "1" : "0";
       if (hintRef.current) hintRef.current.style.display = state.time < 8 ? "block" : "none";
+      if (lockButtonRef.current) lockButtonRef.current.setAttribute("aria-pressed", lockRef.current ? "true" : "false");
       if (compassRef.current && !mapOpenRef.current) paintCompass(compassRef.current, state);
       if (mapOpenRef.current && mapCanvasRef.current) paintSheet(mapCanvasRef.current, state, pinsRef.current);
       renderer.render(scene, camera);
@@ -545,7 +608,7 @@ export function UnwrittenWild() {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-30 bg-[#c6a15a] text-[#24180f]" style={{ fontFamily: "Fraunces, serif" }}>
+    <div className="fixed inset-0 z-30 bg-[#c6a15a] font-display text-[#24180f]">
       <canvas
         ref={canvasRef}
         className="h-full w-full touch-none"
@@ -560,41 +623,52 @@ export function UnwrittenWild() {
           event.currentTarget.dataset.px = String(event.clientX);
         }}
       />
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 px-4 pt-3 text-center">
-        <p ref={titleRef} className="text-2xl text-[#1c243f] transition-opacity">The Unwritten Wild</p>
-        <div ref={compassRef} className="relative mx-auto mt-1 h-8 max-w-md" hidden={mapOpen} />
-        <p ref={objectiveRef} className="mt-1 text-sm text-[#3a2a18]" />
-        <p ref={pipsRef} className="mt-1 text-lg tracking-[0.4em] text-[#8d5a32]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 px-4 pt-14 text-center sm:pt-4">
+        <p ref={titleRef} className="text-2xl text-[#1c243f] transition-opacity duration-300">The Unwritten Wild</p>
+        <div ref={compassRef} className="relative mx-auto mt-2 h-6 max-w-sm border-b border-[#24180f]/20" hidden={mapOpen} />
+        <p ref={objectiveRef} className="mx-auto mt-2 max-w-md text-sm leading-5 text-[#3a2a18]" />
+        <p ref={pipsRef} className="mt-1 text-sm tracking-[0.35em] text-[#8d5a32]" />
       </div>
       <Link
         to="/"
-        className="absolute left-3 top-3 z-10 rounded-full bg-[#efe6d4]/90 px-3 py-2 text-xs tracking-[0.16em] uppercase"
+        className="absolute left-3 top-3 z-10 inline-flex h-11 items-center rounded-full bg-[#efe6d4]/95 px-4 text-xs tracking-[0.16em] uppercase"
       >
         Club
       </Link>
-      <p ref={toastRef} className="pointer-events-none absolute inset-x-6 top-[62%] z-10 text-center text-sm text-[#3a2a18]" />
-      <p ref={hintRef} className="pointer-events-none absolute inset-x-4 bottom-24 z-10 text-center text-sm text-[#3a2a18]">
-        WASD move. A is left, D is right. Drag to look. M opens the sheet.
+      <p ref={toastRef} className="pointer-events-none absolute inset-x-8 top-[58%] z-10 text-center text-sm leading-5 text-[#24180f]" />
+      <p ref={hintRef} className="pointer-events-none absolute inset-x-4 bottom-36 z-10 text-center text-sm leading-5 text-[#3a2a18]">
+        WASD moves. A is left, D is right. Drag to look. M opens the sheet.
       </p>
-      <div className="pointer-events-none absolute inset-x-0 bottom-3 z-10 flex items-end justify-between gap-3 px-3 pb-[env(safe-area-inset-bottom)]">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2 px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <p ref={promptRef} className="text-center text-sm leading-5 text-[#1c243f]" />
+        <div className="flex items-end justify-between gap-3">
         <button
           type="button"
-          className="pointer-events-auto h-12 rounded-full bg-[#efe6d4]/90 px-4 text-xs tracking-[0.16em] uppercase"
+          className="pointer-events-auto inline-flex h-12 items-center gap-2 rounded-full bg-[#efe6d4]/95 px-4 text-xs tracking-[0.16em] uppercase"
           onClick={() => {
             mapOpenRef.current = !mapOpenRef.current;
             setMapOpen(mapOpenRef.current);
           }}
         >
-          Map
+          <MapIcon className="h-4 w-4" aria-hidden="true" />
+          Sheet
         </button>
-        <p ref={promptRef} className="mb-3 text-sm text-[#1c243f]" />
         <div className="pointer-events-auto flex items-end gap-2">
-          <button type="button" className="h-12 min-w-12 rounded-full bg-[#2c2418] px-3 text-sm text-[#f3e6c8]" onPointerDown={() => { edges.current.talk = true; }}>
+          <button
+            type="button"
+            className="h-12 min-w-12 rounded-full bg-[#2c2418] px-3 text-sm text-[#f3e6c8]"
+            aria-label="Speak"
+            onPointerDown={() => {
+              edges.current.talk = true;
+            }}
+          >
             E
           </button>
           <button
             type="button"
-            className="mb-2 h-10 rounded-full bg-[#efe6d4] px-3 text-xs uppercase"
+            ref={lockButtonRef}
+            className="mb-1 h-11 rounded-full bg-[#efe6d4] px-3 text-xs tracking-[0.12em] uppercase aria-pressed:bg-[#2c2418] aria-pressed:text-[#f3e6c8]"
+            aria-pressed="false"
             onClick={() => {
               lockRef.current = !lockRef.current;
             }}
@@ -602,32 +676,44 @@ export function UnwrittenWild() {
             Lock
           </button>
           <div className="relative h-20 w-20">
-            <div ref={ringRef} className="absolute inset-0 rounded-full" />
-            <button type="button" className="absolute inset-2 rounded-full bg-[#f3e6c8] text-2xl text-[#24305a]" onPointerDown={() => { edges.current.cut = true; }}>
+            <div ref={ringRef} className="absolute inset-0 rounded-full bg-[#efe6d4]/70" />
+            <button
+              type="button"
+              className="absolute inset-2 rounded-full bg-[#f3e6c8] text-2xl text-[#24305a]"
+              aria-label="Cut"
+              onPointerDown={() => {
+                edges.current.cut = true;
+              }}
+            >
               K
             </button>
           </div>
         </div>
+        </div>
       </div>
       {mapOpen ? (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#24180f]/50 p-4">
-          <div className="w-full max-w-3xl rounded-lg bg-[#f3e6c8] p-3 shadow-lg">
-            <div className="mb-2 flex items-center justify-between text-sm text-[#3a2a18]">
-              <span>Vellum sheet</span>
+        <div className="absolute inset-0 z-20 flex items-end justify-center bg-[#24180f]/45 p-3 sm:items-center sm:p-6">
+          <div className="flex max-h-[92vh] w-full max-w-3xl flex-col bg-[#f4e7c8] p-4 text-[#24180f] shadow-[0_24px_60px_rgba(36,24,15,0.28)]" style={{ borderRadius: 28 }}>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs tracking-[0.18em] uppercase text-[#3a2a18]">Survey</p>
+                <h2 className="text-xl leading-6">The vellum sheet</h2>
+              </div>
               <button
                 type="button"
-                className="rounded-full px-3 py-1 uppercase tracking-[0.14em]"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-[#efe6d4]"
+                aria-label="Close the sheet"
                 onClick={() => {
                   mapOpenRef.current = false;
                   setMapOpen(false);
                 }}
               >
-                Close
+                <X className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>
             <canvas
               ref={mapCanvasRef}
-              className="h-[70vh] w-full touch-none rounded bg-[#efe2c4]"
+              className="h-[62vh] w-full touch-none rounded-xl bg-[#f4e7c8] sm:h-[68vh]"
               onClick={(event) => {
                 const rect = event.currentTarget.getBoundingClientRect();
                 const u = (event.clientX - rect.left) / rect.width;
@@ -639,7 +725,10 @@ export function UnwrittenWild() {
                 pinsRef.current = [...pinsRef.current, { x, z }].slice(-8);
               }}
             />
-            <p className="mt-2 text-center text-xs text-[#3a2a18]">Tap the known ground to drop an ink pin. Climb the spire to stamp the steppe.</p>
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs leading-5 text-[#3a2a18]">
+              <p>Ink marks only the ground you know. Climb the spire to stamp the steppe.</p>
+              <p className="tracking-[0.08em] uppercase">You · Spire · Stag · Pin</p>
+            </div>
           </div>
         </div>
       ) : null}
@@ -713,56 +802,14 @@ function paintCompass(host: HTMLDivElement, state: WildState) {
 function paintSheet(canvas: HTMLCanvasElement, state: WildState, pins: { x: number; z: number }[]) {
   const width = canvas.clientWidth;
   const height = canvas.clientHeight;
+  if (width < 2 || height < 2) return;
   const dpr = Math.min(2, window.devicePixelRatio || 1);
-  if (canvas.width !== Math.floor(width * dpr)) {
+  if (canvas.width !== Math.floor(width * dpr) || canvas.height !== Math.floor(height * dpr)) {
     canvas.width = Math.floor(width * dpr);
     canvas.height = Math.floor(height * dpr);
   }
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.fillStyle = "#f4e7c8";
-  ctx.fillRect(0, 0, width, height);
-  const cols = 90;
-  const rows = 60;
-  for (let iy = 0; iy < rows; iy++) {
-    for (let ix = 0; ix < cols; ix++) {
-      const x = SHEET.x0 + ((ix + 0.5) / cols) * (SHEET.x1 - SHEET.x0);
-      const z = SHEET.z1 - ((iy + 0.5) / rows) * (SHEET.z1 - SHEET.z0);
-      if (!sheetVisible(x, z, state.x, state.z, state.spireReached)) continue;
-      const [r, g, b] = terrainRgb(x, z);
-      ctx.fillStyle = `rgb(${Math.round(r * 255)},${Math.round(g * 255)},${Math.round(b * 255)})`;
-      ctx.fillRect((ix / cols) * width, (iy / rows) * height, width / cols + 1, height / rows + 1);
-    }
-  }
-  const dot = (x: number, z: number, color: string, label: string) => {
-    if (!sheetVisible(x, z, state.x, state.z, state.spireReached)) return;
-    const px = ((x - SHEET.x0) / (SHEET.x1 - SHEET.x0)) * width;
-    const py = ((SHEET.z1 - z) / (SHEET.z1 - SHEET.z0)) * height;
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.arc(px, py, 4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#24180f";
-    ctx.font = "12px Fraunces, serif";
-    ctx.fillText(label, px + 6, py - 4);
-  };
-  dot(SPIRE.x, SPIRE.z, "#8d5a32", "Spire");
-  if (!state.stagFreed) dot(state.stagX, state.stagZ, "#c45a2a", "Stag");
-  if (state.serif === 0) dot(SERIF.x, SERIF.z, "#e2c36a", "Serif");
-  dot(SCRIPT.x, SCRIPT.z, "#2a3a72", "Script");
-  for (const pin of pins) dot(pin.x, pin.z, "#24180f", "Pin");
-  const px = ((state.x - SHEET.x0) / (SHEET.x1 - SHEET.x0)) * width;
-  const py = ((SHEET.z1 - state.z) / (SHEET.z1 - SHEET.z0)) * height;
-  const face = forwardFromYaw(state.yaw);
-  ctx.save();
-  ctx.translate(px, py);
-  ctx.rotate(Math.atan2(face.x, -face.z));
-  ctx.fillStyle = "#1c243f";
-  ctx.beginPath();
-  ctx.moveTo(0, -8);
-  ctx.lineTo(5, 6);
-  ctx.lineTo(-5, 6);
-  ctx.fill();
-  ctx.restore();
+  drawSheet(ctx, width, height, state, pins);
 }

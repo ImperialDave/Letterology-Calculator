@@ -3,7 +3,7 @@ import test from "node:test";
 import { assemblyProblems, fitScale, HOUSE_FIT, overlaps, PLAYER_R, REACH, slideMove, SOLID_R } from "./bodies";
 import { scaleProblems, PLAYER_M } from "./scale";
 import { HERDER, HOUSES, SCRIPT, SERIF, SPIRE, forwardFromYaw, freshWild, rightFromForward, stepWild, type WildInput } from "./sim";
-import { sheetVisible, terrainHeight } from "./terrain";
+import { FORD, onFord, riverCenter, sheetVisible, terrainHeight } from "./terrain";
 
 const still: WildInput = { forward: 0, strafe: 0, look: 0, jumpHeld: false, hop: false, cut: false, talk: false };
 
@@ -128,6 +128,23 @@ test("the mesa rises above the camp, and the sheet hides the far wild", () => {
   assert.equal(sheetVisible(0, 6, 0, 6, false), true);
   assert.equal(sheetVisible(112, 0, 0, 6, false), false);
   assert.equal(sheetVisible(112, 0, 0, 6, true), true);
+});
+
+test("a sign can be read, and the river ford stays level", () => {
+  const s = freshWild();
+  s.x = 9.6;
+  s.z = 8.8;
+  stepWild(s, { ...still, talk: true }, 1 / 60);
+  assert.match(s.toast, /spire/i);
+  const door = freshWild();
+  door.x = -5.4;
+  door.z = 11.7;
+  stepWild(door, { ...still, talk: true }, 1 / 60);
+  assert.match(door.toast, /shutter/i);
+  const deck = terrainHeight(FORD.x, riverCenter(FORD.x));
+  const groove = terrainHeight(FORD.x + 6, riverCenter(FORD.x + 6));
+  assert.equal(onFord(FORD.x, riverCenter(FORD.x)), true);
+  assert.ok(deck > groove + 0.2);
 });
 
 test("three cuts free the stag and it flees", () => {

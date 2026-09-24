@@ -52,6 +52,18 @@ export function trailDistance(x: number, z: number) {
   return Math.hypot(x - (ax + abx * t), z - (az + abz * t));
 }
 
+/** The dry river's center line. The sheet draws the same curve the ground uses. */
+export function riverCenter(x: number) {
+  return -22 + Math.sin(x * 0.045) * 4;
+}
+
+/** A wooden deck crosses the groove here, so the walk stays level. */
+export const FORD = { x: 8, halfX: 2.4, halfZ: 7 };
+
+export function onFord(x: number, z: number) {
+  return Math.abs(x - FORD.x) < FORD.halfX && Math.abs(z - riverCenter(FORD.x)) < FORD.halfZ;
+}
+
 export function terrainHeight(x: number, z: number) {
   let h = 1.5 + (fbm(x * 0.018, z * 0.018) - 0.35) * 4.5;
   const mesa = Math.hypot(x - MESA.x, z - MESA.z);
@@ -64,9 +76,8 @@ export function terrainHeight(x: number, z: number) {
   const camp = Math.hypot(x, z - 6);
   const flat = smooth(20, 7, camp);
   h = h * (1 - flat) + 2.2 * flat;
-  const riverZ = -22 + Math.sin(x * 0.045) * 4;
-  const river = Math.abs(z - riverZ);
-  if (x > -20 && x < 100 && river < 6) h -= (1 - river / 6) * 0.7;
+  const river = Math.abs(z - riverCenter(x));
+  if (!onFord(x, z) && x > -20 && x < 100 && river < 6) h -= (1 - river / 6) * 0.7;
   return h;
 }
 
@@ -113,8 +124,7 @@ export function terrainRgb(x: number, z: number): [number, number, number] {
     g = g * (1 - k) + 0.84 * k;
     b = b * (1 - k) + 0.62 * k;
   }
-  const riverZ = -22 + Math.sin(x * 0.045) * 4;
-  const river = Math.abs(z - riverZ);
+  const river = Math.abs(z - riverCenter(x));
   if (x > -20 && x < 100 && river < 5) {
     const k = 1 - river / 5;
     r = r * (1 - k) + 0.55 * k;
