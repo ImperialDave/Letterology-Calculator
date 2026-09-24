@@ -34,7 +34,7 @@ import {
 import { PROPS } from "@/wild/props";
 import { HEIGHT_M } from "@/wild/scale";
 import { drawSheet, sheetFrame, sheetUnproject } from "@/wild/sheet";
-import { FEN, FORD, onFord, riverCenter, sheetVisible, terrainHeight, terrainRgb, trailDistance } from "@/wild/terrain";
+import { FEN, FORD, onFord, riverCenter, sheetVisible, terrainHeight, terrainRgb } from "@/wild/terrain";
 import { stagCoat, toonGradient, toonify, toonMaterial } from "@/wild/toon";
 
 const PALETTE: Record<string, number> = {
@@ -128,12 +128,12 @@ export function UnwrittenWild() {
     if (!canvas) return;
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-    renderer.setClearColor(0x8ec8e8);
+    renderer.setClearColor(0x7ec8f2);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(48, 1, 0.1, 280);
-    scene.add(new THREE.HemisphereLight(0x8ec8e8, 0x7cba4a, 0.55));
+    scene.add(new THREE.HemisphereLight(0x8fd4ff, 0x6fbf45, 0.62));
     const sun = new THREE.DirectionalLight(0xfff1d0, 1.45);
     sun.position.set(18, 36, 12);
     sun.castShadow = true;
@@ -147,11 +147,14 @@ export function UnwrittenWild() {
     sun.shadow.bias = -0.0008;
     scene.add(sun);
     scene.add(sun.target);
-    scene.add(buildSky());
+    const sky = buildSky();
+    scene.add(sky.mesh);
+    const clouds = buildClouds();
+    scene.add(clouds);
     const ground = buildGround();
     scene.add(ground);
     const cameraRay = new THREE.Raycaster();
-    scene.fog = new THREE.Fog(0x8ec8e8, 55, 190);
+    scene.fog = new THREE.Fog(0xb7e4fb, 70, 210);
 
     const loader = new GLTFLoader();
     const tex = new THREE.TextureLoader();
@@ -302,6 +305,9 @@ export function UnwrittenWild() {
       const files = {
         grass: "/wild/vendor/kenney-nature/grass.glb",
         grassLarge: "/wild/vendor/kenney-nature/grass_large.glb",
+        grassLeafs: "/wild/vendor/kenney-nature/grass_leafs.glb",
+        grassLeafsLarge: "/wild/vendor/kenney-nature/grass_leafsLarge.glb",
+        groundGrass: "/wild/vendor/kenney-nature/ground_grass.glb",
         oak: "/wild/vendor/kenney-nature/tree_oak.glb",
         tree: "/wild/vendor/kenney-nature/tree_default.glb",
         rock: "/wild/vendor/kenney-nature/rock_largeA.glb",
@@ -377,72 +383,84 @@ export function UnwrittenWild() {
         }
       };
 
-      const tuft = prep(loaded.grass, HEIGHT_M.grass, "leaf");
-      tuft.updateMatrixWorld(true);
-      let grassGeo: THREE.BufferGeometry | null = null;
-      const grassColor = new THREE.Color(PALETTE.leaf);
-      tuft.traverse((child) => {
-        const mesh = child as THREE.Mesh;
-        if (!mesh.isMesh || mesh.name === "outline") return;
-        const painted = mesh.material as THREE.MeshToonMaterial;
-        if (!grassGeo) {
-          grassGeo = mesh.geometry.clone();
-          grassGeo.applyMatrix4(mesh.matrixWorld);
-        }
-        if (painted.color && !painted.map) grassColor.copy(painted.color);
-      });
-      if (grassGeo) {
+      const meadowGreens = [0x5fa83c, 0x7cba4a, 0x8ed24e, 0x3f9a34, 0xb6de62].map((hex) => new THREE.Color(hex));
+      const plantMeadow = (source: THREE.Object3D, step: number, fit: number, flat: boolean, wind: boolean) => {
+        const inner = source.clone(true);
+        releasePaint(inner);
+        inner.position.set(0, 0, 0);
+        inner.rotation.set(0, 0, 0);
+        inner.scale.setScalar(1);
+        inner.updateMatrixWorld(true);
+        const size = new THREE.Box3().setFromObject(inner).getSize(new THREE.Vector3());
+        if (flat) inner.scale.set(fit / Math.max(size.x, 0.001), 1, fit / Math.max(size.z, 0.001));
+        else inner.scale.setScalar(fit / Math.max(size.y, 0.001));
+        inner.updateMatrixWorld(true);
+        const seated = new THREE.Box3().setFromObject(inner);
+        inner.position.y = -seated.min.y;
+        inner.updateMatrixWorld(true);
+        let geometry: THREE.BufferGeometry | null = null;
+        inner.traverse((child) => {
+          const mesh = child as THREE.Mesh;
+          if (!mesh.isMesh || geometry) return;
+          geometry = mesh.geometry.clone();
+          geometry.applyMatrix4(mesh.matrixWorld);
+        });
+        if (!geometry) return;
         const spots: [number, number][] = [];
-        for (let x = -36; x <= 168; x += 2.15) {
-          for (let z = -50; z <= 48; z += 2.15) {
-            const px = x + ((Math.imul(x * 10, 13) ^ Math.imul(z * 10, 7)) % 9) * 0.06;
-            const pz = z + ((Math.imul(x * 10, 3) ^ Math.imul(z * 10, 11)) % 9) * 0.06;
-            if (trailDistance(px, pz) < 1.35 && pz < 40 && px < 150) continue;
-            if (onFord(px, pz)) continue;
-            if (HOUSES.some((house) => Math.hypot(px - house.x, pz - house.z) < SOLID_R.house)) continue;
+        for (let x = -50; x <= 280; x += step) {
+          for (let z = -80; z <= 90; z += step) {
+            const jitter = flat ? 0 : ((Math.imul(Math.round(x * 10), 13) ^ Math.imul(Math.round(z * 10), 7)) % 9) * 0.04;
+            const px = x + jitter;
+            const pz = z + (flat ? 0 : jitter * 0.6);
+            if (!openMeadow(px, pz)) continue;
             spots.push([px, pz]);
           }
         }
-        const grassMat = toonMaterial(0xffffff);
-        grassMat.color.copy(grassColor);
-        grassMat.onBeforeCompile = (shader) => {
-          shader.uniforms.uTime = { value: 0 };
-          grassWind.push(shader.uniforms.uTime);
-          shader.vertexShader = shader.vertexShader.replace(
-            "#include <begin_vertex>",
-            `#include <begin_vertex>
-             float blade = max(transformed.y, 0.0);
-             #ifdef USE_INSTANCING
-               vec4 planted = instanceMatrix * vec4(position, 1.0);
-               float gust = sin(uTime * 1.7 + planted.x * 0.45);
-             #else
-               float gust = sin(uTime * 1.7);
-             #endif
-             transformed.x += gust * blade * 0.55;`,
-          );
-        };
-        const field = new THREE.InstancedMesh(grassGeo, grassMat, spots.length);
+        if (spots.length === 0) return;
+        const material = toonMaterial(0xffffff);
+        if (wind) {
+          material.onBeforeCompile = (shader) => {
+            shader.uniforms.uTime = { value: 0 };
+            grassWind.push(shader.uniforms.uTime);
+            shader.vertexShader = shader.vertexShader.replace(
+              "#include <begin_vertex>",
+              `#include <begin_vertex>
+               float blade = max(transformed.y, 0.0);
+               #ifdef USE_INSTANCING
+                 vec4 planted = instanceMatrix * vec4(position, 1.0);
+                 float gust = sin(uTime * 1.7 + planted.x * 0.45);
+               #else
+                 float gust = sin(uTime * 1.7);
+               #endif
+               transformed.x += gust * blade * 0.35;`,
+            );
+          };
+        }
+        const field = new THREE.InstancedMesh(geometry, material, spots.length);
         field.castShadow = false;
         field.receiveShadow = true;
         const dummy = new THREE.Object3D();
         spots.forEach(([px, pz], index) => {
+          const hx = terrainHeight(px + 0.45, pz) - terrainHeight(px - 0.45, pz);
+          const hz = terrainHeight(px, pz + 0.45) - terrainHeight(px, pz - 0.45);
           dummy.position.set(px, terrainHeight(px, pz), pz);
-          dummy.rotation.y = (px * 13 + pz * 7) % 6;
-          dummy.scale.setScalar(0.85 + ((index * 17) % 10) * 0.03);
+          dummy.rotation.order = "YXZ";
+          dummy.rotation.set(flat ? Math.atan2(hz, 0.9) : 0, (px * 13 + pz * 7) % 6, flat ? Math.atan2(-hx, 0.9) : 0);
+          const scale = flat ? 1 : 0.82 + (index % 7) * 0.06;
+          dummy.scale.setScalar(scale);
           dummy.updateMatrix();
           field.setMatrixAt(index, dummy.matrix);
+          field.setColorAt(index, meadowGreens[(index + Math.round(px)) % meadowGreens.length]);
         });
         field.instanceMatrix.needsUpdate = true;
+        if (field.instanceColor) field.instanceColor.needsUpdate = true;
         scene.add(field);
-      }
-      scatter(loaded.grassLarge, HEIGHT_M.grassLarge, "leaf", [
-        [12, 4],
-        [24, 8],
-        [-10, 8],
-        [40, -6],
-        [70, 4],
-        [96, 2],
-      ], true);
+      };
+      plantMeadow(loaded.groundGrass, 0.8, 1.15, true, false);
+      plantMeadow(loaded.grass, 1.25, HEIGHT_M.grass, false, true);
+      plantMeadow(loaded.grassLeafs, 1.6, 0.34, false, true);
+      plantMeadow(loaded.grassLeafsLarge, 2.8, 0.72, false, true);
+      plantMeadow(loaded.grassLarge, 4.2, HEIGHT_M.grassLarge, false, true);
       scatter(loaded.oak, HEIGHT_M.oak, "leaf", OAK_SPOTS);
       scatter(loaded.tree, HEIGHT_M.tree, "leaf", PINE_SPOTS);
       scatter(loaded.bush, HEIGHT_M.bush, "leaf", [
@@ -782,6 +800,8 @@ export function UnwrittenWild() {
         traveler.rotation.y = state.yaw + Math.PI;
       }
       for (const gust of grassWind) gust.value = state.time;
+      sky.time.value = state.time;
+      clouds.rotation.y = state.time * 0.012;
       if (stagClips) {
         stagClips.update(dt);
         const dStag = Math.hypot(state.stagX - state.x, state.stagZ - state.z);
@@ -1042,6 +1062,14 @@ export function UnwrittenWild() {
   );
 }
 
+function openMeadow(x: number, z: number) {
+  if (onFord(x, z)) return false;
+  if (HOUSES.some((house) => Math.hypot(x - house.x, z - house.z) < SOLID_R.house)) return false;
+  if (Math.hypot(x - SCRIPT.x, z - SCRIPT.z) < SOLID_R.shrine) return false;
+  if (Math.hypot(x - SPIRE.x, z - SPIRE.z) < SOLID_R.spire + 0.35) return false;
+  return true;
+}
+
 function buildGround() {
   const x0 = -50;
   const x1 = 280;
@@ -1080,25 +1108,94 @@ function buildGround() {
 }
 
 function buildSky() {
-  const geo = new THREE.SphereGeometry(220, 28, 16);
+  const geo = new THREE.SphereGeometry(220, 48, 24);
   const position = geo.attributes.position;
   const colors = new Float32Array(position.count * 3);
-  const zenith = new THREE.Color(0x8ec8e8);
-  const horizon = new THREE.Color(0xf3ddb0);
+  const zenith = new THREE.Color(0x2f86d8);
+  const mid = new THREE.Color(0x67c0f4);
+  const horizon = new THREE.Color(0xc8eafc);
   const color = new THREE.Color();
   for (let i = 0; i < position.count; i++) {
     const y = position.getY(i);
-    const t = THREE.MathUtils.clamp((y + 30) / 160, 0, 1);
-    color.copy(horizon).lerp(zenith, t * t);
+    const t = THREE.MathUtils.clamp((y + 20) / 200, 0, 1);
+    if (t < 0.42) color.copy(horizon).lerp(mid, t / 0.42);
+    else color.copy(mid).lerp(zenith, (t - 0.42) / 0.58);
     colors[i * 3] = color.r;
     colors[i * 3 + 1] = color.g;
     colors[i * 3 + 2] = color.b;
   }
   geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-  return new THREE.Mesh(
-    geo,
-    new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false, depthWrite: false }),
-  );
+  const time = { value: 0 };
+  const material = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false, depthWrite: false });
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uTime = time;
+    shader.vertexShader = shader.vertexShader
+      .replace("#include <common>", "varying vec3 vSky;\n#include <common>")
+      .replace("#include <begin_vertex>", "#include <begin_vertex>\n  vSky = normalize(position);");
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        "#include <common>",
+        `varying vec3 vSky;
+         uniform float uTime;
+         float cloudHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+         float cloudNoise(vec2 p) {
+           vec2 i = floor(p);
+           vec2 f = fract(p);
+           f = f * f * (3.0 - 2.0 * f);
+           float a = cloudHash(i);
+           float b = cloudHash(i + vec2(1.0, 0.0));
+           float c = cloudHash(i + vec2(0.0, 1.0));
+           float d = cloudHash(i + vec2(1.0, 1.0));
+           return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+         }
+         float cloudFbm(vec2 p) {
+           float v = 0.0;
+           float a = 0.55;
+           for (int i = 0; i < 5; i++) {
+             v += a * cloudNoise(p);
+             p = p * 2.03 + vec2(1.7, 9.2);
+             a *= 0.5;
+           }
+           return v;
+         }
+         #include <common>`,
+      )
+      .replace(
+        "#include <color_fragment>",
+        `#include <color_fragment>
+         vec2 cuv = vec2(atan(vSky.z, vSky.x) * 1.6 + uTime * 0.012, vSky.y * 2.6);
+         float above = smoothstep(0.02, 0.22, vSky.y) * (1.0 - smoothstep(0.86, 0.98, vSky.y));
+         float n = cloudFbm(cuv * 2.4);
+         float puff = smoothstep(0.5, 0.74, n) * above;
+         float lit = smoothstep(0.46, 0.82, cloudFbm(cuv * 2.4 + vec2(0.18, 0.04)));
+         vec3 cloudCol = mix(vec3(0.86, 0.93, 0.98), vec3(1.0, 0.995, 0.99), lit);
+         diffuseColor.rgb = mix(diffuseColor.rgb, cloudCol, puff * 0.94);`,
+      );
+  };
+  return { mesh: new THREE.Mesh(geo, material), time };
+}
+
+function buildClouds() {
+  const group = new THREE.Group();
+  const puff = new THREE.SphereGeometry(1, 12, 8);
+  const material = new THREE.MeshBasicMaterial({ color: 0xfffefb, fog: false });
+  const places = [0.2, 0.9, 1.5, 2.2, 2.8, 3.5, 4.3, 5.1, 5.8];
+  places.forEach((angle, index) => {
+    const cloud = new THREE.Group();
+    const lobes = 4 + (index % 3);
+    for (let lobe = 0; lobe < lobes; lobe++) {
+      const mesh = new THREE.Mesh(puff, material);
+      const width = 7 + (lobe % 3) * 2.4;
+      mesh.scale.set(width, width * 0.52, width * 0.78);
+      mesh.position.set((lobe - lobes / 2) * 5.2, Math.sin(lobe * 1.7) * 1.4, (lobe % 2) * 2.2);
+      cloud.add(mesh);
+    }
+    const radius = 78 + (index % 4) * 14;
+    cloud.position.set(Math.cos(angle) * radius, 34 + (index % 3) * 7, Math.sin(angle) * radius);
+    cloud.rotation.y = angle;
+    group.add(cloud);
+  });
+  return group;
 }
 
 function paintCompass(host: HTMLDivElement, state: WildState) {

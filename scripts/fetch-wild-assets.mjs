@@ -16,7 +16,7 @@ const packs = [
     url: "https://kenney.nl/media/pages/assets/nature-kit/37ac38a37b-1677698939/kenney_nature-kit.zip",
     license: "CC0-1.0",
     glbDir: "Models/GLTF format",
-    files: ["grass.glb", "grass_large.glb", "tree_oak.glb", "tree_default.glb", "rock_largeA.glb", "rock_smallA.glb", "flower_yellowA.glb", "flower_redA.glb", "flower_purpleA.glb", "cliff_rock.glb", "cliff_large_rock.glb", "plant_bush.glb", "plant_bushLarge.glb", "bridge_wood.glb", "path_stone.glb", "log.glb", "stump_round.glb", "mushroom_tanGroup.glb", "tent_smallOpen.glb", "statue_column.glb"],
+    files: ["grass.glb", "grass_large.glb", "grass_leafs.glb", "grass_leafsLarge.glb", "ground_grass.glb", "tree_oak.glb", "tree_default.glb", "rock_largeA.glb", "rock_smallA.glb", "flower_yellowA.glb", "flower_redA.glb", "flower_purpleA.glb", "cliff_rock.glb", "cliff_large_rock.glb", "plant_bush.glb", "plant_bushLarge.glb", "bridge_wood.glb", "path_stone.glb", "log.glb", "stump_round.glb", "mushroom_tanGroup.glb", "tent_smallOpen.glb", "statue_column.glb"],
   },
   {
     id: "kenney-town",
