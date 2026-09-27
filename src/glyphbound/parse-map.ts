@@ -387,6 +387,19 @@ export function parseRows(rows: string[], ctx: Partial<ParseCtx> = {}): ParsedMa
             label: "SCALE",
           });
         }
+      } else if (c.isHub && ch === "q") {
+        if (!npcs.some((n) => n.id === "q")) {
+          npcs.push({
+            id: "q",
+            glyph: "q",
+            name: "q",
+            x: x + 4,
+            y: y - 16,
+            w: 36,
+            h: 48,
+            lines: ["The Inkstand is open."],
+          });
+        }
       } else if (/^[a-z]$/.test(ch)) {
         const leftStacks = c.isHub && "knt".includes(ch) && c.progress >= 5 && !c.party.includes(ch as LetterId);
         if (!leftStacks) pushNpc(ch, x, y);

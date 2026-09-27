@@ -27,6 +27,8 @@ export type Actions = {
   /** -1 previous letter, +1 next letter, 0 = none. */
   cycle: number;
   caseShift: boolean;
+  vial: boolean;
+  draught: boolean;
 };
 
 const empty = (): Actions => ({
@@ -50,6 +52,8 @@ const empty = (): Actions => ({
   swap: 0,
   cycle: 0,
   caseShift: false,
+  vial: false,
+  draught: false,
 });
 
 const GAME_KEYS = new Set([
@@ -377,6 +381,8 @@ export class Input {
     a.attackHeld = attackHeld;
     a.attack = edgeAct("attack") || (this.buttons.has("attack") && !this.prevButtons.has("attack"));
     a.fangHeld = act("fang") || this.buttons.has("fang");
+    a.vial = this.edge("KeyV") || (this.buttons.has("vial") && !this.prevButtons.has("vial"));
+    a.draught = this.edge("KeyB") || (this.buttons.has("draught") && !this.prevButtons.has("draught"));
     a.fang = edgeAct("fang") || (this.buttons.has("fang") && !this.prevButtons.has("fang"));
     a.special = edgeAct("special") || (this.buttons.has("special") && !this.prevButtons.has("special"));
     a.specialHeld = act("special") || this.buttons.has("special");

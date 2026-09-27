@@ -8,6 +8,7 @@ export type Mode =
   | "dead"
   | "win"
   | "mark"
+  | "shop"
   | "transform"
   | "dialogue"
   | "codex"
@@ -138,6 +139,7 @@ export interface Bullet {
   kind: string;
   alive: boolean;
   pierce: number;
+  gilt?: boolean;
 }
 
 export interface Enemy {
@@ -421,6 +423,11 @@ export interface SaveData {
   arcadeBest: number;
   /** Best mark per ledger id. Missing key means the page has no mark yet. */
   marks: Record<string, LedgerMark>;
+  bux: number;
+  bag: Record<string, number>;
+  owned: Record<string, boolean>;
+  armedVial: string;
+  armedDraught: string;
 }
 
 export interface UiSnap {
@@ -482,6 +489,17 @@ export interface UiSnap {
   /** Set when the book kept a higher mark than the attempt just closed. */
   keptMark: LedgerMark | null;
   bookTotal: number;
+  bux: number;
+  bag: Record<string, number>;
+  owned: Record<string, boolean>;
+  armedVial: string;
+  armedDraught: string;
+  draught: string;
+  draughtT: number;
+  blotLeft: number;
+  pressArmed: boolean;
+  paid: number;
+  sparePulse: boolean;
 }
 
 export interface SlotInfo {

@@ -37,6 +37,8 @@ type Eng = GameEngine & {
   spawnEnemy: (kind: Enemy["kind"], x: number, y: number) => Enemy;
   burst: (x: number, y: number, color: string, n: number, kind: string) => void;
   say: (t: string) => void;
+  draught?: string;
+  noteSingular?: () => void;
 };
 
 const mem = new WeakMap<Enemy, { air: boolean; jump: number }>();
@@ -98,11 +100,20 @@ function land(eng: Eng, e: Enemy, p: Player) {
       // loft-jump made Circumflex unkillable.
       for (const o of eng.enemies) {
         if (!o.alive || o === e || o.kind !== "plus") continue;
-        if (Math.hypot(o.x - e.x, o.y - e.y) < 160) o.hp = Math.min(o.maxHp, o.hp + 1);
+        if (Math.hypot(o.x - e.x, o.y - e.y) >= 160) continue;
+        if (eng.draught === "period") {
+          eng.burst?.(o.x + o.w / 2, o.y, "#e8d48a", 4, "glyph");
+          continue;
+        }
+        o.hp = Math.min(o.maxHp, o.hp + 1);
       }
       eng.ringShot?.(e, 6, 185);
       break;
     case "difference":
+      if (eng.draught === "singular") {
+        eng.noteSingular?.();
+        break;
+      }
       eng.walls = (eng.walls ?? []).filter((w) => Math.hypot(w.x - e.x, w.y - e.y) >= 110);
       e.vx = e.facing * 280;
       break;

@@ -14,6 +14,7 @@ import {
   drawWeatherFront,
   drawFgVeil,
   drawGrade,
+  drawInkstand,
   setFxLite,
 } from "./draw";
 import { AudioBus } from "./audio";
@@ -38,6 +39,25 @@ import {
 } from "./arcade";
 import { lastClearedId, LEVELS, nextStageId, STAGE_COUNT, type LevelId } from "./levels";
 import { bookTotal, betterMark, markFor, seatEnemies, tallyCensus } from "./grade";
+import {
+  buy,
+  drinkDraught,
+  drinkVial,
+  eatBlot,
+  emptyLive,
+  giltCost,
+  isSummon,
+  itemDef,
+  ITEM,
+  payout,
+  readPurse,
+  swingPress,
+  tickDraught,
+  type DraughtId,
+  type LiveDraught,
+  type Purse,
+  type VialId,
+} from "./shop";
 import { parseRows } from "./parse-map";
 import { CATALOG } from "./catalog";
 import { folioFromMeta, padRows, type Folio } from "./folio";
@@ -295,6 +315,18 @@ export class GameEngine {
   private attemptHits = 0;
   private shownMark: LedgerMark | null = null;
   private keptNote: LedgerMark | null = null;
+  private live: LiveDraught = emptyLive();
+  private drinkFx: { id: string; t: number; max: number; root: number } | null = null;
+  private gulpHp = 0;
+  private gulpInk = 0;
+  private gulpFill = false;
+  private gulpAcc = 0;
+  private flashRule = 0;
+  private anchorFlash = 0;
+  private singularTold = false;
+  private lastPay = 0;
+  private sparePulse = false;
+  draught = "";
   arcadeCleared = 0;
   arcadeLast = 0;
   private arcadeSnap: SaveData | null = null;
@@ -470,7 +502,7 @@ export class GameEngine {
     if (p.shield > p.maxShield) p.shield = p.maxShield;
     p.shotLevel = this.save.shotLevel;
     p.maxInk = 40 + this.save.words.length * 8 + (p.letter === "t" || p.letter === "e" ? 8 : 0) - (p.letter === "r" ? 8 : 0);
-    const extra = (p.capital ? 2 : 0) + (this.save.relics.includes("spine") ? 1 : 0);
+    const extra = (p.capital ? 2 : 0) + (this.save.relics.includes("spine") ? 1 : 0) + (this.save.owned?.gall ? 1 : 0);
     p.maxHp = kit.hp + extra;
     if (p.hp > p.maxHp) p.hp = p.maxHp;
   }
@@ -493,7 +525,7 @@ export class GameEngine {
       capital: cap,
       facing: 1,
       hp: this.save.hp || kit.hp,
-      maxHp: kit.hp + (cap ? 2 : 0) + (this.save.relics.includes("spine") ? 1 : 0),
+      maxHp: kit.hp + (cap ? 2 : 0) + (this.save.relics.includes("spine") ? 1 : 0) + (this.save.owned?.gall ? 1 : 0),
       ink: this.save.ink > 0 ? this.save.ink : 18,
       maxInk: 40 + this.save.words.length * 8 + (startLetter === "e" ? 8 : 0) - (startLetter === "r" ? 8 : 0),
       coyote: 0,
@@ -1288,6 +1320,10 @@ export class GameEngine {
       return;
     }
     if (this.mode === "win" || this.mode === "mark") return;
+    if (this.mode === "shop") {
+      if (a.pause) this.closeShop();
+      return;
+    }
     if (this.mode === "dialogue") {
       if (a.attack || a.jump || a.interact) this.advanceDialogue();
       return;
@@ -1323,6 +1359,17 @@ export class GameEngine {
       if (this.returnT <= 0) this.loadLevel("hub");
     }
     this.tickToys(dt);
+    this.tickShop(dt);
+    if (a.vial) this.useVial();
+    if (a.draught) this.useDraught();
+    if (a.attack && this.live.press) this.resolvePress(a);
+    if (this.drinkFx && this.drinkFx.root > 0) {
+      a.moveX = 0;
+      a.jump = false;
+      a.attack = false;
+      a.attackHeld = false;
+      this.player.vx = 0;
+    }
     this.physicsPlayer(dt, a);
     this.updateCombat(dt, a);
     this.updateEnemies(dt);
@@ -2000,6 +2047,7 @@ export class GameEngine {
         kind,
         alive: true,
         pierce,
+        gilt: !!this.save.owned?.gilt,
       });
     }
     this.audio.sfxShot();
@@ -2907,7 +2955,7 @@ export class GameEngine {
   private tryFang() {
     const p = this.player;
     const kit = KITS[p.letter] ?? KITS.c;
-    const cost = shotCostFor(p.letter);
+    const cost = giltCost(shotCostFor(p.letter), !!this.save.owned?.gilt);
     const free = this.freeFangs > 0;
     if (!free && p.ink < cost) {
       if (this.inkWarn > this.time) return;
@@ -3035,10 +3083,23 @@ export class GameEngine {
     kb?: { x?: number; y?: number; stun?: number; moveId?: MeleeMoveId; flourish?: boolean; heat?: boolean },
   ) {
     if (e.hurt > 0) return;
-    e.hp -= dmg;
-    e.percent = (e.percent ?? 0) + dmg * 9;
-    e.hurt = this.isBossKind(e.kind) ? 0.18 : 0.08;
     const boss = this.isBossKind(e.kind);
+    if (this.live.id === "period" && !boss && isSummon(e.kind)) dmg = Math.max(dmg, e.hp);
+    e.hp -= dmg;
+    if (boss && this.live.id === "singular") {
+      for (const o of this.enemies) {
+        if (o === e || !o.alive || !this.isBossKind(o.kind)) continue;
+        o.hp -= dmg;
+        o.flash = 0.2;
+        if (o.hp <= 0) {
+          o.hp = 0;
+          o.alive = false;
+          o.dying = 0.14;
+        }
+      }
+    }
+    e.percent = (e.percent ?? 0) + dmg * 9;
+    e.hurt = boss ? 0.18 : 0.08;
     const live = this.enemies.some((x) => x.alive && x.stun > 0 && x !== e);
     if (this.comboTimer > 0 || live) this.comboHits += 1;
     else this.comboHits = 1;
@@ -3089,6 +3150,7 @@ export class GameEngine {
       e.dying = 0.14;
       this.player.ink = Math.min(this.player.maxInk, this.player.ink + (boss ? 12 : 4));
       this.burst(e.x + e.w / 2, e.y + e.h / 2, "#3d5a48", 16, "ink");
+      if (this.live.id === "period" && isSummon(e.kind)) this.floatText(e.x + e.w / 2, e.y - 8, "·", "#e8d48a");
       this.audio.sfxDeath();
       if (e.kind === "triad") {
         this.enemies.push(this.spawnEnemy("one", e.x - 18, e.y));
@@ -3096,7 +3158,9 @@ export class GameEngine {
         this.enemies.push(this.spawnEnemy("one", e.x - 4, e.y - 12));
         this.say("The triad splits.");
       }
-      if (e.kind === "endmark" && e.phase < 2) {
+      if (e.kind === "endmark" && e.phase < 2 && this.live.id === "singular") {
+        this.noteSingular();
+      } else if (e.kind === "endmark" && e.phase < 2) {
         const feet = e.y + e.h;
         e.alive = true;
         e.dying = 0;
@@ -3135,6 +3199,7 @@ export class GameEngine {
       }
       if (!e.alive) this.spawnKillDrop(e);
     }
+    this.wardensDown();
   }
 
   private hasBuff(id: BuffId) {
@@ -3649,6 +3714,9 @@ export class GameEngine {
       this.moveActor(e, dt, boss);
       if (boss && e.hp < e.maxHp * 0.5 && e.phase < 1) {
         e.phase = 1;
+        if (this.live.id === "singular") {
+          this.noteSingular();
+        } else {
         this.say("The Archivant files a second copy.");
         if (!this.enemies.some((x) => x.kind === "archivant" && x !== e && x.alive)) {
           const echo = this.spawnEnemy("archivant", e.x + 72, e.y);
@@ -3657,6 +3725,7 @@ export class GameEngine {
           echo.maxHp = echo.hp;
           echo.name = "Filed Echo";
           this.enemies.push(echo);
+        }
         }
       }
       if (e.aux > (boss ? 1.05 : 1.45)) {
@@ -4084,6 +4153,10 @@ export class GameEngine {
     const dy = cy - (p.y + p.h / 2);
     const d = Math.hypot(dx, dy) || 1;
     if (d >= radius) return;
+    if (this.live.id === "anchor") {
+      this.anchorFlash = 0.25;
+      return;
+    }
     const nx = p.x + (dx / d) * force * dt;
     const ny = p.y + (dy / d) * (force * 0.55) * dt;
     const large = isLarge(p.letter, p.capital);
@@ -4165,8 +4238,15 @@ export class GameEngine {
       if (b.from === "enemy") {
         const hot = b.kind !== "stamp" || b.life < 0.4;
         if (hot && aabb(box, p) && p.invuln <= 0 && p.roll <= 0) {
-          if (b.kind !== "wave") b.alive = false;
-          this.hurt(b.dmg, b.vx > 0 ? 1 : -1);
+          const eaten = eatBlot(this.live);
+          if (eaten.eaten) {
+            this.live = eaten.live;
+            b.alive = false;
+            this.burst(b.x, b.y, "#1a1d28", 8, "ink");
+          } else {
+            if (b.kind !== "wave") b.alive = false;
+            this.hurt(b.dmg, b.vx > 0 ? 1 : -1);
+          }
         }
         if (b.kind !== "stamp") {
           const large = p.letter === "b" || p.capital;
@@ -4397,6 +4477,7 @@ export class GameEngine {
     }
     this.audio.sfxTransform();
     const filed = this.fileLedgerMark();
+    this.payClear(filed);
     this.markProgress();
     if (this.runMode === "arcade") {
       this.arcadeCleared += 1;
@@ -4404,7 +4485,7 @@ export class GameEngine {
       const p = this.player;
       p.ink = Math.min(p.maxInk, p.ink + 10);
       p.hp = Math.min(p.maxHp, p.hp + 1);
-      this.say(filed ? `Next ledger. ${filed.grade} · ${filed.points}` : "Next ledger.");
+      this.say(filed ? `Next ledger. ${filed.grade} · ${filed.points} · +${this.lastPay}` : "Next ledger.");
       const next = pickEnduranceStage(this.arcadeCleared, this.arcadeLast);
       this.arcadeLast = next;
       this.persist();
@@ -4447,7 +4528,7 @@ export class GameEngine {
     const p = this.player;
     this.nearHint = "";
     for (const n of this.npcs) {
-      if (aabb(p, padBox(n, 40, 22))) this.nearHint = "Talk";
+      if (aabb(p, padBox(n, 40, 22))) this.nearHint = n.glyph === "q" ? "Inkstand" : "Talk";
     }
     for (const m of this.markers) {
       if (m.kind === "down" && aabb(p, { x: m.x - 40, y: m.y - 24, w: 120, h: 80 })) {
@@ -4747,6 +4828,13 @@ export class GameEngine {
   }
 
   private openTalk(n: Npc) {
+    if (n.glyph === "q") {
+      if (this.sandbox || this.proof) return;
+      this.mode = "shop";
+      this.audio.sfxUi();
+      this.emit();
+      return;
+    }
     const who = loreIdFromGlyph(n.glyph);
     if (!this.save.talked.includes(who)) this.save.talked.push(who);
     if (n.id.startsWith("recruit-")) {
@@ -4828,6 +4916,10 @@ export class GameEngine {
   }
 
   private knockPlayer(vx: number, vy: number) {
+    if (this.live.id === "anchor") {
+      this.anchorFlash = 0.25;
+      return;
+    }
     const p = this.player;
     const di = applyDi(vx, vy, this.aimX, this.aimY);
     p.vx = di.vx;
@@ -4992,6 +5084,7 @@ export class GameEngine {
   respawn() {
     this.player.hp = this.player.maxHp;
     this.player.shield = this.player.maxShield;
+    this.sparePulse = false;
     const atSpawn = this.runMode === "arcade";
     this.player.x = atSpawn ? this.spawnX : this.checkX;
     this.player.y = atSpawn ? this.spawnY : this.checkY;
@@ -5118,7 +5211,9 @@ export class GameEngine {
   private livesStock() {
     if (this.sandbox) return -1;
     if (this.runMode === "arcade") return ARCADE_WAKES;
-    return livesFor(this.save.difficulty ?? "easy");
+    const stock = livesFor(this.save.difficulty ?? "easy");
+    if (stock < 0) return -1;
+    return stock + (this.save.owned?.wake ? 1 : 0);
   }
 
   private syncLives(id: string, atCheck: boolean) {
@@ -5151,10 +5246,12 @@ export class GameEngine {
       return;
     }
     if (this.livesStock() >= 0) {
+      const base = livesFor(this.save.difficulty ?? "easy");
+      this.sparePulse = !!this.save.owned?.wake && base >= 0 && this.lives === base + 1;
       this.lives = Math.max(0, this.lives - 1);
       this.save.lives = this.lives;
       this.persist();
-    }
+    } else this.sparePulse = false;
     this.audio.sfxDeath();
     this.emit();
   }
@@ -5169,6 +5266,193 @@ export class GameEngine {
     if (n - this.uiAt < ms) return false;
     this.uiAt = n;
     return true;
+  }
+
+  closeShop() {
+    if (this.mode !== "shop") return;
+    this.mode = this.stage === "hub" ? "hub" : "play";
+    this.emit();
+  }
+
+  buyItem(id: string) {
+    if (this.mode !== "shop" || this.sandbox || this.proof) return;
+    const def = itemDef(id);
+    if (!def) return;
+    const sold = buy(this.purse(), def.id, this.save.difficulty ?? "easy");
+    if (!sold.ok) {
+      this.say(sold.reason);
+      this.emit();
+      return;
+    }
+    this.writePurse(sold.purse);
+    if (def.kind === "permanent") this.syncVitals();
+    this.persist();
+    this.say(sold.reason + ".");
+    this.audio.sfxWord();
+    this.flashRule = 0.35;
+    this.emit();
+  }
+
+  armVial(id: string) {
+    if (id !== "heart" && id !== "ink" && id !== "well") return;
+    this.save.armedVial = id;
+    this.persist();
+    this.emit();
+  }
+
+  armDraught(id: string) {
+    if (id !== "blot" && id !== "anchor" && id !== "period" && id !== "singular" && id !== "press") return;
+    this.save.armedDraught = id;
+    this.persist();
+    this.emit();
+  }
+
+  useVial() {
+    if (this.sandbox || this.proof) return;
+    const id = (this.save.armedVial || "heart") as VialId;
+    const drank = drinkVial(this.purse(), id);
+    if (!drank.ok) {
+      this.say("No vial in the bag.");
+      this.emit();
+      return;
+    }
+    this.writePurse(drank.purse);
+    this.persist();
+    this.gulpAcc = 0;
+    this.gulpHp = 0;
+    this.gulpInk = 0;
+    this.gulpFill = false;
+    this.beginDrink(id, id === "well" ? 0.35 : 0.15, id === "well" ? 0.7 : 0.55);
+    if (id === "heart") this.gulpHp = 3;
+    else if (id === "ink") this.gulpInk = 16;
+    else {
+      this.gulpFill = true;
+      this.gulpAcc = 0;
+    }
+    this.audio.sfxPickup();
+    this.emit();
+  }
+
+  useDraught() {
+    if (this.sandbox || this.proof) return;
+    const id = (this.save.armedDraught || "blot") as DraughtId;
+    const drank = drinkDraught(this.purse(), this.live, id);
+    if (!drank.ok) {
+      this.say("No draught in the bag.");
+      this.emit();
+      return;
+    }
+    this.writePurse(drank.purse);
+    this.live = drank.live;
+    this.singularTold = false;
+    this.persist();
+    this.beginDrink(id, 0.15, 0.6);
+    this.audio.sfxWord();
+    this.say(id === "press" ? "Press armed." : ITEM[id].name + ".");
+    this.emit();
+  }
+
+  noteSingular() {
+    if (this.singularTold) return;
+    this.singularTold = true;
+    this.flashRule = 0.45;
+    this.say("It cannot divide.");
+  }
+
+  private purse(): Purse {
+    return readPurse(this.save);
+  }
+
+  private writePurse(purse: Purse) {
+    this.save.bux = purse.bux;
+    this.save.bag = purse.bag;
+    this.save.owned = purse.owned;
+    this.save.armedVial = purse.armedVial;
+    this.save.armedDraught = purse.armedDraught;
+  }
+
+  private payClear(mark: LedgerMark | null) {
+    this.lastPay = 0;
+    if (!mark || this.sandbox || this.proof || this.stage === "hub") return;
+    const n = this.stageIndex();
+    const first = n > 0 && this.save.progress < n;
+    const paid = payout(first, mark.grade);
+    this.save.bux = (this.save.bux ?? 0) + paid;
+    this.lastPay = paid;
+  }
+
+  private beginDrink(id: string, root: number, max: number) {
+    this.drinkFx = { id, t: max, max, root };
+    this.hitstop = Math.max(this.hitstop, 0.04);
+    this.player.squash = 0.72;
+    this.player.stretch = 1.18;
+    this.burst(this.player.x + this.player.w / 2, this.player.y + 8, id === "ink" ? "#5ee0c0" : "#d45a4a", 8, "glyph");
+  }
+
+  private tickShop(dt: number) {
+    this.live = tickDraught(this.live, dt);
+    this.draught = this.live.id ?? "";
+    this.flashRule = Math.max(0, this.flashRule - dt);
+    this.anchorFlash = Math.max(0, this.anchorFlash - dt);
+    if (this.drinkFx) {
+      this.drinkFx.t -= dt;
+      this.drinkFx.root = Math.max(0, this.drinkFx.root - dt);
+      if (this.drinkFx.t <= 0) this.drinkFx = null;
+    }
+    this.gulpAcc += dt;
+    const step = 0.14;
+    while (this.gulpAcc >= step && (this.gulpHp > 0 || this.gulpInk > 0)) {
+      this.gulpAcc -= step;
+      if (this.gulpHp > 0) {
+        this.player.hp = Math.min(this.player.maxHp, this.player.hp + 1);
+        this.gulpHp -= 1;
+        this.burst(this.player.x + this.player.w / 2, this.player.y + 6, "#d45a4a", 4, "spark");
+      }
+      if (this.gulpInk > 0) {
+        const n = Math.min(4, this.gulpInk);
+        this.player.ink = Math.min(this.player.maxInk, this.player.ink + n);
+        this.gulpInk -= n;
+        this.burst(this.player.x + this.player.w / 2, this.player.y + this.player.h * 0.4, "#5ee0c0", 3, "ink");
+      }
+    }
+    if (this.gulpFill && this.drinkFx && this.drinkFx.max - this.drinkFx.t >= 0.2) {
+      this.player.hp = this.player.maxHp;
+      this.player.ink = this.player.maxInk;
+      this.gulpFill = false;
+      this.burst(this.player.x + this.player.w / 2, this.player.y + this.player.h / 2, "#e8ece8", 12, "glyph");
+    }
+    if (!this.gulpHp && !this.gulpInk) this.gulpAcc = 0;
+  }
+
+  private resolvePress(a: { attack: boolean; attackHeld: boolean }) {
+    this.live = swingPress(this.live);
+    const p = this.player;
+    let best: Enemy | null = null;
+    let bestD = 92;
+    for (const e of this.enemies) {
+      if (!e.alive || !this.isBossKind(e.kind)) continue;
+      const d = Math.hypot(e.x + e.w / 2 - (p.x + p.w / 2), e.y + e.h / 2 - (p.y + p.h / 2));
+      if (d < bestD) {
+        best = e;
+        bestD = d;
+      }
+    }
+    this.beginDrink("press", 0.15, 0.55);
+    p.vy = Math.min(p.vy, -90);
+    this.flashRule = 0.45;
+    if (!best) return;
+    this.hitEnemy(best, 6, p.facing);
+    best.stun = Math.max(best.stun, 0.6);
+    this.hitstop = 0.12;
+    a.attack = false;
+    a.attackHeld = false;
+  }
+
+  private wardensDown() {
+    if (!this.live.id) return;
+    if (this.enemies.some((e) => e.alive && this.isBossKind(e.kind))) return;
+    this.live = { ...this.live, id: null, t: 0, blot: 0 };
+    this.draught = "";
   }
 
   returnHub() {
@@ -5698,6 +5982,17 @@ export class GameEngine {
       mark: this.shownMark,
       keptMark: this.keptNote,
       bookTotal: bookTotal(this.save.marks),
+      bux: this.save.bux ?? 0,
+      bag: this.save.bag ?? {},
+      owned: this.save.owned ?? {},
+      armedVial: this.save.armedVial || "heart",
+      armedDraught: this.save.armedDraught || "blot",
+      draught: this.live.id ?? "",
+      draughtT: this.live.t,
+      blotLeft: this.live.blot,
+      pressArmed: this.live.press,
+      paid: this.lastPay,
+      sparePulse: this.sparePulse,
     });
   }
 
@@ -5855,6 +6150,17 @@ export class GameEngine {
         drawEnemy(ctx, e, camX, camY, this.time, this.save.reducedMotion);
       }
       drawPlayer(ctx, this.player, camX, camY, this.time);
+      drawInkstand(
+        ctx,
+        this.player,
+        camX,
+        camY,
+        this.drinkFx,
+        this.live.id ?? "",
+        this.live.blot,
+        this.anchorFlash,
+        this.flashRule,
+      );
       for (const b of this.bullets) {
         if (!vis(b.x - 8, b.y - 8, 16, 16)) continue;
         drawShot(ctx, b, camX, camY);
@@ -5894,6 +6200,7 @@ export class GameEngine {
           this.player.heat,
           this.buffs,
           this.freeFangs,
+          !!this.save.owned?.gall,
         );
       }
       if (this.mode === "transform") {

@@ -3137,6 +3137,81 @@ function drawSuperFx(
   ctx.restore();
 }
 
+export function drawInkstand(
+  ctx: CanvasRenderingContext2D,
+  p: Player,
+  camX: number,
+  camY: number,
+  fx: { id: string; t: number; max: number } | null,
+  draught: string,
+  blot: number,
+  anchorFlash: number,
+  rule: number,
+) {
+  const cx = p.x + p.w / 2 - camX;
+  const foot = p.y + p.h - camY;
+  const u = fx ? Math.max(0, Math.min(1, fx.t / fx.max)) : 0;
+  ctx.save();
+  if (fx && u > 0.55) {
+    const rise = (1 - u) * 36;
+    ctx.strokeStyle = fx.id === "ink" ? "#5ee0c0" : fx.id === "press" || fx.id === "singular" ? "#e8d48a" : "#d45a4a";
+    ctx.globalAlpha = u;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(cx - 10, foot - 6);
+    ctx.quadraticCurveTo(cx - 16, foot - rise, cx, foot - rise - 8);
+    ctx.stroke();
+  }
+  if (fx?.id === "well" && u < 0.7 && u > 0.15) {
+    ctx.globalAlpha = u;
+    ctx.strokeStyle = "#e8ece8";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx, foot - p.h * 0.4, (1 - u) * 48, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  if (fx?.id === "period" && u > 0.2) {
+    ctx.globalAlpha = u;
+    ctx.fillStyle = "#e8d48a";
+    ctx.beginPath();
+    ctx.arc(cx, foot - 4, 7 * u, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  if (draught === "blot") {
+    ctx.globalAlpha = 0.85;
+    ctx.fillStyle = "#12141c";
+    ctx.strokeStyle = "#e8ece8";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx, foot - p.h * 0.55, 16, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#e8ece8";
+    ctx.font = "700 12px 'Source Sans 3', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(String(blot), cx, foot - p.h * 0.55 + 4);
+  }
+  if (draught === "anchor" || anchorFlash > 0) {
+    ctx.globalAlpha = draught === "anchor" ? 0.9 : anchorFlash * 3;
+    ctx.strokeStyle = anchorFlash > 0 ? "#e8d48a" : "#8ec8d4";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(cx - 18, foot + 2);
+    ctx.lineTo(cx + 18, foot + 2);
+    ctx.stroke();
+  }
+  if (rule > 0) {
+    ctx.globalAlpha = Math.min(1, rule * 2);
+    ctx.strokeStyle = "#e8d48a";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(cx + p.facing * 28, foot - 46);
+    ctx.lineTo(cx + p.facing * 28, foot);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 export function drawPlayer(ctx: CanvasRenderingContext2D, p: Player, camX: number, camY: number, t: number) {
   const cx = Math.round(p.x + p.w / 2 - camX);
   const cy = Math.round(p.y + p.h / 2 - camY);
@@ -3227,7 +3302,9 @@ export function drawShot(ctx: CanvasRenderingContext2D, b: Bullet, camX: number,
   }
   ctx.rotate(Math.atan2(b.vy, b.vx));
   const col =
-    b.from === "enemy"
+    b.gilt && b.from === "player"
+      ? "#e8d48a"
+      : b.from === "enemy"
       ? b.kind === "mortar"
         ? "#e07040"
         : "#d45a4a"
@@ -3529,6 +3606,7 @@ export function drawHudCanvas(
   heat = 0,
   buffs: { id: string; t: number }[] = [],
   freeFangs = 0,
+  gall = false,
 ) {
   ctx.fillStyle = "rgba(7,8,12,0.55)";
   roundRect(ctx, 132, 14, 210, p.smashKind ? 56 : 52, 10);
@@ -3536,8 +3614,14 @@ export function drawHudCanvas(
   roundRect(ctx, 144, 22, 160, 8, 4);
   ctx.fillStyle = "rgba(232,236,232,0.12)";
   ctx.fill();
+  const hpW = Math.max(0, 160 * (p.hp / p.maxHp));
   ctx.fillStyle = "#d45a4a";
-  ctx.fillRect(144, 22, Math.max(0, 160 * (p.hp / p.maxHp)), 8);
+  ctx.fillRect(144, 22, hpW, 8);
+  if (gall && p.maxHp > 1) {
+    const pip = 160 / p.maxHp;
+    ctx.fillStyle = p.hp >= p.maxHp ? "#8a3a32" : "rgba(138,58,50,0.45)";
+    ctx.fillRect(144 + 160 - pip, 22, Math.min(pip, hpW), 8);
+  }
   ctx.fillStyle = "rgba(142,200,212,0.2)";
   roundRect(ctx, 144, 34, 160, 7, 3);
   ctx.fill();

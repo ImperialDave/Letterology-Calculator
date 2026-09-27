@@ -63,6 +63,7 @@ function buildHub(): string[] {
   put(64, fy - 1, "C");
   fill(43, fy - 4, 24, "=");
   put(66, fy - 1, "h");
+  put(68, fy - 1, "q");
   put(72, fy - 1, ">");
   for (let y = 1; y <= fy - 3; y++) {
     put(90, y, "#");

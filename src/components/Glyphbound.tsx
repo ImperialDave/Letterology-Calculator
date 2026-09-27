@@ -3,6 +3,7 @@ import type { GameEngine } from "@/glyphbound/engine";
 import type { LedgerMark, LetterId, SlotInfo, UiSnap } from "@/glyphbound/types";
 import { gradeLabel } from "@/glyphbound/difficulty";
 import { markLine } from "@/glyphbound/grade";
+import { ITEMS } from "@/glyphbound/shop";
 import { STAGE_COUNT } from "@/glyphbound/types";
 import { LEVELS } from "@/glyphbound/levels";
 import { Pause, Volume2, VolumeX } from "lucide-react";
@@ -103,6 +104,8 @@ function ControlsCard() {
           <p className="mb-1 text-[10px] uppercase tracking-[0.18em] text-subtle">Fang · Skill · Ward</p>
           <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-muted">
             <KeyRow keys="F H" text="Fang · ink-heavy ranged · never the same key as Strike" />
+            <KeyRow keys="V" text="Drink the armed vial" />
+            <KeyRow keys="B" text="Drink the armed draught" />
             <KeyRow keys="K X" text="Skill of the letter in play" />
             <KeyRow keys="Flourish" text={FLOURISH_LINE} />
             <KeyRow keys="Heat" text="f,f + Strike Heat Smash · hold Skill Case Art when the gold bar is full · b,f throw · qcf / df / uf + Strike letter special" />
@@ -226,6 +229,17 @@ const emptyUi = (): UiSnap => ({
   mark: null,
   keptMark: null,
   bookTotal: 0,
+  bux: 0,
+  bag: {},
+  owned: {},
+  armedVial: "heart",
+  armedDraught: "blot",
+  draught: "",
+  draughtT: 0,
+  blotLeft: 0,
+  pressArmed: false,
+  paid: 0,
+  sparePulse: false,
 });
 
 const FILE_MARK = ["I", "II", "III"];
@@ -634,6 +648,19 @@ export function Glyphbound() {
                 ))}
               </div>
             )}
+            <div className="mt-4 rounded-lg border border-border bg-elevated/80 p-3">
+              <p className="mb-2 text-[10px] uppercase tracking-[0.2em] text-accent">Bag · {ui.bux} Letterbux</p>
+              <div className="flex gap-2">
+                <button type="button" className="h-9 flex-1 rounded-md bg-fg text-sm text-bg" {...press(() => g()?.useVial())}>
+                  Vial · {ui.bag[ui.armedVial] ?? 0}
+                </button>
+                <button type="button" className="h-9 flex-1 rounded-md border border-border text-sm text-fg" {...press(() => g()?.useDraught())}>
+                  Draught · {ui.bag[ui.armedDraught] ?? 0}
+                </button>
+              </div>
+              {ui.pressArmed ? <p className="mt-2 text-xs text-accent">Press is armed.</p> : null}
+              {ui.draught ? <p className="mt-1 text-xs text-muted">{ui.draught} · {Math.ceil(ui.draughtT)}s</p> : null}
+            </div>
             <div className="mt-4">
               <ControlsCard />
             </div>
@@ -828,6 +855,7 @@ export function Glyphbound() {
                       ? `${ui.lives} remaining.`
                       : "The census took a bite."}
                 </p>
+                {ui.sparePulse ? <p className="mt-2 text-accent">The spare wake caught you.</p> : null}
                 <button
                   type="button"
                   className="mt-6 h-12 w-full rounded-lg bg-fg text-bg"
@@ -841,12 +869,84 @@ export function Glyphbound() {
         </div>
       )}
 
+      {ui.mode === "shop" && (
+        <div data-ui="shop" className="pointer-events-auto absolute inset-0 z-30 flex items-center justify-center bg-bg/80 px-4">
+          <div className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-xl border border-border bg-surface p-5">
+            <div className="flex items-baseline justify-between gap-3">
+              <div>
+                <p className="text-sm uppercase tracking-[0.25em] text-accent">The Inkstand</p>
+                <h2 className="font-display text-4xl">q</h2>
+              </div>
+              <p className="font-display text-2xl text-fg">{ui.bux} Letterbux</p>
+            </div>
+            <ul className="mt-4 grid gap-2">
+              {ITEMS.map((item) => {
+                const owned = item.kind === "permanent" && !!ui.owned[item.id];
+                const have = ui.bag[item.id] ?? 0;
+                const armed = item.kind === "vial" ? ui.armedVial === item.id : item.kind === "draught" && ui.armedDraught === item.id;
+                const full = item.kind !== "permanent" && have >= item.cap;
+                return (
+                  <li key={item.id} className="rounded-lg border border-border bg-bg/50 px-3 py-2">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <p className="font-display text-xl text-fg">
+                        {item.name}
+                        {armed ? <span className="ml-2 text-xs uppercase tracking-[0.14em] text-accent">armed</span> : null}
+                      </p>
+                      <p className="text-sm text-muted">{owned ? "stamped" : full ? "full" : item.price}</p>
+                    </div>
+                    <p className="text-sm text-muted">{item.blurb}</p>
+                    <div className="mt-2 flex gap-2">
+                      {item.kind === "permanent" ? (
+                        <button
+                          type="button"
+                          disabled={owned}
+                          className="h-9 rounded-md bg-fg px-3 text-sm text-bg disabled:opacity-40"
+                          {...press(() => g()?.buyItem(item.id))}
+                        >
+                          {owned ? "Owned" : "Buy"}
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            disabled={full}
+                            className="h-9 rounded-md bg-fg px-3 text-sm text-bg disabled:opacity-40"
+                            {...press(() => g()?.buyItem(item.id))}
+                          >
+                            Buy · {have}/{item.cap}
+                          </button>
+                          <button
+                            type="button"
+                            className="h-9 rounded-md border border-border px-3 text-sm text-fg"
+                            {...press(() => (item.kind === "vial" ? g()?.armVial(item.id) : g()?.armDraught(item.id)))}
+                          >
+                            Arm
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+            <button
+              type="button"
+              className="mt-4 h-11 w-full rounded-lg border border-border text-fg"
+              {...press(() => g()?.closeShop())}
+            >
+              Back to the Stacks
+            </button>
+          </div>
+        </div>
+      )}
+
       {ui.mode === "mark" && ui.mark && (
         <div data-ui="mark" className="pointer-events-auto absolute inset-0 z-20 flex items-center justify-center bg-bg/80 px-6">
           <div className="max-w-md text-center">
             <p className="text-sm uppercase tracking-[0.25em] text-accent">Ledger marked</p>
             <p className="mt-2 text-muted">{ui.stage}</p>
             <MarkFigures mark={ui.mark} kept={ui.keptMark} />
+            {ui.paid > 0 ? <p className="mt-2 text-accent">+{ui.paid} Letterbux</p> : null}
             <button
               type="button"
               className="mt-6 h-12 w-full rounded-lg bg-fg text-bg"
@@ -868,6 +968,7 @@ export function Glyphbound() {
               the ports. You kept writing. Willingness, not fate, turned every page.
             </p>
             {ui.mark ? <MarkFigures mark={ui.mark} kept={ui.keptMark} book={ui.bookTotal} /> : null}
+            {ui.paid > 0 ? <p className="mt-2 text-accent">+{ui.paid} Letterbux</p> : null}
             <button
               type="button"
               className="mt-6 h-12 w-full rounded-lg bg-fg text-bg"
@@ -1074,7 +1175,15 @@ export function Glyphbound() {
         </div>
       )}
       {padOn && (
-        <MobilePad hint={ui.hint} letter={ui.letter} capital={ui.capital} heat={ui.heat ?? 0} inputRef={gameRef} />
+        <MobilePad
+          hint={ui.hint}
+          letter={ui.letter}
+          capital={ui.capital}
+          heat={ui.heat ?? 0}
+          vialCount={ui.bag[ui.armedVial] ?? 0}
+          draughtCount={ui.bag[ui.armedDraught] ?? 0}
+          inputRef={gameRef}
+        />
       )}
 
       {wipe && (
@@ -1166,6 +1275,7 @@ function interactLabel(hint: string) {
   if (/enter/i.test(hint)) return hint.replace(/^E\s+/, "").replace(/\s+/g, " ").trim();
   if (/drop cap/i.test(hint)) return "";
   if (/case/i.test(hint)) return /need/i.test(hint) ? "Need Drop Cap" : "Shift case";
+  if (/inkstand/i.test(hint)) return "Inkstand";
   if (/talk|hear/i.test(hint)) return "Talk";
   if (/^E\s/.test(hint)) return hint.replace(/^E\s+/, "").trim() || "Use";
   return "";
@@ -1180,12 +1290,16 @@ function MobilePad({
   letter,
   capital,
   heat,
+  vialCount,
+  draughtCount,
   inputRef,
 }: {
   hint: string;
   letter: UiSnap["letter"];
   capital: boolean;
   heat: number;
+  vialCount: number;
+  draughtCount: number;
   inputRef: RefObject<GameEngine | null>;
 }) {
   const zoneRef = useRef<HTMLDivElement>(null);
@@ -1254,6 +1368,14 @@ function MobilePad({
         </button>
       ) : null}
 
+      <div className="pointer-events-none absolute bottom-[11.5rem] left-[max(1rem,env(safe-area-inset-left))] z-30 flex gap-2">
+        <button type="button" data-role="vial" className="gb-pad-btn pointer-events-auto h-11 rounded-full border border-accent/50 bg-bg px-3 text-[11px] font-semibold text-accent">
+          Vial {vialCount}
+        </button>
+        <button type="button" data-role="draught" className="gb-pad-btn pointer-events-auto h-11 rounded-full border border-fg/30 bg-bg px-3 text-[11px] font-semibold text-fg">
+          Draught {draughtCount}
+        </button>
+      </div>
       <div
         ref={zoneRef}
         data-role="stick"
