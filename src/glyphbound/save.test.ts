@@ -32,6 +32,14 @@ function memoryStore() {
   return m;
 }
 
+test("a save with no marks loads an empty book", () => {
+  const m = memoryStore();
+  const old = { ...defaultSave() };
+  delete (old as { marks?: unknown }).marks;
+  m.set("glyphbound-save-v3", JSON.stringify(old));
+  assert.deepEqual(loadSave().marks, {});
+});
+
 test("legacy v3 save migrates into file I", () => {
   const m = memoryStore();
   const old = { ...defaultSave(), progress: 12, stage: "stage12", letter: "s", party: ["c", "s"] };

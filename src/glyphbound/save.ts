@@ -1,4 +1,5 @@
 import { livesFor, parseDifficulty } from "./difficulty";
+import { sanitizeMarks } from "./grade";
 import type { LetterId, SaveData, SlotInfo } from "./types";
 
 const VERSION = 3;
@@ -53,6 +54,7 @@ export const defaultSave = (): SaveData => ({
   sortieKits: {},
   sortieCheat: false,
   arcadeBest: 0,
+  marks: {},
 });
 
 export function isEmptySave(data: SaveData) {
@@ -199,6 +201,7 @@ function parseSave(raw: string | null): SaveData {
           ? parsed.lives
           : livesFor(parseDifficulty(parsed.difficulty, parsed.hard)),
       hard: parseDifficulty(parsed.difficulty, parsed.hard) !== "easy",
+      marks: sanitizeMarks(parsed.marks, (v) => parseDifficulty(v)),
     };
     if (merged.progress < 1 && merged.stage1) merged.progress = Math.max(merged.progress, 1);
     if (merged.progress < 2 && merged.stage2) merged.progress = Math.max(merged.progress, 2);

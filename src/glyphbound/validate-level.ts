@@ -129,14 +129,15 @@ function jumpClear(rows: string[], x0: number, y0: number, x1: number, y1: numbe
   return true;
 }
 
-function reachable(rows: string[]): boolean {
+/** Stand-cells on a walk from @ to P. Null when that walk cannot be built. */
+export function standWalk(rows: string[]): Set<string> | null {
   const spawn = findChar(rows, "@");
   const gate = findChar(rows, "P");
-  if (!spawn || !gate) return false;
+  if (!spawn || !gate) return null;
   const W = rows[0]?.length ?? 0;
   const H = rows.length;
-  const key = (x: number, y: number) => x + y * 512;
-  const seen = new Set<number>();
+  const key = (x: number, y: number) => `${x},${y}`;
+  const seen = new Set<string>();
   const q: Array<[number, number]> = [];
   const tryPush = (x: number, y: number) => {
     if (x < 0 || y < 0 || x >= W || y >= H) return;
@@ -146,12 +147,13 @@ function reachable(rows: string[]): boolean {
     seen.add(k);
     q.push([x, y]);
   };
+  const atGate = (x: number, y: number) => x === gate.x && (y === gate.y || y === gate.y - 1 || y === gate.y + 1);
   tryPush(spawn.x, spawn.y);
   if (canStand(rows, spawn.x, spawn.y - 1)) tryPush(spawn.x, spawn.y - 1);
   let i = 0;
   while (i < q.length) {
     const [x, y] = q[i++];
-    if (x === gate.x && (y === gate.y || y === gate.y - 1 || y === gate.y + 1)) return true;
+    if (atGate(x, y)) return seen;
     tryPush(x + 1, y);
     tryPush(x - 1, y);
     for (const dx of [-1, 0, 1] as const) {
@@ -172,7 +174,12 @@ function reachable(rows: string[]): boolean {
       }
     }
   }
-  return seen.has(key(gate.x, gate.y)) || seen.has(key(gate.x, gate.y - 1)) || seen.has(key(gate.x, gate.y + 1));
+  if (seen.has(key(gate.x, gate.y)) || seen.has(key(gate.x, gate.y - 1)) || seen.has(key(gate.x, gate.y + 1))) return seen;
+  return null;
+}
+
+function reachable(rows: string[]): boolean {
+  return standWalk(rows) !== null;
 }
 
 function localFloorY(rows: string[], x: number) {

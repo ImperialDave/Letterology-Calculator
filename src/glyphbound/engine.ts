@@ -37,6 +37,7 @@ import {
   type RunMode,
 } from "./arcade";
 import { lastClearedId, LEVELS, nextStageId, STAGE_COUNT, type LevelId } from "./levels";
+import { bookTotal, betterMark, markFor, seatEnemies, tallyCensus } from "./grade";
 import { parseRows } from "./parse-map";
 import { CATALOG } from "./catalog";
 import { folioFromMeta, padRows, type Folio } from "./folio";
@@ -141,6 +142,7 @@ import {
   type Construct,
   type Enemy,
   type EnemyKind,
+  type LedgerMark,
   type LetterId,
   type Marker,
   type Mode,
@@ -289,6 +291,10 @@ export class GameEngine {
   replayMenu = false;
   hangarOpen = false;
   runMode: RunMode = "campaign";
+  private attemptDeaths = 0;
+  private attemptHits = 0;
+  private shownMark: LedgerMark | null = null;
+  private keptNote: LedgerMark | null = null;
   arcadeCleared = 0;
   arcadeLast = 0;
   private arcadeSnap: SaveData | null = null;
@@ -659,6 +665,10 @@ export class GameEngine {
   loadLevel(id: LevelId, atCheck = false) {
     const meta = LEVELS[id];
     if (!meta) return;
+    this.attemptDeaths = 0;
+    this.attemptHits = 0;
+    this.shownMark = null;
+    this.keptNote = null;
     this.comboHits = 0;
     this.comboTimer = 0;
     this.stage = id;
@@ -694,7 +704,7 @@ export class GameEngine {
     });
     this.solids = parsed.solids;
     this.resetToys();
-    this.enemies = parsed.enemySpawns.map((s) => this.spawnEnemy(s.kind, s.x, s.y));
+    this.enemies = parsed.enemySpawns.map((s) => this.spawnEnemy(s.kind, s.x, s.y, true));
     this.bullets = [];
     this.pickups = parsed.pickups;
     this.npcs = parsed.npcs;
@@ -716,6 +726,7 @@ export class GameEngine {
       const cut = this.checkX;
       this.enemies = this.enemies.filter((e) => e.x + e.w * 0.5 >= cut - 16);
     }
+    seatEnemies(this.rows, this.enemies);
     const p = this.player;
     p.x = resume ? this.checkX : this.spawnX;
     p.y = resume ? this.checkY : this.spawnY;
@@ -999,7 +1010,7 @@ export class GameEngine {
     this.persist();
   }
 
-  private spawnEnemy(kind: EnemyKind, x: number, y: number): Enemy {
+  private spawnEnemy(kind: EnemyKind, x: number, y: number, census = false): Enemy {
     const sizes: Record<EnemyKind, { w: number; h: number; hp: number; name: string }> = {
       one: { w: 26, h: 44, hp: 2, name: "1" },
       dummy: { w: 26, h: 44, hp: 99, name: "Dummy 1" },
@@ -1067,6 +1078,9 @@ export class GameEngine {
       armor: kind === "eight" ? 1 : 0,
       name: s.name,
       dying: 0,
+      census,
+      tx: Math.round(x / TILE),
+      ty: Math.round(y / TILE),
     };
   }
 
@@ -1273,7 +1287,7 @@ export class GameEngine {
       if (a.jump || a.attack) this.respawn();
       return;
     }
-    if (this.mode === "win") return;
+    if (this.mode === "win" || this.mode === "mark") return;
     if (this.mode === "dialogue") {
       if (a.attack || a.jump || a.interact) this.advanceDialogue();
       return;
@@ -3170,8 +3184,9 @@ export class GameEngine {
       p.hazardCd = HAZARD_COOLDOWN;
       this.knockPlayer(dir * 220, -220);
       let dmg = n;
+      let soak = 0;
       if (p.shield > 0) {
-        const soak = Math.min(p.shield, dmg);
+        soak = Math.min(p.shield, dmg);
         p.shield -= soak;
         dmg -= soak;
         p.shieldFlash = 0.4;
@@ -3186,6 +3201,7 @@ export class GameEngine {
         this.audio.sfxHurt();
         this.trauma = Math.min(1, this.trauma + 0.55);
       }
+      if (soak > 0 || dmg > 0) this.noteHit();
       this.emit();
       if (p.hp <= 0) {
         p.hp = 0;
@@ -3196,6 +3212,7 @@ export class GameEngine {
     if (p.invuln > 0) return;
     if (p.artArmor && p.art > 0) {
       p.hp = Math.max(0, p.hp - 1);
+      this.noteHit();
       p.hurtFlash = 0.2;
       this.audio.sfxBlock();
       this.burst(p.x + p.w / 2, p.y + p.h / 2, "#e8d48a", 8, "spark");
@@ -3204,6 +3221,7 @@ export class GameEngine {
     }
     if (p.shield > 0) {
       p.shield -= 1;
+      this.noteHit();
       p.shieldFlash = 0.4;
       p.invuln = 0.85;
       p.vx = dir * 40;
@@ -3232,6 +3250,7 @@ export class GameEngine {
       return;
     }
     p.hp -= n;
+    this.noteHit();
     p.invuln = 1.05;
     p.hurtFlash = 0.4;
     p.recoil = dir === 0 ? -p.facing : dir;
@@ -4377,6 +4396,7 @@ export class GameEngine {
       return;
     }
     this.audio.sfxTransform();
+    const filed = this.fileLedgerMark();
     this.markProgress();
     if (this.runMode === "arcade") {
       this.arcadeCleared += 1;
@@ -4384,7 +4404,7 @@ export class GameEngine {
       const p = this.player;
       p.ink = Math.min(p.maxInk, p.ink + 10);
       p.hp = Math.min(p.maxHp, p.hp + 1);
-      this.say("Next ledger.");
+      this.say(filed ? `Next ledger. ${filed.grade} · ${filed.points}` : "Next ledger.");
       const next = pickEnduranceStage(this.arcadeCleared, this.arcadeLast);
       this.arcadeLast = next;
       this.persist();
@@ -4398,7 +4418,29 @@ export class GameEngine {
       this.emit();
       return;
     }
+    if (filed) {
+      this.mode = "mark";
+      this.persist();
+      this.emit();
+      return;
+    }
     this.loadLevel("hub");
+  }
+
+  private noteHit() {
+    this.attemptHits += 1;
+  }
+
+  /** File this attempt. Studio, Proof, and the hub leave the book alone. */
+  private fileLedgerMark(): LedgerMark | null {
+    if (this.sandbox || this.proof || this.stage === "hub") return null;
+    const mark = markFor(tallyCensus(this.enemies), this.attemptDeaths, this.attemptHits, this.save.difficulty ?? "easy");
+    const prev = this.save.marks?.[this.stage];
+    const kept = betterMark(prev, mark);
+    this.save.marks = { ...(this.save.marks ?? {}), [this.stage]: kept };
+    this.shownMark = mark;
+    this.keptNote = kept === mark ? null : kept;
+    return mark;
   }
 
   private updatePickups() {
@@ -5096,6 +5138,7 @@ export class GameEngine {
   }
 
   private fileDeath() {
+    this.attemptDeaths += 1;
     this.mode = "dead";
     if (this.runMode === "arcade") {
       this.lives = Math.max(0, this.lives - 1);
@@ -5652,6 +5695,9 @@ export class GameEngine {
       runMode: this.runMode,
       arcadeCleared: this.arcadeCleared,
       arcadeBest: this.save.arcadeBest ?? 0,
+      mark: this.shownMark,
+      keptMark: this.keptNote,
+      bookTotal: bookTotal(this.save.marks),
     });
   }
 

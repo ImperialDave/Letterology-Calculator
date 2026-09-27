@@ -7,10 +7,26 @@ export type Mode =
   | "pause"
   | "dead"
   | "win"
+  | "mark"
   | "transform"
   | "dialogue"
   | "codex"
   | "studio";
+
+/** Letter on a closed ledger. A clear floors at D. */
+export type GradeLetter = "A+" | "A" | "A−" | "B+" | "B" | "B−" | "C+" | "C" | "C−" | "D+" | "D";
+
+export interface LedgerMark {
+  grade: GradeLetter;
+  points: number;
+  sentenceKilled: number;
+  sentenceTotal: number;
+  marginKilled: number;
+  marginTotal: number;
+  deaths: number;
+  hits: number;
+  difficulty: Difficulty;
+}
 
 export type Difficulty = "easy" | "hard" | "extreme";
 
@@ -144,6 +160,13 @@ export interface Enemy {
   /** Smash-style damage percent; grows knockback. */
   percent: number;
   alive: boolean;
+  /** Map spawn. Mid-fight adds are outside the census. */
+  census?: boolean;
+  /** Tile of the map glyph. */
+  tx?: number;
+  ty?: number;
+  /** Sentence is the walk to the gate. Margin is a pocket off that walk. */
+  seat?: "sentence" | "margin";
   grounded: boolean;
   phase: number;
   aux: number;
@@ -396,6 +419,8 @@ export interface SaveData {
   sortieCheat: boolean;
   /** Best Endurance clear count. Campaign progress is never this. */
   arcadeBest: number;
+  /** Best mark per ledger id. Missing key means the page has no mark yet. */
+  marks: Record<string, LedgerMark>;
 }
 
 export interface UiSnap {
@@ -452,6 +477,11 @@ export interface UiSnap {
   runMode: "campaign" | "shuffle" | "arcade";
   arcadeCleared: number;
   arcadeBest: number;
+  /** The attempt just closed. Null while a page is still open. */
+  mark: LedgerMark | null;
+  /** Set when the book kept a higher mark than the attempt just closed. */
+  keptMark: LedgerMark | null;
+  bookTotal: number;
 }
 
 export interface SlotInfo {

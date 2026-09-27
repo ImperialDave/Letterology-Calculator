@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type PointerEvent, type RefObject } from "react";
 import type { GameEngine } from "@/glyphbound/engine";
-import type { LetterId, SlotInfo, UiSnap } from "@/glyphbound/types";
+import type { LedgerMark, LetterId, SlotInfo, UiSnap } from "@/glyphbound/types";
 import { gradeLabel } from "@/glyphbound/difficulty";
+import { markLine } from "@/glyphbound/grade";
 import { STAGE_COUNT } from "@/glyphbound/types";
 import { LEVELS } from "@/glyphbound/levels";
 import { Pause, Volume2, VolumeX } from "lucide-react";
@@ -15,6 +16,31 @@ import { GlyphboundReplay } from "@/components/GlyphboundReplay";
 
 const STRIKE_LETTERS: LetterId[] = ["c", "s", "b", "e", "r", "k", "n", "t"];
 const FLOURISH_LINE = STRIKE_LETTERS.map((id) => `${id} ${WEAPONS[id].flourish.name}`).join(" · ");
+
+function MarkFigures({
+  mark,
+  kept,
+  book,
+}: {
+  mark: LedgerMark;
+  kept: LedgerMark | null;
+  book?: number;
+}) {
+  return (
+    <div className="mt-4">
+      <p className="font-display text-6xl leading-none text-fg">{mark.grade}</p>
+      <p className="mt-3 text-muted">{markLine(mark)}</p>
+      <p className="mt-2 font-display text-2xl text-fg">{mark.points}</p>
+      <p className="mt-1 text-xs uppercase tracking-[0.18em] text-subtle">{gradeLabel(mark.difficulty)}</p>
+      {kept ? (
+        <p className="mt-3 text-sm text-muted">
+          The book keeps {kept.grade} · {kept.points}.
+        </p>
+      ) : null}
+      {book != null ? <p className="mt-3 text-muted">Book {book}.</p> : null}
+    </div>
+  );
+}
 
 function KeyRow({ keys, text }: { keys: string; text: string }) {
   return (
@@ -197,6 +223,9 @@ const emptyUi = (): UiSnap => ({
   runMode: "campaign",
   arcadeCleared: 0,
   arcadeBest: 0,
+  mark: null,
+  keptMark: null,
+  bookTotal: 0,
 });
 
 const FILE_MARK = ["I", "II", "III"];
@@ -812,6 +841,23 @@ export function Glyphbound() {
         </div>
       )}
 
+      {ui.mode === "mark" && ui.mark && (
+        <div data-ui="mark" className="pointer-events-auto absolute inset-0 z-20 flex items-center justify-center bg-bg/80 px-6">
+          <div className="max-w-md text-center">
+            <p className="text-sm uppercase tracking-[0.25em] text-accent">Ledger marked</p>
+            <p className="mt-2 text-muted">{ui.stage}</p>
+            <MarkFigures mark={ui.mark} kept={ui.keptMark} />
+            <button
+              type="button"
+              className="mt-6 h-12 w-full rounded-lg bg-fg text-bg"
+              {...press(() => g()?.returnHub())}
+            >
+              Back to the Stacks
+            </button>
+          </div>
+        </div>
+      )}
+
       {ui.mode === "win" && (
         <div data-ui="win" className="pointer-events-auto absolute inset-0 z-20 flex items-center justify-center bg-bg/80 px-6">
           <div className="max-w-md text-center">
@@ -821,6 +867,7 @@ export function Glyphbound() {
               One hundred sixty ledgers. A period, then the operators, then a second century the Dominion could not file. G opened
               the ports. You kept writing. Willingness, not fate, turned every page.
             </p>
+            {ui.mark ? <MarkFigures mark={ui.mark} kept={ui.keptMark} book={ui.bookTotal} /> : null}
             <button
               type="button"
               className="mt-6 h-12 w-full rounded-lg bg-fg text-bg"
