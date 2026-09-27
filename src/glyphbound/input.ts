@@ -98,6 +98,31 @@ function roleOf(e: Event): HTMLElement | null {
   return t.closest("[data-role]") as HTMLElement | null;
 }
 
+/**
+ * Which tracked contacts a touchend/touchcancel should release.
+ * iPhone Safari drops pointerup after setPointerCapture (and after it
+ * cancels a drag it briefly treated as a scroll). touchend still names
+ * the finger that lifted. Android delivers pointerup, so this is a no-op
+ * there once the pointer map is already clear.
+ * An empty remaining list means every finger is up: release them all,
+ * even if pointer ids and touch identifiers disagree.
+ */
+export function pointersToRelease(
+  tracked: number[],
+  touch: { changed: number[]; remaining: number[] },
+): number[] {
+  if (touch.remaining.length === 0) return tracked.slice();
+  const changed = new Set(touch.changed);
+  const remaining = new Set(touch.remaining);
+  return tracked.filter((id) => changed.has(id) && !remaining.has(id));
+}
+
+function touchIds(list: TouchList): number[] {
+  const ids: number[] = [];
+  for (let i = 0; i < list.length; i++) ids.push(list[i].identifier);
+  return ids;
+}
+
 export class Input {
   keys = new Set<string>();
   prev = new Set<string>();
@@ -121,6 +146,9 @@ export class Input {
     window.addEventListener("blur", this.clear);
     window.addEventListener("pointerup", this.onWindowPtrEnd);
     window.addEventListener("pointercancel", this.onWindowPtrEnd);
+    // iPhone drops pointerup after a captured drag. touchend still fires.
+    window.addEventListener("touchend", this.onTouchEnd);
+    window.addEventListener("touchcancel", this.onTouchEnd);
     // iOS drops element pointermove without capture; follow the finger on the window.
     window.addEventListener("pointermove", this.onPtrMove, { passive: false });
     document.addEventListener("visibilitychange", this.onVis);
@@ -128,6 +156,7 @@ export class Input {
     el.addEventListener("pointermove", this.onPtrMove, { passive: false });
     el.addEventListener("pointerup", this.onPtrUp);
     el.addEventListener("pointercancel", this.onPtrUp);
+    el.addEventListener("lostpointercapture", this.onLostCapture);
     el.addEventListener("touchstart", this.blockScroll, { passive: false });
     el.addEventListener("touchmove", this.blockScroll, { passive: false });
     el.addEventListener("contextmenu", (e) => e.preventDefault());
@@ -139,6 +168,8 @@ export class Input {
     window.removeEventListener("blur", this.clear);
     window.removeEventListener("pointerup", this.onWindowPtrEnd);
     window.removeEventListener("pointercancel", this.onWindowPtrEnd);
+    window.removeEventListener("touchend", this.onTouchEnd);
+    window.removeEventListener("touchcancel", this.onTouchEnd);
     window.removeEventListener("pointermove", this.onPtrMove);
     document.removeEventListener("visibilitychange", this.onVis);
     this.canvas?.removeEventListener("pointerdown", this.onPtrDown);
@@ -249,6 +280,22 @@ export class Input {
     this.releasePointer(e.pointerId);
   };
 
+  /**
+   * iPhone Safari often never sends pointerup for a touch joystick: the
+   * drag is captured, or briefly treated as a scroll, and the pointer
+   * stream stops on the last deflection. touchend / touchcancel still
+   * arrive. WebKit uses the touch identifier as the pointer id, same as
+   * Chrome, so a lifted thumb matches the stick contact.
+   */
+  private onTouchEnd = (e: TouchEvent) => {
+    if (this.pointers.size === 0) return;
+    const release = pointersToRelease([...this.pointers.keys()], {
+      changed: touchIds(e.changedTouches),
+      remaining: touchIds(e.touches),
+    });
+    for (const id of release) this.releasePointer(id);
+  };
+
   private updateStick(e: PointerEvent) {
     let x = (e.clientX - this.stick.ox) / this.stickRadius;
     let y = (e.clientY - this.stick.oy) / this.stickRadius;
@@ -303,7 +350,7 @@ export class Input {
     if (this.buttons.has("left")) mx -= 1;
     if (this.buttons.has("right")) mx += 1;
     a.moveX = Math.max(-1, Math.min(1, mx));
-    a.down = act("down") || this.stick.y > 0.48 || this.buttons.has("down");
+    a.down = act("down") || (this.stick.active && this.stick.y > 0.48) || this.buttons.has("down");
     const upKey = act("up");
     const attackHeld = act("attack") || this.buttons.has("attack");
     let aimX = mx;
@@ -321,7 +368,7 @@ export class Input {
     const jumpBtn = act("jump") || this.buttons.has("jump");
     // W / ArrowUp / stick-up aim the melee kit. Space and the Jump pad still hop.
     // Holding Strike plus up is an up-tilt / up-smash, not a jump.
-    const tapJump = (upKey || this.stick.y < -0.48) && !attackHeld;
+    const tapJump = (upKey || (this.stick.active && this.stick.y < -0.48)) && !attackHeld;
     a.jumpHeld = jumpBtn || tapJump;
     a.jump =
       edgeAct("jump") ||

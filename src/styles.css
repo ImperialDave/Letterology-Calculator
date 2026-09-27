@@ -388,6 +388,10 @@
   width: min(42%, 16.5rem);
   padding-bottom: max(0.7rem, env(safe-area-inset-bottom));
   padding-left: max(1rem, env(safe-area-inset-left));
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .gb-actions {

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { Input, applyGamepad } from "./input";
+import { Input, applyGamepad, pointersToRelease } from "./input";
 
 function press(codes: string[]) {
   const i = new Input();
@@ -62,6 +62,18 @@ test("Space still jumps while aiming a strike", () => {
   const a = press(["Space", "KeyJ"]);
   assert.equal(a.jump, true);
   assert.equal(a.attack, true);
+});
+
+test("a lifted thumb releases the stick even when another finger is still down", () => {
+  assert.deepEqual(pointersToRelease([4, 9], { changed: [4], remaining: [9] }), [4]);
+});
+
+test("lifting every finger releases a stick whose pointerup never arrived", () => {
+  assert.deepEqual(pointersToRelease([4, 7], { changed: [4, 7], remaining: [] }), [4, 7]);
+});
+
+test("a jump tap does not release the stick contact that is still down", () => {
+  assert.deepEqual(pointersToRelease([4], { changed: [9], remaining: [4] }), []);
 });
 
 test("standard pad maps A jump, X strike, Y fang, Start pause", () => {
