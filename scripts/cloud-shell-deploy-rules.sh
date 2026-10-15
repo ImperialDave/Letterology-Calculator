@@ -15,6 +15,10 @@ if [[ ! -f "${RULES_FILE}" ]]; then
   echo "Missing ${RULES_FILE}"
   exit 1
 fi
+if ! grep -q 'function sourceStable' "${RULES_FILE}"; then
+  echo "Refusing rules that lack sourceStable. Pull the latest main first."
+  exit 1
+fi
 
 gcloud config set project "${PROJECT_ID}"
 gcloud services enable firebaserules.googleapis.com --project="${PROJECT_ID}"

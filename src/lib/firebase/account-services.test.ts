@@ -36,5 +36,26 @@ test("the rules script publishes only cc33-24cc1", () => {
   assert.match(script, /PROJECT_ID:-cc33-24cc1/);
   assert.match(script, /firestore\.rules/);
   assert.match(script, /cloud\.firestore/);
+  assert.match(script, /function sourceStable/);
+  assert.doesNotMatch(script, /cc33-letterology/);
+});
+
+test("the firestore setup script stays on cc33-24cc1 and publishes rules without rewriting domains", () => {
+  const script = readFileSync(join(root, "scripts/cloud-shell-firebase.sh"), "utf8");
+  const rc = readFileSync(join(root, ".firebaserc"), "utf8");
+  assert.match(script, /PROJECT_ID:-cc33-24cc1/);
+  assert.match(script, /firestore databases create/);
+  assert.match(script, /firestore-native/);
+  assert.match(script, /cloud-shell-deploy-rules\.sh/);
+  assert.match(rc, /cc33-24cc1/);
+  assert.doesNotMatch(script, /cc33-letterology/);
+  assert.doesNotMatch(script, /authorizedDomains/);
+  assert.doesNotMatch(script, /identitytoolkit/);
+  assert.doesNotMatch(script, /projects create/);
+});
+
+test("the X script stays on cc33-24cc1", () => {
+  const script = readFileSync(join(root, "scripts/cloud-shell-enable-x.sh"), "utf8");
+  assert.match(script, /PROJECT_ID:-cc33-24cc1/);
   assert.doesNotMatch(script, /cc33-letterology/);
 });

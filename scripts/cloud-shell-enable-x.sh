@@ -2,7 +2,11 @@
 # After you have an X developer app (API key + secret), run this in Cloud Shell.
 set -euo pipefail
 
-PROJECT_ID="${PROJECT_ID:-cc33-letterology}"
+PROJECT_ID="${PROJECT_ID:-cc33-24cc1}"
+if [[ "${PROJECT_ID}" != "cc33-24cc1" ]]; then
+  echo "Refusing PROJECT_ID=${PROJECT_ID}. This script is for cc33-24cc1 only."
+  exit 1
+fi
 : "${X_API_KEY:?set X_API_KEY}"
 : "${X_API_SECRET:?set X_API_SECRET}"
 
