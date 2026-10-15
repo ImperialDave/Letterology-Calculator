@@ -1,28 +1,21 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { LatinPortrait } from "@/components/letterology/LatinPortrait";
 import { AppShell } from "@/components/SiteChrome";
-import {
-  cardImageUrl,
-  nameToSlug,
-  portraitDescription,
-  portraitOf,
-  portraitTitle,
-  publicSiteOrigin,
-  slugToName,
-} from "@/lib/letterology/share";
+import { parseIso } from "@/lib/letterology/calendar";
+import { portraitOf, portraitPageMeta, nameToSlug, slugToName } from "@/lib/letterology/share";
 
 export const Route = createFileRoute("/p/$slug")({
   validateSearch: (search: Record<string, unknown>) => ({
     date: typeof search.date === "string" ? search.date : undefined,
   }),
-  beforeLoad: ({ params }) => {
+  beforeLoad: ({ params, search }) => {
     const name = slugToName(params.slug);
     const canonical = nameToSlug(name);
     if (canonical && params.slug !== canonical) {
       throw redirect({
         to: "/p/$slug",
         params: { slug: canonical },
-        search: { date: undefined },
+        search: { date: search.date },
       });
     }
   },
@@ -32,43 +25,23 @@ export const Route = createFileRoute("/p/$slug")({
     return { name, horoscope: portraitOf(name), date };
   },
   head: ({ loaderData }) => {
-    const origin = publicSiteOrigin();
     const horoscope = loaderData?.horoscope;
     if (!horoscope) {
       return { title: "CC33", meta: [{ title: "CC33" }] };
     }
-    const title = portraitTitle(horoscope);
-    const description = portraitDescription(horoscope);
-    const image = cardImageUrl(horoscope.displayName, origin);
-    const url = `${origin}/p/${nameToSlug(horoscope.displayName)}`;
-    return {
-      title,
-      meta: [
-        { title },
-        { name: "description", content: description },
-        { name: "twitter:card", content: "summary_large_image" },
-        { name: "twitter:title", content: title },
-        { name: "twitter:description", content: description },
-        { name: "twitter:image", content: image },
-        { name: "twitter:image:alt", content: title },
-        { property: "og:type", content: "website" },
-        { property: "og:site_name", content: "CC33" },
-        { property: "og:title", content: title },
-        { property: "og:description", content: description },
-        { property: "og:url", content: url },
-        { property: "og:image", content: image },
-        { property: "og:image:width", content: "1200" },
-        { property: "og:image:height", content: "630" },
-        { property: "og:image:type", content: "image/jpeg" },
-        { property: "og:image:alt", content: title },
-      ],
-    };
+    return (
+      portraitPageMeta(horoscope.displayName, loaderData?.date) ?? {
+        title: "CC33",
+        meta: [{ title: "CC33" }],
+      }
+    );
   },
   component: PortraitPage,
 });
 
 function PortraitPage() {
-  const { name, horoscope } = Route.useLoaderData();
+  const { name, horoscope, date } = Route.useLoaderData();
+  const civil = parseIso(date);
 
   if (!horoscope) {
     return (
@@ -89,7 +62,7 @@ function PortraitPage() {
 
   return (
     <AppShell current="read">
-      <LatinPortrait key={horoscope.normalized} horoscope={horoscope} />
+      <LatinPortrait key={horoscope.normalized} horoscope={horoscope} date={civil ?? undefined} />
     </AppShell>
   );
 }

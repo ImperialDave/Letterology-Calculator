@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
+import { DayShare } from "@/components/letterology/DayCard";
 import { HouseCircle } from "@/components/letterology/HouseCircle";
 import { LetterDetail } from "@/components/letterology/LetterDetail";
 import { AskView } from "@/components/letterology/AskView";
@@ -7,6 +8,8 @@ import { LuckPanel } from "@/components/letterology/LuckPanel";
 import { PageShare } from "@/components/letterology/PageShare";
 import { Sheet } from "@/components/ui/sheet";
 import { houseOf } from "@/lib/letterology/archetypes";
+import type { CivilDate } from "@/lib/letterology/calendar";
+import { dayCardOf } from "@/lib/letterology/day-card";
 import { dayReadingOf } from "@/lib/letterology/day-reading";
 import { luckOf } from "@/lib/letterology/luck";
 import { themeOf } from "@/lib/letterology/lexicon";
@@ -15,11 +18,18 @@ import { nameToSlug, portraitPath, tweetReading } from "@/lib/letterology/share"
 import type { Horoscope, Letter } from "@/lib/letterology/types";
 import { VOICE } from "@/lib/letterology/voice";
 
-export function LatinPortrait({ horoscope }: { horoscope: Horoscope }) {
+export function LatinPortrait({
+  horoscope,
+  date,
+}: {
+  horoscope: Horoscope;
+  date?: Date | CivilDate;
+}) {
   const [letter, setLetter] = useState<Letter>(horoscope.signature);
   const [open, setOpen] = useState<"letter" | "day" | null>(null);
-  const day = dayReadingOf(horoscope);
-  const luck = luckOf(horoscope);
+  const day = dayReadingOf(horoscope, date);
+  const luck = luckOf(horoscope, date);
+  const card = dayCardOf(horoscope, date);
   const pigment = pigmentOf(horoscope.signature);
   const todayLine = day?.headline ?? "";
 
@@ -42,7 +52,7 @@ export function LatinPortrait({ horoscope }: { horoscope: Horoscope }) {
           where: {themeOf(horoscope.triad[2]).name.toLowerCase()}. {VOICE.pathCaption}
         </p>
         <p className="mt-4 font-display text-sm text-ink">
-          Today's luck {luck.score} · {luck.verdict}
+          {card ? card.dateLabel : "Today"} · {luck.score} · {luck.verdict}
         </p>
         <button
           type="button"
@@ -51,6 +61,9 @@ export function LatinPortrait({ horoscope }: { horoscope: Horoscope }) {
         >
           {todayLine}
         </button>
+        <div className="mx-auto mt-6 w-full max-w-xl text-left">
+          <DayShare horoscope={horoscope} date={date} />
+        </div>
         <div className="mt-6 flex justify-center">
           <PageShare
             path={portraitPath(horoscope.displayName)}

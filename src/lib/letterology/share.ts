@@ -1,4 +1,6 @@
 import { CLUB_NAME } from "./brand";
+import { parseIso } from "./calendar";
+import { dayCardOf, type DayCardModel } from "./day-card";
 import { buildHoroscope } from "./engine";
 import type { Horoscope } from "./types";
 
@@ -54,6 +56,10 @@ export function serverOrigin(): string {
 export function portraitPath(name: string): string {
   const slug = nameToSlug(name);
   return `/p/${encodeURIComponent(slug)}`;
+}
+
+export function portraitDayPath(name: string, iso: string): string {
+  return `${portraitPath(name)}?date=${encodeURIComponent(iso)}`;
 }
 
 export function portraitUrl(name: string, origin = publicSiteOrigin()): string {
@@ -122,6 +128,18 @@ export function tweetDay(headline: string, invitation: string): string {
   return `${headline.trim()}\n${invitation.trim()}`;
 }
 
+export function dayCardCaption(card: Pick<DayCardModel, "weatherLabel" | "score" | "headline">): string {
+  return `${card.weatherLabel} · ${card.score}\n${card.headline}`;
+}
+
+export function dayCardTitle(card: Pick<DayCardModel, "handle" | "weatherLabel" | "score">): string {
+  return clip(`${card.handle} · ${card.weatherLabel} · ${card.score}`, X_TITLE_MAX);
+}
+
+export function dayCardDescription(card: Pick<DayCardModel, "headline" | "verdict">): string {
+  return clip(`${card.headline}. ${card.verdict}.`, X_DESC_MAX);
+}
+
 export function tweetBond(input: {
   a: string;
   b: string;
@@ -176,6 +194,29 @@ export function portraitDescription(h: Horoscope): string {
 
 export function portraitTitle(h: Horoscope): string {
   return clip(`${h.displayName} · ${h.archetype.title}`, X_TITLE_MAX);
+}
+
+/** Head tags for `/p/$slug`. A real `date` unfurls that day's card. Anything else stays the portrait. */
+export function portraitPageMeta(name: string, dateRaw?: string) {
+  const horoscope = portraitOf(name);
+  if (!horoscope) return null;
+  const slug = nameToSlug(horoscope.displayName);
+  const civil = parseIso(dateRaw);
+  const card = civil ? dayCardOf(horoscope, civil) : null;
+  if (card) {
+    return pageCardMeta({
+      title: dayCardTitle(card),
+      description: dayCardDescription(card),
+      path: portraitDayPath(horoscope.displayName, card.iso),
+      imagePath: `/og/${slug}-${card.iso}.jpg`,
+    });
+  }
+  return pageCardMeta({
+    title: portraitTitle(horoscope),
+    description: portraitDescription(horoscope),
+    path: portraitPath(horoscope.displayName),
+    imagePath: `/og/${slug}.jpg`,
+  });
 }
 
 export function pageCardMeta(input: {

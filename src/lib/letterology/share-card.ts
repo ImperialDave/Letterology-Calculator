@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import type { DayCardModel } from "./day-card";
 import { themeOf } from "./lexicon";
 import { mixPair, mixTriad, pigmentOf } from "./pigment";
 import type { Horoscope, Letter } from "./types";
@@ -157,6 +158,56 @@ export function portraitSvg(h: Horoscope, dayLine?: string): string {
   <text x="1050" y="216" text-anchor="middle" font-family="${FACE}" font-size="14" fill="${mix.inkHex}">${esc(h.triad.join(""))}</text>
 
   ${sealMark(h.signature)}
+</svg>`;
+}
+
+/** Poster for one person's day. Two letters, a weather word, a score, three moves. */
+export function daySvg(card: DayCardModel): string {
+  const role = pigmentOf(card.roleLetter);
+  const today = pigmentOf(card.dateLetter);
+  const handle = esc(fit(card.handle, 28));
+  const headline = wrap(card.headline, 58, 2);
+  const weather = esc(card.weatherLabel);
+  const verdict = esc(fit(card.verdict, 24));
+  const moves = [
+    ["Do", card.do],
+    ["Wait", card.wait],
+    ["Ask", card.ask],
+  ] as const;
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  ${paperShell()}
+  ${brandKicker()}
+  <text x="1048" y="118" text-anchor="end" font-family="${FACE}" font-size="16" letter-spacing="3" fill="${WINE}">${esc(card.dateLabel)}</text>
+
+  <text x="80" y="292" font-family="${FACE}" font-size="156" fill="${role.hex}">${esc(card.roleLetter)}</text>
+  <text x="80" y="328" font-family="${FACE}" font-size="16" letter-spacing="3.5" fill="${MUTED}">${esc(card.roleNoun.toUpperCase())}</text>
+
+  <text x="390" y="292" font-family="${FACE}" font-size="156" fill="${today.hex}">${esc(card.dateLetter)}</text>
+  <text x="390" y="328" font-family="${FACE}" font-size="16" letter-spacing="3.5" fill="${MUTED}">${esc(card.dateNoun.toUpperCase())}</text>
+
+  <text x="760" y="188" font-family="${FACE}" font-size="28" fill="${WINE}">${weather}</text>
+  <text x="760" y="286" font-family="${FACE}" font-size="84" fill="${INK}">${esc(String(card.score))}</text>
+  <text x="760" y="322" font-family="${FACE}" font-size="20" fill="${MUTED}">${verdict}</text>
+
+  <text x="80" y="392" font-family="${FACE}" font-size="40" fill="${INK}">${handle}</text>
+  ${headline
+    .map(
+      (line, i) =>
+        `<text x="80" y="${444 + i * 32}" font-family="${FACE}" font-size="22" fill="${INK}">${esc(line)}</text>`,
+    )
+    .join("\n  ")}
+
+  ${moves
+    .map(([kicker, line], i) => {
+      const y = 524 + i * 28;
+      return `<text x="80" y="${y}" font-family="${FACE}" font-size="14" letter-spacing="2.5" fill="${WINE}">${kicker.toUpperCase()}</text>
+  <text x="168" y="${y}" font-family="${FACE}" font-size="20" fill="${INK}">${esc(fit(line, 42))}</text>`;
+    })
+    .join("\n  ")}
+
+  ${sealMark(card.roleLetter)}
 </svg>`;
 }
 

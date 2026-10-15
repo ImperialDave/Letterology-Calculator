@@ -9,9 +9,9 @@ import { readStoicheion } from "../stoicheia/engine";
 import { horaOf } from "../stoicheia/horae";
 import { letterFromMark } from "../stoicheia/letters";
 import { readXenia } from "../stoicheia/xenia";
-import { dayReadingOf } from "./day-reading";
+import { dayCardOf } from "./day-card";
 import { decodeAnswers, readBrain } from "./brain";
-import { bondSvg, brainSvg, glyphSvg, portraitSvg } from "./share-card";
+import { bondSvg, brainSvg, daySvg, glyphSvg, portraitSvg } from "./share-card";
 import { portraitOf, slugToName } from "./share";
 import { themeOf } from "./lexicon";
 import { ALPHABET } from "./types";
@@ -85,12 +85,14 @@ export function parseCardFile(file: string): CardSpec | null {
   return { kind: "portrait", slug: jpg };
 }
 
-export async function renderPortraitJpeg(file: string): Promise<Uint8Array | null> {
+/** The SVG for a card file, before rasterizing. Null when the file does not name a card. */
+export function buildCardSvg(file: string): string | null {
   const parsed = parseCardFile(file);
   if (!parsed) return null;
-  const cached = cache.get(file.toLowerCase());
-  if (cached) return cached;
+  return svgForSpec(parsed);
+}
 
+function svgForSpec(parsed: CardSpec): string | null {
   let svg: string | null = null;
   if (parsed.kind === "stoicheia-hora") {
     const letter = letterFromMark(parsed.mark);
@@ -163,9 +165,15 @@ export async function renderPortraitJpeg(file: string): Promise<Uint8Array | nul
     const name = slugToName(parsed.slug);
     const horoscope = portraitOf(name);
     if (!horoscope) return null;
-    const civil = parseIso(parsed.date);
-    const day = parsed.date ? dayReadingOf(horoscope, civil ?? undefined) : null;
-    svg = portraitSvg(horoscope, day && parsed.date ? day.headline : undefined);
+    if (parsed.date) {
+      const civil = parseIso(parsed.date);
+      if (!civil) return null;
+      const card = dayCardOf(horoscope, civil);
+      if (!card) return null;
+      svg = daySvg(card);
+    } else {
+      svg = portraitSvg(horoscope);
+    }
   } else if (parsed.kind === "house" || parsed.kind === "circle") {
     const house = houseOf(parsed.letter);
     const allies = alliesOf(parsed.letter).join(" · ");
@@ -199,6 +207,15 @@ export async function renderPortraitJpeg(file: string): Promise<Uint8Array | nul
       line: house.myth,
     });
   }
+  return svg;
+}
+
+export async function renderPortraitJpeg(file: string): Promise<Uint8Array | null> {
+  const key = file.toLowerCase();
+  const cached = cache.get(key);
+  if (cached) return cached;
+
+  const svg = buildCardSvg(file);
   if (!svg) return null;
 
   const { Resvg } = await import("@resvg/resvg-js");

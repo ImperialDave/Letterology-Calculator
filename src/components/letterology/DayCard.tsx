@@ -1,19 +1,110 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, Download, ExternalLink, Share2 } from "lucide-react";
 import { CourtLines } from "@/components/letterology/CourtLines";
 import { LuckPanel } from "@/components/letterology/LuckPanel";
 import { Explain } from "@/components/letterology/Gloss";
 import { Button } from "@/components/ui/button";
 import { houseOf } from "@/lib/letterology/archetypes";
+import type { CivilDate } from "@/lib/letterology/calendar";
+import { copyToClipboard, openXIntent } from "@/lib/letterology/clipboard";
+import { dayCardOf } from "@/lib/letterology/day-card";
 import { dayReadingOf } from "@/lib/letterology/day-reading";
-import { luckOf } from "@/lib/letterology/luck";
-import { copyToClipboard } from "@/lib/letterology/clipboard";
 import { WEATHER_COPY } from "@/lib/letterology/glossary";
 import { themeOf } from "@/lib/letterology/lexicon";
-import { composeXPost, portraitUrl, publicSiteOrigin, tweetDay } from "@/lib/letterology/share";
-import type { CivilDate } from "@/lib/letterology/calendar";
+import { luckOf } from "@/lib/letterology/luck";
+import {
+  cardImageUrl,
+  composeXPost,
+  dayCardCaption,
+  nameToSlug,
+  portraitDayPath,
+  publicSiteOrigin,
+} from "@/lib/letterology/share";
 import type { Horoscope } from "@/lib/letterology/types";
+
+export function DayShare({
+  horoscope,
+  date,
+}: {
+  horoscope: Horoscope;
+  date?: Date | CivilDate;
+}) {
+  const [copied, setCopied] = useState<"x" | "link" | "share" | null>(null);
+  const built = dayCardOf(horoscope, date);
+  if (!built) return null;
+  const card = built;
+  const origin = publicSiteOrigin();
+  const path = portraitDayPath(horoscope.displayName, card.iso);
+  const url = `${origin}${path}`;
+  const image = cardImageUrl(horoscope.displayName, origin, card.iso);
+  const post = composeXPost(dayCardCaption(card), url);
+  const fileName = `${nameToSlug(horoscope.displayName)}-${card.iso}.jpg`;
+
+  async function mark(kind: "x" | "link" | "share") {
+    setCopied(kind);
+    window.setTimeout(() => setCopied(null), 1600);
+  }
+
+  async function copyForX() {
+    if (await copyToClipboard(post.text)) await mark("x");
+  }
+
+  async function copyLink() {
+    if (await copyToClipboard(url)) await mark("link");
+  }
+
+  async function nativeShare() {
+    if (typeof navigator.share !== "function") {
+      await copyForX();
+      return;
+    }
+    try {
+      await navigator.share({ title: `${card.handle} · ${card.weatherLabel}`, text: post.caption, url });
+      await mark("share");
+    } catch {
+      // user cancelled
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+      <img
+        src={image}
+        alt={`${card.handle}, ${card.weatherLabel}, ${card.score}`}
+        width={320}
+        height={168}
+        className="w-full max-w-xs rounded-md outline outline-1 -outline-offset-1 outline-ink/15"
+      />
+      <div className="flex min-w-0 flex-1 flex-col gap-3">
+        <p className="whitespace-pre-wrap font-display text-sm leading-relaxed text-ink">{post.caption}</p>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={copyForX}>
+            {copied === "x" ? <Check /> : <Copy />}
+            {copied === "x" ? "Copied for X" : "Copy for X"}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={copyLink}>
+            {copied === "link" ? "Link copied" : "Copy link"}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={nativeShare}>
+            <Share2 />
+            {copied === "share" ? "Shared" : "Share"}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => openXIntent(post.href)}>
+            <ExternalLink />
+            Post on X
+          </Button>
+          <Button variant="ghost" size="sm" asChild>
+            <a href={image} download={fileName}>
+              <Download />
+              Download
+            </a>
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function DayCard({
   horoscope,
@@ -22,7 +113,6 @@ export function DayCard({
   horoscope: Horoscope;
   date?: Date | CivilDate;
 }) {
-  const [copied, setCopied] = useState(false);
   const reading = dayReadingOf(horoscope, date);
   const luck = luckOf(horoscope, date);
   if (!reading) return null;
@@ -31,17 +121,6 @@ export function DayCard({
     label: reading.weather,
     gloss: "",
   };
-  const post = composeXPost(
-    tweetDay(reading.headline, reading.invitation),
-    portraitUrl(horoscope.displayName, publicSiteOrigin()),
-  );
-
-  async function copyDay() {
-    if (await copyToClipboard(post.text)) {
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1800);
-    }
-  }
 
   return (
     <section className="rounded-xl bg-raised p-5 shadow-[var(--shadow-border)] sm:p-7">
@@ -101,11 +180,10 @@ export function DayCard({
         </Explain>
         <p className="mt-2 text-sm text-muted">{reading.climateNote}</p>
       </div>
-      <div className="mt-5 flex flex-wrap items-center gap-3">
-        <Button variant="outline" size="sm" onClick={copyDay}>
-          {copied ? <Check /> : <Copy />}
-          {copied ? "Copied for X" : "Copy day for X"}
-        </Button>
+      <div className="mt-6 border-t border-ink/10 pt-6">
+        <DayShare horoscope={horoscope} date={date} />
+      </div>
+      <div className="mt-4">
         <Link
           to="/almanac"
           search={{ date: reading.iso, name: horoscope.displayName }}
