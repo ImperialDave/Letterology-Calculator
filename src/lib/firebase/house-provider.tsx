@@ -6,6 +6,7 @@ import {
   consumeRedirectResult,
   explainAuthError,
   listenAuth,
+  reloadIdentity,
   signInWith,
   signOutHouse,
   type AuthProviderId,
@@ -28,6 +29,7 @@ export type HouseSession = {
   claim: (raw: string) => Promise<void>;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
+  reload: () => Promise<void>;
 };
 
 const HouseContext = createContext<HouseSession | null>(null);
@@ -104,11 +106,7 @@ export function HouseProvider({ children }: { children: ReactNode }) {
       async claim(raw) {
         if (!identity) throw new Error("Sign in first.");
         setError(null);
-        const sitting = await claimHandle(
-          identity,
-          raw,
-          identity.provider === "x" || identity.provider === "apple" ? identity.provider : "google",
-        );
+        const sitting = await claimHandle(identity, raw, identity.socialProvider ?? "linked");
         setProfile(sitting);
       },
       async signOut() {
@@ -120,6 +118,10 @@ export function HouseProvider({ children }: { children: ReactNode }) {
         if (!identity) return;
         const sitting = await loadProfile(identity.uid);
         setProfile(sitting);
+      },
+      async reload() {
+        const next = await reloadIdentity();
+        await hydrate(next, false);
       },
     }),
     [door, error, identity, isPending, profile],
@@ -144,6 +146,7 @@ export function useHouse(): HouseSession {
       async claim() {},
       async signOut() {},
       async refresh() {},
+      async reload() {},
     };
   }
   return ctx;

@@ -32,6 +32,37 @@ export const VOICE = {
   claimLede:
     "Type the username you actually use. The Letter Path updates as you type, because those letters are what we read.",
   claimHint: "@ is optional. Accents fall away. Only A–Z count.",
+  houseTitle: "Your house",
+  houseLede:
+    "This is the username we read, and the sign-in that opens it. Your legal name stays off the page.",
+  houseSignInNote: "Google or Apple keeps this email. Change it there, not here.",
+  houseNoEmail: "This sign-in has no email, so a password cannot be attached.",
+  housePasswordOff: "A password is not turned on for this club yet.",
+  housePasswordSet:
+    "A password lets you sign in when you are not using Google or Apple. It is the same account.",
+  houseDeleteNote:
+    "Deleting frees the username. Portraits and threshold sittings already given to the court stay in the court book.",
+  houseTaken: "That username is already taken.",
+  housePasswordShort: "Use at least 12 characters.",
+  housePasswordMismatch: "Those two passwords do not match.",
+  housePasswordEmail: "Do not use your email as the password.",
+  housePasswordCurrent: "Type your current password.",
+  loginPasswordLede: "Or use the email and password you set on your house.",
+  loginPasswordEmpty: "Type the email and the password.",
+  loginPasswordExists:
+    "That email already has a sign-in. Use Google or Apple, then set a password from your house.",
+  loginSignInFailed: "Sign-in did not finish.",
+  loginHavePassword: "I already have a password",
+  houseSaved: "Saved.",
+  housePublic: "Public reading",
+  houseSignInWith: "You sign in with",
+  housePasswordSaved: "Password set.",
+  housePasswordChanged: "Password changed.",
+  houseResetSent: "Reset email sent.",
+  housePasswordFailed: "That password could not be saved.",
+  houseResetFailed: "The reset email could not be sent.",
+  houseDeleteConfirm: "Type your username to confirm.",
+  houseDeleteFailed: "The account could not be deleted.",
   nameFormHint: "@ is optional. Accents fall away. Only A–Z count.",
   countKicker: "CC33 · The Count",
   countLede:

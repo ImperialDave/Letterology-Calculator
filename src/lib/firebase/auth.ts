@@ -1,14 +1,23 @@
 import {
+  EmailAuthProvider,
   GoogleAuthProvider,
   OAuthProvider,
   TwitterAuthProvider,
+  createUserWithEmailAndPassword,
+  deleteUser,
   getAdditionalUserInfo,
   getRedirectResult,
+  linkWithCredential,
   linkWithPopup,
   onAuthStateChanged,
+  reauthenticateWithCredential,
+  reauthenticateWithPopup,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
   signInWithPopup,
   signInWithRedirect,
   signOut as firebaseSignOut,
+  updatePassword,
   type User,
 } from "firebase/auth";
 import { firebaseConfigured, getFirebaseAuth } from "./app";
@@ -24,8 +33,13 @@ export type SignedInIdentity = {
   photoURL: string | null;
   displayName: string | null;
   provider: AuthProviderId;
+  /** Google, Apple, or X when one of those is linked. Null for a password-only account. */
+  socialProvider: AuthProviderId | null;
+  hasPassword: boolean;
   xScreenName: string | null;
 };
+
+const RESET_CONTINUE_URL = "https://www.letterology.club/login";
 
 export class AuthRedirectStarted extends Error {
   constructor() {
@@ -45,6 +59,18 @@ const AUTH_ERRORS: Record<string, string> = {
   "auth/cancelled-popup-request": "Another sign-in was already open.",
   "auth/network-request-failed": "The network dropped. Try again.",
   "auth/internal-error": "Google did not finish. Try again.",
+  "auth/invalid-email": "That email or password did not match.",
+  "auth/user-not-found": "That email or password did not match.",
+  "auth/wrong-password": "That email or password did not match.",
+  "auth/invalid-credential": "That email or password did not match.",
+  "auth/email-already-in-use":
+    "That email already has a sign-in. Use Google or Apple, then set a password from your house.",
+  "auth/account-exists-with-different-credential":
+    "That email already has a sign-in. Use Google or Apple, then set a password from your house.",
+  "auth/requires-recent-login": "Sign in again, then retry.",
+  "auth/weak-password": "Use at least 12 characters.",
+  "auth/too-many-requests": "Too many tries. Wait a moment.",
+  "auth/provider-already-linked": "A password is already set on this account.",
 };
 
 function authCode(err: unknown): string {
@@ -61,6 +87,13 @@ export function explainAuthError(err: unknown): string {
   return AUTH_ERRORS[authCode(err)] ?? (err instanceof Error ? err.message : "Sign-in did not finish.");
 }
 
+function explainPasswordError(err: unknown): string {
+  if (authCode(err) === "auth/operation-not-allowed") {
+    return "A password is not turned on for this club yet.";
+  }
+  return explainAuthError(err);
+}
+
 function providerOf(id: AuthProviderId) {
   if (id === "x") return new TwitterAuthProvider();
   if (id === "apple") {
@@ -74,11 +107,16 @@ function providerOf(id: AuthProviderId) {
   return google;
 }
 
-function detectProvider(user: User): AuthProviderId {
+function socialProviderOf(user: User): AuthProviderId | null {
   const ids = user.providerData.map((item) => item.providerId);
   if (ids.includes("twitter.com")) return "x";
   if (ids.includes("apple.com")) return "apple";
-  return "google";
+  if (ids.includes("google.com")) return "google";
+  return null;
+}
+
+function hasPasswordProvider(user: User): boolean {
+  return user.providerData.some((item) => item.providerId === "password");
 }
 
 function xNameFromUser(user: User): string | null {
@@ -90,14 +128,112 @@ function xNameFromUser(user: User): string | null {
 }
 
 export function identityFromUser(user: User, xScreenName?: string | null): SignedInIdentity {
+  const socialProvider = socialProviderOf(user);
   return {
     uid: user.uid,
     email: user.email,
     photoURL: user.photoURL,
     displayName: user.displayName,
-    provider: detectProvider(user),
+    provider: socialProvider ?? "google",
+    socialProvider,
+    hasPassword: hasPasswordProvider(user),
     xScreenName: xScreenName ?? xNameFromUser(user),
   };
+}
+
+function requireCurrentUser(): User {
+  const user = firebaseConfigured ? getFirebaseAuth().currentUser : null;
+  if (!user) throw new Error("Sign in first.");
+  return user;
+}
+
+export async function reloadIdentity(): Promise<SignedInIdentity | null> {
+  if (!firebaseConfigured) return null;
+  const user = getFirebaseAuth().currentUser;
+  if (!user) return null;
+  await user.reload();
+  return identityFromUser(user);
+}
+
+export async function signInWithEmail(email: string, password: string): Promise<SignedInIdentity> {
+  if (!firebaseConfigured) throw new Error("Firebase is not configured yet.");
+  try {
+    const cred = await signInWithEmailAndPassword(getFirebaseAuth(), email.trim(), password);
+    return identityFromUser(cred.user);
+  } catch (err) {
+    throw new Error(explainPasswordError(err));
+  }
+}
+
+export async function signUpWithEmail(email: string, password: string): Promise<SignedInIdentity> {
+  if (!firebaseConfigured) throw new Error("Firebase is not configured yet.");
+  try {
+    const cred = await createUserWithEmailAndPassword(getFirebaseAuth(), email.trim(), password);
+    return identityFromUser(cred.user);
+  } catch (err) {
+    throw new Error(explainPasswordError(err));
+  }
+}
+
+/** Fresh sign-in before a password change, a rename is not required to, or a delete. */
+export async function reauthenticateAccount(currentPassword?: string): Promise<void> {
+  const user = requireCurrentUser();
+  try {
+    if (currentPassword && user.email && hasPasswordProvider(user)) {
+      await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, currentPassword));
+      return;
+    }
+    const social = socialProviderOf(user);
+    if (!social) throw new Error("Sign in again, then retry.");
+    await reauthenticateWithPopup(user, providerOf(social));
+  } catch (err) {
+    throw new Error(explainAuthError(err));
+  }
+}
+
+/** Attach a password to the email already on this Firebase user. Same uid. */
+export async function setAccountPassword(password: string): Promise<SignedInIdentity> {
+  const user = requireCurrentUser();
+  if (!user.email) throw new Error("This sign-in has no email, so a password cannot be attached.");
+  await reauthenticateAccount();
+  try {
+    const linked = await linkWithCredential(user, EmailAuthProvider.credential(user.email, password));
+    return identityFromUser(linked.user);
+  } catch (err) {
+    throw new Error(explainPasswordError(err));
+  }
+}
+
+export async function changeAccountPassword(currentPassword: string, nextPassword: string): Promise<void> {
+  const user = requireCurrentUser();
+  if (!user.email) throw new Error("This sign-in has no email, so a password cannot be attached.");
+  try {
+    await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, currentPassword));
+    await updatePassword(user, nextPassword);
+  } catch (err) {
+    throw new Error(explainPasswordError(err));
+  }
+}
+
+export async function sendAccountReset(email: string): Promise<void> {
+  if (!firebaseConfigured) throw new Error("Firebase is not configured yet.");
+  try {
+    await sendPasswordResetEmail(getFirebaseAuth(), email.trim(), {
+      url: RESET_CONTINUE_URL,
+      handleCodeInApp: false,
+    });
+  } catch (err) {
+    throw new Error(explainPasswordError(err));
+  }
+}
+
+export async function deleteAuthUser(): Promise<void> {
+  const user = requireCurrentUser();
+  try {
+    await deleteUser(user);
+  } catch (err) {
+    throw new Error(explainAuthError(err));
+  }
 }
 
 export function listenAuth(onChange: (identity: SignedInIdentity | null) => void): () => void {

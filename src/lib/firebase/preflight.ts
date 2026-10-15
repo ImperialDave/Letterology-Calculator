@@ -125,3 +125,30 @@ export async function probeAuthDoor(origin: string): Promise<AuthDoorStatus> {
 
   return interpretAuthPreflight({ config, configError, googleError, origin });
 }
+
+/** True when email/password is enabled. False when Firebase refuses it. Null if we could not tell. */
+export async function probePasswordEnabled(): Promise<boolean | null> {
+  const key = firebaseConfig?.apiKey;
+  if (!key) return false;
+  try {
+    const res = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:createAuthUri?key=${encodeURIComponent(key)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          providerId: "password",
+          continueUri: "https://www.letterology.club/login",
+        }),
+      },
+    );
+    if (res.ok) return true;
+    const message = await readError(res);
+    if (/OPERATION_NOT_ALLOWED|CONFIGURATION_NOT_FOUND|identity provider configuration is not found/i.test(message)) {
+      return false;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
