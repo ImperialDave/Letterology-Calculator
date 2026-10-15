@@ -107,7 +107,9 @@ function UsernameBlock({ profile, onSaved }: { profile: HouseProfile; onSaved: (
       await onSaved();
       setSaved(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : VOICE.houseTaken);
+      const code = err && typeof err === "object" && "code" in err ? String(err.code) : "";
+      const denied = code === "permission-denied" || code.endsWith("/permission-denied");
+      setError(denied ? VOICE.housePermission : err instanceof Error ? err.message : VOICE.houseTaken);
     } finally {
       setBusy(false);
     }

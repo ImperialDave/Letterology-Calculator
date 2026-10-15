@@ -23,8 +23,36 @@ service cloud.firestore {
         && get(handleDoc(slug)).data.uid == request.auth.uid;
     }
 
-    function sourceOk() {
+    function sourceListed() {
       return request.resource.data.source in ['google', 'apple', 'x', 'linked'];
+    }
+
+    // Older houses may have no source. Once one is stored, it stays.
+    function sourceStable() {
+      let hasNext = request.resource.data.keys().hasAny(['source']);
+      let nextFine = !hasNext || request.resource.data.source == null || sourceListed();
+      let unchanged = !resource.data.keys().hasAny(['source'])
+        || resource.data.source == null
+        || request.resource.data.source == resource.data.source;
+      return nextFine && unchanged;
+    }
+
+    // Older houses may have no createdAt. Once stored, it cannot move.
+    function createdAtStable() {
+      let missing = !resource.data.keys().hasAny(['createdAt']);
+      let backfill = missing && (
+        !request.resource.data.keys().hasAny(['createdAt'])
+        || request.resource.data.createdAt is number
+      );
+      let unchanged = !missing && request.resource.data.createdAt == resource.data.createdAt;
+      return backfill || unchanged;
+    }
+
+    // A display change keeps the slug. A new slug must already belong to this person.
+    function handleOk() {
+      let same = resource.data.keys().hasAll(['handle'])
+        && request.resource.data.handle == resource.data.handle;
+      return same || ownsHandle(request.resource.data.handle);
     }
 
     match /users/{uid} {
@@ -32,13 +60,13 @@ service cloud.firestore {
 
       allow create: if owns(uid)
         && ownsHandle(request.resource.data.handle)
-        && sourceOk()
+        && sourceListed()
         && request.resource.data.createdAt is number;
 
       allow update: if owns(uid)
-        && ownsHandle(request.resource.data.handle)
-        && sourceOk()
-        && request.resource.data.createdAt == resource.data.createdAt;
+        && handleOk()
+        && sourceStable()
+        && createdAtStable();
 
       allow delete: if owns(uid);
     }

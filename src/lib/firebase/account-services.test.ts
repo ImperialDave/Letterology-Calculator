@@ -12,6 +12,9 @@ test("firestore rules keep slug updates closed and tie a user to a slug they own
   assert.match(rules, /handles/);
   assert.match(rules, /ownsHandle/);
   assert.match(rules, /createdAt == resource\.data\.createdAt/);
+  assert.match(rules, /function sourceStable/);
+  assert.match(rules, /function createdAtStable/);
+  assert.match(rules, /function handleOk/);
   assert.doesNotMatch(rules, /allow update: if true/);
 });
 
@@ -26,4 +29,12 @@ test("the password script stays on cc33-24cc1 and does not retouch Google or App
   const withoutConsole = script.replaceAll("https://console.firebase.google.com", "");
   assert.doesNotMatch(withoutConsole, /google\.com|apple\.com/);
   assert.doesNotMatch(script, /authorizedDomains\s*=/);
+});
+
+test("the rules script publishes only cc33-24cc1", () => {
+  const script = readFileSync(join(root, "scripts/cloud-shell-deploy-rules.sh"), "utf8");
+  assert.match(script, /PROJECT_ID:-cc33-24cc1/);
+  assert.match(script, /firestore\.rules/);
+  assert.match(script, /cloud\.firestore/);
+  assert.doesNotMatch(script, /cc33-letterology/);
 });

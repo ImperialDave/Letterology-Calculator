@@ -63,6 +63,7 @@ export const VOICE = {
   houseResetFailed: "The reset email could not be sent.",
   houseDeleteConfirm: "Type your username to confirm.",
   houseDeleteFailed: "The account could not be deleted.",
+  housePermission: "The username could not be saved.",
   nameFormHint: "@ is optional. Accents fall away. Only A–Z count.",
   countKicker: "CC33 · The Count",
   countLede:

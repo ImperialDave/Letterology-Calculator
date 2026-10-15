@@ -131,6 +131,8 @@ export async function renameHandle(profile: HouseProfile, raw: string): Promise<
   const userRef = doc(getDb(), "users", profile.uid);
   const lastSeenAt = Date.now();
   if (plan.kind === "spelling") {
+    // The slug doc may be missing on an older house. Reserve it before the display write.
+    await reserveHandle(profile.uid, profile.handle);
     await updateDoc(userRef, { displayHandle: plan.displayHandle, lastSeenAt });
     return { ...profile, displayHandle: plan.displayHandle, lastSeenAt };
   }

@@ -55,7 +55,7 @@ export function HouseProvider({ children }: { children: ReactNode }) {
         sitting = await claimHandle(next, next.xScreenName, "x");
       }
       setProfile(sitting);
-      if (sitting) void touchProfile(sitting);
+      if (sitting) void touchProfile(sitting).catch(() => undefined);
     } catch (err) {
       setError(err instanceof Error ? err.message : "The house could not be opened.");
     } finally {
