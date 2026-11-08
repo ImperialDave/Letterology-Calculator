@@ -34,7 +34,6 @@ import { Route as ThresholdRouteImport } from './routes/threshold'
 import { Route as TwoRouteImport } from './routes/two'
 import { Route as WhyRouteImport } from './routes/why'
 import { Route as WildRouteImport } from './routes/wild'
-import { Route as WildEditRouteImport } from './routes/wild_.edit'
 import { Route as ApiCardRouteImport } from './routes/api/card'
 import { Route as BrainRollRouteImport } from './routes/brain_.roll'
 import { Route as CountWalkRouteImport } from './routes/count_.$walk'
@@ -42,6 +41,7 @@ import { Route as GlyphboundSortieRouteImport } from './routes/glyphbound.sortie
 import { Route as LettersMarkRouteImport } from './routes/letters_.$mark'
 import { Route as OgFileRouteImport } from './routes/og.$file'
 import { Route as PSlugRouteImport } from './routes/p.$slug'
+import { Route as SpaceMixPrivacyRouteImport } from './routes/space-mix.privacy'
 import { Route as StoicheiaIndexRouteImport } from './routes/stoicheia.index'
 import { Route as StoicheiaAgonRouteImport } from './routes/stoicheia.agon'
 import { Route as StoicheiaCalendarRouteImport } from './routes/stoicheia.calendar'
@@ -51,6 +51,7 @@ import { Route as StoicheiaHoraeRouteImport } from './routes/stoicheia.horae'
 import { Route as StoicheiaHymnRouteImport } from './routes/stoicheia.hymn'
 import { Route as StoicheiaIsopsephyRouteImport } from './routes/stoicheia.isopsephy'
 import { Route as StoicheiaXeniaRouteImport } from './routes/stoicheia.xenia'
+import { Route as WildEditRouteImport } from './routes/wild_.edit'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as BrainRollIdRouteImport } from './routes/brain_.roll_.$id'
 import { Route as StoicheiaHoraeMarkRouteImport } from './routes/stoicheia.horae_.$mark'
@@ -181,11 +182,6 @@ const WildRoute = WildRouteImport.update({
   path: '/wild',
   getParentRoute: () => rootRouteImport,
 } as any)
-const WildEditRoute = WildEditRouteImport.update({
-  id: '/wild_/edit',
-  path: '/wild/edit',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiCardRoute = ApiCardRouteImport.update({
   id: '/api/card',
   path: '/api/card',
@@ -219,6 +215,11 @@ const OgFileRoute = OgFileRouteImport.update({
 const PSlugRoute = PSlugRouteImport.update({
   id: '/p/$slug',
   path: '/p/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SpaceMixPrivacyRoute = SpaceMixPrivacyRouteImport.update({
+  id: '/space-mix/privacy',
+  path: '/space-mix/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StoicheiaIndexRoute = StoicheiaIndexRouteImport.update({
@@ -265,6 +266,11 @@ const StoicheiaXeniaRoute = StoicheiaXeniaRouteImport.update({
   id: '/xenia',
   path: '/xenia',
   getParentRoute: () => StoicheiaRoute,
+} as any)
+const WildEditRoute = WildEditRouteImport.update({
+  id: '/wild_/edit',
+  path: '/wild/edit',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
@@ -313,7 +319,6 @@ export interface FileRoutesByFullPath {
   '/two': typeof TwoRoute
   '/why': typeof WhyRoute
   '/wild': typeof WildRoute
-  '/wild/edit': typeof WildEditRoute
   '/api/card': typeof ApiCardRoute
   '/brain/roll': typeof BrainRollRoute
   '/count/$walk': typeof CountWalkRoute
@@ -321,6 +326,7 @@ export interface FileRoutesByFullPath {
   '/letters/$mark': typeof LettersMarkRoute
   '/og/$file': typeof OgFileRoute
   '/p/$slug': typeof PSlugRoute
+  '/space-mix/privacy': typeof SpaceMixPrivacyRoute
   '/stoicheia/agon': typeof StoicheiaAgonRoute
   '/stoicheia/calendar': typeof StoicheiaCalendarRoute
   '/stoicheia/canon': typeof StoicheiaCanonRoute
@@ -329,6 +335,7 @@ export interface FileRoutesByFullPath {
   '/stoicheia/hymn': typeof StoicheiaHymnRoute
   '/stoicheia/isopsephy': typeof StoicheiaIsopsephyRoute
   '/stoicheia/xenia': typeof StoicheiaXeniaRoute
+  '/wild/edit': typeof WildEditRoute
   '/stoicheia/': typeof StoicheiaIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/brain/roll/$id': typeof BrainRollIdRoute
@@ -360,7 +367,6 @@ export interface FileRoutesByTo {
   '/two': typeof TwoRoute
   '/why': typeof WhyRoute
   '/wild': typeof WildRoute
-  '/wild/edit': typeof WildEditRoute
   '/api/card': typeof ApiCardRoute
   '/brain/roll': typeof BrainRollRoute
   '/count/$walk': typeof CountWalkRoute
@@ -368,6 +374,7 @@ export interface FileRoutesByTo {
   '/letters/$mark': typeof LettersMarkRoute
   '/og/$file': typeof OgFileRoute
   '/p/$slug': typeof PSlugRoute
+  '/space-mix/privacy': typeof SpaceMixPrivacyRoute
   '/stoicheia/agon': typeof StoicheiaAgonRoute
   '/stoicheia/calendar': typeof StoicheiaCalendarRoute
   '/stoicheia/canon': typeof StoicheiaCanonRoute
@@ -376,6 +383,7 @@ export interface FileRoutesByTo {
   '/stoicheia/hymn': typeof StoicheiaHymnRoute
   '/stoicheia/isopsephy': typeof StoicheiaIsopsephyRoute
   '/stoicheia/xenia': typeof StoicheiaXeniaRoute
+  '/wild/edit': typeof WildEditRoute
   '/stoicheia': typeof StoicheiaIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/brain/roll/$id': typeof BrainRollIdRoute
@@ -409,7 +417,6 @@ export interface FileRoutesById {
   '/two': typeof TwoRoute
   '/why': typeof WhyRoute
   '/wild': typeof WildRoute
-  '/wild_/edit': typeof WildEditRoute
   '/api/card': typeof ApiCardRoute
   '/brain_/roll': typeof BrainRollRoute
   '/count_/$walk': typeof CountWalkRoute
@@ -417,6 +424,7 @@ export interface FileRoutesById {
   '/letters_/$mark': typeof LettersMarkRoute
   '/og/$file': typeof OgFileRoute
   '/p/$slug': typeof PSlugRoute
+  '/space-mix/privacy': typeof SpaceMixPrivacyRoute
   '/stoicheia/agon': typeof StoicheiaAgonRoute
   '/stoicheia/calendar': typeof StoicheiaCalendarRoute
   '/stoicheia/canon': typeof StoicheiaCanonRoute
@@ -425,6 +433,7 @@ export interface FileRoutesById {
   '/stoicheia/hymn': typeof StoicheiaHymnRoute
   '/stoicheia/isopsephy': typeof StoicheiaIsopsephyRoute
   '/stoicheia/xenia': typeof StoicheiaXeniaRoute
+  '/wild_/edit': typeof WildEditRoute
   '/stoicheia/': typeof StoicheiaIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/brain_/roll_/$id': typeof BrainRollIdRoute
@@ -459,7 +468,6 @@ export interface FileRouteTypes {
     | '/two'
     | '/why'
     | '/wild'
-    | '/wild/edit'
     | '/api/card'
     | '/brain/roll'
     | '/count/$walk'
@@ -467,6 +475,7 @@ export interface FileRouteTypes {
     | '/letters/$mark'
     | '/og/$file'
     | '/p/$slug'
+    | '/space-mix/privacy'
     | '/stoicheia/agon'
     | '/stoicheia/calendar'
     | '/stoicheia/canon'
@@ -475,6 +484,7 @@ export interface FileRouteTypes {
     | '/stoicheia/hymn'
     | '/stoicheia/isopsephy'
     | '/stoicheia/xenia'
+    | '/wild/edit'
     | '/stoicheia/'
     | '/api/auth/$'
     | '/brain/roll/$id'
@@ -506,7 +516,6 @@ export interface FileRouteTypes {
     | '/two'
     | '/why'
     | '/wild'
-    | '/wild/edit'
     | '/api/card'
     | '/brain/roll'
     | '/count/$walk'
@@ -514,6 +523,7 @@ export interface FileRouteTypes {
     | '/letters/$mark'
     | '/og/$file'
     | '/p/$slug'
+    | '/space-mix/privacy'
     | '/stoicheia/agon'
     | '/stoicheia/calendar'
     | '/stoicheia/canon'
@@ -522,6 +532,7 @@ export interface FileRouteTypes {
     | '/stoicheia/hymn'
     | '/stoicheia/isopsephy'
     | '/stoicheia/xenia'
+    | '/wild/edit'
     | '/stoicheia'
     | '/api/auth/$'
     | '/brain/roll/$id'
@@ -554,7 +565,6 @@ export interface FileRouteTypes {
     | '/two'
     | '/why'
     | '/wild'
-    | '/wild_/edit'
     | '/api/card'
     | '/brain_/roll'
     | '/count_/$walk'
@@ -562,6 +572,7 @@ export interface FileRouteTypes {
     | '/letters_/$mark'
     | '/og/$file'
     | '/p/$slug'
+    | '/space-mix/privacy'
     | '/stoicheia/agon'
     | '/stoicheia/calendar'
     | '/stoicheia/canon'
@@ -570,6 +581,7 @@ export interface FileRouteTypes {
     | '/stoicheia/hymn'
     | '/stoicheia/isopsephy'
     | '/stoicheia/xenia'
+    | '/wild_/edit'
     | '/stoicheia/'
     | '/api/auth/$'
     | '/brain_/roll_/$id'
@@ -603,13 +615,14 @@ export interface RootRouteChildren {
   TwoRoute: typeof TwoRoute
   WhyRoute: typeof WhyRoute
   WildRoute: typeof WildRoute
-  WildEditRoute: typeof WildEditRoute
   ApiCardRoute: typeof ApiCardRoute
   BrainRollRoute: typeof BrainRollRoute
   CountWalkRoute: typeof CountWalkRoute
   LettersMarkRoute: typeof LettersMarkRoute
   OgFileRoute: typeof OgFileRoute
   PSlugRoute: typeof PSlugRoute
+  SpaceMixPrivacyRoute: typeof SpaceMixPrivacyRoute
+  WildEditRoute: typeof WildEditRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   BrainRollIdRoute: typeof BrainRollIdRoute
   BrainRollThresholdIdRoute: typeof BrainRollThresholdIdRoute
@@ -792,13 +805,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WildRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/wild_/edit': {
-      id: '/wild_/edit'
-      path: '/wild/edit'
-      fullPath: '/wild/edit'
-      preLoaderRoute: typeof WildEditRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/card': {
       id: '/api/card'
       path: '/api/card'
@@ -846,6 +852,13 @@ declare module '@tanstack/react-router' {
       path: '/p/$slug'
       fullPath: '/p/$slug'
       preLoaderRoute: typeof PSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/space-mix/privacy': {
+      id: '/space-mix/privacy'
+      path: '/space-mix/privacy'
+      fullPath: '/space-mix/privacy'
+      preLoaderRoute: typeof SpaceMixPrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/stoicheia/': {
@@ -910,6 +923,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/stoicheia/xenia'
       preLoaderRoute: typeof StoicheiaXeniaRouteImport
       parentRoute: typeof StoicheiaRoute
+    }
+    '/wild_/edit': {
+      id: '/wild_/edit'
+      path: '/wild/edit'
+      fullPath: '/wild/edit'
+      preLoaderRoute: typeof WildEditRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -1010,13 +1030,14 @@ const rootRouteChildren: RootRouteChildren = {
   TwoRoute: TwoRoute,
   WhyRoute: WhyRoute,
   WildRoute: WildRoute,
-  WildEditRoute: WildEditRoute,
   ApiCardRoute: ApiCardRoute,
   BrainRollRoute: BrainRollRoute,
   CountWalkRoute: CountWalkRoute,
   LettersMarkRoute: LettersMarkRoute,
   OgFileRoute: OgFileRoute,
   PSlugRoute: PSlugRoute,
+  SpaceMixPrivacyRoute: SpaceMixPrivacyRoute,
+  WildEditRoute: WildEditRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   BrainRollIdRoute: BrainRollIdRoute,
   BrainRollThresholdIdRoute: BrainRollThresholdIdRoute,
