@@ -67,8 +67,8 @@ function SpaceMixPrivacyPage() {
           <h2 className="font-display text-2xl text-ink">Contact</h2>
           <p className="mt-3">
             Questions about this policy:{" "}
-            <a className="text-primary underline" href="mailto:ericdanielevans@gmail.com">
-              ericdanielevans@gmail.com
+            <a className="text-primary underline" href="mailto:SpaceMixExt@proton.me">
+              SpaceMixExt@proton.me
             </a>
           </p>
         </section>
