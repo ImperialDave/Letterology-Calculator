@@ -11,6 +11,8 @@ export interface P2PRoomHandle {
   room: string;
   peers: PeerInfo[];
   joined: boolean;
+  /** pending until the first /api/rtc poll settles. */
+  signaling: "pending" | "ok" | "down";
   broadcast: (data: unknown) => void;
   send: (data: unknown, peerId?: string) => void;
   onMessage: (
@@ -24,6 +26,7 @@ export function useP2PRoom(options: UseP2PRoomOptions): P2PRoomHandle {
   const [name] = useState(() => options.name ?? "Player");
   const [peers, setPeers] = useState<PeerInfo[]>([]);
   const [joined, setJoined] = useState(false);
+  const [signaling, setSignaling] = useState<"pending" | "ok" | "down">("pending");
   const roomRef = useRef<P2PRoom | null>(null);
   const listeners = useRef(new Set<(from: string, data: unknown, channel: "state" | "reliable") => void>());
 
@@ -37,6 +40,7 @@ export function useP2PRoom(options: UseP2PRoomOptions): P2PRoomHandle {
         for (const fn of listeners.current) fn(from, data, channel);
       },
       onConnected: () => setJoined(true),
+      onSignaling: setSignaling,
     });
     roomRef.current = p2p;
     void p2p.join();
@@ -58,5 +62,5 @@ export function useP2PRoom(options: UseP2PRoomOptions): P2PRoomHandle {
     [],
   );
 
-  return { selfId, room, peers, joined, broadcast, send, onMessage };
+  return { selfId, room, peers, joined, signaling, broadcast, send, onMessage };
 }

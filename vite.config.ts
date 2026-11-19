@@ -136,10 +136,12 @@ export default defineConfig(({ command }) => ({
   },
   resolve: { tsconfigPaths: true },
   optimizeDeps: {
-    exclude: ["@resvg/resvg-js", "sharp"],
+    exclude: ["@resvg/resvg-js", "sharp", "@electric-sql/pglite"],
   },
   ssr: {
-    external: ["@resvg/resvg-js", "sharp"],
+    // PGLite reads pglite.data and the wasm files next to its package entry.
+    // Bundling it into Nitro drops those files and every room poll 500s.
+    external: ["@resvg/resvg-js", "sharp", "@electric-sql/pglite"],
   },
   plugins: [
     pgliteBootstrapPlugin(),
@@ -161,8 +163,13 @@ export default defineConfig(({ command }) => ({
             // manifest + head-tag middleware). Nitro v3 defaults serverDir to
             // false, so removing this silently unwires /?install=1 on deploys.
             serverDir: "./server",
-            // Native addon — keep it out of the Nitro bundle.
-            externals: { external: ["@resvg/resvg-js", "sharp"] },
+            // PGLite loads pglite.data / pglite.wasm / initdb.wasm via
+            // import.meta.url next to its package entry. Nitro only keeps a
+            // package out of the bundle when it is in traceDeps (the
+            // `externals.external` key is not read). The * suffix full-traces
+            // the package into .output/server/node_modules, including those
+            // files. A JS-only trace would shadow the real package and 500.
+            traceDeps: ["@electric-sql/pglite*"],
           }),
         ]
       : []),

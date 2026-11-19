@@ -52,6 +52,8 @@ export interface P2PRoomOptions {
   onMessage?: (from: string, data: unknown, channel: "state" | "reliable") => void;
   /** Fires once, on the first successful signaling poll (registration). */
   onConnected?: () => void;
+  /** Fires when the /api/rtc poll starts working, or keeps failing. */
+  onSignaling?: (state: "ok" | "down") => void;
 }
 
 interface PeerSlot {
@@ -106,6 +108,7 @@ export class P2PRoom {
   private closed = false;
   private everPolled = false;
   private lastPeersFingerprint = "";
+  private signalingState: "ok" | "down" | null = null;
 
   constructor(opts: P2PRoomOptions) {
     this.opts = opts;
@@ -117,13 +120,8 @@ export class P2PRoom {
    * room: the loop and timers start regardless and the next poll retries.
    */
   async join(): Promise<void> {
-    try {
-      await this.pollOnce();
-    } catch {
-      // First poll can fail transiently; the scheduled loop below retries.
-    }
+    await this.poll();
     if (this.closed) return;
-    this.schedulePoll(this.anyPairConnecting() ? FAST_POLL_MS : IDLE_POLL_MS);
     this.pingTimer = setInterval(() => {
       this.pingAll();
       this.watchdog();
@@ -214,10 +212,18 @@ export class P2PRoom {
     if (this.closed) return;
     try {
       await this.pollOnce();
+      this.reportSignaling("ok");
     } catch {
       // Transient poll failures are expected (tab sleep, deploy roll); retry.
+      this.reportSignaling("down");
     }
     this.schedulePoll(this.anyPairConnecting() ? FAST_POLL_MS : IDLE_POLL_MS);
+  }
+
+  private reportSignaling(state: "ok" | "down"): void {
+    if (this.closed || this.signalingState === state) return;
+    this.signalingState = state;
+    this.opts.onSignaling?.(state);
   }
 
   private reconcileRoster(peers: { id: string; name: string }[]): void {

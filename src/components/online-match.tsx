@@ -330,6 +330,7 @@ export function OnlineMatch({
       <WaitScreen
         room={room}
         joined={p2p.joined}
+        signalingDown={p2p.signaling === "down"}
         failed={failed}
         found={Boolean(opponent)}
         copied={copied}
@@ -425,6 +426,7 @@ export function OnlineMatch({
 function WaitScreen({
   room,
   joined,
+  signalingDown,
   failed,
   found,
   copied,
@@ -432,6 +434,7 @@ function WaitScreen({
 }: {
   room: string;
   joined: boolean;
+  signalingDown: boolean;
   failed: boolean;
   found: boolean;
   copied: "code" | "link" | null;
@@ -440,16 +443,28 @@ function WaitScreen({
   return (
     <div className="flex flex-1 flex-col py-6">
       <p className="text-xs font-semibold tracking-widest text-faint uppercase">
-        {failed ? "No direct line" : found ? "Found them" : joined ? "Room open" : "Opening the room"}
+        {signalingDown
+          ? "Room service"
+          : failed
+            ? "No direct line"
+            : found
+              ? "Found them"
+              : joined
+                ? "Room open"
+                : "Opening the room"}
       </p>
-      <h2 className="display mt-3 text-4xl">{failed ? "Couldn’t connect." : "Send this code."}</h2>
+      <h2 className="display mt-3 text-4xl">
+        {signalingDown ? "The room didn’t open." : failed ? "Couldn’t connect." : "Send this code."}
+      </h2>
       <p id="room-code" className="display mt-6 text-6xl tracking-[0.18em]">
         {room}
       </p>
       <p className="mt-4 max-w-md text-muted">
-        {failed
-          ? "These two devices couldn’t open a direct connection. Try the same Wi-Fi, or a new room. One phone still works from the front screen."
-          : "The other person opens Guess the Character, taps Join, and types this code. The character each of you picks stays on your own phone."}
+        {signalingDown
+          ? "This phone could not register with the room. Leave and try again in a moment."
+          : failed
+            ? "These two devices couldn’t open a direct connection. Try the same Wi-Fi, or a new room. One phone still works from the front screen."
+            : "The other person opens Guess the Character, taps Join, and types this code. The character each of you picks stays on your own phone."}
       </p>
       <div className="mt-6 grid grid-cols-2 gap-2">
         <Button variant="secondary" className="rounded-sm" onClick={() => onCopy("code")}>
