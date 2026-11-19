@@ -1,6 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { WildEditor } from "@/components/WildEditor";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/wild_/edit")({
-  component: WildEditor,
+  beforeLoad: () => {
+    throw redirect({ to: "/guess" });
+  },
 });

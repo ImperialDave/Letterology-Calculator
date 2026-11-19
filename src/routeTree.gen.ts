@@ -23,6 +23,7 @@ import { Route as CountRouteImport } from './routes/count'
 import { Route as CourtRouteImport } from './routes/court'
 import { Route as DoctrineRouteImport } from './routes/doctrine'
 import { Route as GlyphboundRouteImport } from './routes/glyphbound'
+import { Route as GuessRouteImport } from './routes/guess'
 import { Route as HouseRouteImport } from './routes/house'
 import { Route as KeyRouteImport } from './routes/key'
 import { Route as LettersRouteImport } from './routes/letters'
@@ -35,6 +36,7 @@ import { Route as TwoRouteImport } from './routes/two'
 import { Route as WhyRouteImport } from './routes/why'
 import { Route as WildRouteImport } from './routes/wild'
 import { Route as ApiCardRouteImport } from './routes/api/card'
+import { Route as ApiRtcRouteImport } from './routes/api/rtc'
 import { Route as BrainRollRouteImport } from './routes/brain_.roll'
 import { Route as CountWalkRouteImport } from './routes/count_.$walk'
 import { Route as GlyphboundSortieRouteImport } from './routes/glyphbound.sortie'
@@ -127,6 +129,11 @@ const GlyphboundRoute = GlyphboundRouteImport.update({
   path: '/glyphbound',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GuessRoute = GuessRouteImport.update({
+  id: '/guess',
+  path: '/guess',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HouseRoute = HouseRouteImport.update({
   id: '/house',
   path: '/house',
@@ -185,6 +192,11 @@ const WildRoute = WildRouteImport.update({
 const ApiCardRoute = ApiCardRouteImport.update({
   id: '/api/card',
   path: '/api/card',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRtcRoute = ApiRtcRouteImport.update({
+  id: '/api/rtc',
+  path: '/api/rtc',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BrainRollRoute = BrainRollRouteImport.update({
@@ -308,6 +320,7 @@ export interface FileRoutesByFullPath {
   '/court': typeof CourtRoute
   '/doctrine': typeof DoctrineRoute
   '/glyphbound': typeof GlyphboundRouteWithChildren
+  '/guess': typeof GuessRoute
   '/house': typeof HouseRoute
   '/key': typeof KeyRoute
   '/letters': typeof LettersRoute
@@ -320,6 +333,7 @@ export interface FileRoutesByFullPath {
   '/why': typeof WhyRoute
   '/wild': typeof WildRoute
   '/api/card': typeof ApiCardRoute
+  '/api/rtc': typeof ApiRtcRoute
   '/brain/roll': typeof BrainRollRoute
   '/count/$walk': typeof CountWalkRoute
   '/glyphbound/sortie': typeof GlyphboundSortieRoute
@@ -357,6 +371,7 @@ export interface FileRoutesByTo {
   '/court': typeof CourtRoute
   '/doctrine': typeof DoctrineRoute
   '/glyphbound': typeof GlyphboundRouteWithChildren
+  '/guess': typeof GuessRoute
   '/house': typeof HouseRoute
   '/key': typeof KeyRoute
   '/letters': typeof LettersRoute
@@ -368,6 +383,7 @@ export interface FileRoutesByTo {
   '/why': typeof WhyRoute
   '/wild': typeof WildRoute
   '/api/card': typeof ApiCardRoute
+  '/api/rtc': typeof ApiRtcRoute
   '/brain/roll': typeof BrainRollRoute
   '/count/$walk': typeof CountWalkRoute
   '/glyphbound/sortie': typeof GlyphboundSortieRoute
@@ -406,6 +422,7 @@ export interface FileRoutesById {
   '/court': typeof CourtRoute
   '/doctrine': typeof DoctrineRoute
   '/glyphbound': typeof GlyphboundRouteWithChildren
+  '/guess': typeof GuessRoute
   '/house': typeof HouseRoute
   '/key': typeof KeyRoute
   '/letters': typeof LettersRoute
@@ -418,6 +435,7 @@ export interface FileRoutesById {
   '/why': typeof WhyRoute
   '/wild': typeof WildRoute
   '/api/card': typeof ApiCardRoute
+  '/api/rtc': typeof ApiRtcRoute
   '/brain_/roll': typeof BrainRollRoute
   '/count_/$walk': typeof CountWalkRoute
   '/glyphbound/sortie': typeof GlyphboundSortieRoute
@@ -457,6 +475,7 @@ export interface FileRouteTypes {
     | '/court'
     | '/doctrine'
     | '/glyphbound'
+    | '/guess'
     | '/house'
     | '/key'
     | '/letters'
@@ -469,6 +488,7 @@ export interface FileRouteTypes {
     | '/why'
     | '/wild'
     | '/api/card'
+    | '/api/rtc'
     | '/brain/roll'
     | '/count/$walk'
     | '/glyphbound/sortie'
@@ -506,6 +526,7 @@ export interface FileRouteTypes {
     | '/court'
     | '/doctrine'
     | '/glyphbound'
+    | '/guess'
     | '/house'
     | '/key'
     | '/letters'
@@ -517,6 +538,7 @@ export interface FileRouteTypes {
     | '/why'
     | '/wild'
     | '/api/card'
+    | '/api/rtc'
     | '/brain/roll'
     | '/count/$walk'
     | '/glyphbound/sortie'
@@ -554,6 +576,7 @@ export interface FileRouteTypes {
     | '/court'
     | '/doctrine'
     | '/glyphbound'
+    | '/guess'
     | '/house'
     | '/key'
     | '/letters'
@@ -566,6 +589,7 @@ export interface FileRouteTypes {
     | '/why'
     | '/wild'
     | '/api/card'
+    | '/api/rtc'
     | '/brain_/roll'
     | '/count_/$walk'
     | '/glyphbound/sortie'
@@ -604,6 +628,7 @@ export interface RootRouteChildren {
   CourtRoute: typeof CourtRoute
   DoctrineRoute: typeof DoctrineRoute
   GlyphboundRoute: typeof GlyphboundRouteWithChildren
+  GuessRoute: typeof GuessRoute
   HouseRoute: typeof HouseRoute
   KeyRoute: typeof KeyRoute
   LettersRoute: typeof LettersRoute
@@ -616,6 +641,7 @@ export interface RootRouteChildren {
   WhyRoute: typeof WhyRoute
   WildRoute: typeof WildRoute
   ApiCardRoute: typeof ApiCardRoute
+  ApiRtcRoute: typeof ApiRtcRoute
   BrainRollRoute: typeof BrainRollRoute
   CountWalkRoute: typeof CountWalkRoute
   LettersMarkRoute: typeof LettersMarkRoute
@@ -728,6 +754,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GlyphboundRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/guess': {
+      id: '/guess'
+      path: '/guess'
+      fullPath: '/guess'
+      preLoaderRoute: typeof GuessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/house': {
       id: '/house'
       path: '/house'
@@ -810,6 +843,13 @@ declare module '@tanstack/react-router' {
       path: '/api/card'
       fullPath: '/api/card'
       preLoaderRoute: typeof ApiCardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/rtc': {
+      id: '/api/rtc'
+      path: '/api/rtc'
+      fullPath: '/api/rtc'
+      preLoaderRoute: typeof ApiRtcRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/brain_/roll': {
@@ -1019,6 +1059,7 @@ const rootRouteChildren: RootRouteChildren = {
   CourtRoute: CourtRoute,
   DoctrineRoute: DoctrineRoute,
   GlyphboundRoute: GlyphboundRouteWithChildren,
+  GuessRoute: GuessRoute,
   HouseRoute: HouseRoute,
   KeyRoute: KeyRoute,
   LettersRoute: LettersRoute,
@@ -1031,6 +1072,7 @@ const rootRouteChildren: RootRouteChildren = {
   WhyRoute: WhyRoute,
   WildRoute: WildRoute,
   ApiCardRoute: ApiCardRoute,
+  ApiRtcRoute: ApiRtcRoute,
   BrainRollRoute: BrainRollRoute,
   CountWalkRoute: CountWalkRoute,
   LettersMarkRoute: LettersMarkRoute,

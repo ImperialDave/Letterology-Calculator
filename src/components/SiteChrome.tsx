@@ -403,10 +403,10 @@ export function AppShell({
             Glyphbound
           </Link>
           <Link
-            to="/wild"
+            to="/guess"
             className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
           >
-            Wild
+            Guess
           </Link>
           <Link
             to="/why"
@@ -444,10 +444,10 @@ export function AppShell({
             </Link>
           ))}
           <Link
-            to="/wild"
+            to="/guess"
             className="inline-flex h-11 min-w-14 items-center justify-center font-display text-xs tracking-[0.14em] text-primary uppercase"
           >
-            Wild
+            Guess
           </Link>
           <AuthSlot />
         </div>

@@ -23,6 +23,14 @@
   --color-hull: #7a3328;
   --color-cargo: #8a6a3a;
   --color-danger: #9a2f24;
+  --color-background: #0e0e0c;
+  --color-background-top: #141410;
+  --color-foreground: #f3f0e8;
+  --color-card: #171714;
+  --color-faint: #746f66;
+  --color-primary-foreground: #16140f;
+  --color-p1: #9eb0c4;
+  --color-p2: #c4b09a;
   --color-accent: #7a3328;
   --color-accent-fg: #f6f0e4;
   --color-accent-dim: #2a6b5c;
@@ -473,6 +481,113 @@
     transition: none !important;
   }
   .gb-pad-btn:active {
+    transform: none;
+  }
+}
+
+/* Guess the Character. These names also exist on the club, with other colors. */
+.gtc {
+  --color-primary: #e7e1d6;
+  --color-muted: #a39e93;
+  --color-subtle: #221f1b;
+  --color-border: #2e2b26;
+  --color-danger: #d4a3a3;
+  --font-sans: "Figtree", "Avenir Next", "Segoe UI", sans-serif;
+  --radius-sm: 8px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  overflow: auto;
+  color-scheme: dark;
+  background-color: var(--color-background);
+  background-image: linear-gradient(180deg, var(--color-background-top) 0%, var(--color-background) 18rem);
+  background-attachment: fixed;
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  line-height: 1.5;
+}
+
+.gtc ::selection {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+.gtc .safe-x {
+  padding-left: max(1.25rem, env(safe-area-inset-left));
+  padding-right: max(1.25rem, env(safe-area-inset-right));
+}
+
+.gtc .safe-y {
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+.gtc .display {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+}
+
+.gtc .press:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.gtc .rise {
+  animation: gtc-rise 250ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes gtc-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.gtc .modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: color-mix(in oklab, var(--color-background) 78%, transparent);
+}
+
+.gtc .modal-panel {
+  position: fixed;
+  z-index: 50;
+  left: 50%;
+  top: 50%;
+  width: min(32rem, calc(100% - 2rem));
+  max-height: min(40rem, calc(100dvh - 2rem));
+  overflow-y: auto;
+  transform: translate(-50%, -50%);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  padding: 1rem;
+}
+
+.gtc .modal-panel:focus {
+  outline: none;
+}
+
+.gtc .check {
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: var(--color-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gtc .rise {
+    animation: none;
+  }
+
+  .gtc .press:active:not(:disabled) {
     transform: none;
   }
 }
