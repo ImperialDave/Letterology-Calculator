@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { GuessGame } from "@/components/guess-game";
+import { GtcChip, GtcWordmark } from "@/components/gtc-mark";
 import { OnlineMatch } from "@/components/online-match";
+import { initialOnline, type OnlineState } from "@/lib/gtc/online";
+import { clearSeat, loadSeat, newPeerId, saveSeat } from "@/lib/gtc/seat";
 import { THEMES } from "@/lib/gtc/themes";
 import { pageCardMeta } from "@/lib/letterology/share";
 import { VOICE } from "@/lib/letterology/voice";
@@ -26,12 +29,12 @@ export const Route = createFileRoute("/guess")({
           }
           return item;
         }),
-        { name: "theme-color", content: "#0e0e0c" },
+        { name: "theme-color", content: "#0b3f36" },
       ],
       links: [
         {
           rel: "stylesheet",
-          href: "https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&display=swap",
+          href: "https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Figtree:wght@400;600;700&display=swap",
         },
       ],
     };
@@ -62,25 +65,45 @@ function PlayGuess() {
   );
 }
 
+function writeRoom(roomCode: string) {
+  const url = new URL(window.location.href);
+  url.searchParams.set("room", roomCode);
+  window.history.replaceState(null, "", `${url.pathname}?${url.searchParams.toString()}`);
+}
+
 function GuessGate() {
+  const [booted, setBooted] = useState(false);
   const [screen, setScreen] = useState<"gate" | "local" | "room">("gate");
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [draftCode, setDraftCode] = useState("");
   const [isHost, setIsHost] = useState(false);
   const [invited, setInvited] = useState<string | null>(null);
+  const [peerId, setPeerId] = useState("");
+  const [restored, setRestored] = useState(false);
+  const [initialState, setInitialState] = useState<OnlineState | undefined>(undefined);
 
   useEffect(() => {
     const saved = localStorage.getItem("gtc-name");
     if (saved) setName(saved);
     const room = new URLSearchParams(window.location.search).get("room");
-    if (room && /^[A-Za-z0-9_-]{1,64}$/.test(room)) {
-      const next = cleanCode(room);
-      if (next.length >= 4) {
-        setInvited(next);
-        setDraftCode(next);
-      }
+    const next = room && /^[A-Za-z0-9_-]{1,64}$/.test(room) ? cleanCode(room) : "";
+    if (next.length >= 4) {
+      setInvited(next);
+      setDraftCode(next);
     }
+    const seat = next.length >= 4 ? loadSeat(next) : loadSeat();
+    if (seat) {
+      if (next !== seat.room) writeRoom(seat.room);
+      setCode(seat.room);
+      setName(seat.name);
+      setIsHost(seat.role === "host");
+      setPeerId(seat.peerId);
+      setInitialState(seat.state);
+      setRestored(true);
+      setScreen("room");
+    }
+    setBooted(true);
   }, []);
 
   function remember(value: string): string {
@@ -90,69 +113,96 @@ function GuessGate() {
     return trimmed;
   }
 
+  function enter(role: "host" | "guest", roomCode: string, who: string) {
+    const id = newPeerId();
+    const state = initialOnline();
+    saveSeat({ room: roomCode, name: who, role, peerId: id, state });
+    writeRoom(roomCode);
+    setPeerId(id);
+    setCode(roomCode);
+    setName(who);
+    setIsHost(role === "host");
+    setInitialState(undefined);
+    setRestored(false);
+    setScreen("room");
+  }
+
   function leaveRoom() {
+    clearSeat();
     const url = new URL(window.location.href);
     url.searchParams.delete("room");
     const next = url.searchParams.toString();
     window.history.replaceState(null, "", next ? `${url.pathname}?${next}` : url.pathname);
+    setRestored(false);
+    setInitialState(undefined);
     setScreen("gate");
   }
 
-  if (screen === "local") return <GuessGame onLeave={() => setScreen("gate")} />;
-  if (screen === "room") {
+  if (!booted) {
     return (
-      <OnlineMatch key={`${code}:${name}:${isHost ? "h" : "g"}`} room={code} name={name} isHost={isHost} onLeave={leaveRoom} />
+      <main className="gtc-boot" data-screen="boot">
+        <GtcWordmark />
+      </main>
+    );
+  }
+  if (screen === "local") return <GuessGame onLeave={() => setScreen("gate")} />;
+  if (screen === "room" && peerId) {
+    return (
+      <OnlineMatch
+        key={`${code}:${name}:${isHost ? "h" : "g"}:${peerId}`}
+        room={code}
+        name={name}
+        isHost={isHost}
+        peerId={peerId}
+        restored={restored}
+        initialState={restored ? initialState : undefined}
+        onLeave={leaveRoom}
+      />
     );
   }
 
   const joinCode = cleanCode(draftCode);
 
   return (
-    <main className="safe-x safe-y mx-auto flex min-h-dvh w-full max-w-xl flex-col py-8" data-screen="gate">
-      <Link to="/" className="inline-flex h-11 items-center self-start text-xs tracking-[0.16em] text-faint uppercase">
+    <main className="safe-x safe-y mx-auto flex min-h-dvh w-full max-w-xl flex-col gap-6 py-6" data-screen="gate">
+      <Link to="/" className="gtc-club self-start">
         Club
       </Link>
-      <p className="text-xs font-semibold tracking-widest text-faint uppercase">Two players</p>
-      <h1 className="display mt-3 text-5xl">
-        Guess the
-        <br />
-        Character
-      </h1>
-      <p className="mt-4 max-w-md text-base text-muted">
+      <GtcWordmark heading />
+      <GtcChip>Two players</GtcChip>
+      <p className="gtc-lede">
         A theme wide enough to be useless. You each hide a character for the other person, then guess the one
         they hid for you. {THEMES.length} themes. No accounts.
       </p>
 
       {invited ? (
-        <p className="mt-6 rounded-lg border border-border bg-card px-3 py-3 text-sm">
-          You were invited to room <span className="font-medium tracking-widest">{invited}</span>.
+        <p className="gtc-sheet text-sm">
+          You were invited to room <span className="font-bold tracking-widest">{invited}</span>.
         </p>
       ) : null}
 
-      <label className="mt-8 block text-sm text-muted" htmlFor="your-name">
-        Your name
-      </label>
-      <input
-        id="your-name"
-        value={name}
-        maxLength={18}
-        autoComplete="nickname"
-        placeholder="Player"
-        onChange={(event) => setName(event.target.value)}
-        className="mt-1 w-full rounded-sm border border-border bg-subtle px-3 py-3 text-base text-foreground placeholder:text-faint focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-      />
+      <div className="flex flex-col gap-2">
+        <label className="gtc-label" htmlFor="your-name">
+          Your name
+        </label>
+        <input
+          id="your-name"
+          value={name}
+          maxLength={18}
+          autoComplete="nickname"
+          placeholder="Player"
+          onChange={(event) => setName(event.target.value)}
+          className="gtc-field"
+        />
+      </div>
 
-      <div className="mt-6 flex flex-col gap-2">
+      <div className="flex flex-col gap-2">
         <button
           id="create-room"
           type="button"
-          className="press min-h-11 w-full rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground"
+          className="gtc-btn gtc-btn-primary press w-full"
           onClick={() => {
-            const who = remember(name);
-            setCode(makeCode());
-            setName(who);
-            setIsHost(true);
-            setScreen("room");
+            enter("host", makeCode(), remember(name));
           }}
         >
           Create a room
@@ -161,18 +211,14 @@ function GuessGate() {
       </div>
 
       <form
-        className="mt-8 flex flex-col gap-2"
+        className="flex flex-col gap-2"
         onSubmit={(event) => {
           event.preventDefault();
           if (joinCode.length < 4) return;
-          const who = remember(name);
-          setCode(joinCode);
-          setName(who);
-          setIsHost(false);
-          setScreen("room");
+          enter("guest", joinCode, remember(name));
         }}
       >
-        <label className="text-sm text-muted" htmlFor="room-code-input">
+        <label className="gtc-label" htmlFor="room-code-input">
           Room code
         </label>
         <input
@@ -184,27 +230,19 @@ function GuessGate() {
           spellCheck={false}
           placeholder="ABCDE"
           onChange={(event) => setDraftCode(cleanCode(event.target.value))}
-          className="display w-full rounded-sm border border-border bg-subtle px-3 py-3 text-2xl tracking-[0.18em] text-foreground placeholder:text-faint focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          className="gtc-field gtc-field-code"
         />
-        <button
-          id="join-room"
-          type="submit"
-          disabled={joinCode.length < 4}
-          className="press min-h-11 w-full rounded-lg border border-border bg-card px-4 text-sm font-medium disabled:opacity-40"
-        >
+        <button id="join-room" type="submit" disabled={joinCode.length < 4} className="gtc-btn gtc-btn-secondary press w-full">
           {invited && joinCode === invited ? `Join ${invited}` : "Join"}
         </button>
       </form>
 
-      <button
-        id="same-phone"
-        type="button"
-        className="press mt-8 min-h-11 w-full rounded-lg px-4 text-sm font-medium text-muted"
-        onClick={() => setScreen("local")}
-      >
-        Same phone
-      </button>
-      <p className="mt-2 text-sm text-faint">Pass one phone back and forth if you’re sitting together.</p>
+      <div className="mt-auto flex flex-col gap-2 pt-4">
+        <button id="same-phone" type="button" className="gtc-btn gtc-btn-quiet press w-full" onClick={() => setScreen("local")}>
+          Same phone
+        </button>
+        <p className="text-sm text-faint">Pass one phone back and forth if you’re sitting together.</p>
+      </div>
     </main>
   );
 }

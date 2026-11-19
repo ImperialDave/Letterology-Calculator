@@ -9,6 +9,8 @@
  * rolls back and accepts, so pairs converge without wedging.
  */
 
+import { sdpFingerprint } from "@/lib/multiplayer/sdp";
+
 export type SignalKind = "offer" | "answer" | "ice";
 
 /**
@@ -45,6 +47,11 @@ export interface P2PRoomOptions {
   room: string;
   selfId: string;
   name?: string;
+  /**
+   * A returning seat already has a peer id. Dial even when we would normally
+   * wait, and ignore SDP left over from the previous page.
+   */
+  redial?: boolean;
   /** Defaults to VITE_STUN_URLS (comma-separated) or Google public STUN. */
   iceServers?: RTCIceServer[];
   onPeersChanged?: (peers: PeerInfo[]) => void;
@@ -109,9 +116,12 @@ export class P2PRoom {
   private everPolled = false;
   private lastPeersFingerprint = "";
   private signalingState: "ok" | "down" | null = null;
+  /** First poll of a returning seat skips SDP from the previous page. */
+  private skipBacklog: boolean;
 
   constructor(opts: P2PRoomOptions) {
     this.opts = opts;
+    this.skipBacklog = Boolean(opts.redial);
   }
 
   /**
@@ -128,12 +138,14 @@ export class P2PRoom {
     }, PING_INTERVAL_MS);
   }
 
-  close(): void {
+  close(opts?: { leave?: boolean }): void {
     this.closed = true;
     if (this.pollTimer) clearTimeout(this.pollTimer);
     if (this.pingTimer) clearInterval(this.pingTimer);
     for (const slot of this.peers.values()) slot.pc.close();
     this.peers.clear();
+    // A refresh keeps the seat, so it must not tell the room this player left.
+    if (opts?.leave === false) return;
     // Leaving the roster is the teardown broadcast: everyone's next poll
     // drops this peer and closes their side of the pair.
     void fetch("/api/rtc", {
@@ -201,6 +213,12 @@ export class P2PRoom {
     }
     this.reconcileRoster(body.peers);
     const roster = new Set(body.peers.map((p) => p.id));
+    if (this.skipBacklog) {
+      // since=0 would replay the previous page's offers into the new connection.
+      for (const sig of body.signals) this.cursor = Math.max(this.cursor, sig.id);
+      this.skipBacklog = false;
+      return;
+    }
     for (const sig of body.signals) {
       this.cursor = Math.max(this.cursor, sig.id);
       await this.onSignal(sig.from, sig.kind, sig.payload, roster);
@@ -235,7 +253,7 @@ export class P2PRoom {
         existing.info.name = p.name;
       } else {
         // Exactly one side dials each pair; the other waits for the offer.
-        this.connectTo(p.id, p.name, this.opts.selfId > p.id);
+        this.connectTo(p.id, p.name, Boolean(this.opts.redial) || this.opts.selfId > p.id);
       }
     }
     for (const [id, slot] of this.peers) {
@@ -385,6 +403,20 @@ export class P2PRoom {
     try {
       if (kind === "offer" || kind === "answer") {
         const description = payload as RTCSessionDescriptionInit;
+        if (kind === "offer") {
+          const incoming = sdpFingerprint(description.sdp);
+          const current = sdpFingerprint(slot.pc.remoteDescription?.sdp);
+          // A reload builds a new RTCPeerConnection. Its fingerprint no longer
+          // matches the one we negotiated, so the old pc cannot take the offer.
+          if (incoming && current && incoming !== current) {
+            const name = slot.info.name;
+            slot.pc.close();
+            this.peers.delete(from);
+            const fresh = this.connectTo(from, name, false);
+            if (!fresh) return;
+            slot = fresh;
+          }
+        }
         const collision =
           kind === "offer" && (slot.makingOffer || slot.pc.signalingState !== "stable");
         slot.ignoreOffer = !polite && collision;

@@ -3,6 +3,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { clsx, type ClassValue } from "clsx";
 import { Copy, Dices, Volume2, VolumeX } from "lucide-react";
 import { twMerge } from "tailwind-merge";
+import { GtcChip, GtcCode, GtcPortrait, GtcTicket, GtcWordmark, gtcAnswerClass } from "@/components/gtc-mark";
 import { isStrongMatch, pointsFor } from "@/lib/gtc/logic";
 import {
   initialOnline,
@@ -18,6 +19,7 @@ import {
   type Seat,
   type Wire,
 } from "@/lib/gtc/online";
+import { loadSeat, saveSeat } from "@/lib/gtc/seat";
 import { THEMES } from "@/lib/gtc/themes";
 import { useP2PRoom } from "@/lib/multiplayer/use-p2p-room";
 
@@ -57,13 +59,10 @@ function Button({
     <button
       type={type}
       className={cn(
-        "press inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium",
-        "transition-[background-color,color,opacity] duration-150",
-        "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
-        "disabled:pointer-events-none disabled:opacity-40",
-        variant === "primary" && "bg-primary text-primary-foreground hover:bg-primary/90",
-        variant === "secondary" && "border border-border bg-card text-foreground hover:bg-subtle",
-        variant === "quiet" && "bg-transparent text-muted hover:text-foreground",
+        "gtc-btn press",
+        variant === "primary" && "gtc-btn-primary",
+        variant === "secondary" && "gtc-btn-secondary",
+        variant === "quiet" && "gtc-btn-quiet",
         className,
       )}
       {...props}
@@ -72,12 +71,7 @@ function Button({
 }
 
 function fieldClass(extra?: string) {
-  return cn(
-    "w-full rounded-sm border border-border bg-subtle px-3 py-3 text-base text-foreground",
-    "placeholder:text-faint",
-    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
-    extra,
-  );
+  return cn("gtc-field", extra);
 }
 
 function answerWord(answer: OLog["answer"]): string {
@@ -111,15 +105,15 @@ function scoreBits(seat: Seat): string {
 function LogList({ entries }: { entries: OLog[] }) {
   if (!entries.length) return <p className="py-4 text-sm text-muted">Nothing on the record yet.</p>;
   return (
-    <ol className="flex flex-col gap-3 py-3">
+    <ol className="gtc-log">
       {entries.map((entry) => (
-        <li key={entry.id} className="text-sm">
-          <p className="text-foreground">{entry.kind === "g" ? `Guess: ${entry.text}` : entry.text}</p>
+        <li key={entry.id}>
+          <p>{entry.kind === "g" ? `Guess: ${entry.text}` : entry.text}</p>
           {entry.answer ? (
-            <p className="mt-1 text-muted">
-              {answerWord(entry.answer)}
-              {entry.note ? ` — ${entry.note}` : ""}
-              {entry.hint ? " · hint" : ""}
+            <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted">
+              <span className={gtcAnswerClass(entry.answer)}>{answerWord(entry.answer)}</span>
+              {entry.note ? <span>{entry.note}</span> : null}
+              {entry.hint ? <span>Hint</span> : null}
             </p>
           ) : null}
         </li>
@@ -132,24 +126,46 @@ export function OnlineMatch({
   room,
   name,
   isHost,
+  peerId,
+  restored = false,
+  initialState,
   onLeave,
 }: {
   room: string;
   name: string;
   isHost: boolean;
+  peerId: string;
+  restored?: boolean;
+  initialState?: OnlineState;
   onLeave: () => void;
 }) {
-  const p2p = useP2PRoom({ room, name });
-  const [state, setState] = useState<OnlineState>(initialOnline);
+  const p2p = useP2PRoom({
+    room,
+    name,
+    selfId: peerId,
+    redial: restored,
+    shouldLeave: () => {
+      const seat = loadSeat(room);
+      return !seat || seat.peerId !== peerId;
+    },
+  });
+  const [state, setState] = useState<OnlineState>(() => initialState ?? initialOnline());
   const [opponentId, setOpponentId] = useState<string | null>(null);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [copied, setCopied] = useState<"code" | "link" | null>(null);
   const stateRef = useRef(state);
   const oppRef = useRef<string | null>(null);
   const helloFor = useRef<string | null>(null);
-  const rolledFor = useRef(0);
+  const rolledFor = useRef(initialState && initialState.phase !== "wait" ? initialState.round : 0);
   const prevPhase = useRef(state.phase);
   stateRef.current = state;
+
+  const remember = useCallback(
+    (next: OnlineState) => {
+      saveSeat({ room, name, role: isHost ? "host" : "guest", peerId, state: next });
+    },
+    [isHost, name, peerId, room],
+  );
 
   const sendTo = useCallback(
     (data: Wire) => {
@@ -165,10 +181,15 @@ export function OnlineMatch({
       const result = step(stateRef.current, action, { isHost });
       stateRef.current = result.state;
       setState(result.state);
+      remember(result.state);
       for (const msg of result.out) sendTo(msg);
     },
-    [isHost, sendTo],
+    [isHost, remember, sendTo],
   );
+
+  useEffect(() => {
+    remember(stateRef.current);
+  }, [remember]);
 
   const onWire = useCallback(
     (msg: Wire) => {
@@ -278,7 +299,11 @@ export function OnlineMatch({
     helloFor.current = pick.id;
     sendTo({ t: "hello", name });
     dispatch({ type: "PEER", name: pick.name || "Friend" });
-  }, [dispatch, name, p2p.peers, sendTo]);
+    const current = stateRef.current;
+    if (restored && isHost && current.phase !== "wait" && current.themeLine.trim()) {
+      sendTo({ t: "theme", themeId: current.themeId, themeLine: current.themeLine.trim() });
+    }
+  }, [dispatch, isHost, name, p2p.peers, restored, sendTo]);
 
   useEffect(() => {
     if (!isHost || state.phase !== "theme") return;
@@ -298,8 +323,6 @@ export function OnlineMatch({
   const connected = opponent?.connectionState === "connected";
   const failed = opponent?.connectionState === "failed";
   const theirName = state.theirName || "Friend";
-  const myColor = isHost ? "text-p1" : "text-p2";
-  const theirColor = isHost ? "text-p2" : "text-p1";
 
   async function copy(kind: "code" | "link") {
     const text = kind === "code" ? room : `${window.location.origin}${window.location.pathname}?room=${room}`;
@@ -316,7 +339,7 @@ export function OnlineMatch({
   if (state.stale) {
     screen = (
       <div className="flex flex-1 flex-col justify-center py-8">
-        <h2 className="display text-4xl">This room already started.</h2>
+        <h2 className="gtc-title">This room already started.</h2>
         <p className="mt-4 max-w-md text-muted">
           The character was picked on the other phone before you arrived. Leave and make a new room.
         </p>
@@ -357,8 +380,6 @@ export function OnlineMatch({
         state={state}
         name={name}
         theirName={theirName}
-        myColor={myColor}
-        theirColor={theirColor}
         dispatch={dispatch}
       />
     );
@@ -366,32 +387,31 @@ export function OnlineMatch({
 
   return (
     <main className="safe-x safe-y mx-auto flex min-h-dvh w-full max-w-xl flex-col" data-screen={state.phase}>
-      <header className="flex items-center gap-3 border-b border-border py-3">
-        <p className="shrink-0 text-xs font-semibold tracking-widest text-faint uppercase">Round {state.round}</p>
-        <div className="flex min-w-0 flex-1 items-center justify-end gap-4">
-          <p className="flex min-w-0 items-baseline gap-1.5">
-            <span className={cn("max-w-20 truncate text-xs", myColor)}>{name}</span>
-            <span className="text-base font-medium tabular-nums">{state.me.score}</span>
+      <header className="gtc-hud">
+        <div className="gtc-hud-top">
+          <GtcWordmark compact />
+          <button type="button" onClick={() => setRulesOpen(true)} className="gtc-rules press">
+            Rules
+          </button>
+        </div>
+        <p className="gtc-round">Round {state.round}</p>
+        <div className="gtc-plates">
+          <p className="gtc-plate gtc-plate-me">
+            <span className="gtc-plate-name">{name}</span>
+            <span className="gtc-plate-score">{state.me.score}</span>
           </p>
-          <p className="flex min-w-0 items-baseline gap-1.5">
-            <span className={cn("max-w-20 truncate text-xs", theirColor)}>{theirName}</span>
-            <span className="text-base font-medium tabular-nums">{state.them.score}</span>
+          <p className="gtc-plate gtc-plate-them">
+            <span className="gtc-plate-name">{theirName}</span>
+            <span className="gtc-plate-score">{state.them.score}</span>
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setRulesOpen(true)}
-          className="press shrink-0 rounded-lg px-2 py-2 text-sm font-medium"
-        >
-          Rules
-        </button>
       </header>
 
       {connected ? null : state.phase === "wait" || state.phase === "theme" ? null : (
-        <p className="mt-3 rounded-lg border border-border bg-card px-3 py-2 text-sm text-muted">
+        <p className="gtc-banner">
           {failed
             ? "The direct connection failed. Same Wi-Fi usually works. You can also leave and play on one phone."
-            : `${theirName} dropped. Stay on this screen if they come back. A refresh starts over and loses the character on this phone.`}
+            : `${theirName} dropped. Stay on this screen if they come back. A refresh on this phone keeps your character.`}
         </p>
       )}
       {connected && p2p.peers.length > 1 ? (
@@ -402,12 +422,12 @@ export function OnlineMatch({
         {screen}
       </div>
 
-      <footer className="flex items-center justify-between gap-3 border-t border-border py-3 text-xs text-faint">
+      <footer className="gtc-foot py-2 text-sm">
         <p className="tabular-nums">
           Room {room}
           {opponent?.rttMs != null ? ` · ${opponent.rttMs} ms` : ""}
         </p>
-        <button type="button" className="press min-h-11 px-2 text-sm text-muted" onClick={onLeave}>
+        <button type="button" className="gtc-btn gtc-btn-quiet press" onClick={onLeave}>
           Leave
         </button>
       </footer>
@@ -442,7 +462,7 @@ function WaitScreen({
 }) {
   return (
     <div className="flex flex-1 flex-col py-6">
-      <p className="text-xs font-semibold tracking-widest text-faint uppercase">
+      <GtcChip>
         {signalingDown
           ? "Room service"
           : failed
@@ -452,13 +472,11 @@ function WaitScreen({
               : joined
                 ? "Room open"
                 : "Opening the room"}
-      </p>
-      <h2 className="display mt-3 text-4xl">
+      </GtcChip>
+      <h2 className="gtc-title mt-3">
         {signalingDown ? "The room didn’t open." : failed ? "Couldn’t connect." : "Send this code."}
       </h2>
-      <p id="room-code" className="display mt-6 text-6xl tracking-[0.18em]">
-        {room}
-      </p>
+      <GtcCode code={room} />
       <p className="mt-4 max-w-md text-muted">
         {signalingDown
           ? "This phone could not register with the room. Leave and try again in a moment."
@@ -467,15 +485,15 @@ function WaitScreen({
             : "The other person opens Guess the Character, taps Join, and types this code. The character each of you picks stays on your own phone."}
       </p>
       <div className="mt-6 grid grid-cols-2 gap-2">
-        <Button variant="secondary" className="rounded-sm" onClick={() => onCopy("code")}>
+        <Button variant="secondary" onClick={() => onCopy("code")}>
           <Copy className="size-4" aria-hidden="true" />
           {copied === "code" ? "Copied" : "Copy code"}
         </Button>
-        <Button variant="secondary" className="rounded-sm" onClick={() => onCopy("link")}>
+        <Button variant="secondary" onClick={() => onCopy("link")}>
           {copied === "link" ? "Copied" : "Copy link"}
         </Button>
       </div>
-      <p className="mt-auto pt-8 text-sm text-faint">Don’t refresh. A refresh drops the room and anything you typed.</p>
+      <p className="pt-6 text-sm text-faint">You can refresh. This phone keeps your place and the character you hid.</p>
     </div>
   );
 }
@@ -495,10 +513,8 @@ function ThemeScreen({
   return (
     <div className="flex flex-col gap-5 py-6">
       <div>
-        <p className="text-xs font-semibold tracking-widest text-faint uppercase">
-          {isHost ? "You start the round" : `Waiting on ${theirName}`}
-        </p>
-        <h2 className="display mt-3 text-4xl">Both of your characters</h2>
+        <GtcChip>{isHost ? "You start the round" : `Waiting on ${theirName}`}</GtcChip>
+        <h2 className="gtc-title mt-3">Both of your characters</h2>
         <p className="mt-3 text-sm text-faint tabular-nums">{THEMES.length} in the deck</p>
       </div>
       <input
@@ -506,7 +522,7 @@ function ThemeScreen({
         value={state.themeLine}
         maxLength={80}
         onChange={(event) => dispatch({ type: "SET_LINE", line: event.target.value })}
-        className={fieldClass("display text-2xl italic")}
+        className={fieldClass("gtc-field-ticket")}
       />
       {examples.length ? (
         <p className="text-sm text-muted">Fits, for instance: {examples.join(" · ")}</p>
@@ -514,12 +530,12 @@ function ThemeScreen({
         <p className="text-sm text-muted">Your theme. Anyone who truly fits is fair game.</p>
       )}
       <div className="flex flex-col gap-2 sm:flex-row">
-        <Button variant="secondary" className="w-full rounded-sm" onClick={() => dispatch({ type: "ROLL" })}>
+        <Button variant="secondary" className="w-full" onClick={() => dispatch({ type: "ROLL" })}>
           <Dices className="size-4" aria-hidden="true" />
           New theme
         </Button>
         {state.examples.length > 4 ? (
-          <Button variant="secondary" className="w-full rounded-sm" onClick={() => dispatch({ type: "SHUFFLE" })}>
+          <Button variant="secondary" className="w-full" onClick={() => dispatch({ type: "SHUFFLE" })}>
             More examples
           </Button>
         ) : null}
@@ -532,10 +548,7 @@ function ThemeScreen({
               <button
                 type="button"
                 onClick={() => dispatch({ type: "PICK", id: theme.id })}
-                className={cn(
-                  "flex min-h-11 w-full items-center rounded-sm px-2 text-left text-sm",
-                  theme.id === state.themeId ? "bg-subtle text-foreground" : "text-muted hover:bg-subtle",
-                )}
+                className={cn("gtc-pick", theme.id === state.themeId && "is-on")}
               >
                 {theme.line}
               </button>
@@ -580,32 +593,31 @@ function DraftScreen({
         dispatch({ type: "LOCK" });
       }}
     >
-      <div>
-        <p className="text-xs font-semibold tracking-widest text-faint uppercase">Both of your characters</p>
-        <p className="display mt-2 text-3xl italic">{state.themeLine}</p>
-      </div>
-      <h2 className="display text-4xl">Pick {theirName}’s character.</h2>
+      <GtcTicket line={state.themeLine} />
+      <h2 className="gtc-title">Pick {theirName}’s character.</h2>
       <p className="text-muted">
         This stays on your phone. {theirName} will try to guess it, and you answer yes, no, or sort of.
       </p>
       {examples.length ? <p className="text-sm text-muted">Fits, for instance: {examples.join(" · ")}</p> : null}
       {state.iLocked ? (
-        <p className="display text-3xl italic">{state.secret}</p>
+        <GtcPortrait name={state.secret} note={state.note} kicker="Locked on this phone" seat="me" />
       ) : (
         <>
-          <label className="block text-sm text-muted" htmlFor="secret">
-            Their character
-          </label>
-          <input
-            id="secret"
-            value={state.secret}
-            maxLength={48}
-            autoComplete="off"
-            onChange={(event) => dispatch({ type: "SET_SECRET", value: event.target.value })}
-            className={fieldClass("display text-2xl")}
-            placeholder="Not your own"
-          />
-          <label className="block text-sm text-muted" htmlFor="note">
+          <GtcPortrait kicker="Their character" seat="me">
+            <label className="sr-only" htmlFor="secret">
+              Their character
+            </label>
+            <input
+              id="secret"
+              value={state.secret}
+              maxLength={48}
+              autoComplete="off"
+              onChange={(event) => dispatch({ type: "SET_SECRET", value: event.target.value })}
+              className={fieldClass("gtc-field-name")}
+              placeholder="Not your own"
+            />
+          </GtcPortrait>
+          <label className="gtc-label" htmlFor="note">
             Private note, optional
           </label>
           <input
@@ -670,13 +682,12 @@ function AskScreen({
         setText("");
       }}
     >
-      <p className="text-xs font-semibold tracking-widest text-faint uppercase">Both of your characters</p>
-      <p className="display text-3xl italic">{state.themeLine}</p>
+      <GtcTicket line={state.themeLine} />
       <p className="text-sm text-muted tabular-nums">
         Worth {worth} if you get it now · this turn {state.me.turnQuestions}
       </p>
       <LogList entries={state.me.log} />
-      <label className="text-sm text-muted" htmlFor="ask">
+      <label className="gtc-label" htmlFor="ask">
         {guessing ? "Your guess" : "Yes or no question"}
       </label>
       <input
@@ -691,7 +702,7 @@ function AskScreen({
         <Button type="submit" className="w-full" disabled={!text.trim()}>
           {guessing ? "Guess" : "Ask"}
         </Button>
-        <Button variant="secondary" className="w-full rounded-sm" onClick={() => setGuessing((value) => !value)}>
+        <Button variant="secondary" className="w-full" onClick={() => setGuessing((value) => !value)}>
           {guessing ? "Ask instead" : "Make a guess"}
         </Button>
       </div>
@@ -701,13 +712,13 @@ function AskScreen({
         </Button>
       )}
       {confirmGiveUp ? (
-        <div className="rounded-lg border border-border p-3">
+        <div className="gtc-sheet">
           <p className="text-sm">Give up and score 0? They’ll show you the character.</p>
           <div className="mt-3 grid grid-cols-2 gap-2">
             <Button variant="quiet" onClick={() => setConfirmGiveUp(false)}>
               Cancel
             </Button>
-            <Button variant="secondary" className="rounded-sm" onClick={() => dispatch({ type: "GIVE_UP" })}>
+            <Button variant="secondary" onClick={() => dispatch({ type: "GIVE_UP" })}>
               Give up
             </Button>
           </div>
@@ -724,11 +735,11 @@ function AskScreen({
 function HoldScreen({ state, theirName }: { state: OnlineState; theirName: string }) {
   return (
     <div className="flex flex-1 flex-col justify-center py-8">
-      <p className="text-xs font-semibold tracking-widest text-faint uppercase">On their phone</p>
-      <h2 className="display mt-3 text-4xl">
+      <GtcChip>On their phone</GtcChip>
+      <h2 className="gtc-title mt-3">
         {state.me.gaveUp ? `Waiting for ${theirName} to reveal it.` : `Waiting for ${theirName}.`}
       </h2>
-      {state.pending ? <p className="display mt-6 text-2xl italic">{state.pending.text}</p> : null}
+      {state.pending ? <p className="gtc-quote mt-6"><span className="gtc-quote-line">{state.pending.text}</span></p> : null}
       <p className="mt-4 text-muted">The character they picked for you is not on this phone.</p>
     </div>
   );
@@ -737,14 +748,12 @@ function HoldScreen({ state, theirName }: { state: OnlineState; theirName: strin
 function WatchScreen({ state, theirName }: { state: OnlineState; theirName: string }) {
   return (
     <div className="flex flex-1 flex-col py-6">
-      <p className="text-xs font-semibold tracking-widest text-faint uppercase">{theirName} is guessing</p>
-      <h2 className="display mt-3 text-4xl">You’ll answer here.</h2>
+      <GtcChip>{theirName} is guessing</GtcChip>
+      <h2 className="gtc-title mt-3">You’ll answer here.</h2>
       <p className="mt-4 text-muted">Don’t say the name out loud. A question will land on this phone.</p>
-      <article className="mt-6 rounded-xl border border-border bg-card p-4">
-        <p className="text-xs text-faint">You picked this for them</p>
-        <p className="display mt-2 text-3xl italic">{state.secret}</p>
-        {state.note ? <p className="mt-2 text-sm text-muted">{state.note}</p> : null}
-      </article>
+      <div className="mt-6">
+        <GtcPortrait name={state.secret} note={state.note} kicker="You picked this for them" seat="them" />
+      </div>
       {state.them.log.length ? (
         <details className="mt-4">
           <summary className="text-sm text-muted">What they’ve asked</summary>
@@ -775,13 +784,11 @@ function RespondScreen({
   const close = pending.kind === "g" && isStrongMatch(pending.text, state.secret);
   return (
     <div className="flex flex-col gap-4 py-6">
-      <p className="text-xs font-semibold tracking-widest text-faint uppercase">Only you can see this</p>
-      <p className="display text-4xl italic">{state.secret}</p>
-      {state.note ? <p className="text-sm text-muted">{state.note}</p> : null}
-      <p className="text-xs font-semibold tracking-widest text-faint uppercase">
-        {theirName} {pending.kind === "g" ? "guessed" : "asked"}
-      </p>
-      <p className="display text-2xl">{pending.text}</p>
+      <GtcPortrait name={state.secret} note={state.note} kicker="Only you can see this" seat="them" />
+      <div className="gtc-quote">
+        <p className="gtc-quote-kicker">{theirName} {pending.kind === "g" ? "guessed" : "asked"}</p>
+        <p className="gtc-quote-line">{pending.text}</p>
+      </div>
       {pending.kind === "g" ? (
         <>
           {close ? (
@@ -791,26 +798,31 @@ function RespondScreen({
           )}
           <div className="grid grid-cols-2 gap-2">
             <Button onClick={() => dispatch({ type: "JUDGE", correct: true })}>Correct</Button>
-            <Button variant="secondary" className="rounded-sm" onClick={() => dispatch({ type: "JUDGE", correct: false })}>
+            <Button variant="secondary" onClick={() => dispatch({ type: "JUDGE", correct: false })}>
               Not quite
             </Button>
           </div>
         </>
       ) : (
         <>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid gap-2">
             {(["yes", "no", "sort"] as AnswerWord[]).map((answer) => (
               <Button
                 key={answer}
                 variant="secondary"
-                className="rounded-sm"
+                className={cn(
+                  "gtc-choice w-full",
+                  answer === "yes" && "gtc-choice-yes",
+                  answer === "no" && "gtc-choice-no",
+                  answer === "sort" && "gtc-choice-sort",
+                )}
                 onClick={() => dispatch({ type: "ANSWER", answer, note, hint })}
               >
                 {answer === "sort" ? "Sort of" : answer === "yes" ? "Yes" : "No"}
               </Button>
             ))}
           </div>
-          <label className="text-sm text-muted" htmlFor="aside">
+          <label className="gtc-label" htmlFor="aside">
             A few words, optional
           </label>
           <input
@@ -848,12 +860,11 @@ function SolvedScreen({
   const done = state.them.solved || state.them.gaveUp || state.afterSolved === "results";
   return (
     <div className="flex flex-1 flex-col py-8">
-      <p className="text-xs font-semibold tracking-widest text-faint uppercase">
-        {state.me.gaveUp ? "Revealed" : "That’s the one"}
-      </p>
-      <h2 className="display mt-3 text-4xl">{state.myCharacter || "They confirmed it"}</h2>
-      {state.myNote ? <p className="mt-3 text-sm text-muted">{state.myNote}</p> : null}
-      <p className="mt-6 text-5xl font-medium tabular-nums">{state.me.gaveUp ? "0" : `+${state.me.roundPoints ?? 0}`}</p>
+      <GtcChip>{state.me.gaveUp ? "Revealed" : "That’s the one"}</GtcChip>
+      <div className="mt-4">
+        <GtcPortrait name={state.myCharacter || "They confirmed it"} note={state.myNote} seat="me" />
+      </div>
+      <p className="gtc-points mt-6">{state.me.gaveUp ? "0" : `+${state.me.roundPoints ?? 0}`}</p>
       <p className="mt-2 text-sm text-muted">{scoreBits(state.me)}</p>
       {state.inbox.length ? <p className="mt-4 text-sm text-muted">{theirName} is already waiting.</p> : null}
       <Button className="mt-auto w-full" onClick={() => dispatch({ type: "CONTINUE" })}>
@@ -867,15 +878,11 @@ function ResultsScreen({
   state,
   name,
   theirName,
-  myColor,
-  theirColor,
   dispatch,
 }: {
   state: OnlineState;
   name: string;
   theirName: string;
-  myColor: string;
-  theirColor: string;
   dispatch: (action: OnlineAction) => void;
 }) {
   const lead =
@@ -883,28 +890,29 @@ function ResultsScreen({
       ? "All square."
       : `${state.me.score > state.them.score ? name : theirName} leads the match.`;
   const cards = [
-    { label: name, color: myColor, character: state.myCharacter || "—", seat: state.me, who: "Yours" },
-    { label: theirName, color: theirColor, character: state.secret || "—", seat: state.them, who: "Theirs" },
+    { label: name, character: state.myCharacter || "—", seat: state.me, who: "Yours" as const },
+    { label: theirName, character: state.secret || "—", seat: state.them, who: "Theirs" as const },
   ];
   return (
     <div className="flex flex-col gap-5 py-6">
       <div>
-        <p className="text-xs font-semibold tracking-widest text-faint uppercase">Round {state.round}</p>
-        <h2 className="display mt-2 text-4xl">{lead}</h2>
-        <p className="mt-3 text-muted italic">{state.themeLine}</p>
+        <GtcChip>Round {state.round}</GtcChip>
+        <h2 className="gtc-title mt-3">{lead}</h2>
       </div>
+      <GtcTicket line={state.themeLine} />
       {cards.map((card) => (
-        <article key={card.label} className="rounded-xl border border-border bg-card p-4">
-          <p className={cn("text-xs font-medium", card.color)}>
-            {card.label} · {card.who}
-          </p>
-          <p className="display mt-2 text-3xl italic">{card.character}</p>
-          <p className="mt-3 text-2xl font-medium tabular-nums">
+        <section key={card.label} className="flex flex-col gap-2">
+          <GtcPortrait
+            name={card.character}
+            kicker={`${card.label} · ${card.who}`}
+            seat={card.who === "Yours" ? "me" : "them"}
+          />
+          <p className="text-2xl font-bold tabular-nums">
             {card.seat.gaveUp ? "0" : `+${card.seat.roundPoints ?? 0}`}
             <span className="ml-2 text-sm font-normal text-muted">match {card.seat.score}</span>
           </p>
-          <p className="mt-2 text-sm text-muted">{scoreBits(card.seat)}</p>
-        </article>
+          <p className="text-sm text-muted">{scoreBits(card.seat)}</p>
+        </section>
       ))}
       <Button className="w-full" onClick={() => dispatch({ type: "NEXT" })}>
         Next round
@@ -929,11 +937,11 @@ function RulesDialog({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="modal-overlay" />
-        <Dialog.Content className="modal-panel" aria-describedby="online-rules">
+        <Dialog.Overlay className="gtc-overlay" />
+        <Dialog.Content className="gtc-modal" aria-describedby="online-rules">
           <div className="flex items-start justify-between gap-3">
-            <Dialog.Title className="display text-3xl">Two phones</Dialog.Title>
-            <Dialog.Close className="press rounded-lg px-2 py-2 text-sm text-muted">Close</Dialog.Close>
+            <Dialog.Title className="gtc-title">Two phones</Dialog.Title>
+            <Dialog.Close className="gtc-btn gtc-btn-quiet press">Close</Dialog.Close>
           </div>
           <div id="online-rules" className="mt-4 flex flex-col gap-4 text-sm text-muted">
             <p className="text-foreground">
@@ -944,7 +952,7 @@ function RulesDialog({
               A correct guess starts at 12. Minus 1 per question, minus 2 per wrong guess, minus 1 per hint. The
               floor is 1 if you get there. Giving up scores 0.
             </p>
-            <p>Don’t refresh. The character you picked lives only in this tab.</p>
+            <p>You can refresh this phone. It keeps your seat and the character you hid. Leave is what drops the room.</p>
           </div>
           <div className="mt-5 flex flex-col gap-2 border-t border-border pt-4">
             <Button variant="secondary" className="w-full rounded-sm" onClick={onSound}>

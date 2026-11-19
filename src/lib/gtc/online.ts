@@ -657,7 +657,9 @@ export function parseWire(data: unknown): Wire | null {
 
 export function snapshot(state: OnlineState, isHost: boolean): Wire[] {
   const wires: Wire[] = [];
-  if (state.themeLine.trim() && (state.phase === "theme" || state.phase === "draft" || state.roundLive)) {
+  // The host's line is the one a reconnect should restore. A guest echo of an
+  // older line would overwrite the roll that just happened on the host.
+  if (isHost && state.themeLine.trim() && (state.phase === "theme" || state.phase === "draft" || state.roundLive)) {
     wires.push({ t: "theme", themeId: state.themeId, themeLine: state.themeLine.trim() });
   }
   if (isHost && (state.phase === "draft" || state.roundLive)) {

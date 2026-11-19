@@ -3,6 +3,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { clsx, type ClassValue } from "clsx";
 import { Dices, Volume2, VolumeX } from "lucide-react";
 import { twMerge } from "tailwind-merge";
+import { GtcChip, GtcPortrait, GtcTicket, GtcWordmark, gtcAnswerClass } from "@/components/gtc-mark";
 import { THEMES } from "@/lib/gtc/themes";
 import {
   answerLabel,
@@ -58,13 +59,10 @@ function Button({
     <button
       type={type}
       className={cn(
-        "press inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-medium",
-        "transition-[background-color,color,opacity] duration-150",
-        "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
-        "disabled:pointer-events-none disabled:opacity-40",
-        variant === "primary" && "bg-primary text-primary-foreground hover:bg-primary/90",
-        variant === "secondary" && "border border-border bg-card text-foreground hover:bg-subtle",
-        variant === "quiet" && "bg-transparent text-muted hover:text-foreground",
+        "gtc-btn press",
+        variant === "primary" && "gtc-btn-primary",
+        variant === "secondary" && "gtc-btn-secondary",
+        variant === "quiet" && "gtc-btn-quiet",
         className,
       )}
       {...props}
@@ -73,12 +71,7 @@ function Button({
 }
 
 function fieldClass(extra?: string) {
-  return cn(
-    "w-full rounded-sm border border-border bg-subtle px-3 py-3 text-base text-foreground",
-    "placeholder:text-faint",
-    "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
-    extra,
-  );
+  return cn("gtc-field", extra);
 }
 
 function eyesOn(state: GameState): PID | null {
@@ -122,50 +115,33 @@ function ScoreBar({ state, onRules }: { state: GameState; onRules: () => void })
   const eyes = eyesOn(state);
   const counter = counterCopy(state);
   return (
-    <header className="shrink-0 border-b border-border">
-      <div className="flex items-center gap-3 py-3">
-        <p className="shrink-0 text-xs font-semibold tracking-widest text-faint uppercase">
-          Round {state.round}
-        </p>
-        <div className="flex min-w-0 flex-1 items-center justify-end gap-4">
-          {state.players.map((player, index) => {
-            const pid = index as PID;
-            const hot = eyes === pid;
-            return (
-              <p key={pid} className="flex min-w-0 items-baseline gap-1.5">
-                <span
-                  className={cn(
-                    "max-w-20 truncate text-xs",
-                    hot ? (pid === 0 ? "text-p1" : "text-p2") : "text-faint",
-                  )}
-                >
-                  {player.name || (pid === 0 ? "Player 1" : "Player 2")}
-                </span>
-                <span className="text-base font-medium tabular-nums">{player.score}</span>
-              </p>
-            );
-          })}
-        </div>
-        <button
-          type="button"
-          onClick={onRules}
-          className="press shrink-0 rounded-lg px-2 py-2 text-sm font-medium text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-        >
+    <header className="gtc-hud shrink-0">
+      <div className="gtc-hud-top">
+        <GtcWordmark compact />
+        <button type="button" onClick={onRules} className="gtc-rules press">
           Rules
         </button>
       </div>
-      {counter ? <p className="pb-3 text-xs text-muted tabular-nums">{counter}</p> : null}
+      <p className="gtc-round">Round {state.round}</p>
+      <div className="gtc-plates">
+        {state.players.map((player, index) => {
+          const pid = index as PID;
+          const hot = eyes === pid;
+          return (
+            <p key={pid} className={cn("gtc-plate", hot ? (pid === 0 ? "gtc-plate-me" : "gtc-plate-them") : "gtc-plate-idle")}>
+              <span className="gtc-plate-name">{player.name || (pid === 0 ? "Player 1" : "Player 2")}</span>
+              <span className="gtc-plate-score">{player.score}</span>
+            </p>
+          );
+        })}
+      </div>
+      {counter ? <p className="text-xs text-muted tabular-nums">{counter}</p> : null}
     </header>
   );
 }
 
 function ThemeLine({ line }: { line: string }) {
-  return (
-    <div className="py-4">
-      <p className="text-xs font-semibold tracking-widest text-faint uppercase">Both of your characters</p>
-      <p className="display mt-1 text-3xl italic">{line.trim() || "…"}</p>
-    </div>
-  );
+  return <GtcTicket line={line} />;
 }
 
 function LogList({ entries }: { entries: LogEntry[] }) {
@@ -177,16 +153,12 @@ function LogList({ entries }: { entries: LogEntry[] }) {
     );
   }
   return (
-    <ol className="flex flex-col gap-4 py-3">
+    <ol className="gtc-log">
       {entries.map((entry) => (
         <li key={entry.id} className="rise">
-          <p className="text-xs font-semibold tracking-widest text-faint uppercase">
-            {entry.kind === "g" ? "Guess" : "Question"}
-          </p>
+          <p className="text-sm font-bold">{entry.kind === "g" ? "Guess" : "Question"}</p>
           <p className="mt-1 text-base">{entry.text}</p>
-          {entry.answer ? (
-            <p className="mt-1 text-sm font-medium">{answerLabel(entry.answer)}</p>
-          ) : null}
+          {entry.answer ? <p className={gtcAnswerClass(entry.answer)}>{answerLabel(entry.answer)}</p> : null}
           {entry.note ? (
             <p className="mt-1 text-sm text-muted">
               {entry.hint ? "Hint — " : null}
@@ -218,13 +190,13 @@ function HandoffScreen({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex flex-1 flex-col justify-center py-8">
-        <p className="text-xs font-semibold tracking-widest text-faint uppercase">{phase.kicker}</p>
-        <h2 className="display mt-3 text-4xl">{phase.title}</h2>
+        <GtcChip>{phase.kicker}</GtcChip>
+        <h2 className="gtc-title mt-3">{phase.title}</h2>
         <p className="mt-4 max-w-md text-base text-muted">{phase.body}</p>
       </div>
       <div className="flex flex-col gap-2 pb-4">
         {phase.canEdit !== null ? (
-          <Button variant="secondary" className="w-full rounded-sm" onClick={() => dispatch({ type: "EDIT_DRAFT" })}>
+          <Button variant="secondary" className="w-full" onClick={() => dispatch({ type: "EDIT_DRAFT" })}>
             Edit the character I picked
           </Button>
         ) : null}
@@ -240,25 +212,28 @@ function Lobby({
   state,
   dispatch,
   onLeave,
+  onRules,
 }: {
   state: GameState;
   dispatch: (action: Parameters<typeof reducer>[1]) => void;
   onLeave?: () => void;
+  onRules: () => void;
 }) {
   const examples = visibleExamples(state);
   const lineRef = useRef<HTMLInputElement>(null);
   const canStart = state.themeLine.trim().length > 0;
 
   return (
-    <div className="flex flex-col gap-6 py-6">
-      <div>
-        <p className="text-xs font-semibold tracking-widest text-faint uppercase">Two players, one phone</p>
-        <h1 className="display mt-3 text-5xl">
-          Guess the
-          <br />
-          Character
-        </h1>
-        <p className="mt-4 max-w-md text-base text-muted">
+    <div className="flex flex-col gap-6 py-4">
+      <div className="flex justify-end">
+        <button type="button" className="gtc-rules press" onClick={onRules}>
+          Rules
+        </button>
+      </div>
+      <div className="flex flex-col gap-4">
+        <GtcWordmark heading />
+        <GtcChip>One phone</GtcChip>
+        <p className="gtc-lede">
           A theme wide enough to be useless. You each hide a character for the other person, then try to
           guess the one they hid for you.
         </p>
@@ -267,27 +242,25 @@ function Lobby({
       <div className="grid grid-cols-2 gap-3">
         {([0, 1] as const).map((pid) => (
           <label key={pid} className="block">
-            <span className={cn("text-xs font-medium", pid === 0 ? "text-p1" : "text-p2")}>
-              {pid === 0 ? "Player 1" : "Player 2"}
-            </span>
+            <span className={pid === 0 ? "gtc-chip gtc-chip-gold" : "gtc-chip"}>{pid === 0 ? "Player 1" : "Player 2"}</span>
             <input
               id={pid === 0 ? "p1-name" : "p2-name"}
               value={state.players[pid].name}
               maxLength={18}
               autoComplete="off"
               onChange={(event) => dispatch({ type: "SET_NAME", player: pid, name: event.target.value })}
-              className={fieldClass("mt-1")}
+              className={fieldClass("mt-2")}
             />
           </label>
         ))}
       </div>
 
-      <section className="rounded-xl border border-border bg-card p-4">
+      <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs font-semibold tracking-widest text-faint uppercase">The theme</p>
+          <p className="gtc-label">The theme</p>
           <span className="text-xs text-faint tabular-nums">{THEMES.length} in the deck</span>
         </div>
-        <label className="mt-4 block text-sm text-muted" htmlFor="theme-line">
+        <label className="sr-only" htmlFor="theme-line">
           Both of your characters
         </label>
         <input
@@ -296,7 +269,7 @@ function Lobby({
           value={state.themeLine}
           maxLength={80}
           onChange={(event) => dispatch({ type: "SET_LINE", line: event.target.value })}
-          className={fieldClass("display mt-2 text-2xl italic")}
+          className={fieldClass("gtc-field-ticket")}
           placeholder="cannot swim"
         />
         {examples.length ? (
@@ -305,7 +278,7 @@ function Lobby({
           <p className="mt-3 text-sm text-muted">Your theme. Anyone who truly fits is fair game.</p>
         )}
         <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-          <Button variant="secondary" className="w-full rounded-sm" onClick={() => dispatch({ type: "ROLL" })}>
+          <Button variant="secondary" className="w-full" onClick={() => dispatch({ type: "ROLL" })}>
             <Dices className="size-4" aria-hidden="true" />
             New theme
           </Button>
@@ -329,10 +302,7 @@ function Lobby({
                   <button
                     type="button"
                     onClick={() => dispatch({ type: "PICK", id: theme.id })}
-                    className={cn(
-                      "flex min-h-11 w-full items-center rounded-sm px-2 text-left text-sm",
-                      selected ? "bg-subtle text-foreground" : "text-muted hover:bg-subtle hover:text-foreground",
-                    )}
+                    className={cn("gtc-pick", selected && "is-on")}
                   >
                     {theme.line}
                   </button>
@@ -387,8 +357,8 @@ function DraftScreen({
         dispatch({ type: "LOCK" });
       }}
     >
-      <p className="text-xs font-semibold tracking-widest text-faint uppercase">Only you look</p>
-      <h2 className="display text-4xl">Pick {state.players[target].name}’s character.</h2>
+      <GtcChip>Only you look</GtcChip>
+      <h2 className="gtc-title">Pick {state.players[target].name}’s character.</h2>
       <p className="text-base text-muted">
         They have to guess this. You will answer. {state.players[target].name} must not see this screen.
       </p>
@@ -398,8 +368,10 @@ function DraftScreen({
           Inspiration, not the assignment: {examples.join(" · ")}. The poster child is usually a trap.
         </p>
       ) : null}
-      <label className="block" htmlFor="character-input">
-        <span className="text-sm text-muted">Their character</span>
+      <GtcPortrait kicker="Their character" seat={author === 0 ? "them" : "me"}>
+        <label className="sr-only" htmlFor="character-input">
+          Their character
+        </label>
         <input
           id="character-input"
           autoFocus
@@ -412,12 +384,12 @@ function DraftScreen({
             setError("");
             dispatch({ type: "SET_CHARACTER", value: event.target.value });
           }}
-          className={fieldClass("display mt-2 text-2xl")}
+          className={fieldClass("gtc-field-name")}
           placeholder="Not the obvious one"
         />
-      </label>
+      </GtcPortrait>
       <label className="block" htmlFor="note-input">
-        <span className="text-sm text-muted">Private reminder, optional</span>
+        <span className="gtc-label">Private reminder, optional</span>
         <textarea
           id="note-input"
           value={secret.note}
@@ -527,7 +499,7 @@ function AskScreen({
           )}
         </div>
         {giveUp ? (
-          <div className="mt-3 rounded-lg border border-border p-3">
+          <div className="gtc-sheet mt-3">
             <p className="text-sm">Give up and score 0? Your character gets revealed.</p>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <Button variant="quiet" onClick={() => setGiveUp(false)}>
@@ -570,21 +542,15 @@ function AnswerScreen({
 
   return (
     <div className="flex flex-1 flex-col gap-4 overflow-y-auto py-5">
-      <p className="text-xs font-semibold tracking-widest text-faint uppercase">
+      <GtcChip>
         {answerer.name} answering for {guesser.name}
-      </p>
-      <section className="rounded-xl border border-border bg-card p-4">
-        <p className="text-xs font-semibold tracking-widest text-faint uppercase">Their character</p>
-        <p className="display mt-2 text-4xl italic">{guesser.character}</p>
-        {guesser.note ? <p className="mt-3 text-sm text-muted">{guesser.note}</p> : null}
-      </section>
+      </GtcChip>
+      <GtcPortrait name={guesser.character} note={guesser.note} kicker="Their character" seat="them" />
       <ThemeLine line={state.themeLine} />
-      <blockquote className="border-l border-border pl-3">
-        <p className="text-xs font-semibold tracking-widest text-faint uppercase">
-          {pending.kind === "g" ? "They guessed" : "They asked"}
-        </p>
-        <p className="display mt-1 text-2xl">{pending.text}</p>
-      </blockquote>
+      <div className="gtc-quote">
+        <p className="gtc-quote-kicker">{pending.kind === "g" ? "They guessed" : "They asked"}</p>
+        <p className="gtc-quote-line">{pending.text}</p>
+      </div>
       {pending.kind === "q" ? (
         <>
           {guesser.log.length ? (
@@ -621,7 +587,12 @@ function AnswerScreen({
               <Button
                 key={answer}
                 variant="secondary"
-                className="w-full rounded-sm text-base"
+                className={cn(
+                  "gtc-choice w-full",
+                  answer === "yes" && "gtc-choice-yes",
+                  answer === "no" && "gtc-choice-no",
+                  answer === "sort" && "gtc-choice-sort",
+                )}
                 onClick={() =>
                   dispatch({
                     type: "RESOLVE_QUESTION",
@@ -689,13 +660,10 @@ function SolvedScreen({
   const player = state.players[state.phase.player];
   const opp = state.players[other(state.phase.player)];
   return (
-    <div className="flex flex-1 flex-col py-8">
-      <p className="text-xs font-semibold tracking-widest text-faint uppercase">
-        {player.gaveUp ? "Revealed" : "That’s the one"}
-      </p>
-      <h2 className="display mt-3 text-4xl">{player.name}</h2>
-      <p className="display mt-4 text-4xl italic">{player.character}</p>
-      <p className="mt-6 text-5xl font-medium tabular-nums">{player.gaveUp ? "0" : `+${player.roundPoints ?? 0}`}</p>
+    <div className="flex flex-1 flex-col gap-4 py-8">
+      <GtcChip>{player.gaveUp ? "Revealed" : "That’s the one"}</GtcChip>
+      <GtcPortrait name={player.character} kicker={player.name} seat="me" />
+      <p className="gtc-points">{player.gaveUp ? "0" : `+${player.roundPoints ?? 0}`}</p>
       <p className="mt-2 text-sm text-muted">{scoreBits(player)}</p>
       <p className="mt-1 text-sm text-muted tabular-nums">
         {tally(player.questions, "question", "questions")} · {tally(player.wrongGuesses, "wrong guess", "wrong guesses")} ·{" "}
@@ -720,28 +688,27 @@ function Results({
     a.score === b.score ? "All square." : `${a.score > b.score ? a.name : b.name} leads the match.`;
   return (
     <div className="flex flex-col gap-6 py-6">
-      <div>
-        <p className="text-xs font-semibold tracking-widest text-faint uppercase">Round {state.round}</p>
-        <h2 className="display mt-2 text-4xl">{lead}</h2>
-        <p className="mt-3 text-muted italic">{state.themeLine}</p>
+      <div className="flex flex-col gap-3">
+        <GtcChip>Round {state.round}</GtcChip>
+        <h2 className="gtc-title">{lead}</h2>
+        <GtcTicket line={state.themeLine} />
       </div>
-      <div className="grid gap-3">
+      <div className="grid gap-5">
         {state.players.map((player, index) => (
-          <article key={index} className="rounded-xl border border-border bg-card p-4">
-            <p className={cn("text-xs font-medium", index === 0 ? "text-p1" : "text-p2")}>{player.name}</p>
-            <p className="display mt-2 text-3xl italic">{player.character}</p>
-            <p className="mt-3 text-2xl font-medium tabular-nums">
+          <section key={index} className="flex flex-col gap-2">
+            <GtcPortrait name={player.character} kicker={player.name} seat={index === 0 ? "me" : "them"} />
+            <p className="text-2xl font-bold tabular-nums">
               {player.gaveUp ? "0" : `+${player.roundPoints ?? 0}`}
               <span className="ml-2 text-sm font-normal text-muted">match {player.score}</span>
             </p>
-            <p className="mt-2 text-sm text-muted">{scoreBits(player)}</p>
+            <p className="text-sm text-muted">{scoreBits(player)}</p>
             {player.log.length ? (
               <details className="mt-3">
                 <summary className="text-sm text-muted">How it went</summary>
                 <LogList entries={player.log} />
               </details>
             ) : null}
-          </article>
+          </section>
         ))}
       </div>
       <Button className="w-full" onClick={() => dispatch({ type: "NEXT_ROUND" })}>
@@ -773,13 +740,11 @@ function RulesDialog({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="modal-overlay" />
-        <Dialog.Content className="modal-panel" aria-describedby="rules-body">
+        <Dialog.Overlay className="gtc-overlay" />
+        <Dialog.Content className="gtc-modal" aria-describedby="rules-body">
           <div className="flex items-start justify-between gap-3">
-            <Dialog.Title className="display text-3xl">How to play</Dialog.Title>
-            <Dialog.Close className="press rounded-lg px-2 py-2 text-sm text-muted hover:text-foreground">
-              Close
-            </Dialog.Close>
+            <Dialog.Title className="gtc-title">How to play</Dialog.Title>
+            <Dialog.Close className="gtc-btn gtc-btn-quiet press">Close</Dialog.Close>
           </div>
           <div id="rules-body" className="mt-4 flex flex-col gap-4 text-sm text-muted">
             <p className="text-foreground">
@@ -891,7 +856,7 @@ function ConfirmRow({
   onNo: () => void;
 }) {
   return (
-    <div className="rounded-lg border border-border p-3">
+    <div className="gtc-sheet">
       <p className="text-sm text-foreground">{copy}</p>
       <div className="mt-3 grid grid-cols-2 gap-2">
         <Button variant="quiet" onClick={onNo}>
@@ -956,7 +921,7 @@ export function GuessGame({ onLeave }: { onLeave?: () => void }) {
   let screen: ReactNode = null;
   switch (state.phase.name) {
     case "lobby":
-      screen = <Lobby state={state} dispatch={dispatch} onLeave={onLeave} />;
+      screen = <Lobby state={state} dispatch={dispatch} onLeave={onLeave} onRules={() => setRulesOpen(true)} />;
       break;
     case "handoff":
       screen = <HandoffScreen state={state} dispatch={dispatch} />;
@@ -988,7 +953,7 @@ export function GuessGame({ onLeave }: { onLeave?: () => void }) {
       )}
       data-screen={state.phase.name}
     >
-      <ScoreBar state={state} onRules={() => setRulesOpen(true)} />
+      {state.phase.name === "lobby" ? null : <ScoreBar state={state} onRules={() => setRulesOpen(true)} />}
       <div key={screenKey(state)} className="rise flex min-h-0 flex-1 flex-col">
         {screen}
       </div>
