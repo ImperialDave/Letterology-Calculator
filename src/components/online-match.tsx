@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { clsx, type ClassValue } from "clsx";
-import { Copy, Dices, Volume2, VolumeX } from "lucide-react";
+import { Copy, Dices, Share, Volume2, VolumeX } from "lucide-react";
 import { twMerge } from "tailwind-merge";
 import { GtcChip, GtcCode, GtcPortrait, GtcTicket, GtcWordmark, gtcAnswerClass } from "@/components/gtc-mark";
 import { isStrongMatch, pointsFor } from "@/lib/gtc/logic";
@@ -46,6 +46,35 @@ function chime() {
     window.setTimeout(() => void ctx.close(), 800);
   } catch {
     /* audio is optional */
+  }
+}
+
+function tick() {
+  try {
+    const ctx = new AudioContext();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.04, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.1);
+    window.setTimeout(() => void ctx.close(), 400);
+  } catch {
+    /* audio is optional */
+  }
+}
+
+function nudge() {
+  tick();
+  try {
+    if (document.hidden) navigator.vibrate?.(30);
+  } catch {
+    /* vibration is optional */
   }
 }
 
@@ -224,6 +253,9 @@ export function OnlineMatch({
         case "lock":
           dispatch({ type: "THEY_LOCK" });
           return;
+        case "unlock":
+          dispatch({ type: "THEY_UNLOCK" });
+          return;
         case "start-draft":
           if (!isHost) dispatch({ type: "REMOTE_START", themeId: msg.themeId, themeLine: msg.themeLine });
           return;
@@ -334,7 +366,12 @@ export function OnlineMatch({
   }, [dispatch, isHost, opponentId, p2p.peers, state.phase, state.round]);
 
   useEffect(() => {
-    if (prevPhase.current !== "solved" && state.phase === "solved" && state.sound && !state.me.gaveUp) chime();
+    const prev = prevPhase.current;
+    if (state.sound) {
+      if (prev !== "solved" && state.phase === "solved" && !state.me.gaveUp) chime();
+      else if (state.phase === "respond" && prev !== "respond") nudge();
+      else if (state.phase === "ask" && prev === "hold") nudge();
+    }
     prevPhase.current = state.phase;
   }, [state.me.gaveUp, state.phase, state.sound]);
 
@@ -382,7 +419,7 @@ export function OnlineMatch({
   } else if (state.phase === "theme" || state.phase === "wait") {
     screen = <ThemeScreen state={state} isHost={isHost} theirName={theirName} dispatch={dispatch} />;
   } else if (state.phase === "draft") {
-    screen = <DraftScreen state={state} isHost={isHost} theirName={theirName} dispatch={dispatch} />;
+    screen = <DraftScreen state={state} theirName={theirName} dispatch={dispatch} />;
   } else if (state.phase === "ask") {
     screen = <AskScreen state={state} theirName={theirName} dispatch={dispatch} />;
   } else if (state.phase === "hold") {
@@ -479,6 +516,15 @@ function WaitScreen({
   copied: "code" | "link" | null;
   onCopy: (kind: "code" | "link") => void;
 }) {
+  const [canShare] = useState(() => typeof navigator !== "undefined" && typeof navigator.share === "function");
+  async function share() {
+    const url = `${window.location.origin}${window.location.pathname}?room=${room}`;
+    try {
+      await navigator.share({ title: "Guess the Character", text: `Room ${room}`, url });
+    } catch {
+      /* The sheet was cancelled, or this browser has no share sheet. */
+    }
+  }
   return (
     <div className="flex flex-1 flex-col py-6">
       <GtcChip>
@@ -512,6 +558,12 @@ function WaitScreen({
           {copied === "link" ? "Copied" : "Copy link"}
         </Button>
       </div>
+      {canShare ? (
+        <Button variant="secondary" className="mt-2 w-full" onClick={() => void share()}>
+          <Share className="size-4" aria-hidden="true" />
+          Share
+        </Button>
+      ) : null}
       <p className="pt-6 text-sm text-faint">You can refresh. This phone keeps your place and the character you hid.</p>
     </div>
   );
@@ -529,6 +581,7 @@ function ThemeScreen({
   dispatch: (action: OnlineAction) => void;
 }) {
   const examples = peekExamples(state);
+  const dirty = useRef(false);
   return (
     <div className="flex flex-col gap-5 py-6">
       <div>
@@ -540,9 +593,23 @@ function ThemeScreen({
         aria-label="Theme"
         value={state.themeLine}
         maxLength={80}
-        onChange={(event) => dispatch({ type: "SET_LINE", line: event.target.value })}
+        onChange={(event) => {
+          dirty.current = true;
+          dispatch({ type: "SET_LINE", line: event.target.value });
+        }}
+        onBlur={() => {
+          if (!dirty.current) return;
+          dirty.current = false;
+          dispatch({ type: "COMMIT_LINE" });
+        }}
+        onKeyDown={(event) => {
+          if (event.key !== "Enter") return;
+          event.preventDefault();
+          event.currentTarget.blur();
+        }}
         className={fieldClass("gtc-field-ticket")}
       />
+      {state.themeFromThem ? <p className="text-sm text-muted">{theirName} set this theme.</p> : null}
       {examples.length ? (
         <p className="text-sm text-muted">Fits, for instance: {examples.join(" · ")}</p>
       ) : (
@@ -580,7 +647,9 @@ function ThemeScreen({
           Pick characters
         </Button>
       ) : (
-        <p className="text-sm text-muted">{theirName} starts the picking once the theme looks right. You can still roll.</p>
+        <p className="text-sm text-muted">
+          {theirName} starts the picking once the theme looks right. A new theme replaces this one for both of you.
+        </p>
       )}
     </div>
   );
@@ -588,17 +657,19 @@ function ThemeScreen({
 
 function DraftScreen({
   state,
-  isHost,
   theirName,
   dispatch,
 }: {
   state: OnlineState;
-  isHost: boolean;
   theirName: string;
   dispatch: (action: OnlineAction) => void;
 }) {
   const [error, setError] = useState("");
+  const secretRef = useRef<HTMLInputElement>(null);
   const examples = peekExamples(state);
+  useEffect(() => {
+    if (!state.iLocked) secretRef.current?.focus();
+  }, [state.iLocked]);
   return (
     <form
       className="flex flex-col gap-4 py-6"
@@ -628,6 +699,7 @@ function DraftScreen({
             </label>
             <input
               id="secret"
+              ref={secretRef}
               value={state.secret}
               maxLength={48}
               autoComplete="off"
@@ -651,28 +723,24 @@ function DraftScreen({
         </>
       )}
       {error ? <p className="text-sm text-danger">{error}</p> : null}
-      {state.iLocked ? (
-        <p className="text-sm text-muted">
-          Locked in.
-          {state.theyLocked ? "" : ` Waiting for ${theirName}.`}
-        </p>
+      {state.iLocked && state.theyLocked ? (
+        <p className="text-sm text-muted">Starting…</p>
+      ) : state.iLocked ? (
+        <p className="text-sm text-muted">Locked in. Waiting for {theirName}.</p>
       ) : (
         <Button type="submit" className="w-full">
           Lock it in
         </Button>
       )}
       {state.iLocked && !state.theyLocked ? (
-        <Button variant="quiet" className="w-full" onClick={() => dispatch({ type: "LOCK" })}>
-          Resend
-        </Button>
-      ) : null}
-      {isHost && state.iLocked && state.theyLocked ? (
-        <Button className="w-full" onClick={() => dispatch({ type: "BEGIN" })}>
-          Start guessing
-        </Button>
-      ) : null}
-      {!isHost && state.iLocked && state.theyLocked ? (
-        <p className="text-sm text-muted">Both locked. {theirName} starts the round.</p>
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="quiet" className="w-full" onClick={() => dispatch({ type: "UNLOCK" })}>
+            Change it
+          </Button>
+          <Button variant="quiet" className="w-full" onClick={() => dispatch({ type: "LOCK" })}>
+            Resend
+          </Button>
+        </div>
       ) : null}
     </form>
   );
@@ -690,7 +758,11 @@ function AskScreen({
   const [text, setText] = useState("");
   const [guessing, setGuessing] = useState(false);
   const [confirmGiveUp, setConfirmGiveUp] = useState(false);
+  const askRef = useRef<HTMLInputElement>(null);
   const worth = pointsFor(state.me);
+  useEffect(() => {
+    askRef.current?.focus();
+  }, [guessing]);
   return (
     <form
       className="flex flex-1 flex-col gap-4 py-6"
@@ -711,6 +783,7 @@ function AskScreen({
       </label>
       <input
         id="ask"
+        ref={askRef}
         value={text}
         maxLength={guessing ? 48 : 160}
         onChange={(event) => setText(event.target.value)}
@@ -824,23 +897,6 @@ function RespondScreen({
         </>
       ) : (
         <>
-          <div className="grid gap-2">
-            {(["yes", "no", "sort"] as AnswerWord[]).map((answer) => (
-              <Button
-                key={answer}
-                variant="secondary"
-                className={cn(
-                  "gtc-choice w-full",
-                  answer === "yes" && "gtc-choice-yes",
-                  answer === "no" && "gtc-choice-no",
-                  answer === "sort" && "gtc-choice-sort",
-                )}
-                onClick={() => dispatch({ type: "ANSWER", answer, note, hint })}
-              >
-                {answer === "sort" ? "Sort of" : answer === "yes" ? "Yes" : "No"}
-              </Button>
-            ))}
-          </div>
           <label className="gtc-label" htmlFor="aside">
             A few words, optional
           </label>
@@ -861,6 +917,23 @@ function RespondScreen({
             />
             This gives the game away
           </label>
+          <div className="grid gap-2">
+            {(["yes", "no", "sort"] as AnswerWord[]).map((answer) => (
+              <Button
+                key={answer}
+                variant="secondary"
+                className={cn(
+                  "gtc-choice w-full",
+                  answer === "yes" && "gtc-choice-yes",
+                  answer === "no" && "gtc-choice-no",
+                  answer === "sort" && "gtc-choice-sort",
+                )}
+                onClick={() => dispatch({ type: "ANSWER", answer, note, hint })}
+              >
+                {answer === "sort" ? "Sort of" : answer === "yes" ? "Yes" : "No"}
+              </Button>
+            ))}
+          </div>
         </>
       )}
     </div>

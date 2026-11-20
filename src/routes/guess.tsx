@@ -200,11 +200,40 @@ function GuessGate() {
         />
       </div>
 
+      {invited ? (
+        <form
+          className="flex flex-col gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (joinCode.length < 4) return;
+            enter("guest", joinCode, remember(name));
+          }}
+        >
+          <label className="gtc-label" htmlFor="room-code-input">
+            Room code
+          </label>
+          <input
+            id="room-code-input"
+            value={draftCode}
+            maxLength={8}
+            autoCapitalize="characters"
+            autoComplete="off"
+            spellCheck={false}
+            placeholder="ABCDE"
+            onChange={(event) => setDraftCode(cleanCode(event.target.value))}
+            className="gtc-field gtc-field-code"
+          />
+          <button id="join-room" type="submit" disabled={joinCode.length < 4} className="gtc-btn gtc-btn-primary press w-full">
+            {joinCode === invited ? `Join ${invited}` : "Join"}
+          </button>
+        </form>
+      ) : null}
+
       <div className="flex flex-col gap-2">
         <button
           id="create-room"
           type="button"
-          className="gtc-btn gtc-btn-primary press w-full"
+          className={invited ? "gtc-btn gtc-btn-quiet press w-full" : "gtc-btn gtc-btn-primary press w-full"}
           onClick={() => {
             enter("host", makeCode(), remember(name));
           }}
@@ -214,32 +243,34 @@ function GuessGate() {
         <p className="text-sm text-faint">One phone makes the room. The other joins with the code.</p>
       </div>
 
-      <form
-        className="flex flex-col gap-2"
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (joinCode.length < 4) return;
-          enter("guest", joinCode, remember(name));
-        }}
-      >
-        <label className="gtc-label" htmlFor="room-code-input">
-          Room code
-        </label>
-        <input
-          id="room-code-input"
-          value={draftCode}
-          maxLength={8}
-          autoCapitalize="characters"
-          autoComplete="off"
-          spellCheck={false}
-          placeholder="ABCDE"
-          onChange={(event) => setDraftCode(cleanCode(event.target.value))}
-          className="gtc-field gtc-field-code"
-        />
-        <button id="join-room" type="submit" disabled={joinCode.length < 4} className="gtc-btn gtc-btn-secondary press w-full">
-          {invited && joinCode === invited ? `Join ${invited}` : "Join"}
-        </button>
-      </form>
+      {invited ? null : (
+        <form
+          className="flex flex-col gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (joinCode.length < 4) return;
+            enter("guest", joinCode, remember(name));
+          }}
+        >
+          <label className="gtc-label" htmlFor="room-code-input">
+            Room code
+          </label>
+          <input
+            id="room-code-input"
+            value={draftCode}
+            maxLength={8}
+            autoCapitalize="characters"
+            autoComplete="off"
+            spellCheck={false}
+            placeholder="ABCDE"
+            onChange={(event) => setDraftCode(cleanCode(event.target.value))}
+            className="gtc-field gtc-field-code"
+          />
+          <button id="join-room" type="submit" disabled={joinCode.length < 4} className="gtc-btn gtc-btn-secondary press w-full">
+            Join
+          </button>
+        </form>
+      )}
 
       <div className="mt-auto flex flex-col gap-2 pt-4">
         <button id="same-phone" type="button" className="gtc-btn gtc-btn-quiet press w-full" onClick={() => setScreen("local")}>

@@ -41,6 +41,7 @@ export type Wire =
   | { t: "hello"; name: string }
   | { t: "theme"; themeId: string; themeLine: string }
   | { t: "lock" }
+  | { t: "unlock" }
   | { t: "start-draft"; themeId: string; themeLine: string }
   | { t: "begin"; first: "host" | "guest"; round: number }
   | { t: "notready" }
@@ -59,6 +60,7 @@ export type OnlineAction =
   | { type: "ROLL" }
   | { type: "PICK"; id: string }
   | { type: "SET_LINE"; line: string }
+  | { type: "COMMIT_LINE" }
   | { type: "SHUFFLE" }
   | { type: "APPLY_THEME"; themeId: string; themeLine: string }
   | { type: "START_DRAFT" }
@@ -66,7 +68,9 @@ export type OnlineAction =
   | { type: "SET_SECRET"; value: string }
   | { type: "SET_NOTE"; value: string }
   | { type: "LOCK" }
+  | { type: "UNLOCK" }
   | { type: "THEY_LOCK" }
+  | { type: "THEY_UNLOCK" }
   | { type: "BEGIN" }
   | { type: "REMOTE_BEGIN"; firstIsMe: boolean; round: number }
   | { type: "NOT_READY" }
@@ -94,6 +98,8 @@ export type OnlineState = {
   round: number;
   themeId: string;
   themeLine: string;
+  /** The other phone sent the line that is showing. A local roll, pick, or edit clears it. */
+  themeFromThem: boolean;
   examples: string[];
   exampleCursor: number;
   secret: string;
@@ -148,6 +154,7 @@ export function initialOnline(): OnlineState {
     round: 1,
     themeId: first.id,
     themeLine: first.line,
+    themeFromThem: false,
     examples: first.examples,
     exampleCursor: 0,
     secret: "",
@@ -197,8 +204,19 @@ function withTheme(state: OnlineState, theme: Theme): OnlineState {
     phase: state.phase === "wait" ? "theme" : state.phase,
     themeId: theme.id,
     themeLine: theme.line,
+    themeFromThem: false,
     examples: theme.examples,
     exampleCursor: 0,
+  };
+}
+
+/** The host starts the round when the second lock lands. The guest never sends begin. */
+function hostBegin(state: OnlineState, isHost: boolean): { state: OnlineState; wire: Wire } | null {
+  if (!isHost || state.phase !== "draft" || !state.iLocked || !state.theyLocked || state.roundLive) return null;
+  const first: "host" | "guest" = state.round % 2 === 1 ? "host" : "guest";
+  return {
+    state: applyBegin(state, first === "host", state.round),
+    wire: { t: "begin", first, round: state.round },
   };
 }
 
@@ -233,6 +251,7 @@ function advance(state: OnlineState): OnlineState {
     pending: null,
     inbox: [],
     roundLive: false,
+    themeFromThem: false,
     stale: false,
     me: blankSeat(state.me.score),
     them: blankSeat(state.them.score),
@@ -283,6 +302,23 @@ export function step(
         phase: state.phase === "wait" ? "theme" : state.phase,
         themeLine: line,
         themeId: match?.id ?? "custom",
+        themeFromThem: false,
+        examples: match?.examples ?? [],
+        exampleCursor: 0,
+      };
+      return ok(next);
+    }
+    case "COMMIT_LINE": {
+      if (state.phase !== "theme" && state.phase !== "wait") return ok(state);
+      const line = state.themeLine.trim();
+      if (!line) return ok(state);
+      const match = THEMES.find((theme) => theme.line.toLowerCase() === line.toLowerCase());
+      const next: OnlineState = {
+        ...state,
+        phase: state.phase === "wait" ? "theme" : state.phase,
+        themeLine: line,
+        themeId: match?.id ?? "custom",
+        themeFromThem: false,
         examples: match?.examples ?? [],
         exampleCursor: 0,
       };
@@ -293,7 +329,7 @@ export function step(
     case "APPLY_THEME": {
       if (state.phase !== "theme" && state.phase !== "wait") return ok(state);
       const theme = themeOf(action.themeId, action.themeLine);
-      return ok({ ...state, phase: "theme", ...theme, exampleCursor: 0 });
+      return ok({ ...state, phase: "theme", ...theme, exampleCursor: 0, themeFromThem: true });
     }
     case "START_DRAFT": {
       if ((state.phase !== "theme" && state.phase !== "wait") || !state.themeLine.trim()) return ok(state);
@@ -334,15 +370,28 @@ export function step(
       return ok({ ...state, note: action.value.slice(0, 140) });
     case "LOCK": {
       if (state.phase !== "draft" || !state.secret.trim()) return ok(state);
-      return ok({ ...state, iLocked: true, secret: state.secret.trim() }, { t: "lock" });
+      const locked = { ...state, iLocked: true, secret: state.secret.trim() };
+      const started = hostBegin(locked, ctx.isHost);
+      if (started) return ok(started.state, [{ t: "lock" }, started.wire]);
+      return ok(locked, { t: "lock" });
     }
-    case "THEY_LOCK":
-      return ok({ ...state, theyLocked: true });
+    case "UNLOCK": {
+      if (state.phase !== "draft" || state.roundLive || !state.iLocked) return ok(state);
+      return ok({ ...state, iLocked: false }, { t: "unlock" });
+    }
+    case "THEY_LOCK": {
+      const locked = { ...state, theyLocked: true };
+      const started = hostBegin(locked, ctx.isHost);
+      if (started) return ok(started.state, started.wire);
+      return ok(locked);
+    }
+    case "THEY_UNLOCK":
+      if (state.phase !== "draft" || state.roundLive) return ok(state);
+      return ok({ ...state, theyLocked: false });
     case "BEGIN": {
-      if (state.phase !== "draft" || !state.iLocked || !state.theyLocked || state.roundLive) return ok(state);
-      const first: "host" | "guest" = state.round % 2 === 1 ? "host" : "guest";
-      const firstIsMe = ctx.isHost ? first === "host" : first === "guest";
-      return ok(applyBegin(state, firstIsMe, state.round), { t: "begin", first, round: state.round });
+      const started = hostBegin(state, ctx.isHost);
+      if (!started) return ok(state);
+      return ok(started.state, started.wire);
     }
     case "REMOTE_BEGIN": {
       if (state.roundLive && state.phase !== "draft") return ok(state);
@@ -606,6 +655,8 @@ export function parseWire(data: unknown): Wire | null {
     }
     case "lock":
       return { t: "lock" };
+    case "unlock":
+      return { t: "unlock" };
     case "start-draft": {
       const themeId = str(data.themeId, 40) ?? "custom";
       const themeLine = str(data.themeLine, 80);
@@ -665,6 +716,7 @@ export function snapshot(state: OnlineState, isHost: boolean): Wire[] {
   if (isHost && (state.phase === "draft" || state.roundLive)) {
     wires.push({ t: "start-draft", themeId: state.themeId, themeLine: state.themeLine.trim() });
   }
+  if (state.phase === "draft" && !state.iLocked) wires.push({ t: "unlock" });
   if (state.iLocked) wires.push({ t: "lock" });
   if (isHost && state.roundLive) {
     wires.push({

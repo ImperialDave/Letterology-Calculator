@@ -143,6 +143,7 @@ export function parseOnlineState(value: unknown): OnlineState | null {
     round: num(row.round, 1, 99, 1),
     themeId: known?.id ?? (themeId || "custom"),
     themeLine,
+    themeFromThem: row.themeFromThem === true,
     examples: known?.examples ?? [],
     exampleCursor: num(row.exampleCursor, 0, 1000, 0),
     secret: clip(row.secret, 48),
