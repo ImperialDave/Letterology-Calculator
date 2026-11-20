@@ -1,9 +1,11 @@
 /**
  * WebRTC signaling over the app database (Neon deployed, PGLite in preview).
- * Only rendezvous traffic passes through here — roster + SDP/ICE relay while a
- * mesh forms; game data then flows peer-to-peer. DB-backed so any serverless
- * instance can serve any poll. Mount at /api/rtc (see the multiplayer-p2p
- * skill); the client side lives in `@/lib/multiplayer`.
+ * Roster, SDP/ICE, and Guess mail all pass through here. Guess is turn-based,
+ * so its moves are `kind: "msg"` rows instead of a WebRTC data channel: a
+ * phone that cannot punch a direct UDP hole still plays. SDP expires quickly.
+ * Mail lives as long as a Guess seat. DB-backed so any serverless instance
+ * can serve any poll. Mount at /api/rtc. The client side lives in
+ * `@/lib/multiplayer`.
  *
  * The GET poll is the whole peer lifecycle: the first poll (since=0) IS the
  * join — it registers the peer, returns the roster, and prunes stale rows.
@@ -20,7 +22,7 @@ const signalSchema = z.object({
   room: ID,
   from: ID,
   to: ID,
-  kind: z.enum(["offer", "answer", "ice"]),
+  kind: z.enum(["offer", "answer", "ice", "msg"]),
   payload: z.unknown().refine((v) => v !== undefined && JSON.stringify(v).length <= 32_768, {
     message: "payload too large",
   }),
@@ -28,8 +30,10 @@ const signalSchema = z.object({
 const leaveSchema = z.object({ op: z.literal("leave"), room: ID, peer: ID });
 const postSchema = z.discriminatedUnion("op", [signalSchema, leaveSchema]);
 
-const PEER_TTL_SECONDS = 30;
+const PEER_TTL_SECONDS = 120;
 const SIGNAL_TTL_SECONDS = 60;
+/** Matches the Guess seat. A phone can lock, come back, and still collect its mail. */
+const MAIL_TTL_SECONDS = 12 * 60 * 60;
 
 const globalRef = globalThis as typeof globalThis & {
   __rtcSchemaPromise__?: Promise<void>;
@@ -90,9 +94,12 @@ async function touchPeer(sql: Sql, room: string, peer: string, name: string) {
 
 async function prune(sql: Sql) {
   await Promise.all([
-    sql.query(`DELETE FROM webrtc_signals WHERE created_at < now() - make_interval(secs => $1)`, [
-      SIGNAL_TTL_SECONDS,
-    ]),
+    sql.query(
+      `DELETE FROM webrtc_signals
+       WHERE (kind <> 'msg' AND created_at < now() - make_interval(secs => $1))
+          OR (kind = 'msg' AND created_at < now() - make_interval(secs => $2))`,
+      [SIGNAL_TTL_SECONDS, MAIL_TTL_SECONDS],
+    ),
     sql.query(`DELETE FROM webrtc_peers WHERE last_seen < now() - make_interval(secs => $1)`, [
       PEER_TTL_SECONDS,
     ]),
@@ -141,7 +148,7 @@ async function handleGet(url: URL): Promise<Response> {
   const body: RtcPollResponse = {
     peers: await roster(sql, room),
     signals: rows.map((r) => ({
-      id: r.id,
+      id: Number(r.id),
       from: r.from_peer,
       kind: r.kind,
       payload: r.payload,

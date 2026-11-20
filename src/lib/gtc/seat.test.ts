@@ -36,11 +36,34 @@ test("a seat keeps the hidden character for the same room", () => {
   assert.equal(loaded.peerId, peerId);
   assert.equal(loaded.state.secret, "Waldo");
   assert.equal(loaded.state.phase, "draft");
+  assert.equal(loaded.mailCursor, 0);
   assert.equal(loadSeat("ZZZZZ"), null);
   assert.equal(loadSeat()?.state.secret, "Waldo");
   assert.equal(loadSeat("ABCDE")?.state.secret, "Waldo");
   clearSeat();
   assert.equal(loadSeat("ABCDE"), null);
+  resetSeatBackendForTests();
+});
+
+test("a seat remembers how much room mail it has applied", () => {
+  const store = memory();
+  setSeatBackendForTests(store);
+  const peerId = newPeerId();
+  saveSeat({ room: "ABCDE", name: "Ada", role: "host", peerId, state: initialOnline(), mailCursor: 12.8 });
+  assert.equal(loadSeat("ABCDE")?.mailCursor, 12);
+  store.setItem(
+    "gtc-seat",
+    JSON.stringify({
+      version: 1,
+      room: "ABCDE",
+      name: "Ada",
+      role: "host",
+      peerId,
+      state: initialOnline(),
+      savedAt: Date.now(),
+    }),
+  );
+  assert.equal(loadSeat("ABCDE")?.mailCursor, null);
   resetSeatBackendForTests();
 });
 

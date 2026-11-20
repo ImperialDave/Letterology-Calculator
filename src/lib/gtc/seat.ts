@@ -31,6 +31,11 @@ export type SavedSeat = {
   peerId: string;
   state: OnlineState;
   savedAt: number;
+  /**
+   * Last room-mail id this phone has applied. Null means a seat saved before
+   * mail existed. A number, including 0, resumes after that id.
+   */
+  mailCursor: number | null;
 };
 
 type Backend = {
@@ -208,6 +213,10 @@ export function loadSeat(room?: string): SavedSeat | null {
     store.removeItem(KEY);
     return null;
   }
+  const mailCursor =
+    typeof row.mailCursor === "number" && Number.isFinite(row.mailCursor) && row.mailCursor >= 0
+      ? Math.min(Math.trunc(row.mailCursor), Number.MAX_SAFE_INTEGER)
+      : null;
   return {
     version: 1,
     room: savedRoom,
@@ -216,13 +225,20 @@ export function loadSeat(room?: string): SavedSeat | null {
     peerId: clip(row.peerId, 20),
     state,
     savedAt,
+    mailCursor,
   };
 }
 
-export function saveSeat(seat: Omit<SavedSeat, "version" | "savedAt"> & { savedAt?: number }): void {
+export function saveSeat(
+  seat: Omit<SavedSeat, "version" | "savedAt" | "mailCursor"> & { savedAt?: number; mailCursor?: number | null },
+): void {
   const store = db();
   if (!store) return;
   if (!ROOM.test(seat.room) || !PEER.test(seat.peerId)) return;
+  const mailCursor =
+    typeof seat.mailCursor === "number" && Number.isFinite(seat.mailCursor) && seat.mailCursor >= 0
+      ? Math.min(Math.trunc(seat.mailCursor), Number.MAX_SAFE_INTEGER)
+      : 0;
   const record: SavedSeat = {
     version: 1,
     room: seat.room,
@@ -231,6 +247,7 @@ export function saveSeat(seat: Omit<SavedSeat, "version" | "savedAt"> & { savedA
     peerId: seat.peerId,
     state: seat.state,
     savedAt: seat.savedAt ?? Date.now(),
+    mailCursor,
   };
   try {
     store.setItem(KEY, JSON.stringify(record));

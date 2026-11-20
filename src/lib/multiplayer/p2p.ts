@@ -1,8 +1,10 @@
 /**
- * Full-mesh WebRTC rooms: one RTCPeerConnection per remote peer, signaled
- * through /api/rtc (see signaling.server.ts), game data flowing directly
- * browser-to-browser afterwards. Client-authoritative by construction — see
- * the multiplayer-p2p skill for when NOT to use this.
+ * Rooms signaled through /api/rtc (see signaling.server.ts).
+ * `via: "direct"` opens one RTCPeerConnection per peer and then sends game
+ * data browser-to-browser. `via: "room"` keeps the moves on the room mailbox
+ * (`kind: "msg"`), which is how Guess plays: a turn-based match cannot wait
+ * on a UDP hole that a phone often cannot open. Client-authoritative either
+ * way — see the multiplayer-p2p skill for when NOT to use this.
  *
  * Negotiation follows the "perfect negotiation" pattern: on a glare (both
  * sides offering at once) the polite peer — the lexicographically smaller id —
@@ -11,7 +13,7 @@
 
 import { sdpFingerprint } from "@/lib/multiplayer/sdp";
 
-export type SignalKind = "offer" | "answer" | "ice";
+export type SignalKind = "offer" | "answer" | "ice" | "msg";
 
 /**
  * Wire contract between this client and the signaling relay the app provides
@@ -49,9 +51,19 @@ export interface P2PRoomOptions {
   name?: string;
   /**
    * A returning seat already has a peer id. Dial even when we would normally
-   * wait, and ignore SDP left over from the previous page.
+   * wait, and ignore SDP left over from the previous page. Ignored for
+   * `via: "room"`, which resumes from `since` instead of skipping mail.
    */
   redial?: boolean;
+  /**
+   * "room" delivers game messages through the mailbox. "direct" (default)
+   * uses a WebRTC data channel.
+   */
+  via?: "direct" | "room";
+  /** Last mailbox id already applied. The first poll asks for rows after this. */
+  since?: number;
+  /** Fires when the mailbox cursor moves, so a refresh can resume after it. */
+  onCursor?: (id: number) => void;
   /** Defaults to VITE_STUN_URLS (comma-separated) or Google public STUN. */
   iceServers?: RTCIceServer[];
   onPeersChanged?: (peers: PeerInfo[]) => void;
@@ -107,6 +119,9 @@ export function defaultIceServers(): RTCIceServer[] {
 export class P2PRoom {
   private readonly opts: P2PRoomOptions;
   private readonly peers = new Map<string, PeerSlot>();
+  /** Roster entries when moves travel through the room instead of a data channel. */
+  private readonly roomPeers = new Map<string, PeerInfo>();
+  private readonly viaRoom: boolean;
   /** Per-remote-peer signal delivery chains (order-preserving). */
   private readonly signalQueues = new Map<string, Promise<void>>();
   private cursor = 0;
@@ -121,7 +136,11 @@ export class P2PRoom {
 
   constructor(opts: P2PRoomOptions) {
     this.opts = opts;
-    this.skipBacklog = Boolean(opts.redial);
+    this.viaRoom = opts.via === "room";
+    if (typeof opts.since === "number" && Number.isFinite(opts.since) && opts.since > 0) {
+      this.cursor = Math.trunc(opts.since);
+    }
+    this.skipBacklog = this.viaRoom ? false : Boolean(opts.redial);
   }
 
   /**
@@ -132,6 +151,7 @@ export class P2PRoom {
   async join(): Promise<void> {
     await this.poll();
     if (this.closed) return;
+    if (this.viaRoom) return;
     this.pingTimer = setInterval(() => {
       this.pingAll();
       this.watchdog();
@@ -158,6 +178,10 @@ export class P2PRoom {
 
   /** Send on the unreliable game-state channel (drops stale packets). */
   broadcast(data: unknown): void {
+    if (this.viaRoom) {
+      this.send(data);
+      return;
+    }
     const wire = JSON.stringify({ t: "d", d: data });
     for (const slot of this.peers.values()) {
       if (slot.state?.readyState === "open") slot.state.send(wire);
@@ -166,6 +190,14 @@ export class P2PRoom {
 
   /** Send reliably (ordered) to one peer, or to all when peerId is omitted. */
   send(data: unknown, peerId?: string): void {
+    if (this.viaRoom) {
+      const targets = peerId ? [peerId] : [...this.roomPeers.keys()];
+      for (const to of targets) {
+        if (!to || to === this.opts.selfId) continue;
+        void this.sendSignal(to, "msg", data);
+      }
+      return;
+    }
     const wire = JSON.stringify({ t: "d", d: data });
     const targets = peerId ? [this.peers.get(peerId)] : [...this.peers.values()];
     for (const slot of targets) {
@@ -174,6 +206,7 @@ export class P2PRoom {
   }
 
   peerList(): PeerInfo[] {
+    if (this.viaRoom) return [...this.roomPeers.values()].map((peer) => ({ ...peer }));
     return [...this.peers.values()].map((s) => ({ ...s.info }));
   }
 
@@ -186,6 +219,8 @@ export class P2PRoom {
   }
 
   private anyPairConnecting(): boolean {
+    // Mail is the game. Keep the poll quick for the whole sitting.
+    if (this.viaRoom) return true;
     for (const s of this.peers.values()) {
       // Terminal pairs (NAT-blocked after all recovery attempts) must not pin
       // the session at the 400ms fast-poll rate.
@@ -215,15 +250,23 @@ export class P2PRoom {
     const roster = new Set(body.peers.map((p) => p.id));
     if (this.skipBacklog) {
       // since=0 would replay the previous page's offers into the new connection.
-      for (const sig of body.signals) this.cursor = Math.max(this.cursor, sig.id);
+      for (const sig of body.signals) this.advance(sig.id);
       this.skipBacklog = false;
       return;
     }
     for (const sig of body.signals) {
-      this.cursor = Math.max(this.cursor, sig.id);
+      this.advance(sig.id);
       await this.onSignal(sig.from, sig.kind, sig.payload, roster);
       if (this.closed) return;
     }
+  }
+
+  /** Remember a mailbox id before the message is applied, so a refresh resumes after it. */
+  private advance(id: number): void {
+    const next = typeof id === "number" ? id : Number(id);
+    if (!Number.isFinite(next) || next <= this.cursor) return;
+    this.cursor = next;
+    this.opts.onCursor?.(next);
   }
 
   private async poll(): Promise<void> {
@@ -245,6 +288,25 @@ export class P2PRoom {
   }
 
   private reconcileRoster(peers: { id: string; name: string }[]): void {
+    if (this.viaRoom) {
+      const alive = new Set<string>();
+      for (const peer of peers) {
+        if (peer.id === this.opts.selfId) continue;
+        alive.add(peer.id);
+        this.roomPeers.set(peer.id, {
+          id: peer.id,
+          name: peer.name,
+          connectionState: "connected",
+          candidateType: null,
+          rttMs: null,
+        });
+      }
+      for (const id of this.roomPeers.keys()) {
+        if (!alive.has(id)) this.roomPeers.delete(id);
+      }
+      this.emitPeers();
+      return;
+    }
     const alive = new Set(peers.map((p) => p.id));
     for (const p of peers) {
       if (p.id === this.opts.selfId) continue;
@@ -389,6 +451,12 @@ export class P2PRoom {
     roster: Set<string>,
   ): Promise<void> {
     if (this.closed) return;
+    if (kind === "msg") {
+      if (from === this.opts.selfId) return;
+      this.opts.onMessage?.(from, payload, "reliable");
+      return;
+    }
+    if (this.viaRoom) return;
     let slot = this.peers.get(from);
     if (!slot) {
       // New peers dial us in the same poll that adds them to the roster.

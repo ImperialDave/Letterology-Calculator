@@ -82,6 +82,7 @@ function GuessGate() {
   const [peerId, setPeerId] = useState("");
   const [restored, setRestored] = useState(false);
   const [initialState, setInitialState] = useState<OnlineState | undefined>(undefined);
+  const [mailCursor, setMailCursor] = useState<number | null>(0);
 
   useEffect(() => {
     const saved = localStorage.getItem("gtc-name");
@@ -100,6 +101,7 @@ function GuessGate() {
       setIsHost(seat.role === "host");
       setPeerId(seat.peerId);
       setInitialState(seat.state);
+      setMailCursor(seat.mailCursor);
       setRestored(true);
       setScreen("room");
     }
@@ -123,6 +125,7 @@ function GuessGate() {
     setName(who);
     setIsHost(role === "host");
     setInitialState(undefined);
+    setMailCursor(0);
     setRestored(false);
     setScreen("room");
   }
@@ -156,6 +159,7 @@ function GuessGate() {
         peerId={peerId}
         restored={restored}
         initialState={restored ? initialState : undefined}
+        mailCursor={mailCursor}
         onLeave={leaveRoom}
       />
     );

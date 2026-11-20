@@ -129,6 +129,7 @@ export function OnlineMatch({
   peerId,
   restored = false,
   initialState,
+  mailCursor = 0,
   onLeave,
 }: {
   room: string;
@@ -137,35 +138,53 @@ export function OnlineMatch({
   peerId: string;
   restored?: boolean;
   initialState?: OnlineState;
+  /** Null is a seat from before room mail. Zero is a new room. */
+  mailCursor?: number | null;
   onLeave: () => void;
 }) {
+  const [state, setState] = useState<OnlineState>(() => initialState ?? initialOnline());
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  const mailRef = useRef(mailCursor ?? 0);
+  const rememberRef = useRef<(next: OnlineState) => void>(() => {});
   const p2p = useP2PRoom({
     room,
     name,
     selfId: peerId,
     redial: restored,
+    via: "room",
+    since: mailCursor ?? 0,
+    onCursor: (id) => {
+      mailRef.current = id;
+      rememberRef.current(stateRef.current);
+    },
     shouldLeave: () => {
       const seat = loadSeat(room);
       return !seat || seat.peerId !== peerId;
     },
   });
-  const [state, setState] = useState<OnlineState>(() => initialState ?? initialOnline());
   const [opponentId, setOpponentId] = useState<string | null>(null);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [copied, setCopied] = useState<"code" | "link" | null>(null);
-  const stateRef = useRef(state);
   const oppRef = useRef<string | null>(null);
   const helloFor = useRef<string | null>(null);
   const rolledFor = useRef(initialState && initialState.phase !== "wait" ? initialState.round : 0);
   const prevPhase = useRef(state.phase);
-  stateRef.current = state;
 
   const remember = useCallback(
     (next: OnlineState) => {
-      saveSeat({ room, name, role: isHost ? "host" : "guest", peerId, state: next });
+      saveSeat({
+        room,
+        name,
+        role: isHost ? "host" : "guest",
+        peerId,
+        state: next,
+        mailCursor: mailRef.current,
+      });
     },
     [isHost, name, peerId, room],
   );
+  rememberRef.current = remember;
 
   const sendTo = useCallback(
     (data: Wire) => {
@@ -348,7 +367,7 @@ export function OnlineMatch({
         </Button>
       </div>
     );
-  } else if (!connected && (state.phase === "wait" || state.phase === "theme")) {
+  } else if (state.phase === "wait") {
     screen = (
       <WaitScreen
         room={room}
@@ -410,8 +429,8 @@ export function OnlineMatch({
       {connected ? null : state.phase === "wait" || state.phase === "theme" ? null : (
         <p className="gtc-banner">
           {failed
-            ? "The direct connection failed. Same Wi-Fi usually works. You can also leave and play on one phone."
-            : `${theirName} dropped. Stay on this screen if they come back. A refresh on this phone keeps your character.`}
+            ? "The room lost them. Stay on this screen. They can rejoin this same code."
+            : `${theirName} stepped away. The room keeps the game until they come back. A refresh on this phone keeps your character.`}
         </p>
       )}
       {connected && p2p.peers.length > 1 ? (
@@ -466,7 +485,7 @@ function WaitScreen({
         {signalingDown
           ? "Room service"
           : failed
-            ? "No direct line"
+            ? "Still waiting"
             : found
               ? "Found them"
               : joined
@@ -481,7 +500,7 @@ function WaitScreen({
         {signalingDown
           ? "This phone could not register with the room. Leave and try again in a moment."
           : failed
-            ? "These two devices couldn’t open a direct connection. Try the same Wi-Fi, or a new room. One phone still works from the front screen."
+            ? "The other phone has not reached this room yet. Stay on this screen, or leave and make a new one. One phone still works from the front screen."
             : "The other person opens Guess the Character, taps Join, and types this code. The character each of you picks stays on your own phone."}
       </p>
       <div className="mt-6 grid grid-cols-2 gap-2">
