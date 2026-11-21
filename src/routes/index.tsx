@@ -224,6 +224,13 @@ function ClubGames() {
           image="/guess.jpg"
           alt="Guess the Character — two people at a table with silhouette cards"
         />
+        <GameCard
+          to="https://logostax.grok.me"
+          title="Logostax"
+          lede={VOICE.logostaxLede}
+          image="/logostax.jpg"
+          alt="Logostax — cream, teal, and copper letter tiles stacked on a black board"
+        />
       </div>
     </section>
   );
@@ -236,17 +243,16 @@ function GameCard({
   image,
   alt,
 }: {
-  to: "/glyphbound" | "/guess";
+  to: "/glyphbound" | "/guess" | "https://logostax.grok.me";
   title: string;
   lede: string;
   image: string;
   alt: string;
 }) {
-  return (
-    <Link
-      to={to}
-      className="block overflow-hidden rounded-lg bg-raised shadow-border transition-[box-shadow] duration-150 ease-out hover:shadow-border-hover"
-    >
+  const className =
+    "block overflow-hidden rounded-lg bg-raised shadow-border transition-[box-shadow] duration-150 ease-out hover:shadow-border-hover";
+  const body = (
+    <>
       <img
         src={image}
         alt={alt}
@@ -258,6 +264,18 @@ function GameCard({
         <p className="font-display text-xl text-ink">{title}</p>
         <p className="mt-1 text-sm leading-relaxed text-muted">{lede}</p>
       </div>
+    </>
+  );
+  if (to === "https://logostax.grok.me") {
+    return (
+      <a href={to} className={className}>
+        {body}
+      </a>
+    );
+  }
+  return (
+    <Link to={to} className={className}>
+      {body}
     </Link>
   );
 }

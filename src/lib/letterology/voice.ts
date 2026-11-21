@@ -113,9 +113,11 @@ export const VOICE = {
     "Ask in ordinary words. Should, will, how, when, who — or two options split by or. We read the letters of the matter, not the mood word.",
   glyphLede:
     "Play as the letter c against living numbers. Five closed chapters, then the Numberomicons. One hundred sixty ledgers.",
-  gamesHome: "The club keeps two games.",
+  gamesHome: "The club keeps three games.",
   guessLede:
     "Each of you hides a character. The other guesses. Pass one phone, or share a room code.",
+  logostaxLede:
+    "Guess today’s shared word, deal a private one, or host a table. The fewest guesses wins.",
   starWordsLede:
     "Pilot the C-wing. Letters on the wing. Lizards in the count. Dualis waits at the Press.",
   rollTitle: "The Roll",
