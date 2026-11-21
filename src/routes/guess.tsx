@@ -9,14 +9,29 @@ import { THEMES } from "@/lib/gtc/themes";
 import { pageCardMeta } from "@/lib/letterology/share";
 import { VOICE } from "@/lib/letterology/voice";
 
-const ALT = "Guess the Character — two people at a table with silhouette cards";
+const GUESS_ALT = "Guess the Character — two people at a table with silhouette cards";
+const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+/** A join code of 4–8 letters. Shorter or ambiguous codes stay the plain game card. */
+function shareRoom(value: string): string {
+  const code = value
+    .toUpperCase()
+    .replace(new RegExp(`[^${ALPHABET}]`, "g"), "")
+    .slice(0, 8);
+  return code.length >= 4 ? code : "";
+}
 
 export const Route = createFileRoute("/guess")({
-  head: () => {
+  loader: ({ location }) => {
+    const params = new URL(location.href, "https://www.letterology.club").searchParams;
+    return { room: shareRoom(params.get("room") ?? "") };
+  },
+  head: ({ loaderData }) => {
+    const room = loaderData?.room ?? "";
     const card = pageCardMeta({
-      title: "Guess the Character",
-      description: VOICE.guessLede,
-      path: "/guess",
+      title: room ? `Join room ${room}` : "Guess the Character",
+      description: room ? `Room ${room}. Each of you hides a character. The other guesses.` : VOICE.guessLede,
+      path: room ? `/guess?room=${room}` : "/guess",
       imagePath: "/guess.jpg",
     });
     return {
@@ -25,7 +40,7 @@ export const Route = createFileRoute("/guess")({
         ...card.meta.map((item) => {
           if (item.property === "og:type") return { property: "og:type", content: "x:game" };
           if (item.name === "twitter:image:alt" || item.property === "og:image:alt") {
-            return { ...item, content: ALT };
+            return { ...item, content: GUESS_ALT };
           }
           return item;
         }),
@@ -41,8 +56,6 @@ export const Route = createFileRoute("/guess")({
   },
   component: PlayGuess,
 });
-
-const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 function makeCode(): string {
   const bytes = new Uint8Array(5);

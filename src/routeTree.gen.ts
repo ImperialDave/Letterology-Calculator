@@ -28,6 +28,7 @@ import { Route as HouseRouteImport } from './routes/house'
 import { Route as KeyRouteImport } from './routes/key'
 import { Route as LettersRouteImport } from './routes/letters'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as LogostaxRouteImport } from './routes/logostax'
 import { Route as SheetRouteImport } from './routes/sheet'
 import { Route as StarwordsRouteImport } from './routes/starwords'
 import { Route as StoicheiaRouteImport } from './routes/stoicheia'
@@ -152,6 +153,11 @@ const LettersRoute = LettersRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LogostaxRoute = LogostaxRouteImport.update({
+  id: '/logostax',
+  path: '/logostax',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SheetRoute = SheetRouteImport.update({
@@ -325,6 +331,7 @@ export interface FileRoutesByFullPath {
   '/key': typeof KeyRoute
   '/letters': typeof LettersRoute
   '/login': typeof LoginRoute
+  '/logostax': typeof LogostaxRoute
   '/sheet': typeof SheetRoute
   '/starwords': typeof StarwordsRoute
   '/stoicheia': typeof StoicheiaRouteWithChildren
@@ -376,6 +383,7 @@ export interface FileRoutesByTo {
   '/key': typeof KeyRoute
   '/letters': typeof LettersRoute
   '/login': typeof LoginRoute
+  '/logostax': typeof LogostaxRoute
   '/sheet': typeof SheetRoute
   '/starwords': typeof StarwordsRoute
   '/threshold': typeof ThresholdRoute
@@ -427,6 +435,7 @@ export interface FileRoutesById {
   '/key': typeof KeyRoute
   '/letters': typeof LettersRoute
   '/login': typeof LoginRoute
+  '/logostax': typeof LogostaxRoute
   '/sheet': typeof SheetRoute
   '/starwords': typeof StarwordsRoute
   '/stoicheia': typeof StoicheiaRouteWithChildren
@@ -480,6 +489,7 @@ export interface FileRouteTypes {
     | '/key'
     | '/letters'
     | '/login'
+    | '/logostax'
     | '/sheet'
     | '/starwords'
     | '/stoicheia'
@@ -531,6 +541,7 @@ export interface FileRouteTypes {
     | '/key'
     | '/letters'
     | '/login'
+    | '/logostax'
     | '/sheet'
     | '/starwords'
     | '/threshold'
@@ -581,6 +592,7 @@ export interface FileRouteTypes {
     | '/key'
     | '/letters'
     | '/login'
+    | '/logostax'
     | '/sheet'
     | '/starwords'
     | '/stoicheia'
@@ -633,6 +645,7 @@ export interface RootRouteChildren {
   KeyRoute: typeof KeyRoute
   LettersRoute: typeof LettersRoute
   LoginRoute: typeof LoginRoute
+  LogostaxRoute: typeof LogostaxRoute
   SheetRoute: typeof SheetRoute
   StarwordsRoute: typeof StarwordsRoute
   StoicheiaRoute: typeof StoicheiaRouteWithChildren
@@ -787,6 +800,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/logostax': {
+      id: '/logostax'
+      path: '/logostax'
+      fullPath: '/logostax'
+      preLoaderRoute: typeof LogostaxRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sheet': {
@@ -1064,6 +1084,7 @@ const rootRouteChildren: RootRouteChildren = {
   KeyRoute: KeyRoute,
   LettersRoute: LettersRoute,
   LoginRoute: LoginRoute,
+  LogostaxRoute: LogostaxRoute,
   SheetRoute: SheetRoute,
   StarwordsRoute: StarwordsRoute,
   StoicheiaRoute: StoicheiaRouteWithChildren,
