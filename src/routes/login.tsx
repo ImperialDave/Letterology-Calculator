@@ -12,10 +12,10 @@ import { probePasswordEnabled } from "@/lib/firebase/preflight";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { isBrainAdminEmail } from "@/lib/letterology/brain-admin";
 
-type Search = { next?: "/court" | "/brain/roll" };
+type Search = { next?: "/court" | "/brain/roll" | "/logostax" };
 
-function safeNext(raw: unknown): "/court" | "/brain/roll" | undefined {
-  if (raw === "/court" || raw === "/brain/roll") return raw;
+function safeNext(raw: unknown): "/court" | "/brain/roll" | "/logostax" | undefined {
+  if (raw === "/court" || raw === "/brain/roll" || raw === "/logostax") return raw;
   return undefined;
 }
 

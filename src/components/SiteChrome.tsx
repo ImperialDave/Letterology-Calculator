@@ -409,6 +409,12 @@ export function AppShell({
             Guess
           </Link>
           <Link
+            to="/logostax"
+            className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+          >
+            Logostax
+          </Link>
+          <Link
             to="/why"
             search={{ tongue: tongue === "el" ? "el" : "la" }}
             hash={tongue === "el" ? "greek" : "latin"}
@@ -448,6 +454,12 @@ export function AppShell({
             className="inline-flex h-11 min-w-14 items-center justify-center font-display text-xs tracking-[0.14em] text-primary uppercase"
           >
             Guess
+          </Link>
+          <Link
+            to="/logostax"
+            className="inline-flex h-11 min-w-14 items-center justify-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+          >
+            Stax
           </Link>
           <AuthSlot />
         </div>
