@@ -409,6 +409,12 @@ export function AppShell({
             Guess
           </Link>
           <Link
+            to="/letterace"
+            className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
+          >
+            Letterace
+          </Link>
+          <Link
             to="/logostax"
             className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
           >

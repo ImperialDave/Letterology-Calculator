@@ -26,6 +26,7 @@ import { Route as GlyphboundRouteImport } from './routes/glyphbound'
 import { Route as GuessRouteImport } from './routes/guess'
 import { Route as HouseRouteImport } from './routes/house'
 import { Route as KeyRouteImport } from './routes/key'
+import { Route as LetteraceRouteImport } from './routes/letterace'
 import { Route as LettersRouteImport } from './routes/letters'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LogostaxRouteImport } from './routes/logostax'
@@ -143,6 +144,11 @@ const HouseRoute = HouseRouteImport.update({
 const KeyRoute = KeyRouteImport.update({
   id: '/key',
   path: '/key',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LetteraceRoute = LetteraceRouteImport.update({
+  id: '/letterace',
+  path: '/letterace',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LettersRoute = LettersRouteImport.update({
@@ -329,6 +335,7 @@ export interface FileRoutesByFullPath {
   '/guess': typeof GuessRoute
   '/house': typeof HouseRoute
   '/key': typeof KeyRoute
+  '/letterace': typeof LetteraceRoute
   '/letters': typeof LettersRoute
   '/login': typeof LoginRoute
   '/logostax': typeof LogostaxRoute
@@ -381,6 +388,7 @@ export interface FileRoutesByTo {
   '/guess': typeof GuessRoute
   '/house': typeof HouseRoute
   '/key': typeof KeyRoute
+  '/letterace': typeof LetteraceRoute
   '/letters': typeof LettersRoute
   '/login': typeof LoginRoute
   '/logostax': typeof LogostaxRoute
@@ -433,6 +441,7 @@ export interface FileRoutesById {
   '/guess': typeof GuessRoute
   '/house': typeof HouseRoute
   '/key': typeof KeyRoute
+  '/letterace': typeof LetteraceRoute
   '/letters': typeof LettersRoute
   '/login': typeof LoginRoute
   '/logostax': typeof LogostaxRoute
@@ -487,6 +496,7 @@ export interface FileRouteTypes {
     | '/guess'
     | '/house'
     | '/key'
+    | '/letterace'
     | '/letters'
     | '/login'
     | '/logostax'
@@ -539,6 +549,7 @@ export interface FileRouteTypes {
     | '/guess'
     | '/house'
     | '/key'
+    | '/letterace'
     | '/letters'
     | '/login'
     | '/logostax'
@@ -590,6 +601,7 @@ export interface FileRouteTypes {
     | '/guess'
     | '/house'
     | '/key'
+    | '/letterace'
     | '/letters'
     | '/login'
     | '/logostax'
@@ -643,6 +655,7 @@ export interface RootRouteChildren {
   GuessRoute: typeof GuessRoute
   HouseRoute: typeof HouseRoute
   KeyRoute: typeof KeyRoute
+  LetteraceRoute: typeof LetteraceRoute
   LettersRoute: typeof LettersRoute
   LoginRoute: typeof LoginRoute
   LogostaxRoute: typeof LogostaxRoute
@@ -786,6 +799,13 @@ declare module '@tanstack/react-router' {
       path: '/key'
       fullPath: '/key'
       preLoaderRoute: typeof KeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/letterace': {
+      id: '/letterace'
+      path: '/letterace'
+      fullPath: '/letterace'
+      preLoaderRoute: typeof LetteraceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/letters': {
@@ -1082,6 +1102,7 @@ const rootRouteChildren: RootRouteChildren = {
   GuessRoute: GuessRoute,
   HouseRoute: HouseRoute,
   KeyRoute: KeyRoute,
+  LetteraceRoute: LetteraceRoute,
   LettersRoute: LettersRoute,
   LoginRoute: LoginRoute,
   LogostaxRoute: LogostaxRoute,
