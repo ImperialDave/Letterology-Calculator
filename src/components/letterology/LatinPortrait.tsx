@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
+import { ArchetypeCard } from "@/components/letterology/ArchetypeCard";
+import { ArchetypeList } from "@/components/letterology/ArchetypeList";
 import { DayShare } from "@/components/letterology/DayCard";
 import { HouseCircle } from "@/components/letterology/HouseCircle";
 import { LetterDetail } from "@/components/letterology/LetterDetail";
@@ -72,6 +74,14 @@ export function LatinPortrait({
           />
         </div>
       </header>
+
+      <ArchetypeCard archetype={horoscope.archetype} featured />
+
+      <ArchetypeList
+        items={horoscope.kindred}
+        caption="Same manner and field, sitting in an allied house"
+        note="Kindred paths share how you work and where, and sit a neighboring role."
+      />
 
       <LuckPanel luck={luck} />
 

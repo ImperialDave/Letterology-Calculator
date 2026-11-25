@@ -124,11 +124,11 @@ export function HoroscopeView({
             a blind spot, not a villain.
           </Explain>
           <Link
-            to="/circle"
-            search={{ house: horoscope.signature }}
+            to="/letters"
+            search={{ house: horoscope.signature, tongue: undefined }}
             className="inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
           >
-            Open the circle
+            Open the wheel
           </Link>
         </div>
         <h3 className="mt-3 font-display text-2xl text-ink">{horoscope.archetype.house}</h3>

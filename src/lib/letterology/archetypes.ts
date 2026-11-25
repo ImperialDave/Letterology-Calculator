@@ -1,6 +1,7 @@
 import type { Archetype, Letter, LetterInventory, Triad } from "./types";
 import { ALPHABET } from "./types";
 import { themeOf } from "./lexicon";
+import { readingOf } from "./reading";
 
 interface LetterRole {
   letter: Letter;
@@ -40,9 +41,9 @@ const ROLES: Record<Letter, LetterRole> = {
     calling:
       "You stand as the Seeker. You already know this version of your life is too small. Wanting more is not drama. It is information.",
     method:
-      "The manner is rising. You start before you feel ready. You take the first real step instead of waiting for a perfect plan.",
+      "Rising is the method, not a second name. You take the first real step before the plan is finished, and you refuse to shop for a self instead of walking.",
     field:
-      "The realm is the Threshold — the gap between the life you have and the one you keep thinking about. It only changes if you move.",
+      "The work happens at the Threshold, the gap between the life you have and the one you keep thinking about. It changes only if you move.",
     doubled:
       "When the Seeker doubles, you start twice and finish nothing. Complete one crossing.",
     invitation: "Say what you actually want, then do one thing that matches it.",
@@ -65,9 +66,9 @@ const ROLES: Record<Letter, LetterRole> = {
     calling:
       "You stand as the Caregiver. Feeding, keeping, and guarding is real work. You make a home of two things that chose each other.",
     method:
-      "The manner is devoted keeping. You hold what would fall apart. You know the difference between loyalty and control.",
+      "Devotion is the method, not a second name. You start by keeping one living thing, a person or a practice or a promise, and you know the difference between loyalty and control.",
     field:
-      "The realm is the Hearth — a place a body can rest. Without that, nobody recovers.",
+      "The work happens at the Hearth, a place a body can rest. Without that room, nobody recovers, including you.",
     doubled:
       "When the Caregiver doubles, care becomes fusion. Hold without gripping. Let people have their own breath.",
     invitation: "Keep what is actually alive. Let go of the care that is really control.",
@@ -90,9 +91,9 @@ const ROLES: Record<Letter, LetterRole> = {
     calling:
       "You stand as the Rebel. You are not chaos for sport. You are why a dishonest room does not stay quiet.",
     method:
-      "The manner is wild ignition. You start the change other people only complain about, and you do it in public.",
+      "A wild method does the change other people only complain about, and does it where it can be seen. The work starts with a clean no, not with a second identity.",
     field:
-      "The realm is the Spark — the first honest sentence, the first break with a bad rule. After that comes the work of not becoming the next bad rule.",
+      "The work happens at the Spark, the first honest break with a dead rule. After the spark comes the work of not becoming the next bad rule.",
     doubled:
       "When the Rebel doubles, you start fires and tend none of them. Stay long enough to see if the change helps.",
     invitation: "Start one change worth keeping, then stay long enough to make it livable.",
@@ -115,9 +116,9 @@ const ROLES: Record<Letter, LetterRole> = {
     calling:
       "You stand as the Hermit. Depth is not shyness. You prefer the practice to the announcement.",
     method:
-      "The manner is hidden descent. You stay with what is not clear yet. You will not be hurried by people who only live on the surface.",
+      "A hidden method stays with what is not clear yet. You will not be hurried into a public version of a private decision.",
     field:
-      "The realm is the Well — the quiet work that changes you. What you learn there is meant to be used in daylight.",
+      "The work happens at the Well. You go quiet long enough to see, and what you learn there is meant to be used in daylight.",
     doubled:
       "When the Hermit doubles, you go so far in you forget to come back. Bring something with you.",
     invitation: "Let one private practice become visible. Depth that never speaks starts lying to itself.",
@@ -140,9 +141,9 @@ const ROLES: Record<Letter, LetterRole> = {
     calling:
       "You stand as the Explorer. Where the Seeker leaves an old self, you leave an old map. You make more room than the situation asked for, and someone usually needs it.",
     method:
-      "The manner is open widening. You grow by walking into what you cannot name yet. You trust the part of you that says there is more world than this argument.",
+      "An open method widens the job past the argument in front of you. You grow by walking into what you cannot name yet, without making distance itself the point.",
     field:
-      "The realm is the Horizon — the next range, not an excuse to never arrive. You can outgrow a story without betraying the people in it.",
+      "The work happens on the Horizon, the next range rather than an excuse never to arrive. You can outgrow a story without betraying the people in it.",
     doubled:
       "When the Explorer doubles, everything is distant and nothing is close. Grow in one direction.",
     invitation: "Expand toward one place you could actually love, not every empty distance at once.",
@@ -165,9 +166,9 @@ const ROLES: Record<Letter, LetterRole> = {
     calling:
       "You stand as the Fool. You have not signed the contract that says you must already know who you are. Joy and risk arrive together, or not at all.",
     method:
-      "The manner is free. You leave room in the day. You move as you actually need to move, and you will not be shamed for traveling light — only asked, eventually, to land.",
+      "A free method leaves room in the day. You move before the old armor is on, and you are still asked, eventually, to land.",
     field:
-      "The realm is the Gate — an opening you choose and keep choosing. Freedom is a daily refusal to be herded by fear, fashion, or last year's self.",
+      "The work happens at the Gate, an opening you choose and keep choosing. Freedom here is a daily refusal to be herded by fear or by last year's self.",
     doubled:
       "When the Fool doubles, nothing is vowed. Stay freely. One promise is what keeps freedom from becoming drift.",
     invitation: "Keep the open space, and give it one promise that is still yours.",
@@ -190,9 +191,9 @@ const ROLES: Record<Letter, LetterRole> = {
     calling:
       "You stand as the Creator. You do not collect projects. You stay until something living stands where there was only intention. Talent comes and goes. Tending is a decision.",
     method:
-      "The manner is generative. You see what wants to live and you help it. You stay through the unglamorous season.",
+      "A generative method stays until something living stands where there was only intention. You help what wants to live, including through the unglamorous season.",
     field:
-      "The realm is the Grove — work, children of the mind, rooms of practice that grow because someone refused to leave. It keeps giving after you are tired.",
+      "The work happens in the Grove, a living piece of work that keeps giving after you are tired. Talent comes and goes. Tending is the decision.",
     doubled:
       "When the Creator doubles, nothing is allowed to rest. Let one thing lie fallow.",
     invitation: "Tend one living work, and let it rest when it asks.",
@@ -215,9 +216,9 @@ const ROLES: Record<Letter, LetterRole> = {
     calling:
       "You stand as the Prophet. You will not let a family, a craft, or a culture forget its own vow. You see what is coming. The task is to say it in a language the living can hear, then stay for the meal.",
     method:
-      "The manner is far-seeing. You offer the longer view without forcing anyone to kneel to it. Hospitality is how your vision stays from becoming a sermon.",
+      "A far-seeing method offers the longer view without making anyone kneel to it. You say the far line in language the living can use.",
     field:
-      "The realm is the Vista — the far line that organizes today's table. A vision that cannot help anyone through an ordinary day is just talk.",
+      "The work happens on the Vista, the far line that organizes today's table. A vision that cannot help anyone through an ordinary day is only talk.",
     doubled:
       "When the Prophet doubles, the near is neglected. Set the nearest table. The future is fed by the present meal.",
     invitation: "Keep the far line, and be decent to the person already in the room.",
@@ -240,9 +241,9 @@ const ROLES: Record<Letter, LetterRole> = {
     calling:
       "You stand as the Sage. Imagination lives in you first as a private room. That is correct. The second move is also required: let one unused insight help someone who is trying to see.",
     method:
-      "The manner is lucid. You keep the thought honest before you show it. You revise. You wait until the sentence is true, then you risk saying it.",
+      "A lucid method keeps the thought honest before it is shown. You revise, you wait until the sentence is true, and then you risk saying it.",
     field:
-      "The realm is the Lamp. A lamp is not a bonfire. It is a small, tended brightness for work, reading, and the people you will not leave confused.",
+      "The work happens at the Lamp, a small tended brightness for real work. It is not a bonfire, and it is not a study with the door locked.",
     doubled:
       "When the Sage doubles, the study locks. Speak one private seeing. Unused light starts looking like wisdom if you sit among it long enough.",
     invitation: "Say one unused insight out loud, and let ordinary life test it.",
@@ -265,9 +266,9 @@ const ROLES: Record<Letter, LetterRole> = {
     calling:
       "You stand as the Hero — not the statue, the traveler who will not look away. Joy is part of how you travel, or the road is only punishment. You move a life from a smaller honesty to a larger one.",
     method:
-      "The manner is steadfast travel. You take the next mile when the prize is not visible. You do not confuse delay with destiny.",
+      "A steadfast method takes the next mile when the prize is not visible. You do not confuse delay with a reason to stop, and you do not confuse motion with arrival.",
     field:
-      "The realm is the Road — the honest miles between a smaller self and a larger duty. Arrival is part of the work. So is sitting down among the people you left.",
+      "The work happens on the Road, the honest miles between a smaller honesty and a larger duty. Arrival is part of the work, and so is sitting down with the people you left.",
     doubled:
       "When the Hero doubles, you never arrive. A journey that cannot rest is just exile with better branding.",
     invitation: "Take the next honest mile, and let joy come along instead of waiting at the end.",
@@ -290,9 +291,9 @@ const ROLES: Record<Letter, LetterRole> = {
     calling:
       "You stand as the Orphan — not as a wound to display, as the beginning of real kinship. You understand by standing with people. What you know wants to be useful to someone specific.",
     method:
-      "The manner is kindred. You knit family and chosen family. Kindness is not decoration on your intelligence. It is how you think.",
+      "A kindred method thinks by standing with someone specific. Kindness is not decoration. It is how the work decides who it is for.",
     field:
-      "The realm is the Table — the place the outsider is fed and the insider is asked to make room. A key that only opens for blood is just a lock with a story.",
+      "The work happens at the Table, where the outsider is fed and the insider is asked to make room. A key that opens only for blood is a lock with a story.",
     doubled:
       "When the Orphan doubles, the room closes around the wound. Leave a place for the one who does not yet belong.",
     invitation: "Offer one precise kindness to kin, then one to someone who has no claim on you yet.",
@@ -315,9 +316,9 @@ const ROLES: Record<Letter, LetterRole> = {
     calling:
       "You stand as the Lover. You lead by going first in warmth. This is not collapse. It is putting your heat where you said it belongs.",
     method:
-      "The manner is radiant. Care is your form of authority. You make a room visible, and you know when you need rest.",
+      "A radiant method puts heat where you said it belongs, then rests. You go first in warmth, and you do not light every hallway to prove you are alive.",
     field:
-      "The realm is the Flame — not the firework, the fire that actually cooks. Passion here is loyalty with heat. Heat that never becomes care is only a show.",
+      "The work happens at the Flame, the fire that cooks rather than the firework. Heat that never becomes care is only a show.",
     doubled:
       "When the Lover doubles, brightness performs and fatigue hides. Rest. Love that cannot sleep becomes display.",
     invitation: "Give your attention to one true thing. Stop lighting every hallway.",
@@ -340,9 +341,9 @@ const ROLES: Record<Letter, LetterRole> = {
     calling:
       "You stand as the Warrior. This is not violence. It is a practice that has begun to carry itself. You give scattered energy a spine. People remember what they were for, near you.",
     method:
-      "The manner is swift and rhythmic. You move toward mastery, not just activity. You return to the work when mood would like a different war.",
+      "A swift method gives scattered energy a spine and comes back tomorrow. You move toward mastery, and you put the weapon down when the hour is over.",
     field:
-      "The realm is the Wheel — work that continues. Real strength is showing up again tomorrow, not the one blow people remember.",
+      "The work happens on the Wheel, the work that continues. Real strength is showing up again, not the one blow people remember.",
     doubled:
       "When the Warrior doubles, speed outruns meaning. Pause. A fight without a worthy object is just restlessness in armor.",
     invitation: "Give the real work a daily return, and know which battles are beneath you.",
@@ -365,9 +366,9 @@ const ROLES: Record<Letter, LetterRole> = {
     calling:
       "You stand as the Healer. You notice before you fix. Care, in you, has no condescension. You see what needs feeding while others are still arguing about the problem.",
     method:
-      "The manner is gentle feeding. You tend what is young, tender, or not yet named. You do not confuse a dramatic cure with the slow work of making a body, a friendship, or a day able to continue.",
+      "A gentle method notices before it fixes. You tend what is young or not yet named, and you do not confuse a dramatic cure with a day that can continue.",
     field:
-      "The realm is the Garden — the rows where recovery actually happens. No one applauds a well-watered root. That is how you know you are close to the real work.",
+      "The work happens in the Garden, the rows where recovery actually happens. Nobody applauds a well-watered root. That is how you know the work is real.",
     doubled:
       "When the Healer doubles, the feeder starves. Include yourself. Taking care of the healer is not vanity.",
     invitation: "Feed what is already alive in you. Then feed what is alive near you. In that order.",
@@ -390,9 +391,9 @@ const ROLES: Record<Letter, LetterRole> = {
     calling:
       "You stand as the Priestess. You open, and you keep the opening from becoming chaos. This is not a performance of the sacred. It is hospitality toward what cannot be scheduled.",
     method:
-      "The manner is receptive. You make order that can still admit a guest, a chance, a second beginning. You know when to speak and when speaking would scare the thing away.",
+      "A receptive method makes an order that can still admit a guest. You know when speech would scare the true thing away.",
     field:
-      "The realm is the Circle. A circle is a decision about what belongs inside tonight. Too tight, and life cannot enter. Too loose, and nothing can ripen.",
+      "The work happens in the Circle, a decision about what belongs inside tonight. Too tight, and life cannot enter. Too loose, and nothing ripens.",
     doubled:
       "When the Priestess doubles, the circle freezes into empty rite. Open one real door, and keep the room behind it warm.",
     invitation: "Open the door that is actually yours to open, and give the space a simple, kept order.",
@@ -415,9 +416,9 @@ const ROLES: Record<Letter, LetterRole> = {
     calling:
       "You stand as the Ruler. Purpose, in you, is presence with a direction. You are not here to dominate. You are here to give scattered lives a shape they can trust, including your own.",
     method:
-      "The manner is sovereign aiming. You turn potential into a sequence of kept days. Passion waits for a worthy object, which is how it becomes a plan instead of a mood.",
+      "A sovereign method turns a wish into a sequence of kept days. You aim the work without erasing the people inside it.",
     field:
-      "The realm is the Crown: not jewelry, the ring of responsibility. Whoever wears it must stay larger than their favorite plan, or the land dries out around a single idea.",
+      "The work happens under the Crown, the ring of responsibility rather than the jewelry. The person who holds it has to stay larger than one favorite plan.",
     doubled:
       "When the Ruler doubles, the script hardens. Let purpose stay larger than one aim. A crown that cannot listen is only a hat.",
     invitation: "Name the work that would still matter if it were slower, then do the next inch of it.",
@@ -440,9 +441,9 @@ const ROLES: Record<Letter, LetterRole> = {
     calling:
       "You stand as the Mystic. You would rather touch the real thing and leave the rest than win an argument about the whole. Quiet quality is how you love. That love is stricter than it looks.",
     method:
-      "The manner is quiet questioning. You will not be rushed into a cheap version of the true. You wait. You discard. You keep the one thing that still rings when the fashion has gone dull.",
+      "A quiet method will not be rushed into a cheap version of the true. You wait, you discard, and you keep the one thing that still rings.",
     field:
-      "The realm is the Cloister — not escape, the inner courtyard from which life can be seen without being owned by its noise. You go there to return more accurately, not to disappear.",
+      "The work happens in the Cloister, the inner courtyard where life can be seen without being owned by its noise. You go there in order to return more accurately.",
     doubled:
       "When the Mystic doubles, the ordinary day is despised. Live near the question without leaving the living.",
     invitation: "Ask the one question that would change the week, and stay beside it without needing an audience.",
@@ -465,9 +466,9 @@ const ROLES: Record<Letter, LetterRole> = {
     calling:
       "You stand as the Bard. You restore pitch. This is why people tell you things they did not plan to tell. They can hear themselves better in your presence, which is a responsibility.",
     method:
-      "The manner is attuned returning. You listen until the signal is clean. You refuse to interrupt a true sound with a cleverer one.",
+      "An attuned method listens until the signal is clean. You refuse to cover a true sound with a cleverer one.",
     field:
-      "The realm is the Song — a pattern a body can enter. If it cannot be lived, it is not yet a song. It is only an idea with rhythm attached.",
+      "The work happens in the Song, a pattern a body can enter. If it cannot be lived, it is not yet a song.",
     doubled:
       "When the Bard doubles, echo replaces voice. Change key when the old one is spent.",
     invitation: "Listen for the note that is yours, and return to it once before night.",
@@ -490,9 +491,9 @@ const ROLES: Record<Letter, LetterRole> = {
     calling:
       "You stand as the Weaver. You make combinations. You can feel when two lives, two ideas, or two hours want to be more together than apart, and you have the patience to let the join set.",
     method:
-      "The manner is shared joining. You braid people, efforts, timings. The strongest seams are often the ones no one applauds.",
+      "A shared method braids people, efforts, and timings, and lets the join set. The strongest seams are often the ones nobody applauds.",
     field:
-      "The realm is the Weave — relationship, timing, and meaning as one cloth. You also live with loose ends. A finished tapestry with no new thread is a funeral.",
+      "The work happens in the Weave, where relationship and timing are one cloth. Keep one thread that is still yours, or you vanish into the pattern.",
     doubled:
       "When the Weaver doubles, the self dissolves into the pattern. Keep one unsurrendered thread.",
     invitation: "Join what wants joining, and keep a name that is still yours.",
@@ -515,9 +516,9 @@ const ROLES: Record<Letter, LetterRole> = {
     calling:
       "You stand as the Alchemist. Truth, in you, costs something. You midwife change not by cruelty, but by refusing the comfortable lie. People may experience this as loss. Sometimes it is. Not every loss is a mistake.",
     method:
-      "The manner is fierce crossing. You will not live in an expired story. Tension is the heat that makes a new shape possible. Trust comes after the old skin is shed, not before.",
+      "A fierce method will not live inside an expired story. You supply the heat, and you also supply the container, or the change is only a burn.",
     field:
-      "The realm is the Crucible: a container that can take heat without leaking. Change without a container is only a burn. You are responsible for the container as much as for the flame.",
+      "The work happens in the Crucible, a vessel that can take heat without leaking. You are responsible for the container as much as for the flame.",
     doubled:
       "When the Alchemist doubles, crisis becomes a style. Tend what the last fire revealed. Not every day is for the furnace.",
     invitation: "Name the one thing that is already over, and cross with as much tenderness as courage.",
@@ -540,9 +541,9 @@ const ROLES: Record<Letter, LetterRole> = {
     calling:
       "You stand as the Peacemaker — not the smoother of conflict, the holder of opposites. Charm asks people to get along. The vessel asks them to stay true and still remain in the room.",
     method:
-      "The manner is whole-making. You look for the understanding that lets two honest forces stand together. You will disappoint people who wanted you to pick a smaller side.",
+      "A whole method looks for the understanding that lets two honest forces stand together. You will disappoint people who wanted the smaller side.",
     field:
-      "The realm is the Vessel — the bowl that can hold difference without cracking. Too fine, it shatters. Too thick, nothing can be tasted.",
+      "The work happens in the Vessel, the bowl that can hold a quarrel without splitting the room. Too fine, it shatters. Too thick, nothing can be tasted.",
     doubled:
       "When the Peacemaker doubles, conflict is papered. Let one necessary edge remain. Unity that cannot bear a quarrel is only niceness.",
     invitation: "Hold the whole, and keep one unblended contour of yourself.",
@@ -565,9 +566,9 @@ const ROLES: Record<Letter, LetterRole> = {
     calling:
       "You stand as the Oracle — seer, not soothsayer. This is vocation, not prediction. You see the shape of a life while it is still only an idea, and you are willing to be seen seeing it. That willingness is the real risk.",
     method:
-      "The manner is vivid pointing. You name a direction with enough life that others can walk toward it. You keep the image warm by remaining human beside it.",
+      "A vivid method names a direction with enough life that a person can walk toward it. You stay human beside the picture so it does not harden into a statue.",
     field:
-      "The realm is the Sanctum — the private room where the picture is received before it is announced. What is received in private must be tested in public, or it remains a private religion.",
+      "The work happens in the Sanctum, where the picture is received before it is announced. What stays only private becomes a private religion.",
     doubled:
       "When the Oracle doubles, the near is refused. Take one humble inch that belongs to the picture.",
     invitation: "Tell the true picture, then take the ordinary step that proves you mean it.",
@@ -590,9 +591,9 @@ const ROLES: Record<Letter, LetterRole> = {
     calling:
       "You stand as the Innocent. Wonder is wisdom before it hardens into advice. You remain available to being changed by what you see. This is rarer than cleverness, and more useful.",
     method:
-      "The manner is awake witnessing. You look again. You restore astonishment as a practical mercy — the kind that makes a tired person able to continue.",
+      "An awake method looks again, including at the wound, and still puts a hand to the work. Wonder that will not act is only tourism.",
     field:
-      "The realm is the Dawn: the hour when the world is not yet argued over. Innocence is a way of beginning again. It is not a way of remaining uninformed.",
+      "The work happens at Dawn, the hour before the world is argued over. It is a way of beginning again, not a way of remaining uninformed.",
     doubled:
       "When the Innocent doubles, looking replaces doing. Put a hand to the work.",
     invitation: "Look again at what you think you already understand, then join two strands with your hands.",
@@ -615,9 +616,9 @@ const ROLES: Record<Letter, LetterRole> = {
     calling:
       "You stand as the Trickster. The rare thing in you is not a costume. It is medicine. Rooms become more honest when you arrive, even if they do not thank you at once.",
     method:
-      "The manner is liminal. You work from the margin. You bring the missing term into a finished room — then you help set the table again, or the trick was only cruelty.",
+      "A liminal method brings the missing term into a finished room, then helps set the table again. A disruption that will not rebuild was only cruelty.",
     field:
-      "The realm is the Edge: crossings, extremes, the honesty of the unmapped. The gift is movement between worlds, not a permanent address in exile. Messengers deliver, then they leave the house standing.",
+      "The work happens at the Edge, the honesty of what is not mapped yet. The gift is movement between rooms, not a permanent address in exile.",
     doubled:
       "When the Trickster doubles, exile becomes a habit. Let the rare thing serve more than your difference.",
     invitation: "Honor what does not match the pattern, and bring it back so others can use it.",
@@ -640,9 +641,9 @@ const ROLES: Record<Letter, LetterRole> = {
     calling:
       "You stand as the Shapeshifter. Yearning, in you, has learned both yes and not-yet. People call this the empath. The older word is a soul that refuses to become a statue of itself.",
     method:
-      "The manner is yielding. You bend where bending is wisdom. You know how to say yes without becoming a door anyone may walk through.",
+      "A yielding method bends where bending is wisdom and keeps one unbent vow. You can say yes without becoming a door anyone may walk through.",
     field:
-      "The realm is the Fork — the place a life can still choose. A fork is not an excuse to walk both roads until you starve. It is a real choice, still open.",
+      "The work happens at the Fork, a real choice that is still open. It is not permission to walk both roads until you starve.",
     doubled:
       "When the Shapeshifter doubles, the stand is postponed. Let one yes become a spine.",
     invitation: "Bend where bending is wisdom. Then keep one unbent vow.",
@@ -665,9 +666,9 @@ const ROLES: Record<Letter, LetterRole> = {
     calling:
       "You stand as the Magician. This is not stagecraft. It is intensity without waste. You raise the ceiling of a room by refusing the lukewarm. People feel, near you, that a life can actually be aimed — which is why you must stay kind to the part of them that is still climbing.",
     method:
-      "The manner is complete concentration. You will spend a season on a single height. The duty is to know when the season has done its work.",
+      "A complete method spends a season on one height and knows when the season has done its work. Intensity without a descent is only altitude.",
     field:
-      "The realm is the Peak — a place to visit with the whole self, not a climate to inhabit. The magician who cannot descend has mistaken the summit for the world.",
+      "The work happens at the Peak, a place to visit with the whole self, not a climate to inhabit. The walk back down is part of the work.",
     doubled:
       "When the Magician doubles, the climb starves the descent. Come down. Power that cannot become ordinary is only inflation.",
     invitation: "Give zeal one worthy height, and practice the walk back down as part of the work.",
@@ -697,20 +698,6 @@ function buildTitle(a: LetterRole, b: LetterRole, c: LetterRole, triad: Triad): 
   return `The ${b.adj} ${a.noun} of the ${c.realm}`;
 }
 
-function buildPortrait(a: LetterRole, b: LetterRole, c: LetterRole, triad: Triad, title: string): string {
-  const repeats: string[] = [];
-  if (triad[0] === triad[1] || triad[0] === triad[2]) repeats.push(a.doubled);
-  if (triad[1] === triad[2] && triad[1] !== triad[0]) repeats.push(b.doubled);
-
-  return [
-    a.calling,
-    b.method,
-    c.field,
-    ...repeats,
-    `${title} is ${a.noun.toLowerCase()} work done in a ${b.adj.toLowerCase()} way, on the path of the ${c.realm}.`,
-  ].join(" ");
-}
-
 function buildSummary(a: LetterRole, b: LetterRole, c: LetterRole): string {
   return `${a.house} · ${b.adj} aspect · path of the ${c.realm}`;
 }
@@ -721,6 +708,7 @@ export function archetypeOf(triad: Triad): Archetype {
   const b = houseOf(y);
   const c = houseOf(z);
   const title = buildTitle(a, b, c, triad);
+  const reading = readingOf(triad);
   return {
     triad,
     code: `${x}${y}${z}`,
@@ -731,11 +719,11 @@ export function archetypeOf(triad: Triad): Archetype {
     myth: a.myth,
     correspondence: a.correspondence,
     doctrine: a.doctrine,
-    shadow: a.shadow,
-    gold: a.gold,
+    shadow: reading.shadow,
+    gold: reading.gold,
     summary: buildSummary(a, b, c),
-    portrait: buildPortrait(a, b, c, triad, title),
-    invitation: `${a.invitation} ${c.invitation}`,
+    portrait: reading.portrait,
+    invitation: reading.invitation,
   };
 }
 

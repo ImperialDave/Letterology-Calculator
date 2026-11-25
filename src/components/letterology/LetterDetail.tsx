@@ -39,6 +39,20 @@ export function LetterDetail({ letter }: { letter: Letter }) {
         </p>
         <p className="mt-3 text-sm leading-relaxed text-ink/90">{house.doctrine}</p>
       </div>
+      <div className="mt-5 grid gap-4 lg:grid-cols-3">
+        <div className="border-t border-ink/10 pt-4">
+          <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">As a role</p>
+          <p className="mt-2 text-sm leading-relaxed text-ink/90">{house.calling}</p>
+        </div>
+        <div className="border-t border-ink/10 pt-4">
+          <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">As how</p>
+          <p className="mt-2 text-sm leading-relaxed text-ink/90">{house.method}</p>
+        </div>
+        <div className="border-t border-ink/10 pt-4">
+          <p className="font-display text-xs tracking-[0.16em] text-muted uppercase">As where</p>
+          <p className="mt-2 text-sm leading-relaxed text-ink/90">{house.field}</p>
+        </div>
+      </div>
       <p className="mt-4 text-sm tracking-wide text-muted">{theme.keywords.join(" · ")}</p>
       <p className="mt-4 text-[1.05rem] leading-relaxed text-ink">{theme.essence}</p>
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -79,11 +93,11 @@ export function LetterDetail({ letter }: { letter: Letter }) {
         {house.invitation}
       </p>
       <Link
-        to="/circle"
-        search={{ house: letter }}
+        to="/archetypes"
+        search={{ house: letter, code: undefined }}
         className="mt-4 inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
       >
-        See on the circle
+        Read the house
       </Link>
     </article>
   );

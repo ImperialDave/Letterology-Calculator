@@ -19,8 +19,8 @@ function BondRow({
         <span key={letter}>
           {index > 0 ? <span className="text-muted"> · </span> : null}
           <Link
-            to="/circle"
-            search={{ house: letter }}
+            to="/letters"
+            search={{ house: letter, tongue: undefined }}
             className="font-display text-ink underline-offset-4 hover:underline"
           >
             {letter} {houseOf(letter).noun}

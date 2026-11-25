@@ -146,7 +146,9 @@ export function speakLatin(h: Horoscope): string {
   const a = houseOf(role);
   const b = houseOf(manner);
   const c = houseOf(field);
-  return `${h.displayName} is ${role}${manner}${field}. That is the ${a.noun}, working as ${b.noun} in the ${c.realm}. ${a.invitation}`;
+  const mannerWord = b.adj.toLowerCase();
+  const article = /^[aeiou]/.test(mannerWord) ? "an" : "a";
+  return `${h.displayName} is ${role}${manner}${field}. That is the ${a.noun}, working in ${article} ${mannerWord} way, in the ${c.realm}. ${a.invitation}`;
 }
 
 export function speakGreek(s: Stoicheion): string {

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { HouseCircle } from "@/components/letterology/HouseCircle";
 import { LetterDetail } from "@/components/letterology/LetterDetail";
 import { TongueStage } from "@/components/letterology/TongueStage";
@@ -9,16 +9,23 @@ import { NightWheel } from "@/components/stoicheia/NightWheel";
 import { pageCardMeta } from "@/lib/letterology/share";
 import { useTongue } from "@/components/letterology/TongueProvider";
 import { VOICE } from "@/lib/letterology/voice";
-import type { Letter } from "@/lib/letterology/types";
+import { ALPHABET, type Letter } from "@/lib/letterology/types";
 import { markOf } from "@/lib/stoicheia/letters";
 import { portraitOf } from "@/lib/stoicheia/portrait";
 import type { Stoich } from "@/lib/stoicheia/letters";
 
-type Search = { tongue?: "la" | "el" };
+type Search = { tongue?: "la" | "el"; house?: Letter };
+
+function asLetter(raw: unknown): Letter | undefined {
+  if (typeof raw !== "string") return undefined;
+  const letter = raw.trim().toUpperCase();
+  return ALPHABET.includes(letter) ? letter : undefined;
+}
 
 export const Route = createFileRoute("/letters")({
   validateSearch: (search: Record<string, unknown>): Search => ({
     tongue: search.tongue === "el" ? "el" : search.tongue === "la" ? "la" : undefined,
+    house: asLetter(search.house),
   }),
   head: () =>
     pageCardMeta({
@@ -31,9 +38,12 @@ export const Route = createFileRoute("/letters")({
 });
 
 function LettersPage() {
-  const { tongue: raw } = Route.useSearch();
+  const { tongue: raw, house } = Route.useSearch();
   const tongue = useTongue(raw);
-  const [latin, setLatin] = useState<Letter>("A");
+  const [latin, setLatin] = useState<Letter>(house ?? "A");
+  useEffect(() => {
+    if (house) setLatin(house);
+  }, [house]);
   const [greek, setGreek] = useState<Stoich>("Α");
   const book = portraitOf(greek);
 

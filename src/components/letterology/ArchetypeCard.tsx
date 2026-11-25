@@ -58,7 +58,6 @@ export function ArchetypeCard({
         Old tables call this {archetype.tradition} — {archetype.correspondence}. A likeness, not a
         creed.
       </p>
-      <p className="mt-4 max-w-3xl text-sm leading-relaxed text-ink/80">{archetype.doctrine}</p>
       <p className="mt-4 max-w-3xl leading-relaxed text-ink/90">{archetype.portrait}</p>
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <div className="border-t border-ink/10 pt-4">
@@ -80,7 +79,7 @@ export function ArchetypeCard({
         search={{ house: first, code: archetype.code }}
         className="mt-5 inline-flex h-11 items-center font-display text-xs tracking-[0.14em] text-primary uppercase"
       >
-        Open this house
+        Read this path
       </Link>
     </article>
   );

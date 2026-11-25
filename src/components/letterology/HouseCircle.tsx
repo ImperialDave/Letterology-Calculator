@@ -263,8 +263,8 @@ export function HouseCircle({
           return (
             <Link
               key={seat.letter}
-              to="/circle"
-              search={{ house: seat.letter }}
+              to="/letters"
+              search={{ house: seat.letter, tongue: undefined }}
               aria-label={label}
               style={style}
               className={className}
