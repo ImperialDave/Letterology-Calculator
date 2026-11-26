@@ -113,7 +113,9 @@ export const VOICE = {
     "Ask in ordinary words. Should, will, how, when, who — or two options split by or. We read the letters of the matter, not the mood word.",
   glyphLede:
     "Play as the letter c against living numbers. Five closed chapters, then the Numberomicons. One hundred sixty ledgers.",
-  gamesHome: "The club keeps three games.",
+  gamesHome: "The club keeps four games.",
+  letteraceLede:
+    "Eight karts on a paper road. A letterpress grand prix.",
   guessLede:
     "Each of you hides a character. The other guesses. Pass one phone, or share a room code.",
   logostaxLede:

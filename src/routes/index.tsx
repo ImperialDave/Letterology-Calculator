@@ -218,6 +218,13 @@ function ClubGames() {
           alt="Glyphbound — the letter c facing a mechanical number wyrm in the rain"
         />
         <GameCard
+          to="/letterace"
+          title="Letterace"
+          lede={VOICE.letteraceLede}
+          image="/letterace.jpg"
+          alt="Letterace — toy karts on a paper road inside a letterpress workshop"
+        />
+        <GameCard
           to="/guess"
           title="Guess the Character"
           lede={VOICE.guessLede}
@@ -243,7 +250,7 @@ function GameCard({
   image,
   alt,
 }: {
-  to: "/glyphbound" | "/guess" | "/logostax";
+  to: "/glyphbound" | "/letterace" | "/guess" | "/logostax";
   title: string;
   lede: string;
   image: string;
