@@ -79,10 +79,7 @@ function callNum(name: string): number | null {
 }
 
 function seatCount() {
-  const coarse = window.matchMedia("(pointer: coarse)").matches;
-  const pads = navigator.getGamepads ? Array.from(navigator.getGamepads()).filter((pad) => pad).length : 0;
-  if (!coarse) return 4;
-  return pads >= 2 ? Math.min(4, pads) : 1;
+  return 1;
 }
 
 function LetteracePage() {
